@@ -1,10 +1,11 @@
-package codec
+package jsonapi
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
 
+	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -39,33 +40,64 @@ type ShortEnumsOption struct {
 	StrictUnmarshal bool
 }
 
-func (se *ShortEnumsOption) EnumValues(src protoreflect.EnumValueDescriptors) ([]string, error) {
+func (se *ShortEnumsOption) EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules) ([]string, error) {
 	values := make([]string, 0, src.Len())
-	if se == nil {
-		for ii := 0; ii < src.Len(); ii++ {
-			value := string(src.Get(ii).Name())
-			values = append(values, value)
+
+	specMap := map[int32]struct{}{}
+	var notIn bool
+	var isIn bool
+
+	if constraint != nil {
+		if constraint.NotIn != nil {
+			for _, notIn := range constraint.NotIn {
+				specMap[notIn] = struct{}{}
+			}
+			notIn = true
+
+		} else if constraint.In != nil {
+			for _, in := range constraint.In {
+				specMap[in] = struct{}{}
+			}
+			isIn = true
 		}
-		return values, nil
 	}
 
-	trimPrefix := ""
-	if se != nil {
-		suffix := se.unspecifiedSuffix()
-		unspecifiedVal := string(src.Get(0).Name())
-		if !strings.HasSuffix(unspecifiedVal, suffix) {
-			return nil, fmt.Errorf("enum does not have an unspecified value ending in %q", suffix)
-		}
-		trimPrefix = strings.TrimSuffix(unspecifiedVal, suffix) + "_"
+	if notIn && isIn {
+		return nil, fmt.Errorf("enum cannot have both in and not_in constraints")
 	}
 
 	for ii := 0; ii < src.Len(); ii++ {
-		value := string(src.Get(ii).Name())
-		if trimPrefix != "" {
-			value = strings.TrimPrefix(value, trimPrefix)
+		option := src.Get(ii)
+		number := int32(option.Number())
+
+		if notIn {
+			_, exclude := specMap[number]
+			if exclude {
+				continue
+			}
+		} else if isIn {
+			_, include := specMap[number]
+			if !include {
+				continue
+			}
 		}
 
-		values = append(values, value)
+		values = append(values, string(option.Name()))
+	}
+
+	if se == nil {
+		return values, nil
+	}
+
+	suffix := se.unspecifiedSuffix()
+	unspecifiedVal := string(src.Get(0).Name())
+	if !strings.HasSuffix(unspecifiedVal, suffix) {
+		return nil, fmt.Errorf("enum does not have an unspecified value ending in %q", suffix)
+	}
+	trimPrefix := strings.TrimSuffix(unspecifiedVal, suffix) + "_"
+
+	for ii := range values {
+		values[ii] = strings.TrimPrefix(values[ii], trimPrefix)
 	}
 	return values, nil
 }

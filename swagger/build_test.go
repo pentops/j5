@@ -4,19 +4,18 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/pentops/custom-proto-api/codec"
+	"github.com/pentops/custom-proto-api/jsonapi"
 	"github.com/pentops/o5-runtime-sidecar/testproto"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func filesToSwagger(t testing.TB, fileDescriptors ...*descriptorpb.FileDescriptorProto) *Document {
 	t.Helper()
 	services := testproto.FilesToServiceDescriptors(t, fileDescriptors...)
-	swaggerDoc, err := Build(codec.Options{
-		ShortEnums: &codec.ShortEnumsOption{},
+	swaggerDoc, err := Build(jsonapi.Options{
+		ShortEnums: &jsonapi.ShortEnumsOption{},
 	}, services)
 	if err != nil {
 		t.Fatal(err)
@@ -123,7 +122,7 @@ func TestBuild(t *testing.T) {
 		t.Errorf("unexpected description: '%s'", refSchema.Description)
 	}
 
-	asObject := refSchema.ItemType.(ObjectItem)
+	asObject := refSchema.ItemType.(jsonapi.ObjectItem)
 	if len(asObject.Properties) != 2 {
 		t.Fatalf("unexpected properties: %d", len(asObject.Properties))
 	}
@@ -141,7 +140,7 @@ func TestBuild(t *testing.T) {
 	if fEnum.Name != "enum" {
 		t.Errorf("unexpected field name: '%s'", fEnum.Name)
 	}
-	enumType, ok := fEnum.SchemaItem.ItemType.(EnumItem)
+	enumType, ok := fEnum.SchemaItem.ItemType.(jsonapi.EnumItem)
 	if !ok {
 		t.Fatalf("unexpected type: %T", fEnum.SchemaItem.ItemType)
 	}
@@ -151,55 +150,6 @@ func TestBuild(t *testing.T) {
 	}
 	if enumType.Enum[1] != "FOO" {
 		t.Errorf("unexpected enum value: '%s'", enumType.Enum[1])
-	}
-
-}
-
-func TestCommentBuilder(t *testing.T) {
-
-	for _, tc := range []struct {
-		name     string
-		leading  string
-		trailing string
-		expected string
-	}{{
-		name:     "leading",
-		leading:  "comment",
-		expected: "comment",
-	}, {
-		name:     "fallback",
-		expected: "fallback",
-	}, {
-		name:     "both",
-		leading:  "leading",
-		trailing: "trailing",
-		expected: "leading\ntrailing",
-	}, {
-		name:     "multiline",
-		leading:  "line1\n  line2",
-		trailing: "line3\n  line4",
-		expected: "line1\nline2\nline3\nline4",
-	}, {
-		name:     "multiline commented",
-		leading:  "#line1\nline2",
-		expected: "line2",
-	}, {
-		name:     "commented fallback",
-		leading:  "#line1",
-		expected: "fallback",
-	}} {
-		t.Run(tc.name, func(t *testing.T) {
-			sl := protoreflect.SourceLocation{
-				LeadingComments:  tc.leading,
-				TrailingComments: tc.trailing,
-			}
-
-			got := buildComment(sl, "fallback")
-			if got != tc.expected {
-				t.Errorf("expected comment: '%s', got '%s'", tc.expected, got)
-			}
-
-		})
 	}
 
 }

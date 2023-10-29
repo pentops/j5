@@ -1,4 +1,4 @@
-package swagger
+package jsonapi
 
 import (
 	"encoding/json"
@@ -90,25 +90,4 @@ func jsonFieldMap(object interface{}, m map[string]json.RawMessage) error {
 	}
 
 	return nil
-}
-
-type MapItem interface {
-	MapKey() string
-}
-
-type OrderedMap[T MapItem] []T
-
-func (om OrderedMap[T]) MarshalJSON() ([]byte, error) {
-	fields := make([]string, len(om))
-	for idx, field := range om {
-		val, err := json.Marshal(field)
-		if err != nil {
-			return nil, err
-		}
-		keyString := field.MapKey()
-		key, _ := json.Marshal(keyString)
-		fields[idx] = string(key) + ":" + string(val)
-	}
-	outStr := "{" + strings.Join(fields, ",") + "}"
-	return []byte(outStr), nil
 }

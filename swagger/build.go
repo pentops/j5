@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pentops/custom-proto-api/codec"
+	"github.com/pentops/custom-proto-api/jsonapi"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -14,22 +14,20 @@ import (
 
 type builder struct {
 	document *Document
-
-	paths   map[string]*PathItem
-	Options codec.Options
+	paths    map[string]*PathItem
+	schemas  *jsonapi.SchemaSet
 }
 
-func Build(options codec.Options, services []protoreflect.ServiceDescriptor) (*Document, error) {
+func Build(options jsonapi.Options, services []protoreflect.ServiceDescriptor) (*Document, error) {
 	b := builder{
 		document: &Document{
 			OpenAPI: "3.0.0",
 			Components: Components{
-				Schemas:         make(map[string]*SchemaItem),
 				SecuritySchemes: make(map[string]interface{}),
 			},
 		},
 		paths:   make(map[string]*PathItem),
-		Options: options,
+		schemas: jsonapi.NewSchemaSet(options),
 	}
 
 	for _, service := range services {
@@ -38,6 +36,7 @@ func Build(options codec.Options, services []protoreflect.ServiceDescriptor) (*D
 		}
 	}
 
+	b.document.Components.Schemas = b.schemas.Schemas
 	return b.document, nil
 
 }
@@ -96,7 +95,7 @@ func (bb *builder) registerMethod(serviceName string, method protoreflect.Method
 		},
 	}
 
-	okResponse, err := bb.buildSchemaObject(method.Output())
+	okResponse, err := bb.schemas.BuildSchemaObject(method.Output())
 	if err != nil {
 		return err
 	}
@@ -111,12 +110,12 @@ func (bb *builder) registerMethod(serviceName string, method protoreflect.Method
 		},
 	}}
 
-	request, err := bb.buildSchemaObject(method.Input())
+	request, err := bb.schemas.BuildSchemaObject(method.Input())
 	if err != nil {
 		return err
 	}
 
-	requestObject := request.ItemType.(ObjectItem)
+	requestObject := request.ItemType.(jsonapi.ObjectItem)
 
 	for _, paramStr := range rePathParameter.FindAllString(httpPath, -1) {
 		name := paramStr[1 : len(paramStr)-1]
@@ -169,172 +168,6 @@ func (bb *builder) registerMethod(serviceName string, method protoreflect.Method
 		bb.document.Paths = append(bb.document.Paths, path)
 	}
 	path.AddOperation(operation)
-
-	return nil
-}
-
-func (bb *builder) buildSchemaObject(src protoreflect.MessageDescriptor) (*SchemaItem, error) {
-
-	obj := ObjectItem{
-		ProtoMessageName: string(src.FullName()),
-		Properties:       make([]*ObjectProperty, 0, src.Fields().Len()),
-	}
-
-	for ii := 0; ii < src.Fields().Len(); ii++ {
-		field := src.Fields().Get(ii)
-		prop, err := bb.buildSchemaProperty(field)
-		if err != nil {
-			return nil, err
-		}
-		obj.Properties = append(obj.Properties, prop)
-	}
-
-	description := commentDescription(src, string(src.Name()))
-
-	return &SchemaItem{
-		Description: description,
-		ItemType:    obj,
-	}, nil
-}
-
-func commentDescription(src protoreflect.Descriptor, fallback string) string {
-	sourceLocation := src.ParentFile().SourceLocations().ByDescriptor(src)
-	return buildComment(sourceLocation, fallback)
-}
-
-func buildComment(sourceLocation protoreflect.SourceLocation, fallback string) string {
-	allComments := make([]string, 0)
-	if sourceLocation.LeadingComments != "" {
-		allComments = append(allComments, strings.Split(sourceLocation.LeadingComments, "\n")...)
-	}
-	if sourceLocation.TrailingComments != "" {
-		allComments = append(allComments, strings.Split(sourceLocation.TrailingComments, "\n")...)
-	}
-
-	// Trim leading whitespace
-	commentsOut := make([]string, 0, len(allComments))
-	for _, comment := range allComments {
-		comment = strings.TrimSpace(comment)
-		if comment == "" {
-			continue
-		}
-		if strings.HasPrefix(comment, "#") {
-			continue
-		}
-		commentsOut = append(commentsOut, comment)
-	}
-
-	if len(commentsOut) <= 0 {
-		return fallback
-	}
-	return strings.Join(commentsOut, "\n")
-}
-
-func (bb *builder) buildSchemaProperty(src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
-
-	prop := &ObjectProperty{
-		ProtoFieldName:   string(src.Name()),
-		ProtoFieldNumber: int(src.Number()),
-		Name:             string(src.JSONName()),
-		Description:      commentDescription(src, ""),
-	}
-
-	// TODO: Validation / Rules
-	// TODO: Oneof (meta again?)
-	// TODO: Repeated
-	// TODO: Map
-	// TODO: Extra types (see below)
-
-	switch src.Kind() {
-	case protoreflect.BoolKind:
-		prop.SchemaItem = SchemaItem{
-			ItemType: BooleanItem{},
-		}
-
-	case protoreflect.EnumKind:
-		values, err := bb.Options.ShortEnums.EnumValues(src.Enum().Values())
-		if err != nil {
-			return nil, err
-		}
-
-		prop.SchemaItem = SchemaItem{
-			ItemType: EnumItem{
-				EnumRules: EnumRules{
-					Enum: values,
-				},
-			},
-		}
-
-	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Uint32Kind:
-		prop.SchemaItem = SchemaItem{
-			ItemType: IntegerItem{
-				Format: "int32",
-			},
-		}
-
-	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind:
-		prop.SchemaItem = SchemaItem{
-			ItemType: IntegerItem{
-				Format: "int64",
-			},
-		}
-
-	case protoreflect.FloatKind, protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind, protoreflect.DoubleKind:
-		prop.SchemaItem = SchemaItem{
-			ItemType: NumberItem{
-				Format: "float",
-			},
-		}
-
-	case protoreflect.StringKind:
-		prop.SchemaItem = SchemaItem{
-			Description: string(src.Name()),
-			ItemType:    StringItem{},
-		}
-
-	case protoreflect.BytesKind:
-		prop.SchemaItem = SchemaItem{
-			ItemType: StringItem{
-				Format: "byte",
-			},
-		}
-
-	case protoreflect.MessageKind:
-		// When called from a field of a message, this creates a ref. When built directly from a service RPC request or create, this code is not called, they are inlined with the buildSchemaObject call directly
-		prop.SchemaItem = SchemaItem{
-			Ref: fmt.Sprintf("#/components/schemas/%s", src.Message().FullName()),
-		}
-		if err := bb.addSchemaRef(src.Message()); err != nil {
-			return nil, err
-		}
-
-	default:
-		/* TODO:
-		Sfixed32Kind Kind = 15
-		Fixed32Kind  Kind = 7
-		Sfixed64Kind Kind = 16
-		Fixed64Kind  Kind = 6
-		GroupKind    Kind = 10
-		*/
-		return nil, fmt.Errorf("unsupported field type %s", src.Kind())
-	}
-
-	return prop, nil
-
-}
-
-func (bb *builder) addSchemaRef(src protoreflect.MessageDescriptor) error {
-
-	if _, ok := bb.document.Components.Schemas[string(src.FullName())]; ok {
-		return nil
-	}
-
-	schema, err := bb.buildSchemaObject(src)
-	if err != nil {
-		return err
-	}
-
-	bb.document.Components.Schemas[string(src.FullName())] = schema
 
 	return nil
 }
