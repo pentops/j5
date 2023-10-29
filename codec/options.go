@@ -39,6 +39,44 @@ type ShortEnumsOption struct {
 	StrictUnmarshal bool
 }
 
+func (se *ShortEnumsOption) EnumValues(src protoreflect.EnumValueDescriptors) ([]string, error) {
+	values := make([]string, 0, src.Len())
+	if se == nil {
+		for ii := 0; ii < src.Len(); ii++ {
+			value := string(src.Get(ii).Name())
+			values = append(values, value)
+		}
+		return values, nil
+	}
+
+	trimPrefix := ""
+	if se != nil {
+		suffix := se.unspecifiedSuffix()
+		unspecifiedVal := string(src.Get(0).Name())
+		if !strings.HasSuffix(unspecifiedVal, suffix) {
+			return nil, fmt.Errorf("enum does not have an unspecified value ending in %q", suffix)
+		}
+		trimPrefix = strings.TrimSuffix(unspecifiedVal, suffix) + "_"
+	}
+
+	for ii := 0; ii < src.Len(); ii++ {
+		value := string(src.Get(ii).Name())
+		if trimPrefix != "" {
+			value = strings.TrimPrefix(value, trimPrefix)
+		}
+
+		values = append(values, value)
+	}
+	return values, nil
+}
+
+func (se *ShortEnumsOption) unspecifiedSuffix() string {
+	if se.UnspecifiedSuffix != "" {
+		return se.UnspecifiedSuffix
+	}
+	return "_UNSPECIFIED"
+}
+
 func (se *ShortEnumsOption) Decode(enum protoreflect.EnumDescriptor, stringVal string) (protoreflect.EnumNumber, error) {
 
 	vals := enum.Values()
@@ -53,10 +91,7 @@ func (se *ShortEnumsOption) Decode(enum protoreflect.EnumDescriptor, stringVal s
 
 	unspecified := vals.ByNumber(0)
 	if unspecified != nil {
-		unspecifiedSuffix := se.UnspecifiedSuffix
-		if unspecifiedSuffix == "" {
-			unspecifiedSuffix = "_UNSPECIFIED"
-		}
+		unspecifiedSuffix := se.unspecifiedSuffix()
 		unspecifiedName := string(unspecified.Name())
 		if strings.HasSuffix(unspecifiedName, unspecifiedSuffix) {
 			prefix := strings.TrimSuffix(unspecifiedName, unspecifiedSuffix)
@@ -87,11 +122,7 @@ func (se *ShortEnumsOption) Encode(enum protoreflect.EnumDescriptor, enumVal pro
 		return "", fmt.Errorf("enum %s has no unspecified value", enum.FullName())
 	}
 
-	unspecifiedSuffix := se.UnspecifiedSuffix
-	if unspecifiedSuffix == "" {
-		unspecifiedSuffix = "_UNSPECIFIED"
-	}
-
+	unspecifiedSuffix := se.unspecifiedSuffix()
 	unspecifiedName := string(unspecified.Name())
 
 	if !strings.HasSuffix(unspecifiedName, unspecifiedSuffix) {

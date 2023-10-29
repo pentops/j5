@@ -16,7 +16,7 @@ func filesToSwagger(t testing.TB, fileDescriptors ...*descriptorpb.FileDescripto
 	t.Helper()
 	services := testproto.FilesToServiceDescriptors(t, fileDescriptors...)
 	swaggerDoc, err := Build(codec.Options{
-		ShortEnums: true,
+		ShortEnums: &codec.ShortEnumsOption{},
 	}, services)
 	if err != nil {
 		t.Fatal(err)

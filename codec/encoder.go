@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pentops/sugar-go/v1/sugar_pb"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -56,11 +58,26 @@ func (enc *encoder) closeArray() {
 	enc.add([]byte("]"))
 }
 
+func (enc *encoder) fieldSep() {
+	enc.add([]byte(","))
+}
+
+func (enc *encoder) fieldLabel(label string) {
+	enc.add([]byte(fmt.Sprintf(`"%s":`, label)))
+}
+
 func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 
 	wktEncoder := wellKnownTypeMarshaler(msg.Descriptor().FullName())
 	if wktEncoder != nil {
 		return wktEncoder(enc, msg)
+	}
+
+	isOneofWrapper := false
+	msgOptions := msg.Descriptor().Options()
+	ext := proto.GetExtension(msgOptions, sugar_pb.E_Message).(*sugar_pb.Message)
+	if ext != nil {
+		isOneofWrapper = ext.OneofWrapper
 	}
 
 	enc.openObject()
@@ -75,17 +92,17 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 		}
 
 		if !first {
-			enc.add([]byte(","))
+			enc.fieldSep()
 		}
 		first = false
 
 		value := msg.Get(field)
 
-		if enc.WrapOneof {
+		if !isOneofWrapper && enc.WrapOneof {
 			if oneof := field.ContainingOneof(); oneof != nil && !oneof.IsSynthetic() {
-				enc.add([]byte(fmt.Sprintf(`"%s":`, protoNameToJSON(string(oneof.Name())))))
+				enc.fieldLabel(protoNameToJSON(string(oneof.Name())))
 				enc.openObject()
-				enc.add([]byte(fmt.Sprintf(`"%s":`, string(field.JSONName()))))
+				enc.fieldLabel(field.JSONName())
 				if err := enc.encodeValue(field, value); err != nil {
 					return err
 				}
@@ -94,7 +111,7 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 			}
 		}
 
-		enc.add([]byte(fmt.Sprintf(`"%s":`, field.JSONName())))
+		enc.fieldLabel(field.JSONName())
 
 		if err := enc.encodeField(field, value); err != nil {
 			return err
@@ -127,7 +144,7 @@ func (enc *encoder) encodeMapField(field protoreflect.FieldDescriptor, value pro
 	value.Map().Range(func(key protoreflect.MapKey, val protoreflect.Value) bool {
 		fmt.Printf("enc key %v\n", key.Interface())
 		if !first {
-			enc.add([]byte(","))
+			enc.fieldSep()
 		}
 		first = false
 		if err := enc.encodeValue(keyDesc, key.Value()); err != nil {
@@ -155,7 +172,7 @@ func (enc *encoder) encodeListField(field protoreflect.FieldDescriptor, value pr
 	list := value.List()
 	for i := 0; i < list.Len(); i++ {
 		if !first {
-			enc.add([]byte(","))
+			enc.fieldSep()
 		}
 		first = false
 		if err := enc.encodeValue(field, value.List().Get(i)); err != nil {

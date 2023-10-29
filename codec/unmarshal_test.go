@@ -149,7 +149,7 @@ func TestUnmarshal(t *testing.T) {
 				},
 			},
 		}, {
-			name: "wrapped oneof",
+			name: "wrap naked oneof",
 			json: `{
 				"nakedOneof": {
 					"oneofString": "oneofStringVal"
@@ -161,6 +161,23 @@ func TestUnmarshal(t *testing.T) {
 			wantProto: &testpb.PostFooRequest{
 				NakedOneof: &testpb.PostFooRequest_OneofString{
 					OneofString: "oneofStringVal",
+				},
+			},
+		}, {
+			name: "no double wrap oneof",
+			json: `{
+				"wrappedOneof": {
+					"oneofString": "oneofStringVal"
+				}
+			}`,
+			options: Options{
+				WrapOneof: true,
+			},
+			wantProto: &testpb.PostFooRequest{
+				WrappedOneof: &testpb.WrappedOneof{
+					Type: &testpb.WrappedOneof_OneofString{
+						OneofString: "oneofStringVal",
+					},
 				},
 			},
 		}} {

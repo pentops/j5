@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pentops/sugar-go/v1/sugar_pb"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -55,12 +57,20 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 	}
 
 	if err := dec.startObject(); err != nil {
-		return fmt.Errorf("e1: %w", err)
+		return err
 	}
 
 	descriptor := msg.Descriptor()
 	fields := descriptor.Fields()
 	oneofs := descriptor.Oneofs()
+
+	isOneofWrapper := false
+
+	msgOptions := msg.Descriptor().Options()
+	ext := proto.GetExtension(msgOptions, sugar_pb.E_Message).(*sugar_pb.Message)
+	if ext != nil {
+		isOneofWrapper = ext.OneofWrapper
+	}
 
 	for {
 		if !dec.More() {
@@ -83,40 +93,19 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 			if !dec.Options.WrapOneof {
 				return fmt.Errorf("no such field %s", keyTokenStr)
 			}
-
 			keyTokenStr = jsonNameToProto(keyTokenStr)
 			oneof := oneofs.ByName(protoreflect.Name(keyTokenStr))
 			if oneof == nil {
 				return fmt.Errorf("no such field %s", keyTokenStr)
 			}
 
-			if err := dec.startObject(); err != nil {
-				return err
-			}
-
-			oneofKeyToken, err := dec.Token()
-			if err != nil {
-				return err
-			}
-
-			oneofKeyTokenStr, ok := oneofKeyToken.(string)
-			if !ok {
-				return unexpectedTokenError(oneofKeyToken, "string (oneof key)")
-			}
-
-			oneofField := oneof.Fields().ByJSONName(oneofKeyTokenStr)
-			if oneofField == nil {
-				return fmt.Errorf("no such oneof type %s", oneofKeyTokenStr)
-			}
-
-			if err := dec.decodeField(msg, oneofField); err != nil {
-				return fmt.Errorf("decoding oneof child '%s.%s': %w", keyTokenStr, oneofKeyTokenStr, err)
-			}
-
-			if err := dec.endObject(); err != nil {
-				return err
+			if err := dec.decodeOneofField(msg, oneof); err != nil {
+				return fmt.Errorf("decoding '%s': %w", keyTokenStr, err)
 			}
 			continue
+		}
+		if !isOneofWrapper && dec.Options.WrapOneof && protoField.ContainingOneof() != nil {
+			return fmt.Errorf("field %s is part of a oneof", keyTokenStr)
 		}
 
 		if protoField.IsMap() {
@@ -135,6 +124,38 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 	}
 
 	return dec.endObject()
+}
+
+func (dec *decoder) decodeOneofField(msg protoreflect.Message, oneof protoreflect.OneofDescriptor) error {
+
+	if err := dec.startObject(); err != nil {
+		return err
+	}
+
+	oneofKeyToken, err := dec.Token()
+	if err != nil {
+		return err
+	}
+
+	oneofKeyTokenStr, ok := oneofKeyToken.(string)
+	if !ok {
+		return unexpectedTokenError(oneofKeyToken, "string (oneof key)")
+	}
+
+	oneofField := oneof.Fields().ByJSONName(oneofKeyTokenStr)
+	if oneofField == nil {
+		return fmt.Errorf("no such oneof type %s", oneofKeyTokenStr)
+	}
+
+	if err := dec.decodeField(msg, oneofField); err != nil {
+		return fmt.Errorf("decoding oneof child '%s': %w", oneofKeyTokenStr, err)
+	}
+
+	if err := dec.endObject(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (dec *decoder) startObject() error {

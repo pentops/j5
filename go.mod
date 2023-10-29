@@ -4,7 +4,7 @@ go 1.21.3
 
 require (
 	github.com/pentops/o5-runtime-sidecar v0.0.1-beta7
-	github.com/pentops/sugar-go v0.0.0-20231029171721-871d1bbe23b2
+	github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5
 	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b
 	google.golang.org/grpc v1.59.0
 	google.golang.org/protobuf v1.31.0

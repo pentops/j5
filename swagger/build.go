@@ -252,27 +252,9 @@ func (bb *builder) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Objec
 		}
 
 	case protoreflect.EnumKind:
-		values := make([]string, 0, src.Enum().Values().Len())
-		trimPrefix := ""
-		if bb.Options.ShortEnums {
-			suffix := bb.Options.UnspecifiedEnumSuffix
-			if suffix == "" {
-				suffix = "_UNSPECIFIED"
-			}
-			unspecifiedVal := string(src.Enum().Values().Get(0).Name())
-			if !strings.HasSuffix(unspecifiedVal, suffix) {
-				return nil, fmt.Errorf("enum %q does not have an unspecified value ending in %q", src.FullName(), suffix)
-			}
-			trimPrefix = strings.TrimSuffix(unspecifiedVal, suffix) + "_"
-		}
-
-		for ii := 0; ii < src.Enum().Values().Len(); ii++ {
-			value := string(src.Enum().Values().Get(ii).Name())
-			if trimPrefix != "" {
-				value = strings.TrimPrefix(value, trimPrefix)
-			}
-
-			values = append(values, value)
+		values, err := bb.Options.ShortEnums.EnumValues(src.Enum().Values())
+		if err != nil {
+			return nil, err
 		}
 
 		prop.SchemaItem = SchemaItem{
