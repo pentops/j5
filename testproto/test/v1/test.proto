@@ -5,6 +5,7 @@ option go_package = "github.com/pentops/custom-proto-api/testproto/gen/testpb";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
+import "sugar/v1/message.proto";
 
 package test.v1;
 
@@ -59,6 +60,20 @@ message PostFooRequest {
   map<string, string> map_string_string = 15;
 
   oneof naked_oneof {
+    string oneof_string = 100;
+    Bar one_bar = 101;
+    float oneof_float = 102;
+    Enum oneof_enum = 103;
+  }
+
+  WrappedOneof wrapped_oneof = 16;
+
+}
+
+message WrappedOneof {
+  option (sugar.v1.message).oneof_wrapper = true;
+
+  oneof type {
     string oneof_string = 100;
     Bar one_bar = 101;
     float oneof_float = 102;

@@ -54,24 +54,22 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 		return wktDecoder(dec, msg)
 	}
 
-	tok, err := dec.Token()
-	if err != nil {
-		return err
+	if err := dec.startObject(); err != nil {
+		return fmt.Errorf("e1: %w", err)
 	}
 
-	if tok != json.Delim('{') {
-		return fmt.Errorf("expected '{' but got %v", tok)
-	}
+	descriptor := msg.Descriptor()
+	fields := descriptor.Fields()
+	oneofs := descriptor.Oneofs()
 
 	for {
+		if !dec.More() {
+			break
+		}
+
 		keyToken, err := dec.Token()
 		if err != nil {
 			return err
-		}
-
-		// Ends the object
-		if keyToken == json.Delim('}') {
-			return nil
 		}
 
 		// Otherwise should be a key
@@ -80,9 +78,45 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 			return fmt.Errorf("expected string key but got %v", keyToken)
 		}
 
-		protoField := msg.Descriptor().Fields().ByJSONName(keyTokenStr)
+		protoField := fields.ByJSONName(keyTokenStr)
 		if protoField == nil {
-			return fmt.Errorf("no such field %s", keyTokenStr)
+			if !dec.Options.WrapOneof {
+				return fmt.Errorf("no such field %s", keyTokenStr)
+			}
+
+			keyTokenStr = jsonNameToProto(keyTokenStr)
+			oneof := oneofs.ByName(protoreflect.Name(keyTokenStr))
+			if oneof == nil {
+				return fmt.Errorf("no such field %s", keyTokenStr)
+			}
+
+			if err := dec.startObject(); err != nil {
+				return err
+			}
+
+			oneofKeyToken, err := dec.Token()
+			if err != nil {
+				return err
+			}
+
+			oneofKeyTokenStr, ok := oneofKeyToken.(string)
+			if !ok {
+				return unexpectedTokenError(oneofKeyToken, "string (oneof key)")
+			}
+
+			oneofField := oneof.Fields().ByJSONName(oneofKeyTokenStr)
+			if oneofField == nil {
+				return fmt.Errorf("no such oneof type %s", oneofKeyTokenStr)
+			}
+
+			if err := dec.decodeField(msg, oneofField); err != nil {
+				return fmt.Errorf("decoding oneof child '%s.%s': %w", keyTokenStr, oneofKeyTokenStr, err)
+			}
+
+			if err := dec.endObject(); err != nil {
+				return err
+			}
+			continue
 		}
 
 		if protoField.IsMap() {
@@ -99,6 +133,27 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 			}
 		}
 	}
+
+	return dec.endObject()
+}
+
+func (dec *decoder) startObject() error {
+	return dec.expectDelim('{')
+}
+func (dec *decoder) endObject() error {
+	return dec.expectDelim('}')
+}
+
+func (dec *decoder) expectDelim(delim rune) error {
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+
+	if tok != json.Delim(delim) {
+		return unexpectedTokenError(tok, string(delim))
+	}
+	return nil
 }
 
 func (dec *decoder) decodeField(msg protoreflect.Message, field protoreflect.FieldDescriptor) error {

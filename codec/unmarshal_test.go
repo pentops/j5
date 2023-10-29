@@ -29,7 +29,7 @@ func TestUnmarshal(t *testing.T) {
 		{
 			name: "scalars",
 			options: Options{
-				ShortEnums: true,
+				ShortEnums: &ShortEnumsOption{},
 			},
 			json: `{
 				"sString": "nameVal",
@@ -59,7 +59,7 @@ func TestUnmarshal(t *testing.T) {
 		}, {
 			name: "long enums",
 			options: Options{
-				ShortEnums: false,
+				ShortEnums: nil,
 			},
 			json: `{
 				"enum": "ENUM_VALUE1",
@@ -137,6 +137,31 @@ func TestUnmarshal(t *testing.T) {
 				}, {
 					Id: "bar2",
 				}},
+			},
+		}, {
+			name: "naked oneof",
+			json: `{
+				"oneofString": "oneofStringVal"
+			}`,
+			wantProto: &testpb.PostFooRequest{
+				NakedOneof: &testpb.PostFooRequest_OneofString{
+					OneofString: "oneofStringVal",
+				},
+			},
+		}, {
+			name: "wrapped oneof",
+			json: `{
+				"nakedOneof": {
+					"oneofString": "oneofStringVal"
+				}
+			}`,
+			options: Options{
+				WrapOneof: true,
+			},
+			wantProto: &testpb.PostFooRequest{
+				NakedOneof: &testpb.PostFooRequest_OneofString{
+					OneofString: "oneofStringVal",
+				},
 			},
 		}} {
 		t.Run(tc.name, func(t *testing.T) {

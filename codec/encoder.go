@@ -5,15 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func Encode(opts Options, msg protoreflect.Message) ([]byte, error) {
-	if opts.UnspecifiedEnumSuffix == "" {
-		opts.UnspecifiedEnumSuffix = "_UNSPECIFIED"
-	}
 	enc := &encoder{
 		b:       &bytes.Buffer{},
 		Options: opts,
@@ -44,6 +40,22 @@ func (enc *encoder) addJSON(v interface{}) error {
 	return nil
 }
 
+func (enc *encoder) openObject() {
+	enc.add([]byte("{"))
+}
+
+func (enc *encoder) closeObject() {
+	enc.add([]byte("}"))
+}
+
+func (enc *encoder) openArray() {
+	enc.add([]byte("["))
+}
+
+func (enc *encoder) closeArray() {
+	enc.add([]byte("]"))
+}
+
 func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 
 	wktEncoder := wellKnownTypeMarshaler(msg.Descriptor().FullName())
@@ -51,7 +63,7 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 		return wktEncoder(enc, msg)
 	}
 
-	enc.add([]byte("{"))
+	enc.openObject()
 
 	first := true
 
@@ -69,6 +81,19 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 
 		value := msg.Get(field)
 
+		if enc.WrapOneof {
+			if oneof := field.ContainingOneof(); oneof != nil && !oneof.IsSynthetic() {
+				enc.add([]byte(fmt.Sprintf(`"%s":`, protoNameToJSON(string(oneof.Name())))))
+				enc.openObject()
+				enc.add([]byte(fmt.Sprintf(`"%s":`, string(field.JSONName()))))
+				if err := enc.encodeValue(field, value); err != nil {
+					return err
+				}
+				enc.closeObject()
+				continue
+			}
+		}
+
 		enc.add([]byte(fmt.Sprintf(`"%s":`, field.JSONName())))
 
 		if err := enc.encodeField(field, value); err != nil {
@@ -77,7 +102,7 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 
 	}
 
-	enc.add([]byte("}"))
+	enc.closeObject()
 	return nil
 }
 
@@ -88,11 +113,12 @@ func (enc *encoder) encodeField(field protoreflect.FieldDescriptor, value protor
 	if field.IsList() {
 		return enc.encodeListField(field, value)
 	}
+
 	return enc.encodeValue(field, value)
 }
 
 func (enc *encoder) encodeMapField(field protoreflect.FieldDescriptor, value protoreflect.Value) error {
-	enc.add([]byte("{"))
+	enc.openObject()
 	first := true
 	var outerError error
 	keyDesc := field.MapKey()
@@ -118,12 +144,12 @@ func (enc *encoder) encodeMapField(field protoreflect.FieldDescriptor, value pro
 	if outerError != nil {
 		return outerError
 	}
-	enc.add([]byte("}"))
+	enc.closeObject()
 	return nil
 }
 
 func (enc *encoder) encodeListField(field protoreflect.FieldDescriptor, value protoreflect.Value) error {
-	enc.add([]byte("["))
+	enc.openArray()
 	first := true
 	var outerError error
 	list := value.List()
@@ -140,7 +166,7 @@ func (enc *encoder) encodeListField(field protoreflect.FieldDescriptor, value pr
 	if outerError != nil {
 		return outerError
 	}
-	enc.add([]byte("]"))
+	enc.closeArray()
 	return nil
 }
 
@@ -175,22 +201,11 @@ func (enc *encoder) encodeValue(field protoreflect.FieldDescriptor, value protor
 		return enc.addJSON(float64(value.Float()))
 
 	case protoreflect.EnumKind:
-		enumVals := field.Enum().Values()
-		unspecifiedField := enumVals.ByNumber(0)
-		specifiedField := enumVals.ByNumber(value.Enum())
-		returnName := string(specifiedField.Name())
-
-		if enc.ShortEnums {
-			if unspecifiedField != nil {
-				unspecifiedName := string(unspecifiedField.Name())
-				if strings.HasSuffix(unspecifiedName, enc.UnspecifiedEnumSuffix) {
-					unspecifiedPrefix := strings.TrimSuffix(unspecifiedName, enc.UnspecifiedEnumSuffix)
-					returnName = strings.TrimPrefix(returnName, unspecifiedPrefix+"_")
-				}
-			}
+		stringVal, err := enc.ShortEnums.Encode(field.Enum(), value.Enum())
+		if err != nil {
+			return err
 		}
-
-		return enc.addJSON(returnName)
+		return enc.addJSON(stringVal)
 
 	case protoreflect.BytesKind:
 		byteVal := value.Bytes()

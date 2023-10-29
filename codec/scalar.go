@@ -100,7 +100,7 @@ func (dec *decoder) decodeScalarField(field protoreflect.FieldDescriptor) (proto
 		if !ok {
 			return protoreflect.Value{}, unexpectedTokenError(tok, "string")
 		}
-		enumValue, err := decodeEnumField(stringVal, field)
+		enumValue, err := dec.Options.ShortEnums.Decode(field.Enum(), stringVal)
 		if err != nil {
 			return protoreflect.Value{}, err
 		}
@@ -132,27 +132,4 @@ func (dec *decoder) decodeScalarField(field protoreflect.FieldDescriptor) (proto
 	default:
 		return protoreflect.Value{}, fmt.Errorf("unsupported field kind %v", field.Kind())
 	}
-}
-
-func decodeEnumField(stringVal string, field protoreflect.FieldDescriptor) (protoreflect.EnumNumber, error) {
-
-	enum := field.Enum()
-	vals := enum.Values()
-	unspecified := vals.ByNumber(0)
-	if unspecified != nil {
-		unspecifiedName := string(unspecified.Name())
-		if strings.HasSuffix(unspecifiedName, "_UNSPECIFIED") {
-			prefix := strings.TrimSuffix(unspecifiedName, "_UNSPECIFIED")
-			fmt.Printf("prefix: %s, string %s\n", prefix, stringVal)
-			if !strings.HasPrefix(stringVal, prefix) {
-				stringVal = prefix + "_" + stringVal
-			}
-		}
-	}
-	enumVal := vals.ByName(protoreflect.Name(stringVal))
-	if enumVal == nil {
-		return 0, fmt.Errorf("unknown enum value %s for enum %s", stringVal, enum.FullName())
-	}
-
-	return enumVal.Number(), nil
 }
