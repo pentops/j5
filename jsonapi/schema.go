@@ -96,6 +96,13 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 	// second _ prevents a panic when the exception is not set
 	constraint, _ := proto.GetExtension(src.Options(), validate.E_Field).(*validate.FieldConstraints)
 
+	if constraint != nil {
+		if constraint.Required {
+			prop.Required = true
+		}
+		// TODO: Others
+	}
+
 	// TODO: Validation / Rules
 	// TODO: Oneof (meta again?)
 	// TODO: Repeated
@@ -335,7 +342,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 	case protoreflect.StringKind:
 		stringItem := StringItem{}
-		if constraint != nil {
+		if constraint != nil && constraint.Type != nil {
 			stringConstraint, ok := constraint.Type.(*validate.FieldConstraints_String_)
 			if !ok {
 				return nil, fmt.Errorf("wrong constraint type for string: %T", constraint.Type)

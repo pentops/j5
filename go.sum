@@ -6,6 +6,10 @@ github.com/golang/protobuf v1.5.3/go.mod h1:XVQd3VNwM+JqD3oG2Ue2ip4fOMUkwXdXDdiu
 github.com/google/go-cmp v0.5.5/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
 github.com/google/go-cmp v0.5.9 h1:O2Tfq5qg4qc4AmwVlvv0oLiVAGB7enBSJ2x2DqQFi38=
 github.com/google/go-cmp v0.5.9/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/pentops/o5-go v0.0.0-20231031165007-604c5438ddf5 h1:k9iw7DaOLJ4AK70h5f4JjI4QNojnOOlThLGrwqOsT+E=
+github.com/pentops/o5-go v0.0.0-20231031165007-604c5438ddf5/go.mod h1:YREzbtRQB7StF9H49EBFAzlk0hsD1h2tkMlEb7ybN2U=
+github.com/pentops/o5-go v0.0.0-20231107000020-504c08975ba6 h1:z8QhtrIal1YhFuE6+LwQPsVm4I2pl5J0TbMsS6mK2qQ=
+github.com/pentops/o5-go v0.0.0-20231107000020-504c08975ba6/go.mod h1:YREzbtRQB7StF9H49EBFAzlk0hsD1h2tkMlEb7ybN2U=
 github.com/pentops/o5-runtime-sidecar v0.0.1-beta7 h1:TXSXmivdLYtPIhs+Wk+xpp5q3M77hWDUi3lnzgp5X+s=
 github.com/pentops/o5-runtime-sidecar v0.0.1-beta7/go.mod h1:T/1dCFuVMAmltRVTMzwp4wQfm19tSk6OrOy/mrCyTHk=
 github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5 h1:09bSwWuVlJ2ac3caVja4LBLhywvs6Rhev7uijnBzyAs=
