@@ -27,19 +27,66 @@ type jsonFieldMapper interface {
 	jsonFieldMap(map[string]json.RawMessage) error
 }
 
+type jsonFieldMapperDirect interface {
+	fieldMap() (map[string]json.RawMessage, error)
+}
+
+func toJsonFieldMap(object interface{}) (map[string]json.RawMessage, error) {
+	m := make(map[string]json.RawMessage)
+	err := jsonFieldMap(object, m)
+	if err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 func jsonFieldMap(object interface{}, m map[string]json.RawMessage) error {
 
 	if jfm, ok := object.(jsonFieldMapper); ok {
 		return jfm.jsonFieldMap(m)
 	}
 
+	if jfmd, ok := object.(jsonFieldMapperDirect); ok {
+		fields, err := jfmd.fieldMap()
+		if err != nil {
+			return err
+		}
+		for k, v := range fields {
+			m[k] = v
+		}
+		return nil
+	}
+
 	if _, ok := object.(json.Marshaler); ok {
 		return fmt.Errorf("%T implements json.Marshaler, it should implement jsonFieldMapper", object)
 	}
 
+	return jsonFieldMapFromStructFields(object, m)
+}
+
+func jsonFieldMapFromStructFields(object interface{}, m map[string]json.RawMessage) error {
+
 	val := reflect.ValueOf(object)
 	if val.Kind() != reflect.Struct {
-		return fmt.Errorf("object must be a struct, got %s", val.Kind().String())
+		existingRaw, ok := object.(map[string]json.RawMessage)
+		if ok {
+			for k, v := range existingRaw {
+				m[k] = v
+			}
+			return nil
+		}
+		existingInterface, ok := object.(map[string]interface{})
+		if ok {
+			for k, v := range existingInterface {
+				asJSON, err := json.Marshal(v)
+				if err != nil {
+					return err
+				}
+				m[k] = json.RawMessage(asJSON)
+			}
+			return nil
+		}
+		return fmt.Errorf("object must be a struct, got %s %T", val.Kind().String(), object)
 	}
 
 	for i := 0; i < val.NumField(); i++ {

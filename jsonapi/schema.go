@@ -13,12 +13,15 @@ import (
 type SchemaSet struct {
 	Options Options
 	Schemas map[string]*SchemaItem
+
+	seen map[string]bool
 }
 
 func NewSchemaSet(options Options) *SchemaSet {
 	return &SchemaSet{
 		Options: options,
 		Schemas: make(map[string]*SchemaItem),
+		seen:    make(map[string]bool),
 	}
 }
 
@@ -412,8 +415,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 		}
 
 		prop.SchemaItem = SchemaItem{
-			Description: string(src.Name()),
-			ItemType:    stringItem,
+			ItemType: stringItem,
 		}
 
 	case protoreflect.BytesKind:
@@ -453,6 +455,9 @@ func (ss *SchemaSet) addSchemaRef(src protoreflect.MessageDescriptor) error {
 		return nil
 	}
 
+	// Prevents recursion errors
+	ss.Schemas[string(src.FullName())] = &SchemaItem{}
+
 	schema, err := ss.BuildSchemaObject(src)
 	if err != nil {
 		return err
@@ -478,12 +483,12 @@ type SchemaItem struct {
 	Mutex       string `json:"x-mutex,omitempty"`
 }
 
-func (si SchemaItem) MarshalJSON() ([]byte, error) {
+func (si SchemaItem) fieldMap() (map[string]json.RawMessage, error) {
 	if si.Ref != "" {
 		if len(si.OneOf) > 0 || len(si.AnyOf) > 0 || si.ItemType != nil {
 			return nil, fmt.Errorf("schema item has both a ref and other properties")
 		}
-		return json.Marshal(map[string]interface{}{
+		return toJsonFieldMap(map[string]interface{}{
 			"$ref": si.Ref,
 		})
 	}
@@ -492,7 +497,7 @@ func (si SchemaItem) MarshalJSON() ([]byte, error) {
 		if len(si.AnyOf) > 0 || si.ItemType != nil {
 			return nil, fmt.Errorf("schema item has both oneOf and other properties")
 		}
-		return json.Marshal(map[string]interface{}{
+		return toJsonFieldMap(map[string]interface{}{
 			"oneOf": si.OneOf,
 		})
 	}
@@ -501,7 +506,7 @@ func (si SchemaItem) MarshalJSON() ([]byte, error) {
 		if len(si.OneOf) > 0 || si.ItemType != nil {
 			return nil, fmt.Errorf("schema item has both a anyOf and other properties")
 		}
-		return json.Marshal(map[string]interface{}{
+		return toJsonFieldMap(map[string]interface{}{
 			"anyOf": si.AnyOf,
 		})
 	}
@@ -512,11 +517,20 @@ func (si SchemaItem) MarshalJSON() ([]byte, error) {
 
 	propOut := map[string]json.RawMessage{}
 	if err := jsonFieldMap(si.ItemType, propOut); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("fieldMap item: %w", err)
 	}
 	propOut["type"], _ = json.Marshal(si.TypeName())
 	if si.Description != "" {
 		propOut["description"], _ = json.Marshal(si.Description)
+	}
+
+	return propOut, nil
+}
+
+func (si SchemaItem) MarshalJSON() ([]byte, error) {
+	propOut, err := si.fieldMap()
+	if err != nil {
+		return nil, fmt.Errorf("si MarshalJson fieldMap: %w", err)
 	}
 
 	return json.Marshal(propOut)
@@ -632,18 +646,20 @@ func (op ObjectItem) GetProperty(name string) (*ObjectProperty, bool) {
 }
 
 func (op ObjectItem) jsonFieldMap(out map[string]json.RawMessage) error {
-	properties := map[string]json.RawMessage{}
+	properties := map[string]map[string]json.RawMessage{}
 	required := []string{}
 	for _, prop := range op.Properties {
 		if prop.Skip {
 			continue
 		}
 
-		jsonVal, err := prop.MarshalJSON()
+		propMap := map[string]json.RawMessage{}
+		err := prop.jsonFieldMap(propMap)
+
 		if err != nil {
 			return fmt.Errorf("property %s: %w", prop.Name, err)
 		}
-		properties[prop.Name] = jsonVal
+		properties[prop.Name] = propMap
 
 		if prop.Required {
 			required = append(required, prop.Name)
@@ -658,7 +674,7 @@ func (op ObjectItem) jsonFieldMap(out map[string]json.RawMessage) error {
 }
 
 type ObjectProperty struct {
-	SchemaItem
+	SchemaItem       `json:"-"`
 	Skip             bool   `json:"-"`
 	Name             string `json:"-"`
 	Required         bool   `json:"-"` // this bubbles up to the required array of the object
@@ -667,6 +683,23 @@ type ObjectProperty struct {
 	Description      string `json:"description,omitempty"`
 	ProtoFieldName   string `json:"x-proto-name,omitempty"`
 	ProtoFieldNumber int    `json:"x-proto-number,omitempty"`
+}
+
+func (op ObjectProperty) jsonFieldMap(out map[string]json.RawMessage) error {
+	propOut, err := op.SchemaItem.fieldMap()
+	if err != nil {
+		return err
+	}
+
+	for k, v := range propOut {
+		out[k] = v
+	}
+
+	if err := jsonFieldMapFromStructFields(op, out); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type ObjectRules struct {

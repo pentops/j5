@@ -8,6 +8,7 @@ import (
 	"github.com/pentops/custom-proto-api/jsonapi"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -16,6 +17,36 @@ type builder struct {
 	document *Document
 	paths    map[string]*PathItem
 	schemas  *jsonapi.SchemaSet
+}
+
+func BuildFromDescriptors(options jsonapi.Options, descriptors *descriptorpb.FileDescriptorSet) (*Document, error) {
+
+	services := make([]protoreflect.ServiceDescriptor, 0)
+	descFiles, err := protodesc.NewFiles(descriptors)
+	if err != nil {
+		return nil, err
+	}
+
+	descFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {
+		fileServices := file.Services()
+		for ii := 0; ii < fileServices.Len(); ii++ {
+			service := fileServices.Get(ii)
+			services = append(services, service)
+		}
+		return true
+	})
+
+	filteredServices := make([]protoreflect.ServiceDescriptor, 0)
+	for _, service := range services {
+		name := service.FullName()
+		if !strings.HasSuffix(string(name), "Service") {
+			continue
+		}
+
+		filteredServices = append(filteredServices, service)
+	}
+
+	return Build(options, filteredServices)
 }
 
 func Build(options jsonapi.Options, services []protoreflect.ServiceDescriptor) (*Document, error) {
