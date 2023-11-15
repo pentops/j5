@@ -64,7 +64,7 @@ func (bb *builder) registerMethod(serviceName string, method protoreflect.Method
 	var httpPath string
 
 	if httpOpt == nil {
-		return fmt.Errorf("missing http rule for method %s", method.Name())
+		return fmt.Errorf("missing http rule for method /%s/%s", serviceName, method.Name())
 	}
 	switch pt := httpOpt.Pattern.(type) {
 	case *annotations.HttpRule_Get:
