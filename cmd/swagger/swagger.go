@@ -37,8 +37,15 @@ func main() {
 		}
 	}
 
-	options := jsonapi.Options{}
-	document, err := swagger.BuildFromDescriptors(options, descriptors)
+	codecOptions := jsonapi.Options{
+		ShortEnums: &jsonapi.ShortEnumsOption{
+			UnspecifiedSuffix: "UNSPECIFIED",
+			StrictUnmarshal:   true,
+		},
+		WrapOneof: true,
+	}
+
+	document, err := swagger.BuildFromDescriptors(codecOptions, descriptors)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

@@ -40,8 +40,13 @@ type ShortEnumsOption struct {
 	StrictUnmarshal bool
 }
 
-func (se *ShortEnumsOption) EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules) ([]string, error) {
-	values := make([]string, 0, src.Len())
+type EnumValueDescription struct {
+	Name        string `json:"name"`
+	Number      int32  `json:"number"`
+	Description string `json:"description"`
+}
+
+func (se *ShortEnumsOption) EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules) ([]EnumValueDescription, error) {
 
 	specMap := map[int32]struct{}{}
 	var notIn bool
@@ -66,6 +71,7 @@ func (se *ShortEnumsOption) EnumValues(src protoreflect.EnumValueDescriptors, co
 		return nil, fmt.Errorf("enum cannot have both in and not_in constraints")
 	}
 
+	values := make([]EnumValueDescription, 0, src.Len())
 	for ii := 0; ii < src.Len(); ii++ {
 		option := src.Get(ii)
 		number := int32(option.Number())
@@ -82,7 +88,11 @@ func (se *ShortEnumsOption) EnumValues(src protoreflect.EnumValueDescriptors, co
 			}
 		}
 
-		values = append(values, string(option.Name()))
+		values = append(values, EnumValueDescription{
+			Name:        string(option.Name()),
+			Number:      number,
+			Description: commentDescription(option, ""),
+		})
 	}
 
 	if se == nil {
@@ -94,10 +104,10 @@ func (se *ShortEnumsOption) EnumValues(src protoreflect.EnumValueDescriptors, co
 	if !strings.HasSuffix(unspecifiedVal, suffix) {
 		return nil, fmt.Errorf("enum does not have an unspecified value ending in %q", suffix)
 	}
-	trimPrefix := strings.TrimSuffix(unspecifiedVal, suffix) + "_"
+	trimPrefix := strings.TrimSuffix(unspecifiedVal, suffix)
 
 	for ii := range values {
-		values[ii] = strings.TrimPrefix(values[ii], trimPrefix)
+		values[ii].Name = strings.TrimPrefix(values[ii].Name, trimPrefix)
 	}
 	return values, nil
 }
@@ -106,7 +116,7 @@ func (se *ShortEnumsOption) unspecifiedSuffix() string {
 	if se.UnspecifiedSuffix != "" {
 		return se.UnspecifiedSuffix
 	}
-	return "_UNSPECIFIED"
+	return "UNSPECIFIED"
 }
 
 func (se *ShortEnumsOption) Decode(enum protoreflect.EnumDescriptor, stringVal string) (protoreflect.EnumNumber, error) {
@@ -128,7 +138,7 @@ func (se *ShortEnumsOption) Decode(enum protoreflect.EnumDescriptor, stringVal s
 		if strings.HasSuffix(unspecifiedName, unspecifiedSuffix) {
 			prefix := strings.TrimSuffix(unspecifiedName, unspecifiedSuffix)
 			if se.StrictUnmarshal || !strings.HasPrefix(stringVal, prefix) {
-				stringVal = prefix + "_" + stringVal
+				stringVal = prefix + stringVal
 			}
 		}
 	}
@@ -164,7 +174,7 @@ func (se *ShortEnumsOption) Encode(enum protoreflect.EnumDescriptor, enumVal pro
 	prefix := strings.TrimSuffix(unspecifiedName, unspecifiedSuffix)
 	// End Cache TODO
 
-	return strings.TrimPrefix(fullStringValue, prefix+"_"), nil
+	return strings.TrimPrefix(fullStringValue, prefix), nil
 }
 
 var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")

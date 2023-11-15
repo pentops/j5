@@ -125,11 +125,17 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			return nil, err
 		}
 
+		valueStrings := make([]string, 0, len(values))
+		for _, value := range values {
+			valueStrings = append(valueStrings, value.Name)
+		}
+
 		prop.SchemaItem = SchemaItem{
 			ItemType: EnumItem{
 				EnumRules: EnumRules{
-					Enum: values,
+					Enum: valueStrings,
 				},
+				Extended: values,
 			},
 		}
 
@@ -449,10 +455,47 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 }
 
+func wktSchema(src protoreflect.MessageDescriptor) (*SchemaItem, bool) {
+
+	switch string(src.FullName()) {
+	case "google.protobuf.Timestamp":
+		return &SchemaItem{
+			ItemType: StringItem{
+				Format: "date-time",
+			},
+		}, true
+	case "google.protobuf.Duration":
+		return &SchemaItem{
+			ItemType: StringItem{
+				Format: "duration",
+			},
+		}, true
+
+	case "google.protobuf.Struct":
+		return &SchemaItem{
+			ItemType: ObjectItem{
+				AdditionalProperties: true,
+			},
+		}, true
+
+	}
+
+	return nil, false
+
+}
+
 func (ss *SchemaSet) addSchemaRef(src protoreflect.MessageDescriptor) error {
 
 	if _, ok := ss.Schemas[string(src.FullName())]; ok {
 		return nil
+	}
+
+	if wktschema, ok := wktSchema(src); ok {
+		ss.Schemas[string(src.FullName())] = wktschema
+		return nil
+	}
+	if strings.HasPrefix(string(src.FullName()), "google.protobuf.") {
+		return fmt.Errorf("unknown google.protobuf type %s", src.FullName())
 	}
 
 	// Prevents recursion errors
@@ -554,6 +597,7 @@ type StringRules struct {
 // EnumItem represents a PROTO enum in Swagger, so can only be a string
 type EnumItem struct {
 	EnumRules
+	Extended []EnumValueDescription `json:"x-enum"`
 }
 
 func (ri EnumItem) TypeName() string {
@@ -626,10 +670,11 @@ type ArrayRules struct {
 
 type ObjectItem struct {
 	ObjectRules
-	Properties       []*ObjectProperty `json:"properties,omitempty"`
-	Required         []string          `json:"required,omitempty"`
-	ProtoMessageName string            `json:"x-message"`
-	debug            string
+	Properties           []*ObjectProperty `json:"properties,omitempty"`
+	Required             []string          `json:"required,omitempty"`
+	ProtoMessageName     string            `json:"x-message"`
+	AdditionalProperties bool              `json:"additionalProperties,omitempty"`
+	debug                string
 }
 
 func (ri ObjectItem) TypeName() string {
