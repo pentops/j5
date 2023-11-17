@@ -1,4 +1,4 @@
-package swagger
+package structure
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-func filesToSwagger(t testing.TB, fileDescriptors ...*descriptorpb.FileDescriptorProto) *Document {
+func filesToSwagger(t testing.TB, fileDescriptors ...*descriptorpb.FileDescriptorProto) *Built {
 	t.Helper()
 	services := testproto.FilesToServiceDescriptors(t, fileDescriptors...)
 	swaggerDoc, err := Build(jsonapi.Options{

@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package jsonapi.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
+
+extend google.protobuf.FileOptions {
+  PackageOptions package = 90443354;
+}
+
+message PackageOptions {
+  string label = 1;
+  bool hidden = 2;
+}
+
+
+extend google.protobuf.MessageOptions {
+  OneofWrapper oneof = 90443355;
+}
+
+message OneofWrapper {
+  bool flatten = 1;
+}
+
+
+extend google.protobuf.MethodOptions {
+  MethodOptions method = 90443356;
+}
+
+message MethodOptions {
+  string label = 1;
+  bool hidden = 2;
+}
+

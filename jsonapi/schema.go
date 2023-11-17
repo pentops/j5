@@ -6,8 +6,10 @@ import (
 	"strings"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type SchemaSet struct {
@@ -29,7 +31,11 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 
 	obj := ObjectItem{
 		ProtoMessageName: string(src.FullName()),
-		Properties:       make([]*ObjectProperty, 0, src.Fields().Len()),
+		GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
+		GRPCPackage:      string(src.ParentFile().Package()),
+		GoTypeName:       string(src.Name()),
+
+		Properties: make([]*ObjectProperty, 0, src.Fields().Len()),
 	}
 
 	for ii := 0; ii < src.Fields().Len(); ii++ {
@@ -82,9 +88,14 @@ func buildComment(sourceLocation protoreflect.SourceLocation, fallback string) s
 	return strings.Join(commentsOut, "\n")
 }
 
-var wellKnownStringPatterns = map[string]string{
-	`^\d{4}-\d{2}-\d{2}$`: "date",
-	`^\d(.?\d)?$`:         "number",
+type wellKnownStringPattern struct {
+	format  string
+	example string
+}
+
+var wellKnownStringPatterns = map[string]wellKnownStringPattern{
+	`^\d{4}-\d{2}-\d{2}$`: {format: "date", example: "2021-01-01"},
+	`^\d(.?\d)?$`:         {format: "number", example: "12.34"},
 }
 
 func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
@@ -372,42 +383,49 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 				pattern := *constraint.Pattern
 				wellKnownStringPattern, ok := wellKnownStringPatterns[pattern]
 				if ok {
-					stringItem.Format = wellKnownStringPattern
+					stringItem.Format = wellKnownStringPattern.format
+					stringItem.Example = wellKnownStringPattern.example
 				} else {
 					stringItem.Pattern = pattern
 				}
-
 			}
+			stringItem.Pattern = "string value"
 
 			switch wkt := constraint.WellKnown.(type) {
 			case *validate.StringRules_Uuid:
 				if wkt.Uuid {
 					stringItem.Format = "uuid"
+					stringItem.Example = uuid.NewString()
 				}
 			case *validate.StringRules_Email:
 				if wkt.Email {
 					stringItem.Format = "email"
+					stringItem.Example = "test@example.com"
 				}
 
 				// TODO: More Types
 			case *validate.StringRules_Hostname:
 				if wkt.Hostname {
 					stringItem.Format = "hostname"
+					stringItem.Example = "example.com"
 				}
 
 			case *validate.StringRules_Ipv4:
 				if wkt.Ipv4 {
 					stringItem.Format = "ipv4"
+					stringItem.Example = "10.10.10.10"
 				}
 
 			case *validate.StringRules_Ipv6:
 				if wkt.Ipv6 {
 					stringItem.Format = "ipv6"
+					stringItem.Example = "2001:db8::68"
 				}
 
 			case *validate.StringRules_Uri:
 				if wkt.Uri {
 					stringItem.Format = "uri"
+					stringItem.Example = "https://example.com"
 				}
 
 			// Other types not supported by swagger
@@ -433,11 +451,16 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 	case protoreflect.MessageKind:
 		// When called from a field of a message, this creates a ref. When built directly from a service RPC request or create, this code is not called, they are inlined with the buildSchemaObject call directly
-		prop.SchemaItem = SchemaItem{
-			Ref: fmt.Sprintf("#/components/schemas/%s", src.Message().FullName()),
-		}
-		if err := ss.addSchemaRef(src.Message()); err != nil {
-			return nil, err
+		if wktschema, ok := wktSchema(src.Message()); ok {
+			prop.SchemaItem = *wktschema
+
+		} else {
+			prop.SchemaItem = SchemaItem{
+				Ref: fmt.Sprintf("#/components/schemas/%s", src.Message().FullName()),
+			}
+			if err := ss.addSchemaRef(src.Message()); err != nil {
+				return nil, err
+			}
 		}
 
 	default:
@@ -474,6 +497,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (*SchemaItem, bool) {
 	case "google.protobuf.Struct":
 		return &SchemaItem{
 			ItemType: ObjectItem{
+				GoTypeName:           "map[string]interface{}",
 				AdditionalProperties: true,
 			},
 		}, true
@@ -490,10 +514,6 @@ func (ss *SchemaSet) addSchemaRef(src protoreflect.MessageDescriptor) error {
 		return nil
 	}
 
-	if wktschema, ok := wktSchema(src); ok {
-		ss.Schemas[string(src.FullName())] = wktschema
-		return nil
-	}
 	if strings.HasPrefix(string(src.FullName()), "google.protobuf.") {
 		return fmt.Errorf("unknown google.protobuf type %s", src.FullName())
 	}
@@ -580,7 +600,8 @@ func (si SchemaItem) MarshalJSON() ([]byte, error) {
 }
 
 type StringItem struct {
-	Format string `json:"format,omitempty"`
+	Format  string `json:"format,omitempty"`
+	Example string `json:"example,omitempty"`
 	StringRules
 }
 
@@ -675,10 +696,31 @@ type ObjectItem struct {
 	ProtoMessageName     string            `json:"x-message"`
 	AdditionalProperties bool              `json:"additionalProperties,omitempty"`
 	debug                string
+
+	GoPackageName string `json:"-"`
+	GoTypeName    string `json:"-"`
+	GRPCPackage   string `json:"-"`
 }
 
 func (ri ObjectItem) TypeName() string {
 	return "object"
+}
+
+func (op *ObjectItem) PopProperty(name string) (*ObjectProperty, bool) {
+	newProps := make([]*ObjectProperty, 0, len(op.Properties))
+	var found *ObjectProperty
+	for _, prop := range op.Properties {
+		if prop.ProtoFieldName == name {
+			found = prop
+		} else {
+			newProps = append(newProps, prop)
+		}
+	}
+	op.Properties = newProps
+	if found != nil {
+		return found, true
+	}
+	return nil, false
 }
 
 func (op ObjectItem) GetProperty(name string) (*ObjectProperty, bool) {
