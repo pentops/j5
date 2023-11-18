@@ -51,7 +51,6 @@ func scalarTypeName(item jsonapi.SchemaItem) (string, error) {
 		return "bool", nil
 
 	case jsonapi.EnumItem:
-
 		return "string", nil
 
 	case jsonapi.ObjectItem:
@@ -72,7 +71,7 @@ func WriteGoCode(document *structure.Built, outputDir string, options Options) e
 
 	var addObject func(object jsonapi.ObjectItem) error
 
-	jsonField := func(gen *GeneratedFile, property *jsonapi.ObjectProperty) (*Field, error) {
+	jsonField := func(property *jsonapi.ObjectProperty) (*Field, error) {
 
 		tags := map[string]string{}
 
@@ -140,7 +139,7 @@ func WriteGoCode(document *structure.Built, outputDir string, options Options) e
 		gen.types[object.GoTypeName] = structType
 
 		for _, property := range object.Properties {
-			field, err := jsonField(gen, property)
+			field, err := jsonField(property)
 			if err != nil {
 				return err
 			}
@@ -225,7 +224,7 @@ func WriteGoCode(document *structure.Built, outputDir string, options Options) e
 			if operation.RequestBody != nil {
 				requestSchema := operation.RequestBody.ItemType.(jsonapi.ObjectItem)
 				for _, property := range requestSchema.Properties {
-					field, err := jsonField(gen, property)
+					field, err := jsonField(property)
 					if err != nil {
 						return err
 					}
@@ -241,7 +240,7 @@ func WriteGoCode(document *structure.Built, outputDir string, options Options) e
 
 			responseSchema := operation.ResponseBody.ItemType.(jsonapi.ObjectItem)
 			for _, property := range responseSchema.Properties {
-				field, err := jsonField(gen, property)
+				field, err := jsonField(property)
 				if err != nil {
 					return err
 				}

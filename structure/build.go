@@ -2,6 +2,8 @@ package structure
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -22,6 +24,8 @@ type Built struct {
 type builder struct {
 	schemas  *jsonapi.SchemaSet
 	packages []*Package
+
+	trimPackages []string
 }
 
 type Package struct {
@@ -54,13 +58,41 @@ type Entity struct {
 
 type Parameter struct {
 	Name        string             `json:"name"`
-	In          string             `json:"in"`
 	Description string             `json:"description,omitempty"`
 	Required    bool               `json:"required,omitempty"`
 	Schema      jsonapi.SchemaItem `json:"schema"`
 }
 
-func BuildFromDescriptors(options jsonapi.Options, descriptors *descriptorpb.FileDescriptorSet) (*Built, error) {
+type ProseResolver interface {
+	ResolveProse(filename string) (string, error)
+}
+
+type DirResolver string
+
+func (dr DirResolver) ResolveProse(filename string) (string, error) {
+	data, err := os.ReadFile(filepath.Join(string(dr), filename))
+	if err != nil {
+		return "", err
+	}
+	return string(data), nil
+}
+
+func BuildFromDescriptors(config *jsonapi_pb.Config, descriptors *descriptorpb.FileDescriptorSet, prose ProseResolver) (*Built, error) {
+
+	codecOptions := jsonapi.Options{
+		ShortEnums: &jsonapi.ShortEnumsOption{
+			UnspecifiedSuffix: "UNSPECIFIED",
+			StrictUnmarshal:   true,
+		},
+		WrapOneof: config.Options.WrapOneof,
+	}
+
+	if config.Options.ShortEnums != nil {
+		codecOptions.ShortEnums = &jsonapi.ShortEnumsOption{
+			UnspecifiedSuffix: config.Options.ShortEnums.UnspecifiedSuffix,
+			StrictUnmarshal:   config.Options.ShortEnums.StrictUnmarshal,
+		}
+	}
 
 	services := make([]protoreflect.ServiceDescriptor, 0)
 	descFiles, err := protodesc.NewFiles(descriptors)
@@ -77,26 +109,46 @@ func BuildFromDescriptors(options jsonapi.Options, descriptors *descriptorpb.Fil
 		return true
 	})
 
-	filteredServices := make([]protoreflect.ServiceDescriptor, 0)
+	trimSuffixes := make([]string, len(config.Options.TrimSubPackages))
+	for idx, suffix := range config.Options.TrimSubPackages {
+		trimSuffixes[idx] = "." + suffix
+	}
+
+	b := builder{
+		schemas:      jsonapi.NewSchemaSet(codecOptions),
+		trimPackages: trimSuffixes,
+	}
+
+	wantPackages := make(map[string]bool)
+	for _, pkg := range config.Packages {
+		wantPackages[pkg.Name] = true
+		prose, err := prose.ResolveProse(pkg.Prose)
+		if err != nil {
+			return nil, fmt.Errorf("package %s: %w", pkg.Name, err)
+		}
+
+		b.packages = append(b.packages, &Package{
+			Name:         pkg.Name,
+			Label:        pkg.Label,
+			Introduction: prose,
+		})
+	}
+
 	for _, service := range services {
 		name := service.FullName()
 		if !strings.HasSuffix(string(name), "Service") {
 			continue
 		}
+		packageName := string(service.ParentFile().Package())
 
-		filteredServices = append(filteredServices, service)
-	}
+		for _, suffix := range b.trimPackages {
+			packageName = strings.TrimSuffix(packageName, suffix)
+		}
 
-	return Build(options, filteredServices)
-}
+		if !wantPackages[packageName] {
+			continue
+		}
 
-func Build(options jsonapi.Options, services []protoreflect.ServiceDescriptor) (*Built, error) {
-	b := builder{
-		packages: make([]*Package, 0),
-		schemas:  jsonapi.NewSchemaSet(options),
-	}
-
-	for _, service := range services {
 		if err := b.addService(service); err != nil {
 			return nil, err
 		}
@@ -114,8 +166,9 @@ func (bb *builder) getPackage(file protoreflect.FileDescriptor) (*Package, error
 
 	name := string(file.Package())
 
-	name = strings.TrimSuffix(name, ".service")
-	name = strings.TrimSuffix(name, ".topic")
+	for _, trimSuffix := range bb.trimPackages {
+		name = strings.TrimSuffix(name, trimSuffix)
+	}
 
 	var pkg *Package
 	for _, search := range bb.packages {
@@ -130,7 +183,6 @@ func (bb *builder) getPackage(file protoreflect.FileDescriptor) (*Package, error
 			Name: name,
 		}
 		bb.packages = append(bb.packages, pkg)
-
 	}
 
 	packageOptions := proto.GetExtension(file.Options(), jsonapi_pb.E_Package).(*jsonapi_pb.PackageOptions)
@@ -271,7 +323,6 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 		for _, param := range requestObject.Properties {
 			builtMethod.QueryParameters = append(builtMethod.QueryParameters, &Parameter{
 				Name:     param.Name,
-				In:       "query",
 				Required: false,
 				Schema:   param.SchemaItem,
 			})

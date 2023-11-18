@@ -3,10 +3,12 @@ package jsonapi
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"github.com/google/uuid"
+	"github.com/pentops/custom-proto-api/gen/v1/jsonapi_pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -38,13 +40,84 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 		Properties: make([]*ObjectProperty, 0, src.Fields().Len()),
 	}
 
+	options := proto.GetExtension(src.Options(), jsonapi_pb.E_Message).(*jsonapi_pb.MessageOptions)
+	if options != nil {
+		if options.IsOneofWrapper {
+			obj.IsOneof = true
+		}
+	}
+
+	oneofs := make(map[string]*ObjectItem)
+	pendingOneofProps := make(map[string]*ObjectProperty)
+
+	for idx := 0; idx < src.Oneofs().Len(); idx++ {
+		oneof := src.Oneofs().Get(idx)
+		if oneof.IsSynthetic() {
+			continue
+		}
+		ext := proto.GetExtension(oneof.Options(), jsonapi_pb.E_Oneof).(*jsonapi_pb.OneofOptions)
+
+		if ext == nil || !ext.Expose {
+			if !obj.IsOneof {
+				fmt.Fprintf(os.Stderr, "WARN: no def for oneof %s.%s\n", src.FullName(), oneof.Name())
+			}
+			continue
+		}
+
+		oneofName := string(oneof.Name())
+		oneofObject := &ObjectItem{
+			ProtoMessageName: string(oneof.FullName()),
+			IsOneof:          true,
+		}
+		prop := &ObjectProperty{
+			ProtoFieldName: string(oneof.Name()),
+			Name:           string(oneof.Name()),
+			Description:    commentDescription(src, ""),
+			SchemaItem: SchemaItem{
+				ItemType: oneofObject,
+			},
+		}
+		pendingOneofProps[oneofName] = prop
+		oneofs[oneofName] = oneofObject
+
+	}
+
 	for ii := 0; ii < src.Fields().Len(); ii++ {
 		field := src.Fields().Get(ii)
 		prop, err := ss.buildSchemaProperty(field)
 		if err != nil {
 			return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 		}
+
+		inOneof := field.ContainingOneof()
+		if inOneof == nil || inOneof.IsSynthetic() {
+			obj.Properties = append(obj.Properties, prop)
+			continue
+		}
+
+		name := string(inOneof.Name())
+
 		obj.Properties = append(obj.Properties, prop)
+		oneof, ok := oneofs[name]
+		if !ok {
+			obj.Properties = append(obj.Properties, prop)
+			continue
+		}
+
+		oneof.Properties = append(oneof.Properties, prop)
+
+		// deferrs adding the oneof to the property array until the first
+		// field is encountered, i.e. preserves ordering
+		pending, ok := pendingOneofProps[name]
+		if ok {
+			obj.Properties = append(obj.Properties, pending)
+			fmt.Fprintf(os.Stderr, "added pending oneof %s\n", name)
+			delete(pendingOneofProps, name)
+		}
+	}
+
+	for _, pending := range pendingOneofProps {
+		return nil, fmt.Errorf("oneof %s has not been added", pending.Name)
 	}
 
 	description := commentDescription(src, string(src.Name()))
@@ -697,6 +770,8 @@ type ObjectItem struct {
 	AdditionalProperties bool              `json:"additionalProperties,omitempty"`
 	debug                string
 
+	IsOneof bool `json:"x-is-oneof,omitempty"`
+
 	GoPackageName string `json:"-"`
 	GoTypeName    string `json:"-"`
 	GRPCPackage   string `json:"-"`
@@ -757,6 +832,11 @@ func (op ObjectItem) jsonFieldMap(out map[string]json.RawMessage) error {
 	if len(required) > 0 {
 		out["required"], _ = json.Marshal(required)
 	}
+
+	if op.IsOneof {
+		out["x-is-oneof"], _ = json.Marshal(true)
+	}
+
 	return nil
 }
 
