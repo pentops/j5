@@ -461,7 +461,6 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 					stringItem.Pattern = pattern
 				}
 			}
-			stringItem.Pattern = "string value"
 
 			switch wkt := constraint.WellKnown.(type) {
 			case *validate.StringRules_Uuid:
@@ -475,7 +474,6 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 					stringItem.Example = "test@example.com"
 				}
 
-				// TODO: More Types
 			case *validate.StringRules_Hostname:
 				if wkt.Hostname {
 					stringItem.Format = "hostname"
