@@ -89,6 +89,14 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 			return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 		}
 
+		if field.IsList() {
+			prop.SchemaItem = SchemaItem{
+				ItemType: ArrayItem{
+					Items: prop.SchemaItem,
+				},
+			}
+		}
+
 		inOneof := field.ContainingOneof()
 		if inOneof == nil || inOneof.IsSynthetic() {
 			obj.Properties = append(obj.Properties, prop)

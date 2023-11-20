@@ -229,6 +229,26 @@ func TestSchemaTypesComplex(t *testing.T) {
 			"properties":  LenEqual(0),
 		},
 	}, {
+		name: "array field",
+		proto: &descriptorpb.FileDescriptorProto{
+			Name:    proto.String("test.proto"),
+			Package: proto.String("test"),
+			MessageType: []*descriptorpb.DescriptorProto{{
+				Name: proto.String("TestMessage"),
+				Field: []*descriptorpb.FieldDescriptorProto{{
+					Name:   proto.String("test_field"),
+					Type:   descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+					Number: proto.Int32(1),
+					Label:  descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
+				}},
+			}},
+		},
+		expected: map[string]interface{}{
+			"description":               "TestMessage",
+			"type":                      "object",
+			"properties.testField.type": "array",
+		},
+	}, {
 		name: "enum field",
 		proto: &descriptorpb.FileDescriptorProto{
 			Name:    proto.String("test.proto"),
