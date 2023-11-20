@@ -2,26 +2,16 @@ package structure
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 
+	"github.com/pentops/custom-proto-api/gen/v1/jsonapi_pb"
 	"github.com/pentops/custom-proto-api/jsonapi"
 	"github.com/pentops/o5-runtime-sidecar/testproto"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
-
-func filesToSwagger(t testing.TB, fileDescriptors ...*descriptorpb.FileDescriptorProto) *Built {
-	t.Helper()
-	services := testproto.FilesToServiceDescriptors(t, fileDescriptors...)
-	swaggerDoc, err := Build(jsonapi.Options{
-		ShortEnums: &jsonapi.ShortEnumsOption{},
-	}, services)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return swaggerDoc
-}
 
 const (
 	pathMessage = 4
@@ -30,9 +20,9 @@ const (
 
 func TestBuild(t *testing.T) {
 
-	swaggerDoc := filesToSwagger(t, &descriptorpb.FileDescriptorProto{
+	descriptors := &descriptorpb.FileDescriptorProto{
 		Name:    proto.String("test.proto"),
-		Package: proto.String("test"),
+		Package: proto.String("test.v1"),
 		Service: []*descriptorpb.ServiceDescriptorProto{{
 			Name: proto.String("TestService"),
 			Method: []*descriptorpb.MethodDescriptorProto{
@@ -60,7 +50,7 @@ func TestBuild(t *testing.T) {
 				Name:     proto.String("msg"),
 				Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
 				Number:   proto.Int32(2),
-				TypeName: proto.String(".test.Nested"),
+				TypeName: proto.String(".test.v1.Nested"),
 			}},
 		}, {
 			Name: proto.String("Nested"),
@@ -72,7 +62,7 @@ func TestBuild(t *testing.T) {
 				Name:     proto.String("enum"),
 				Type:     descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
 				Number:   proto.Int32(3),
-				TypeName: proto.String(".test.TestEnum"),
+				TypeName: proto.String(".test.v1.TestEnum"),
 			}},
 		}},
 		EnumType: []*descriptorpb.EnumDescriptorProto{{
@@ -97,19 +87,34 @@ func TestBuild(t *testing.T) {
 				Span:            []int32{2, 1, 2},                      // Single line comment
 			}},
 		},
-	})
+	}
 
-	bb, err := json.MarshalIndent(swaggerDoc, "", "  ")
+	built, err := BuildFromDescriptors(&jsonapi_pb.Config{
+		Packages: []*jsonapi_pb.PackageConfig{{
+			Label: "Test",
+			Name:  "test.v1",
+		}},
+		Options: &jsonapi_pb.CodecOptions{
+			ShortEnums: &jsonapi_pb.ShortEnumOptions{},
+		},
+	}, &descriptorpb.FileDescriptorSet{
+		File: []*descriptorpb.FileDescriptorProto{descriptors},
+	}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	bb, err := json.MarshalIndent(built, "", "  ")
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Log(string(bb))
 
-	if _, ok := swaggerDoc.GetSchema("#/components/schemas/test.TestRequest"); ok {
+	if _, ok := built.Schemas["test.v1.TestRequest"]; ok {
 		t.Fatal("TestRequest should not be registered as a schema, but was")
 	}
 
-	refSchema, ok := swaggerDoc.GetSchema("#/components/schemas/test.Nested")
+	refSchema, ok := built.Schemas["test.v1.Nested"]
 	if !ok {
 		t.Fatal("schema not found")
 	}
@@ -140,7 +145,18 @@ func TestBuild(t *testing.T) {
 	if fEnum.Name != "enum" {
 		t.Errorf("unexpected field name: '%s'", fEnum.Name)
 	}
-	enumType, ok := fEnum.SchemaItem.ItemType.(jsonapi.EnumItem)
+
+	ref := fEnum.SchemaItem.Ref
+	if ref == "" {
+		t.Fatal("ref is nil")
+	}
+
+	schemaEnum, ok := built.Schemas[strings.TrimPrefix(ref, "#/components/schemas/")]
+	if !ok {
+		t.Fatalf("schema not found: '%s'", ref)
+	}
+
+	enumType, ok := schemaEnum.ItemType.(jsonapi.EnumItem)
 	if !ok {
 		t.Fatalf("unexpected type: %T", fEnum.SchemaItem.ItemType)
 	}

@@ -78,7 +78,7 @@ func (dr DirResolver) ResolveProse(filename string) (string, error) {
 	return string(data), nil
 }
 
-func BuildFromDescriptors(config *jsonapi_pb.Config, descriptors *descriptorpb.FileDescriptorSet, prose ProseResolver) (*Built, error) {
+func BuildFromDescriptors(config *jsonapi_pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*Built, error) {
 
 	codecOptions := jsonapi.Options{
 		ShortEnums: &jsonapi.ShortEnumsOption{
@@ -123,9 +123,14 @@ func BuildFromDescriptors(config *jsonapi_pb.Config, descriptors *descriptorpb.F
 	wantPackages := make(map[string]bool)
 	for _, pkg := range config.Packages {
 		wantPackages[pkg.Name] = true
-		prose, err := prose.ResolveProse(pkg.Prose)
-		if err != nil {
-			return nil, fmt.Errorf("package %s: %w", pkg.Name, err)
+
+		var prose string
+
+		if pkg.Prose != "" && proseResolver != nil {
+			prose, err = proseResolver.ResolveProse(pkg.Prose)
+			if err != nil {
+				return nil, fmt.Errorf("package %s: %w", pkg.Name, err)
+			}
 		}
 
 		b.packages = append(b.packages, &Package{

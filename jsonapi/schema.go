@@ -234,7 +234,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 		ss.Schemas[name] = refSchemaItem
 
 		prop.SchemaItem = SchemaItem{
-			Ref: fmt.Sprintf("#/components/schemas/%s", name),
+			Ref: name,
 		}
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
@@ -541,7 +541,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 		} else {
 			prop.SchemaItem = SchemaItem{
-				Ref: fmt.Sprintf("#/components/schemas/%s", src.Message().FullName()),
+				Ref: string(src.Message().FullName()),
 			}
 			if err := ss.addSchemaObject(src.Message()); err != nil {
 				return nil, err

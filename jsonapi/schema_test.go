@@ -289,7 +289,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 			"description":               "TestMessage",
 			"type":                      "object",
 			"properties":                LenEqual(1),
-			"properties.testField.$ref": "#/components/schemas/test.TestEnum",
+			"properties.testField.$ref": "test.TestEnum",
 		},
 		expectedRefs: map[string]map[string]interface{}{
 			"test.TestEnum": {
