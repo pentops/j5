@@ -1,0 +1,403 @@
+package gogen
+
+import (
+	"bytes"
+	"fmt"
+	"go/format"
+	"os"
+	"path"
+	"path/filepath"
+	"strings"
+)
+
+type StringGen struct {
+	imports   map[string]string
+	buf       *bytes.Buffer
+	myPackage string
+}
+
+func (g *StringGen) ImportPath(importSrc string) string {
+	existing, ok := g.imports[importSrc]
+	if ok {
+		return existing
+	}
+
+	importName := g.findUnusedPackage(path.Base(importSrc))
+	g.imports[importSrc] = importName
+	return g.imports[importSrc]
+}
+
+func (g *StringGen) findUnusedPackage(want string) string {
+	for _, used := range g.imports {
+		if used == want {
+			// TODO if the name is already a number, increment it
+			return g.findUnusedPackage(want + "_1")
+		}
+	}
+
+	return want
+}
+
+func (g *StringGen) ChildGen() *StringGen {
+	return &StringGen{
+		buf:       &bytes.Buffer{},
+		imports:   g.imports,
+		myPackage: g.myPackage,
+	}
+}
+
+// P prints a line to the generated output. It converts each parameter to a
+// string following the same rules as fmt.Print. It never inserts spaces
+// between parameters.
+func (g *StringGen) P(v ...interface{}) {
+	for _, x := range v {
+		if packaged, ok := x.(PackagedIdentity); ok {
+			specified := packaged.PackageName()
+			if specified == g.myPackage {
+				fmt.Fprint(g.buf, packaged.Identity())
+			} else {
+				packageName := g.ImportPath(packaged.PackageName())
+				fmt.Fprint(g.buf, packageName)
+				fmt.Fprint(g.buf, ".")
+				fmt.Fprint(g.buf, packaged.Identity())
+			}
+		} else {
+			fmt.Fprint(g.buf, x)
+		}
+	}
+	fmt.Fprintln(g.buf)
+}
+
+type FileSet struct {
+	files  map[string]*GeneratedFile
+	prefix string
+}
+
+func NewFileSet(prefix string) *FileSet {
+	return &FileSet{
+		files:  make(map[string]*GeneratedFile),
+		prefix: prefix,
+	}
+}
+
+func (fs *FileSet) WriteAll(dir string) error {
+	for fullPackageName, file := range fs.files {
+		bb, err := file.ExportBytes()
+		if err != nil {
+			return err
+		}
+		fileName := strings.TrimPrefix(fullPackageName, fs.prefix)
+		fullFilePath := filepath.Join(dir, fileName, "generated.go")
+		if err := os.MkdirAll(filepath.Dir(fullFilePath), 0755); err != nil {
+			return err
+		}
+
+		if err := os.WriteFile(fullFilePath, bb, 0644); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (fs *FileSet) File(packagePath string, packageName string) (*GeneratedFile, error) {
+	file, ok := fs.files[packagePath]
+	if !ok {
+		file = NewFile(packagePath, packageName)
+		fs.files[packagePath] = file
+		return file, nil
+	}
+
+	if file.packageName != packageName {
+		return nil, fmt.Errorf("file %s already exists with package name %s, adding %s", packagePath, file.packageName, packageName)
+	}
+
+	return file, nil
+}
+
+type GoIdent struct {
+	Package string
+	Name    string
+}
+
+func (gi GoIdent) PackageName() string {
+	return gi.Package
+}
+
+func (gi GoIdent) Identity() string {
+	return gi.Name
+}
+
+type GeneratedFile struct {
+	path        string
+	packageName string
+
+	interfaces map[string]*Interface
+	services   map[string]*Struct
+	types      map[string]*Struct
+	funcs      map[string]*Function
+
+	*StringGen
+}
+
+func NewFile(importPath string, packageName string) *GeneratedFile {
+	gen := &GeneratedFile{
+		path:        importPath,
+		packageName: packageName,
+		services:    make(map[string]*Struct),
+		types:       make(map[string]*Struct),
+		funcs:       make(map[string]*Function),
+		interfaces:  make(map[string]*Interface),
+		StringGen: &StringGen{
+			buf:       &bytes.Buffer{},
+			imports:   make(map[string]string),
+			myPackage: importPath,
+		},
+	}
+
+	return gen
+}
+
+type PackagedIdentity interface {
+	PackageName() string
+	Identity() string
+}
+
+func (gen *GeneratedFile) Service(serviceName string) *Struct {
+	existing, ok := gen.services[serviceName]
+	if ok {
+		return existing
+	}
+
+	constructor := &Function{
+		Name: fmt.Sprintf("New%s", serviceName),
+		Parameters: []*Parameter{{
+			Name:     "requester",
+			DataType: "Requester",
+		}},
+		Returns: []*Parameter{{
+			DataType: serviceName,
+			Pointer:  true,
+		}},
+		StringGen: gen.ChildGen(),
+	}
+
+	constructor.P("  return &", serviceName, "{")
+	constructor.P("    Requester: requester,")
+	constructor.P("  }")
+
+	service := &Struct{
+		Name: serviceName,
+		Fields: []*Field{{
+			DataType: "Requester",
+			// Anon
+		}},
+		Constructors: []*Function{constructor},
+	}
+	gen.services[serviceName] = service
+
+	return service
+}
+
+func (gen *GeneratedFile) EnsureInterface(ii *Interface) {
+	_, ok := gen.interfaces[ii.Name]
+	if ok {
+		return
+	}
+	// TODO: Compare Methods
+
+	gen.interfaces[ii.Name] = ii
+}
+
+type Field struct {
+	Name     string
+	DataType interface{}
+	Pointer  bool
+	Tags     map[string]string
+}
+
+type Parameter struct {
+	Name     string
+	DataType interface{}
+	Pointer  bool
+}
+
+type Function struct {
+	Name       string
+	Parameters []*Parameter
+	Returns    []*Parameter
+	*StringGen
+}
+
+func (f *Function) PrintSignature(gen *StringGen) {
+	parts := f.signature()
+	gen.P(parts...)
+}
+
+func (f *Function) signature() []interface{} {
+	parts := []interface{}{
+		f.Name, "(",
+	}
+	for idx, parameter := range f.Parameters {
+		if idx > 0 {
+			parts = append(parts, ", ")
+		}
+
+		ptr := ""
+		if parameter.Pointer {
+			ptr = "*"
+		}
+		parts = append(parts, parameter.Name, " ", ptr, parameter.DataType)
+	}
+	parts = append(parts, ") (")
+	for idx, parameter := range f.Returns {
+		if idx > 0 {
+			parts = append(parts, ", ")
+		}
+		ptr := ""
+		if parameter.Pointer {
+			ptr = "*"
+		}
+		parts = append(parts, ptr, parameter.DataType)
+	}
+	parts = append(parts, ")")
+	return parts
+}
+
+func (f *Function) Print(gen *StringGen) {
+	parts := f.signature()
+	parts = append(parts, " {")
+	gen.P(append([]interface{}{
+		"func ",
+	}, parts...)...)
+
+	f.StringGen.buf.WriteTo(gen.buf) // nolint: errcheck //  as all writes to a bytes.Buffer succeed
+
+	gen.P("}")
+	gen.P()
+}
+
+func (f *Function) PrintAsMethod(gen *StringGen, methodOf string) {
+	parts := f.signature()
+	parts = append(parts, " {")
+
+	gen.P(append([]interface{}{
+		"func (s ", methodOf, ") ",
+	}, parts...)...)
+
+	f.StringGen.buf.WriteTo(gen.buf) // nolint: errcheck //  as all writes to a bytes.Buffer succeed
+
+	gen.P("}")
+	gen.P()
+}
+
+type Struct struct {
+	Name         string
+	Constructors []*Function
+	Methods      []*Function
+	Fields       []*Field
+}
+
+func tagString(tags map[string]string) string {
+	if len(tags) == 0 {
+		return ""
+	}
+	tagStrings := make([]string, 0, len(tags))
+	for tagName, tagValue := range tags {
+		tagStrings = append(tagStrings, fmt.Sprintf("%s:\"%s\"", tagName, tagValue))
+	}
+	tagString := strings.Join(tagStrings, " ")
+	return "`" + tagString + "`"
+}
+
+func (ss *Struct) Print(gen *StringGen) {
+
+	gen.P("type ", ss.Name, " struct {")
+	for _, field := range ss.Fields {
+		tags := tagString(field.Tags)
+		if field.Name == "" {
+			gen.P("  ", field.DataType, " ", tags)
+		} else {
+			gen.P("  ", field.Name, " ", field.DataType, " ", tags)
+		}
+	}
+	gen.P("}")
+	gen.P()
+
+	for _, constructor := range ss.Constructors {
+		constructor.Print(gen)
+	}
+
+	for _, method := range ss.Methods {
+		method.PrintAsMethod(gen, ss.Name)
+	}
+}
+
+type Interface struct {
+	Name    string
+	Methods []*Function
+}
+
+func (ii *Interface) Print(gen *StringGen) {
+	gen.P("type ", ii.Name, " interface {")
+	for _, method := range ii.Methods {
+		method.PrintSignature(gen)
+	}
+	gen.P("}")
+	gen.P()
+}
+
+func ImportedName(fullPackage, identity string) GoIdent {
+	return GoIdent{
+		Package: fullPackage,
+		Name:    identity,
+	}
+}
+
+func (g *GeneratedFile) ExportBytes() ([]byte, error) {
+
+	header := g.ChildGen()
+
+	for _, ii := range g.interfaces {
+		ii.Print(header)
+	}
+
+	for _, ss := range g.services {
+		ss.Print(header)
+	}
+
+	for _, ss := range g.types {
+		ss.Print(header)
+	}
+
+	for _, ff := range g.funcs {
+		ff.Print(header)
+	}
+
+	bb := g.buf.Bytes()
+
+	headerBytes := &bytes.Buffer{}
+	headerBytes.WriteString("package " + g.packageName + "\n")
+	headerBytes.WriteString("// Code generated by custom-proto-api. DO NOT EDIT.\n")
+	headerBytes.WriteString("// Source: " + g.path + "\n")
+	headerBytes.WriteString("\n")
+
+	headerBytes.WriteString("import (\n")
+	for importSrc, importName := range g.imports {
+		fmt.Fprintf(headerBytes, "  %s \"%s\"\n", importName, importSrc)
+	}
+	headerBytes.WriteString(")\n")
+	headerBytes.WriteString("\n")
+
+	headerBytes.Write(header.buf.Bytes())
+	headerBytes.Write(bb)
+
+	p, err := format.Source(headerBytes.Bytes())
+	if err != nil {
+
+		return headerBytes.Bytes(), nil
+
+		//	return nil, err
+	}
+
+	return p, nil
+}

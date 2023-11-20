@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package jsonapi.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
+
+
+extend google.protobuf.MessageOptions {
+  MessageOptions message = 90443353;
+}
+
+message MessageOptions {
+  // When true, all fields in this message should be wrapped in a single oneof
+  // field. The message will show in json-schema as-is but with the
+  // x-oneof flag set.
+  bool is_oneof_wrapper = 1;
+}
+
+
+extend google.protobuf.OneofOptions {
+  OneofOptions oneof = 90443355;
+}
+
+message OneofOptions {
+  // When true, the oneof is exposed as a field in the parent message, rather
+  // than being a validation rule.
+  // Will show in json-schema as an object with the x-oneof flag set.
+  bool expose = 1;
+}
+
+extend google.protobuf.MethodOptions {
+  MethodOptions method = 90443356;
+}
+
+message MethodOptions {
+  string label = 1;
+  bool hidden = 2;
+}
+
+extend google.protobuf.FieldOptions {
+  StringOptions string = 90443357;
+}
+
+message StringOptions {
+  StringFormat format = 1;
+}
+
+enum StringFormat {
+  STRING_FORMAT_UNSPECIFIED = 0;
+  STRING_FORMAT_DATE = 1;
+}

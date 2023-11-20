@@ -3,11 +3,15 @@ package jsonapi
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	"github.com/google/uuid"
+	"github.com/pentops/custom-proto-api/gen/v1/jsonapi_pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type SchemaSet struct {
@@ -29,7 +33,53 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 
 	obj := ObjectItem{
 		ProtoMessageName: string(src.FullName()),
-		Properties:       make([]*ObjectProperty, 0, src.Fields().Len()),
+		GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
+		GRPCPackage:      string(src.ParentFile().Package()),
+		GoTypeName:       string(src.Name()),
+
+		Properties: make([]*ObjectProperty, 0, src.Fields().Len()),
+	}
+
+	options := proto.GetExtension(src.Options(), jsonapi_pb.E_Message).(*jsonapi_pb.MessageOptions)
+	if options != nil {
+		if options.IsOneofWrapper {
+			obj.IsOneof = true
+		}
+	}
+
+	oneofs := make(map[string]*ObjectItem)
+	pendingOneofProps := make(map[string]*ObjectProperty)
+
+	for idx := 0; idx < src.Oneofs().Len(); idx++ {
+		oneof := src.Oneofs().Get(idx)
+		if oneof.IsSynthetic() {
+			continue
+		}
+		ext := proto.GetExtension(oneof.Options(), jsonapi_pb.E_Oneof).(*jsonapi_pb.OneofOptions)
+
+		if ext == nil || !ext.Expose {
+			if !obj.IsOneof {
+				fmt.Fprintf(os.Stderr, "WARN: no def for oneof %s.%s\n", src.FullName(), oneof.Name())
+			}
+			continue
+		}
+
+		oneofName := string(oneof.Name())
+		oneofObject := &ObjectItem{
+			ProtoMessageName: string(oneof.FullName()),
+			IsOneof:          true,
+		}
+		prop := &ObjectProperty{
+			ProtoFieldName: string(oneof.Name()),
+			Name:           string(oneof.Name()),
+			Description:    commentDescription(src, ""),
+			SchemaItem: SchemaItem{
+				ItemType: oneofObject,
+			},
+		}
+		pendingOneofProps[oneofName] = prop
+		oneofs[oneofName] = oneofObject
+
 	}
 
 	for ii := 0; ii < src.Fields().Len(); ii++ {
@@ -38,7 +88,35 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 		if err != nil {
 			return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 		}
+
+		inOneof := field.ContainingOneof()
+		if inOneof == nil || inOneof.IsSynthetic() {
+			obj.Properties = append(obj.Properties, prop)
+			continue
+		}
+
+		name := string(inOneof.Name())
+
 		obj.Properties = append(obj.Properties, prop)
+		oneof, ok := oneofs[name]
+		if !ok {
+			obj.Properties = append(obj.Properties, prop)
+			continue
+		}
+
+		oneof.Properties = append(oneof.Properties, prop)
+
+		// deferrs adding the oneof to the property array until the first
+		// field is encountered, i.e. preserves ordering
+		pending, ok := pendingOneofProps[name]
+		if ok {
+			obj.Properties = append(obj.Properties, pending)
+			delete(pendingOneofProps, name)
+		}
+	}
+
+	for _, pending := range pendingOneofProps {
+		return nil, fmt.Errorf("oneof %s has not been added", pending.Name)
 	}
 
 	description := commentDescription(src, string(src.Name()))
@@ -82,9 +160,14 @@ func buildComment(sourceLocation protoreflect.SourceLocation, fallback string) s
 	return strings.Join(commentsOut, "\n")
 }
 
-var wellKnownStringPatterns = map[string]string{
-	`^\d{4}-\d{2}-\d{2}$`: "date",
-	`^\d(.?\d)?$`:         "number",
+type wellKnownStringPattern struct {
+	format  string
+	example string
+}
+
+var wellKnownStringPatterns = map[string]wellKnownStringPattern{
+	`^\d{4}-\d{2}-\d{2}$`: {format: "date", example: "2021-01-01"},
+	`^\d(.?\d)?$`:         {format: "number", example: "12.34"},
 }
 
 func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
@@ -372,42 +455,47 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 				pattern := *constraint.Pattern
 				wellKnownStringPattern, ok := wellKnownStringPatterns[pattern]
 				if ok {
-					stringItem.Format = wellKnownStringPattern
+					stringItem.Format = wellKnownStringPattern.format
+					stringItem.Example = wellKnownStringPattern.example
 				} else {
 					stringItem.Pattern = pattern
 				}
-
 			}
 
 			switch wkt := constraint.WellKnown.(type) {
 			case *validate.StringRules_Uuid:
 				if wkt.Uuid {
 					stringItem.Format = "uuid"
+					stringItem.Example = uuid.NewString()
 				}
 			case *validate.StringRules_Email:
 				if wkt.Email {
 					stringItem.Format = "email"
+					stringItem.Example = "test@example.com"
 				}
 
-				// TODO: More Types
 			case *validate.StringRules_Hostname:
 				if wkt.Hostname {
 					stringItem.Format = "hostname"
+					stringItem.Example = "example.com"
 				}
 
 			case *validate.StringRules_Ipv4:
 				if wkt.Ipv4 {
 					stringItem.Format = "ipv4"
+					stringItem.Example = "10.10.10.10"
 				}
 
 			case *validate.StringRules_Ipv6:
 				if wkt.Ipv6 {
 					stringItem.Format = "ipv6"
+					stringItem.Example = "2001:db8::68"
 				}
 
 			case *validate.StringRules_Uri:
 				if wkt.Uri {
 					stringItem.Format = "uri"
+					stringItem.Example = "https://example.com"
 				}
 
 			// Other types not supported by swagger
@@ -433,11 +521,16 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 	case protoreflect.MessageKind:
 		// When called from a field of a message, this creates a ref. When built directly from a service RPC request or create, this code is not called, they are inlined with the buildSchemaObject call directly
-		prop.SchemaItem = SchemaItem{
-			Ref: fmt.Sprintf("#/components/schemas/%s", src.Message().FullName()),
-		}
-		if err := ss.addSchemaRef(src.Message()); err != nil {
-			return nil, err
+		if wktschema, ok := wktSchema(src.Message()); ok {
+			prop.SchemaItem = *wktschema
+
+		} else {
+			prop.SchemaItem = SchemaItem{
+				Ref: fmt.Sprintf("#/components/schemas/%s", src.Message().FullName()),
+			}
+			if err := ss.addSchemaRef(src.Message()); err != nil {
+				return nil, err
+			}
 		}
 
 	default:
@@ -474,6 +567,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (*SchemaItem, bool) {
 	case "google.protobuf.Struct":
 		return &SchemaItem{
 			ItemType: ObjectItem{
+				GoTypeName:           "map[string]interface{}",
 				AdditionalProperties: true,
 			},
 		}, true
@@ -490,10 +584,6 @@ func (ss *SchemaSet) addSchemaRef(src protoreflect.MessageDescriptor) error {
 		return nil
 	}
 
-	if wktschema, ok := wktSchema(src); ok {
-		ss.Schemas[string(src.FullName())] = wktschema
-		return nil
-	}
 	if strings.HasPrefix(string(src.FullName()), "google.protobuf.") {
 		return fmt.Errorf("unknown google.protobuf type %s", src.FullName())
 	}
@@ -580,7 +670,8 @@ func (si SchemaItem) MarshalJSON() ([]byte, error) {
 }
 
 type StringItem struct {
-	Format string `json:"format,omitempty"`
+	Format  string `json:"format,omitempty"`
+	Example string `json:"example,omitempty"`
 	StringRules
 }
 
@@ -675,10 +766,33 @@ type ObjectItem struct {
 	ProtoMessageName     string            `json:"x-message"`
 	AdditionalProperties bool              `json:"additionalProperties,omitempty"`
 	debug                string
+
+	IsOneof bool `json:"x-is-oneof,omitempty"`
+
+	GoPackageName string `json:"-"`
+	GoTypeName    string `json:"-"`
+	GRPCPackage   string `json:"-"`
 }
 
 func (ri ObjectItem) TypeName() string {
 	return "object"
+}
+
+func (op *ObjectItem) PopProperty(name string) (*ObjectProperty, bool) {
+	newProps := make([]*ObjectProperty, 0, len(op.Properties))
+	var found *ObjectProperty
+	for _, prop := range op.Properties {
+		if prop.ProtoFieldName == name {
+			found = prop
+		} else {
+			newProps = append(newProps, prop)
+		}
+	}
+	op.Properties = newProps
+	if found != nil {
+		return found, true
+	}
+	return nil, false
 }
 
 func (op ObjectItem) GetProperty(name string) (*ObjectProperty, bool) {
@@ -715,6 +829,11 @@ func (op ObjectItem) jsonFieldMap(out map[string]json.RawMessage) error {
 	if len(required) > 0 {
 		out["required"], _ = json.Marshal(required)
 	}
+
+	if op.IsOneof {
+		out["x-is-oneof"], _ = json.Marshal(true)
+	}
+
 	return nil
 }
 

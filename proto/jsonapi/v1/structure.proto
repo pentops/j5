@@ -1,0 +1,159 @@
+syntax = "proto3";
+
+package jsonapi.v1;
+
+option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
+
+message API {
+  repeated Package packages = 1;
+  map<string,Schema> schemas = 2;
+}
+
+message Package {
+  string label = 1;
+  string name = 2;
+  bool hidden = 3;
+
+  string introduction = 4;
+  repeated Method methods = 5;
+  repeated Entity entities = 6;
+}
+
+message Method {
+  string grpc_service_name = 1;
+  string grpc_method_name = 2;
+  string full_grpc_name = 3;
+
+  string http_method = 4;
+  string http_path = 5;
+  Schema request_body = 6;
+  Schema response_body = 7;
+  repeated Parameter query_parameters = 8;
+  repeated Parameter path_parameters = 9;
+}
+
+message Entity {
+  Schema state_schema = 1;
+  Schema event_schema = 2;
+}
+
+message Parameter {
+  string name = 1;
+  string description = 3;
+  bool required = 4;
+  Schema schema = 5;
+}
+
+message Schema {
+  oneof type{
+    string ref = 1;
+    SchemaItem item = 2;
+  }
+
+  string description = 3;
+}
+
+message SchemaItem {
+  oneof type {
+    StringItem string = 1;
+    IntegerItem integer = 2;
+    EnumItem enum = 3;
+    NumberItem number = 4;
+    BooleanItem boolean = 5;
+    ArrayItem array = 6;
+    ObjectItem object = 7;
+  }
+}
+
+message StringItem {
+  string format = 1;
+  string example = 2;
+  StringRules rules = 3;
+}
+
+message StringRules {
+  string pattern = 1;
+  uint64 min_length = 2;
+  uint64 max_length = 3;
+}
+
+message EnumItem {
+  repeated string enum = 1;
+  repeated EnumValueDescription extended = 2;
+}
+
+message EnumValueDescription {
+  string value = 1;
+  string description = 2;
+}
+
+message NumberItem {
+  string format = 1;
+  NumberRules rules = 2;
+}
+
+message NumberRules {
+  bool exclusive_maximum = 1;
+  bool exclusive_minimum = 2;
+  double minimum = 3;
+  double maximum = 4;
+  double multiple_of = 5;
+}
+
+message IntegerItem {
+  string format = 1;
+  IntegerRules rules = 2;
+}
+
+message IntegerRules {
+  bool exclusive_maximum = 1;
+  bool exclusive_minimum = 2;
+  int64 minimum = 3;
+  int64 maximum = 4;
+  int64 multiple_of = 5;
+}
+
+message BooleanItem {
+}
+
+message ArrayItem {
+  ArrayRules rules = 1;
+  SchemaItem items = 2;
+}
+
+message ArrayRules {
+  uint64 min_items = 1;
+  uint64 max_items = 2;
+  bool unique_items = 3;
+}
+
+message ObjectItem {
+  ObjectRules rules = 1;
+  repeated ObjectProperty properties = 2;
+  repeated string required = 3;
+  string proto_message_name = 4;
+  bool additional_properties = 5;
+  string debug = 6;
+
+  string go_package_name = 7;
+  string go_type_name = 8;
+  string grpc_package_name = 9;
+}
+
+message ObjectProperty {
+  SchemaItem schema = 1;
+  bool skip = 2;
+  string name = 3;
+  bool required = 4;
+  bool read_only = 5;
+  bool write_only = 6;
+  string description = 7;
+  string proto_field_name = 8;
+  int32 proto_field_number = 9;
+}
+
+message ObjectRules {
+  uint64 min_properties = 1;
+  uint64 max_properties = 2;
+}
+

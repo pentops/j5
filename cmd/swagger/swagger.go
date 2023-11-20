@@ -4,48 +4,36 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"os"
+	"path/filepath"
 
-	"github.com/pentops/custom-proto-api/jsonapi"
-	"github.com/pentops/custom-proto-api/swagger"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/descriptorpb"
+	"github.com/bufbuild/protoyaml-go"
+	"github.com/pentops/custom-proto-api/gen/v1/jsonapi_pb"
+	"github.com/pentops/custom-proto-api/structure"
 )
 
 func main() {
 	src := flag.String("proto-src", "-", "Protobuf binary input file (- for stdin)")
+	configFile := flag.String("config", "", "Config file to use")
 	flag.Parse()
-	descriptors := &descriptorpb.FileDescriptorSet{}
 
-	if *src == "-" {
-		protoData, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		if err := proto.Unmarshal(protoData, descriptors); err != nil {
-			log.Fatal(err.Error())
-		}
-	} else {
-		protoData, err := os.ReadFile(*src)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		if err := proto.Unmarshal(protoData, descriptors); err != nil {
-			log.Fatal(err.Error())
-		}
+	configData, err := os.ReadFile(*configFile)
+	if err != nil {
+		log.Fatal(err.Error())
 	}
 
-	codecOptions := jsonapi.Options{
-		ShortEnums: &jsonapi.ShortEnumsOption{
-			UnspecifiedSuffix: "UNSPECIFIED",
-			StrictUnmarshal:   true,
-		},
-		WrapOneof: true,
+	config := &jsonapi_pb.Config{}
+	if err := protoyaml.Unmarshal(configData, config); err != nil {
+		log.Fatal(err.Error())
 	}
 
-	document, err := swagger.BuildFromDescriptors(codecOptions, descriptors)
+	descriptors, err := structure.ReadFileDescriptorSet(*src)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+
+	document, err := structure.BuildFromDescriptors(config, descriptors, structure.DirResolver(filepath.Dir(*configFile)))
 	if err != nil {
 		log.Fatal(err.Error())
 	}
