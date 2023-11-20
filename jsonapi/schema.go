@@ -213,13 +213,20 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			valueStrings = append(valueStrings, value.Name)
 		}
 
-		prop.SchemaItem = SchemaItem{
+		refSchemaItem := &SchemaItem{
 			ItemType: EnumItem{
 				EnumRules: EnumRules{
 					Enum: valueStrings,
 				},
 				Extended: values,
 			},
+		}
+
+		name := string(src.Enum().FullName())
+		ss.Schemas[name] = refSchemaItem
+
+		prop.SchemaItem = SchemaItem{
+			Ref: fmt.Sprintf("#/components/schemas/%s", name),
 		}
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
@@ -528,7 +535,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			prop.SchemaItem = SchemaItem{
 				Ref: fmt.Sprintf("#/components/schemas/%s", src.Message().FullName()),
 			}
-			if err := ss.addSchemaRef(src.Message()); err != nil {
+			if err := ss.addSchemaObject(src.Message()); err != nil {
 				return nil, err
 			}
 		}
@@ -578,7 +585,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (*SchemaItem, bool) {
 
 }
 
-func (ss *SchemaSet) addSchemaRef(src protoreflect.MessageDescriptor) error {
+func (ss *SchemaSet) addSchemaObject(src protoreflect.MessageDescriptor) error {
 
 	if _, ok := ss.Schemas[string(src.FullName())]; ok {
 		return nil

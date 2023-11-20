@@ -210,9 +210,10 @@ func TestSchemaTypesComplex(t *testing.T) {
 	})
 
 	for _, tt := range []struct {
-		name     string
-		proto    *descriptorpb.FileDescriptorProto
-		expected map[string]interface{}
+		name         string
+		proto        *descriptorpb.FileDescriptorProto
+		expected     map[string]interface{}
+		expectedRefs map[string]map[string]interface{}
 	}{{
 		name: "empty message",
 		proto: &descriptorpb.FileDescriptorProto{
@@ -265,11 +266,16 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"description":                 "TestMessage",
-			"type":                        "object",
-			"properties":                  LenEqual(1),
-			"properties.testField.enum.0": "FOO",
-			"properties.testField.enum.1": "BAR",
+			"description":               "TestMessage",
+			"type":                      "object",
+			"properties":                LenEqual(1),
+			"properties.testField.$ref": "#/components/schemas/test.TestEnum",
+		},
+		expectedRefs: map[string]map[string]interface{}{
+			"test.TestEnum": {
+				"enum.0": "FOO",
+				"enum.1": "BAR",
+			},
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -287,6 +293,21 @@ func TestSchemaTypesComplex(t *testing.T) {
 
 			for path, expected := range tt.expected {
 				dd.AssertEqual(t, path, expected)
+			}
+
+			for path, expectSet := range tt.expectedRefs {
+				schema, ok := ss.Schemas[path]
+				if !ok {
+					t.Fatalf("schema %q not found", path)
+				}
+				ddRef, err := MarshalDynamic(schema)
+				if err != nil {
+					t.Fatal(err.Error())
+				}
+				ddRef.Print(t)
+				for path, expected := range expectSet {
+					ddRef.AssertEqual(t, path, expected)
+				}
 			}
 
 		})
