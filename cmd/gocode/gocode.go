@@ -8,7 +8,6 @@ import (
 
 	"github.com/pentops/custom-proto-api/gen/v1/jsonapi_pb"
 	"github.com/pentops/custom-proto-api/gogen"
-	"github.com/pentops/custom-proto-api/jsonapi"
 	"github.com/pentops/custom-proto-api/structure"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -39,21 +38,6 @@ func main() {
 	config := &jsonapi_pb.Config{}
 	if err := protoyaml.Unmarshal(configData, config); err != nil {
 		log.Fatal(err.Error())
-	}
-
-	codecOptions := jsonapi.Options{
-		ShortEnums: &jsonapi.ShortEnumsOption{
-			UnspecifiedSuffix: "UNSPECIFIED",
-			StrictUnmarshal:   true,
-		},
-		WrapOneof: config.Options.WrapOneof,
-	}
-
-	if config.Options.ShortEnums != nil {
-		codecOptions.ShortEnums = &jsonapi.ShortEnumsOption{
-			UnspecifiedSuffix: config.Options.ShortEnums.UnspecifiedSuffix,
-			StrictUnmarshal:   config.Options.ShortEnums.StrictUnmarshal,
-		}
 	}
 
 	descriptors, err := structure.ReadFileDescriptorSet(*src)

@@ -33,9 +33,9 @@ type Package struct {
 	Name   string `json:"name"`
 	Hidden bool   `json:"hidden"`
 
-	Introduction string    `json:"introduction,omitempty"`
-	Methods      []*Method `json:"methods"`
-	Entities     []*Entity `json:"entities"`
+	Introduction string       `json:"introduction,omitempty"`
+	Methods      []*Method    `json:"methods"`
+	Events       []*EventSpec `json:"events"`
 }
 
 type Method struct {
@@ -51,7 +51,8 @@ type Method struct {
 	PathParameters  []*Parameter        `json:"pathParameters,omitempty"`
 }
 
-type Entity struct {
+type EventSpec struct {
+	Name        string              `json:"name"`
 	StateSchema *jsonapi.SchemaItem `json:"stateSchema,omitempty"`
 	EventSchema *jsonapi.SchemaItem `json:"eventSchema,omitempty"`
 }
@@ -135,10 +136,7 @@ func BuildFromDescriptors(config *jsonapi_pb.Config, descriptors *descriptorpb.F
 	}
 
 	for _, service := range services {
-		name := service.FullName()
-		if !strings.HasSuffix(string(name), "Service") {
-			continue
-		}
+		name := string(service.FullName())
 		packageName := string(service.ParentFile().Package())
 
 		for _, suffix := range b.trimPackages {
@@ -149,9 +147,19 @@ func BuildFromDescriptors(config *jsonapi_pb.Config, descriptors *descriptorpb.F
 			continue
 		}
 
-		if err := b.addService(service); err != nil {
-			return nil, err
+		if strings.HasSuffix(name, "Service") {
+			if err := b.addService(service); err != nil {
+				return nil, err
+			}
+		} else if strings.HasSuffix(name, "Events") {
+			if err := b.addEvents(service); err != nil {
+				return nil, err
+			}
+		} else if strings.HasSuffix(name, "Topic") {
+		} else {
+			return nil, fmt.Errorf("unsupported service name %q", name)
 		}
+
 	}
 
 	bb := &Built{
@@ -198,6 +206,50 @@ func (bb *builder) getPackage(file protoreflect.FileDescriptor) (*Package, error
 	return pkg, nil
 }
 
+func (bb *builder) addEvents(src protoreflect.ServiceDescriptor) error {
+	methods := src.Methods()
+	for ii := 0; ii < methods.Len(); ii++ {
+		method := methods.Get(ii)
+
+		msgFields := method.Input().Fields()
+
+		eventMsg := msgFields.ByJSONName("event")
+		if eventMsg == nil {
+			return fmt.Errorf("missing event field in %s", method.Input().FullName())
+		}
+
+		eventSchema, err := bb.schemas.BuildSchemaObject(eventMsg.Message())
+		if err != nil {
+			return err
+		}
+
+		eventSpec := &EventSpec{
+			Name:        string(method.Name()),
+			EventSchema: eventSchema,
+		}
+
+		stateMsg := msgFields.ByJSONName("state")
+		if stateMsg != nil {
+
+			stateSchema, err := bb.schemas.BuildSchemaObject(stateMsg.Message())
+			if err != nil {
+				return err
+			}
+			eventSpec.StateSchema = stateSchema
+		}
+
+		pkg, err := bb.getPackage(method.ParentFile())
+		if err != nil {
+			return err
+		}
+
+		pkg.Events = append(pkg.Events, eventSpec)
+
+	}
+	return nil
+
+}
+
 func (bb *builder) addService(src protoreflect.ServiceDescriptor) error {
 	methods := src.Methods()
 	name := string(src.FullName())
@@ -238,6 +290,7 @@ func convertPath(path string) (string, error) {
 	}
 	return strings.Join(parts, "/"), nil
 }
+
 func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDescriptor) (*Method, error) {
 
 	methodOptions := method.Options().(*descriptorpb.MethodOptions)

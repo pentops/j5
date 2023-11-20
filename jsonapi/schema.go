@@ -111,7 +111,6 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 		pending, ok := pendingOneofProps[name]
 		if ok {
 			obj.Properties = append(obj.Properties, pending)
-			fmt.Fprintf(os.Stderr, "added pending oneof %s\n", name)
 			delete(pendingOneofProps, name)
 		}
 	}
