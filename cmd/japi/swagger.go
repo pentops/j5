@@ -110,7 +110,7 @@ func runImage(ctx context.Context, osArgs []string) error {
 		return err
 	}
 
-	fmt.Println(string(bb))
+	os.Stdout.Write(bb)
 	return nil
 }
 
