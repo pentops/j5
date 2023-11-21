@@ -127,7 +127,7 @@ func TestBuild(t *testing.T) {
 		t.Errorf("unexpected description: '%s'", refSchema.Description)
 	}
 
-	asObject := refSchema.ItemType.(jsonapi.ObjectItem)
+	asObject := refSchema.ItemType.(*jsonapi.ObjectItem)
 	if len(asObject.Properties) != 2 {
 		t.Fatalf("unexpected properties: %d", len(asObject.Properties))
 	}

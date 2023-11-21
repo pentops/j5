@@ -29,13 +29,27 @@ func NewSchemaSet(options Options) *SchemaSet {
 	}
 }
 
+func walkName(src protoreflect.MessageDescriptor) string {
+	goTypeName := string(src.Name())
+	parent := src.Parent()
+	// if parent is a message
+	msg, ok := parent.(protoreflect.MessageDescriptor)
+	if !ok {
+		return goTypeName
+	}
+
+	return fmt.Sprintf("%s_%s", walkName(msg), goTypeName)
+
+}
 func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*SchemaItem, error) {
 
-	obj := ObjectItem{
+	goTypeName := walkName(src)
+
+	obj := &ObjectItem{
 		ProtoMessageName: string(src.FullName()),
 		GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
 		GRPCPackage:      string(src.ParentFile().Package()),
-		GoTypeName:       string(src.Name()),
+		GoTypeName:       goTypeName,
 
 		Properties: make([]*ObjectProperty, 0, src.Fields().Len()),
 	}
@@ -65,9 +79,13 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 		}
 
 		oneofName := string(oneof.Name())
+		syntheticTypeName := fmt.Sprintf("%s_%s", src.Name(), oneofName)
 		oneofObject := &ObjectItem{
 			ProtoMessageName: string(oneof.FullName()),
 			IsOneof:          true,
+			GoTypeName:       syntheticTypeName,
+			GoPackageName:    obj.GoPackageName,
+			GRPCPackage:      obj.GRPCPackage,
 		}
 		prop := &ObjectProperty{
 			ProtoFieldName: string(oneof.Name()),
@@ -105,7 +123,6 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 
 		name := string(inOneof.Name())
 
-		obj.Properties = append(obj.Properties, prop)
 		oneof, ok := oneofs[name]
 		if !ok {
 			obj.Properties = append(obj.Properties, prop)
@@ -190,24 +207,28 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 	// second _ prevents a panic when the exception is not set
 	constraint, _ := proto.GetExtension(src.Options(), validate.E_Field).(*validate.FieldConstraints)
 
-	if constraint != nil {
+	if constraint != nil && !constraint.Skipped {
 		if constraint.Required {
 			prop.Required = true
 		}
-		// TODO: Others
+		// constraint.IgnoreEmpty doesn't really apply
 	}
 
 	// TODO: Validation / Rules
-	// TODO: Oneof (meta again?)
-	// TODO: Repeated
 	// TODO: Map
 	// TODO: Extra types (see below)
 
 	switch src.Kind() {
 	case protoreflect.BoolKind:
-		prop.SchemaItem = SchemaItem{
-			ItemType: BooleanItem{},
+		boolConstraint := constraint.GetBool()
+		boolItem := BooleanItem{}
+		if boolConstraint.Const != nil {
+			boolItem.BooleanRules.Const = Value(*boolConstraint.Const)
 		}
+		prop.SchemaItem = SchemaItem{
+			ItemType: boolItem,
+		}
+		prop.Required = true
 
 	case protoreflect.EnumKind:
 		enumConstraint := constraint.GetEnum()
@@ -581,7 +602,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (*SchemaItem, bool) {
 
 	case "google.protobuf.Struct":
 		return &SchemaItem{
-			ItemType: ObjectItem{
+			ItemType: &ObjectItem{
 				GoTypeName:           "map[string]interface{}",
 				AdditionalProperties: true,
 			},
@@ -757,6 +778,7 @@ func (ri BooleanItem) TypeName() string {
 }
 
 type BooleanRules struct {
+	Const Optional[bool] `json:"const,omitempty"`
 }
 
 type ArrayItem struct {
@@ -789,7 +811,7 @@ type ObjectItem struct {
 	GRPCPackage   string `json:"-"`
 }
 
-func (ri ObjectItem) TypeName() string {
+func (ri *ObjectItem) TypeName() string {
 	return "object"
 }
 

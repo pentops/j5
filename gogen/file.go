@@ -51,15 +51,18 @@ func (g *StringGen) ChildGen() *StringGen {
 // between parameters.
 func (g *StringGen) P(v ...interface{}) {
 	for _, x := range v {
-		if packaged, ok := x.(PackagedIdentity); ok {
-			specified := packaged.PackageName()
+		if packaged, ok := x.(DataType); ok {
+			if packaged.Package == "" {
+				fmt.Fprint(g.buf, packaged.Prefix(), packaged.Name)
+				continue
+			}
+
+			specified := packaged.Package
 			if specified == g.myPackage {
-				fmt.Fprint(g.buf, packaged.Identity())
+				fmt.Fprint(g.buf, packaged.Prefix(), packaged.Name)
 			} else {
-				packageName := g.ImportPath(packaged.PackageName())
-				fmt.Fprint(g.buf, packageName)
-				fmt.Fprint(g.buf, ".")
-				fmt.Fprint(g.buf, packaged.Identity())
+				importedName := g.ImportPath(packaged.Package)
+				fmt.Fprint(g.buf, packaged.Prefix(), importedName, ".", packaged.Name)
 			}
 		} else {
 			fmt.Fprint(g.buf, x)
@@ -171,12 +174,16 @@ func (gen *GeneratedFile) Service(serviceName string) *Struct {
 	constructor := &Function{
 		Name: fmt.Sprintf("New%s", serviceName),
 		Parameters: []*Parameter{{
-			Name:     "requester",
-			DataType: "Requester",
+			Name: "requester",
+			DataType: DataType{
+				Name: "Requester",
+			},
 		}},
 		Returns: []*Parameter{{
-			DataType: serviceName,
-			Pointer:  true,
+			DataType: DataType{
+				Name:    serviceName,
+				Pointer: true,
+			},
 		}},
 		StringGen: gen.ChildGen(),
 	}
@@ -188,7 +195,9 @@ func (gen *GeneratedFile) Service(serviceName string) *Struct {
 	service := &Struct{
 		Name: serviceName,
 		Fields: []*Field{{
-			DataType: "Requester",
+			DataType: DataType{
+				Name: "Requester",
+			},
 			// Anon
 		}},
 		Constructors: []*Function{constructor},
@@ -210,15 +219,33 @@ func (gen *GeneratedFile) EnsureInterface(ii *Interface) {
 
 type Field struct {
 	Name     string
-	DataType interface{}
-	Pointer  bool
+	DataType DataType
 	Tags     map[string]string
+}
+
+type DataType struct {
+	Name    string // string or GoIdent
+	Package string // Leave empty for no package
+	Pointer bool
+	Slice   bool
+}
+
+func (dt DataType) Prefix() string {
+
+	ptr := ""
+	if dt.Slice && dt.Pointer {
+		ptr = "[]*"
+	} else if dt.Slice {
+		ptr = "[]"
+	} else if dt.Pointer {
+		ptr = "*"
+	}
+	return ptr
 }
 
 type Parameter struct {
 	Name     string
-	DataType interface{}
-	Pointer  bool
+	DataType DataType
 }
 
 type Function struct {
@@ -242,22 +269,14 @@ func (f *Function) signature() []interface{} {
 			parts = append(parts, ", ")
 		}
 
-		ptr := ""
-		if parameter.Pointer {
-			ptr = "*"
-		}
-		parts = append(parts, parameter.Name, " ", ptr, parameter.DataType)
+		parts = append(parts, parameter.Name, " ", parameter.DataType)
 	}
 	parts = append(parts, ") (")
 	for idx, parameter := range f.Returns {
 		if idx > 0 {
 			parts = append(parts, ", ")
 		}
-		ptr := ""
-		if parameter.Pointer {
-			ptr = "*"
-		}
-		parts = append(parts, ptr, parameter.DataType)
+		parts = append(parts, parameter.DataType)
 	}
 	parts = append(parts, ")")
 	return parts
@@ -292,6 +311,7 @@ func (f *Function) PrintAsMethod(gen *StringGen, methodOf string) {
 
 type Struct struct {
 	Name         string
+	Comment      string
 	Constructors []*Function
 	Methods      []*Function
 	Fields       []*Field
@@ -311,11 +331,12 @@ func tagString(tags map[string]string) string {
 
 func (ss *Struct) Print(gen *StringGen) {
 
+	gen.P("// ", ss.Name, " ", ss.Comment)
 	gen.P("type ", ss.Name, " struct {")
 	for _, field := range ss.Fields {
 		tags := tagString(field.Tags)
 		if field.Name == "" {
-			gen.P("  ", field.DataType, " ", tags)
+			gen.P("  ", field.DataType.Prefix(), field.DataType.Name, " ", tags)
 		} else {
 			gen.P("  ", field.Name, " ", field.DataType, " ", tags)
 		}
@@ -344,13 +365,6 @@ func (ii *Interface) Print(gen *StringGen) {
 	}
 	gen.P("}")
 	gen.P()
-}
-
-func ImportedName(fullPackage, identity string) GoIdent {
-	return GoIdent{
-		Package: fullPackage,
-		Name:    identity,
-	}
 }
 
 func (g *GeneratedFile) ExportBytes() ([]byte, error) {

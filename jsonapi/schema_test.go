@@ -35,7 +35,7 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	obj, ok := schemaItem.ItemType.(ObjectItem)
+	obj, ok := schemaItem.ItemType.(*ObjectItem)
 	if !ok {
 		t.Fatalf("expected object item, got %T", schemaItem.ItemType)
 	}
@@ -416,7 +416,7 @@ func TestCommentBuilder(t *testing.T) {
 func TestSchemaJSONMarshal(t *testing.T) {
 
 	object := SchemaItem{
-		ItemType: ObjectItem{
+		ItemType: &ObjectItem{
 			debug: "a",
 			Properties: []*ObjectProperty{{
 				Name: "id",
@@ -442,7 +442,7 @@ func TestSchemaJSONMarshal(t *testing.T) {
 			}, {
 				Name: "object",
 				SchemaItem: SchemaItem{
-					ItemType: ObjectItem{
+					ItemType: &ObjectItem{
 						debug: "b",
 						Properties: []*ObjectProperty{{
 							Name:     "foo",

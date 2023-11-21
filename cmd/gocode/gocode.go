@@ -4,13 +4,11 @@ import (
 	"flag"
 	"log"
 	"os"
-	"strings"
+	"path/filepath"
 
 	"github.com/pentops/custom-proto-api/gen/v1/jsonapi_pb"
 	"github.com/pentops/custom-proto-api/gogen"
 	"github.com/pentops/custom-proto-api/structure"
-	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
 
 	protoyaml "github.com/bufbuild/protoyaml-go"
 )
@@ -45,32 +43,7 @@ func main() {
 		log.Fatal(err.Error())
 	}
 
-	services := make([]protoreflect.ServiceDescriptor, 0)
-	descFiles, err := protodesc.NewFiles(descriptors)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	descFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {
-		fileServices := file.Services()
-		for ii := 0; ii < fileServices.Len(); ii++ {
-			service := fileServices.Get(ii)
-			services = append(services, service)
-		}
-		return true
-	})
-
-	filteredServices := make([]protoreflect.ServiceDescriptor, 0)
-	for _, service := range services {
-		name := service.FullName()
-		if !strings.HasSuffix(string(name), "Service") {
-			continue
-		}
-
-		filteredServices = append(filteredServices, service)
-	}
-
-	document, err := structure.Build(codecOptions, filteredServices)
+	document, err := structure.BuildFromDescriptors(config, descriptors, structure.DirResolver(filepath.Dir(*configFile)))
 	if err != nil {
 		log.Fatal(err.Error())
 	}

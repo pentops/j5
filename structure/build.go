@@ -278,16 +278,22 @@ func (bb *builder) addService(src protoreflect.ServiceDescriptor) error {
 
 var rePathParameter = regexp.MustCompile(`\{([^\}]+)\}`)
 
-func convertPath(path string) (string, error) {
+func convertPath(path string, requestObject protoreflect.MessageDescriptor) (string, error) {
 	parts := strings.Split(path, "/")
+	requestFields := requestObject.Fields()
 	for idx, part := range parts {
 		if part == "" {
 			continue
 		}
 
 		if part[0] == '{' && part[len(part)-1] == '}' {
-			part = ":" + part[1:len(part)-1]
-			parts[idx] = part
+			fieldName := part[1 : len(part)-1]
+			field := requestFields.ByName(protoreflect.Name(fieldName))
+			if field == nil {
+				return "", fmt.Errorf("path parameter %q not found in request object", fieldName)
+			}
+
+			parts[idx] = ":" + field.JSONName()
 		} else if strings.ContainsAny(part, "{}*:") {
 			return "", fmt.Errorf("invalid path part %q", part)
 		}
@@ -328,7 +334,7 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 		return nil, fmt.Errorf("unsupported http method %T", pt)
 	}
 
-	converted, err := convertPath(httpPath)
+	converted, err := convertPath(httpPath, method.Input())
 	if err != nil {
 		return nil, err
 	}
@@ -353,8 +359,7 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 		return nil, err
 	}
 
-	requestObjectRaw := request.ItemType.(jsonapi.ObjectItem)
-	requestObject := &requestObjectRaw
+	requestObject := request.ItemType.(*jsonapi.ObjectItem)
 
 	for _, paramStr := range rePathParameter.FindAllString(httpPath, -1) {
 		name := paramStr[1 : len(paramStr)-1]
@@ -370,7 +375,7 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 
 		prop.Skip = true
 		builtMethod.PathParameters = append(builtMethod.PathParameters, &Parameter{
-			Name:     prop.ProtoFieldName, // Special case for Path Parameters
+			Name:     prop.Name,
 			Required: true,
 			Schema:   prop.SchemaItem,
 		})
@@ -386,7 +391,7 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 			})
 		}
 	} else if httpOpt.Body == "*" {
-		request.ItemType = *requestObject
+		request.ItemType = requestObject
 		builtMethod.RequestBody = request
 	} else {
 		return nil, fmt.Errorf("unsupported body type %q", httpOpt.Body)
