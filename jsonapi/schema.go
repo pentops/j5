@@ -46,10 +46,11 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 	goTypeName := walkName(src)
 
 	obj := &ObjectItem{
-		ProtoMessageName: string(src.FullName()),
-		GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
-		GRPCPackage:      string(src.ParentFile().Package()),
-		GoTypeName:       goTypeName,
+		FullProtoName: string(src.FullName()),
+		ProtoName:     string(src.Name()),
+		GoPackageName: src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
+		GRPCPackage:   string(src.ParentFile().Package()),
+		GoTypeName:    goTypeName,
 
 		Properties: make([]*ObjectProperty, 0, src.Fields().Len()),
 	}
@@ -81,16 +82,17 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 		oneofName := string(oneof.Name())
 		syntheticTypeName := fmt.Sprintf("%s_%s", src.Name(), oneofName)
 		oneofObject := &ObjectItem{
-			ProtoMessageName: string(oneof.FullName()),
-			IsOneof:          true,
-			GoTypeName:       syntheticTypeName,
-			GoPackageName:    obj.GoPackageName,
-			GRPCPackage:      obj.GRPCPackage,
+			FullProtoName: string(oneof.FullName()),
+			ProtoName:     oneofName,
+			IsOneof:       true,
+			GoTypeName:    syntheticTypeName,
+			GoPackageName: obj.GoPackageName,
+			GRPCPackage:   obj.GRPCPackage,
 		}
 		prop := &ObjectProperty{
 			ProtoFieldName: string(oneof.Name()),
 			Name:           string(oneof.Name()),
-			Description:    commentDescription(src, ""),
+			Description:    commentDescription(src),
 			SchemaItem: SchemaItem{
 				ItemType: oneofObject,
 			},
@@ -144,7 +146,7 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 		return nil, fmt.Errorf("oneof %s has not been added", pending.Name)
 	}
 
-	description := commentDescription(src, string(src.Name()))
+	description := commentDescription(src)
 
 	return &SchemaItem{
 		Description: description,
@@ -152,9 +154,9 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 	}, nil
 }
 
-func commentDescription(src protoreflect.Descriptor, fallback string) string {
+func commentDescription(src protoreflect.Descriptor) string {
 	sourceLocation := src.ParentFile().SourceLocations().ByDescriptor(src)
-	return buildComment(sourceLocation, fallback)
+	return buildComment(sourceLocation, "")
 }
 
 func buildComment(sourceLocation protoreflect.SourceLocation, fallback string) string {
@@ -201,7 +203,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 		ProtoFieldName:   string(src.Name()),
 		ProtoFieldNumber: int(src.Number()),
 		Name:             string(src.JSONName()),
-		Description:      commentDescription(src, ""),
+		Description:      commentDescription(src),
 	}
 
 	// second _ prevents a panic when the exception is not set
@@ -222,8 +224,11 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 	case protoreflect.BoolKind:
 		boolConstraint := constraint.GetBool()
 		boolItem := BooleanItem{}
-		if boolConstraint.Const != nil {
-			boolItem.BooleanRules.Const = Value(*boolConstraint.Const)
+
+		if boolConstraint != nil {
+			if boolConstraint.Const != nil {
+				boolItem.BooleanRules.Const = Value(*boolConstraint.Const)
+			}
 		}
 		prop.SchemaItem = SchemaItem{
 			ItemType: boolItem,
@@ -649,7 +654,6 @@ type SchemaItem struct {
 
 	ItemType
 	Description string `json:"description,omitempty"`
-	Mutex       string `json:"x-mutex,omitempty"`
 }
 
 func (si SchemaItem) fieldMap() (map[string]json.RawMessage, error) {
@@ -800,11 +804,12 @@ type ObjectItem struct {
 	ObjectRules
 	Properties           []*ObjectProperty `json:"properties,omitempty"`
 	Required             []string          `json:"required,omitempty"`
-	ProtoMessageName     string            `json:"x-message"`
 	AdditionalProperties bool              `json:"additionalProperties,omitempty"`
 	debug                string
 
-	IsOneof bool `json:"x-is-oneof,omitempty"`
+	FullProtoName string `json:"x-proto-full-name"`
+	ProtoName     string `json:"x-proto-name"`
+	IsOneof       bool   `json:"x-is-oneof,omitempty"`
 
 	GoPackageName string `json:"-"`
 	GoTypeName    string `json:"-"`
@@ -842,6 +847,10 @@ func (op ObjectItem) GetProperty(name string) (*ObjectProperty, bool) {
 }
 
 func (op ObjectItem) jsonFieldMap(out map[string]json.RawMessage) error {
+	if err := jsonFieldMapFromStructFields(op, out); err != nil {
+		return err
+	}
+
 	properties := map[string]map[string]json.RawMessage{}
 	required := []string{}
 	for _, prop := range op.Properties {

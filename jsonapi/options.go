@@ -91,7 +91,7 @@ func (se *ShortEnumsOption) EnumValues(src protoreflect.EnumValueDescriptors, co
 		values = append(values, EnumValueDescription{
 			Name:        string(option.Name()),
 			Number:      number,
-			Description: commentDescription(option, ""),
+			Description: commentDescription(option),
 		})
 	}
 
