@@ -13,7 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/pentops/custom-proto-api/testproto/gen/testpb"
+	"github.com/pentops/jsonapi/testproto/gen/testpb"
 )
 
 func TestUnmarshal(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"github.com/google/uuid"
-	"github.com/pentops/custom-proto-api/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"

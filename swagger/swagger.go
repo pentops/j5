@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pentops/custom-proto-api/jsonapi"
-	"github.com/pentops/custom-proto-api/structure"
+	"github.com/pentops/jsonapi/jsonapi"
+	"github.com/pentops/jsonapi/structure"
 )
 
 type Document struct {
