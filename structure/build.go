@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pentops/custom-proto-api/gen/v1/jsonapi_pb"
-	"github.com/pentops/custom-proto-api/jsonapi"
+	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/jsonapi"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -76,6 +76,39 @@ func (dr DirResolver) ResolveProse(filename string) (string, error) {
 		return "", err
 	}
 	return string(data), nil
+}
+
+type mapResolver map[string]string
+
+func (mr mapResolver) ResolveProse(filename string) (string, error) {
+	data, ok := mr[filename]
+	if !ok {
+		return "", fmt.Errorf("prose file %q not found", filename)
+	}
+	return data, nil
+}
+
+func imageResolver(proseFiles []*jsonapi_pb.ProseFile) ProseResolver {
+	mr := make(mapResolver)
+	for _, proseFile := range proseFiles {
+		mr[proseFile.Path] = string(proseFile.Content)
+	}
+	return mr
+}
+
+func BuildFromImage(image *jsonapi_pb.Image) (*Built, error) {
+	proseResolver := imageResolver(image.Prose)
+
+	descriptors := &descriptorpb.FileDescriptorSet{
+		File: image.File,
+	}
+
+	config := &jsonapi_pb.Config{
+		Packages: image.Packages,
+		Options:  image.Codec,
+	}
+
+	return BuildFromDescriptors(config, descriptors, proseResolver)
 }
 
 func BuildFromDescriptors(config *jsonapi_pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*Built, error) {
@@ -196,16 +229,6 @@ func (bb *builder) getPackage(file protoreflect.FileDescriptor) (*Package, error
 			Name: name,
 		}
 		bb.packages = append(bb.packages, pkg)
-	}
-
-	packageOptions := proto.GetExtension(file.Options(), jsonapi_pb.E_Package).(*jsonapi_pb.PackageOptions)
-	if packageOptions != nil {
-		if packageOptions.Label != "" {
-			if pkg.Label != "" && pkg.Label != packageOptions.Label {
-				return nil, fmt.Errorf("package %q has conflicting labels %q and %q", name, pkg.Label, packageOptions.Label)
-			}
-			pkg.Label = packageOptions.Label
-		}
 	}
 
 	return pkg, nil

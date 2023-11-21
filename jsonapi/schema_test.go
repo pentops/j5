@@ -224,9 +224,9 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"description": "TestMessage",
-			"type":        "object",
-			"properties":  LenEqual(0),
+			"x-proto-name": "TestMessage",
+			"type":         "object",
+			"properties":   LenEqual(0),
 		},
 	}, {
 		name: "array field",
@@ -244,7 +244,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"description":               "TestMessage",
+			"x-proto-name":              "TestMessage",
 			"type":                      "object",
 			"properties.testField.type": "array",
 		},
@@ -286,7 +286,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"description":               "TestMessage",
+			"x-proto-name":              "TestMessage",
 			"type":                      "object",
 			"properties":                LenEqual(1),
 			"properties.testField.$ref": "test.TestEnum",

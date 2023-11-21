@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package jsonapi.v1;
+
+import "google/protobuf/descriptor.proto";
+import "jsonapi/v1/config.proto";
+
+option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
+
+message Image {
+  repeated google.protobuf.FileDescriptorProto file = 1;
+  repeated PackageConfig packages = 2;
+  repeated ProseFile prose = 3;
+  CodecOptions codec = 4;
+}
+
+message ProseFile {
+  string path = 1;
+  bytes content = 2;
+}

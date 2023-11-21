@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pentops/custom-proto-api/jsonapi"
-	"github.com/pentops/custom-proto-api/structure"
+	"github.com/pentops/jsonapi/jsonapi"
+	"github.com/pentops/jsonapi/structure"
 )
 
 type Options struct {
@@ -214,7 +214,7 @@ func (bb *builder) addObject(object *jsonapi.ObjectItem) error {
 		Name: object.GoTypeName,
 		Comment: fmt.Sprintf(
 			"Proto: %s",
-			object.ProtoMessageName,
+			object.FullProtoName,
 		),
 	}
 	gen.types[object.GoTypeName] = structType

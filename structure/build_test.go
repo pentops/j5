@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pentops/custom-proto-api/gen/v1/jsonapi_pb"
-	"github.com/pentops/custom-proto-api/jsonapi"
+	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/jsonapi"
 	"github.com/pentops/o5-runtime-sidecar/testproto"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
