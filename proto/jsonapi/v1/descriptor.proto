@@ -12,6 +12,7 @@ message Image {
   repeated PackageConfig packages = 2;
   repeated ProseFile prose = 3;
   CodecOptions codec = 4;
+  RegistryConfig registry = 5;
 }
 
 message ProseFile {

@@ -8,6 +8,7 @@ option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
 message Config {
   repeated PackageConfig packages = 1;
   CodecOptions options = 2;
+  RegistryConfig registry = 3;
 }
 
 message PackageConfig {
@@ -25,4 +26,9 @@ message CodecOptions {
 message ShortEnumOptions {
   string unspecified_suffix = 1;
   bool strict_unmarshal = 2;
+}
+
+message RegistryConfig {
+  string organization = 1;
+  string name = 2;
 }
