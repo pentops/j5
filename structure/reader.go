@@ -162,6 +162,7 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*jsonapi_pb.Image,
 		Packages: config.Packages,
 		Codec:    config.Options,
 		Prose:    proseFiles,
+		Registry: config.Registry,
 	}, nil
 
 }

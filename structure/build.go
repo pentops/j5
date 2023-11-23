@@ -88,6 +88,28 @@ func (mr mapResolver) ResolveProse(filename string) (string, error) {
 	return data, nil
 }
 
+func removeMarkdownHeader(data string) string {
+	// only look at the first 5 lines, that should be well enough to deal with
+	// both title formats (# or \n===), and a few trailing empty lines
+
+	lines := strings.SplitN(data, "\n", 5)
+	if len(lines) == 0 {
+		return ""
+	}
+	if strings.HasPrefix(lines[0], "# ") {
+		lines = lines[1:]
+	} else if strings.HasPrefix(lines[1], "==") {
+		lines = lines[2:]
+	}
+
+	// Remove any leading empty lines
+	for len(lines) > 1 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+
+	return strings.Join(lines, "\n")
+}
+
 func imageResolver(proseFiles []*jsonapi_pb.ProseFile) ProseResolver {
 	mr := make(mapResolver)
 	for _, proseFile := range proseFiles {
@@ -164,6 +186,7 @@ func BuildFromDescriptors(config *jsonapi_pb.Config, descriptors *descriptorpb.F
 			if err != nil {
 				return nil, fmt.Errorf("package %s: %w", pkg.Name, err)
 			}
+			prose = removeMarkdownHeader(prose)
 		}
 
 		b.packages = append(b.packages, &Package{
