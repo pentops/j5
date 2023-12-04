@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
 	"github.com/pentops/sugar-go/v1/sugar_pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -105,7 +106,13 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 			continue
 		}
 		if !isOneofWrapper && dec.Options.WrapOneof && protoField.ContainingOneof() != nil {
-			return fmt.Errorf("field %s is part of a oneof", keyTokenStr)
+			containingOneof := protoField.ContainingOneof()
+			if !containingOneof.IsSynthetic() {
+				ext := proto.GetExtension(containingOneof.Options(), jsonapi_pb.E_Oneof).(*jsonapi_pb.OneofOptions)
+				if ext != nil && ext.Expose {
+					return fmt.Errorf("field '%s' is should be '%s.%s'", keyTokenStr, containingOneof.Name(), keyTokenStr)
+				}
+			}
 		}
 
 		if protoField.IsMap() {

@@ -403,7 +403,7 @@ func (bb *builder) addOperation(fullGoPackage string, operation *structure.Metho
 				return fmt.Errorf("path parameter %q not found in request object %s", name, requestType)
 			}
 
-			pathParts[idx] = "%q"
+			pathParts[idx] = "%s"
 
 			pathParams = append(pathParams, fmt.Sprintf("req.%s", field.Name))
 		}
