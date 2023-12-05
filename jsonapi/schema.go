@@ -216,6 +216,10 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 		// constraint.IgnoreEmpty doesn't really apply
 	}
 
+	if !prop.Required && src.HasOptionalKeyword() {
+		prop.Optional = true
+	}
+
 	// TODO: Validation / Rules
 	// TODO: Map
 	// TODO: Extra types (see below)
@@ -893,6 +897,7 @@ type ObjectProperty struct {
 	Description      string `json:"description,omitempty"`
 	ProtoFieldName   string `json:"x-proto-name,omitempty"`
 	ProtoFieldNumber int    `json:"x-proto-number,omitempty"`
+	Optional         bool   `json:"x-proto-optional"` // The proto field is marked as optional, go code etc should use a pointer
 }
 
 func (op ObjectProperty) jsonFieldMap(out map[string]json.RawMessage) error {

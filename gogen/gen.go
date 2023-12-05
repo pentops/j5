@@ -186,7 +186,7 @@ func (bb *builder) jsonField(property *jsonapi.ObjectProperty) (*Field, error) {
 		return nil, fmt.Errorf("building type %#v: %w", property.Name, err)
 	}
 
-	if !dataType.Pointer && !property.Required && !dataType.Slice {
+	if !dataType.Pointer && !dataType.Slice && property.Optional {
 		dataType.Pointer = true
 	}
 
