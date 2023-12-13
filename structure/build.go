@@ -212,6 +212,10 @@ func BuildFromDescriptors(config *jsonapi_pb.Config, descriptors *descriptorpb.F
 			if err := b.addService(service); err != nil {
 				return nil, err
 			}
+		} else if strings.HasSuffix(name, "Sandbox") {
+			if err := b.addService(service); err != nil {
+				return nil, err
+			}
 		} else if strings.HasSuffix(name, "Events") {
 			if err := b.addEvents(service); err != nil {
 				return nil, err

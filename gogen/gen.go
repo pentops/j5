@@ -23,6 +23,7 @@ func (o Options) ToGoPackage(pkg string) string {
 
 	pkg = strings.TrimSuffix(pkg, ".service")
 	pkg = strings.TrimSuffix(pkg, ".topic")
+	pkg = strings.TrimSuffix(pkg, ".sandbox")
 
 	parts := strings.Split(pkg, ".")
 	nextName := parts[len(parts)-2]
@@ -40,7 +41,7 @@ func scalarTypeName(item jsonapi.SchemaItem) (*DataType, error) {
 	switch item := item.ItemType.(type) {
 	case jsonapi.StringItem:
 		switch item.Format {
-		case "", "uuid", "date":
+		case "", "uuid", "date", "email":
 			return &DataType{
 				Name:    "string",
 				Pointer: false,
@@ -50,6 +51,11 @@ func scalarTypeName(item jsonapi.SchemaItem) (*DataType, error) {
 				Name:    "Time",
 				Pointer: true,
 				Package: "time",
+			}, nil
+		case "byte":
+			return &DataType{
+				Name:    "[]byte",
+				Pointer: false,
 			}, nil
 		default:
 			return nil, fmt.Errorf("Unknown string format: %s", item.Format)
@@ -186,7 +192,7 @@ func (bb *builder) jsonField(property *jsonapi.ObjectProperty) (*Field, error) {
 		return nil, fmt.Errorf("building type %#v: %w", property.Name, err)
 	}
 
-	if !dataType.Pointer && !property.Required && !dataType.Slice {
+	if !dataType.Pointer && !dataType.Slice && property.Optional {
 		dataType.Pointer = true
 	}
 
