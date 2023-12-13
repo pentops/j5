@@ -23,6 +23,13 @@ func (dec *decoder) decodeScalarField(field protoreflect.FieldDescriptor) (proto
 		}
 		return protoreflect.ValueOfString(str), nil
 
+	case protoreflect.BoolKind:
+		b, ok := tok.(bool)
+		if !ok {
+			return protoreflect.Value{}, fmt.Errorf("expected bool but got %v", tok)
+		}
+		return protoreflect.ValueOfBool(b), nil
+
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
 		i, ok := tok.(json.Number)
 		if !ok {

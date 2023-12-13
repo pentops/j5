@@ -65,41 +65,43 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 	oneofs := make(map[string]*ObjectItem)
 	pendingOneofProps := make(map[string]*ObjectProperty)
 
-	for idx := 0; idx < src.Oneofs().Len(); idx++ {
-		oneof := src.Oneofs().Get(idx)
-		if oneof.IsSynthetic() {
-			continue
-		}
-		ext := proto.GetExtension(oneof.Options(), jsonapi_pb.E_Oneof).(*jsonapi_pb.OneofOptions)
-
-		if ext == nil || !ext.Expose {
-			if !obj.IsOneof {
-				fmt.Fprintf(os.Stderr, "WARN: no def for oneof %s.%s\n", src.FullName(), oneof.Name())
+	if !obj.IsOneof {
+		for idx := 0; idx < src.Oneofs().Len(); idx++ {
+			oneof := src.Oneofs().Get(idx)
+			if oneof.IsSynthetic() {
+				continue
 			}
-			continue
-		}
+			ext := proto.GetExtension(oneof.Options(), jsonapi_pb.E_Oneof).(*jsonapi_pb.OneofOptions)
 
-		oneofName := string(oneof.Name())
-		syntheticTypeName := fmt.Sprintf("%s_%s", src.Name(), oneofName)
-		oneofObject := &ObjectItem{
-			FullProtoName: string(oneof.FullName()),
-			ProtoName:     oneofName,
-			IsOneof:       true,
-			GoTypeName:    syntheticTypeName,
-			GoPackageName: obj.GoPackageName,
-			GRPCPackage:   obj.GRPCPackage,
-		}
-		prop := &ObjectProperty{
-			ProtoFieldName: string(oneof.Name()),
-			Name:           string(oneof.Name()),
-			Description:    commentDescription(src),
-			SchemaItem: SchemaItem{
-				ItemType: oneofObject,
-			},
-		}
-		pendingOneofProps[oneofName] = prop
-		oneofs[oneofName] = oneofObject
+			if ext == nil || !ext.Expose {
+				if !obj.IsOneof {
+					fmt.Fprintf(os.Stderr, "WARN: no def for oneof %s.%s\n", src.FullName(), oneof.Name())
+				}
+				//continue
+			}
 
+			oneofName := string(oneof.Name())
+			syntheticTypeName := fmt.Sprintf("%s_%s", src.Name(), oneofName)
+			oneofObject := &ObjectItem{
+				FullProtoName: string(oneof.FullName()),
+				ProtoName:     oneofName,
+				IsOneof:       true,
+				GoTypeName:    syntheticTypeName,
+				GoPackageName: obj.GoPackageName,
+				GRPCPackage:   obj.GRPCPackage,
+			}
+			prop := &ObjectProperty{
+				ProtoFieldName: string(oneof.Name()),
+				Name:           string(oneof.Name()),
+				Description:    commentDescription(src),
+				SchemaItem: SchemaItem{
+					ItemType: oneofObject,
+				},
+			}
+			pendingOneofProps[oneofName] = prop
+			oneofs[oneofName] = oneofObject
+
+		}
 	}
 
 	for ii := 0; ii < src.Fields().Len(); ii++ {
@@ -118,7 +120,7 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 		}
 
 		inOneof := field.ContainingOneof()
-		if inOneof == nil || inOneof.IsSynthetic() {
+		if obj.IsOneof || inOneof == nil || inOneof.IsSynthetic() {
 			obj.Properties = append(obj.Properties, prop)
 			continue
 		}
