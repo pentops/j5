@@ -79,7 +79,6 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 	if ext != nil {
 		isOneofWrapper = ext.IsOneofWrapper
 	}
-	fmt.Printf("isOneofWrapper %s %v\n", msg.Descriptor().Name(), isOneofWrapper)
 
 	enc.openObject()
 
