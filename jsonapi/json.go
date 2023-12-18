@@ -86,7 +86,7 @@ func jsonFieldMapFromStructFields(object interface{}, m map[string]json.RawMessa
 			}
 			return nil
 		}
-		return fmt.Errorf("object must be a struct, got %s %T", val.Kind().String(), object)
+		return fmt.Errorf("jsonFieldMap requires a struct, map[string]json.RawMessage or map[string]interface{}, got %s %T", val.Kind().String(), object)
 	}
 
 	for i := 0; i < val.NumField(); i++ {

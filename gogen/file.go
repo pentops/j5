@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -83,19 +82,14 @@ func NewFileSet(prefix string) *FileSet {
 	}
 }
 
-func (fs *FileSet) WriteAll(dir string) error {
-	for fullPackageName, file := range fs.files {
+func (fileSet *FileSet) WriteAll(output FileWriter) error {
+	for fullPackageName, file := range fileSet.files {
 		bb, err := file.ExportBytes()
 		if err != nil {
 			return err
 		}
-		fileName := strings.TrimPrefix(fullPackageName, fs.prefix)
-		fullFilePath := filepath.Join(dir, fileName, "generated.go")
-		if err := os.MkdirAll(filepath.Dir(fullFilePath), 0755); err != nil {
-			return err
-		}
-
-		if err := os.WriteFile(fullFilePath, bb, 0644); err != nil {
+		fileName := strings.TrimPrefix(fullPackageName, fileSet.prefix)
+		if err := output.WriteFile(filepath.Join(fileName, "generated.go"), bb); err != nil {
 			return err
 		}
 	}

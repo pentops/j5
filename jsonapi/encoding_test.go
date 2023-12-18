@@ -208,6 +208,7 @@ func TestUnmarshal(t *testing.T) {
 }
 
 func CompareJSON(t testing.TB, wantSRC, gotSRC []byte) {
+	t.Helper()
 	wantBuff := &bytes.Buffer{}
 	if err := json.Indent(wantBuff, wantSRC, "", "  "); err != nil {
 		t.Fatalf("want json was invalid: %v", err)

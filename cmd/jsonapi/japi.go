@@ -96,7 +96,9 @@ func runGocode(ctx context.Context, osArgs []string) error {
 		AddGoPrefix:       *addGoPrefix,
 	}
 
-	if err := gogen.WriteGoCode(jdefDoc, *outputDir, options); err != nil {
+	output := gogen.DirFileWriter(*outputDir)
+
+	if err := gogen.WriteGoCode(jdefDoc, output, options); err != nil {
 		return err
 	}
 

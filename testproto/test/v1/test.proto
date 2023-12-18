@@ -1,22 +1,20 @@
 syntax = "proto3";
 
-option go_package = "github.com/pentops/custom-proto-api/testproto/gen/testpb";
+package test.v1;
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
-import "sugar/v1/message.proto";
+import "jsonapi/v1/annotations.proto";
 
-package test.v1;
+option go_package = "github.com/pentops/custom-proto-api/testproto/gen/testpb";
 
 service FooService {
-  rpc GetFoo (GetFooRequest) returns (GetFooResponse) {
-    option (google.api.http) = {
-      get: "/test/v1/foo/{id}"
-    };
+  rpc GetFoo(GetFooRequest) returns (GetFooResponse) {
+    option (google.api.http) = {get: "/test/v1/foo/{id}"};
   }
 
-  rpc PostFoo (PostFooRequest) returns (PostFooResponse) {
+  rpc PostFoo(PostFooRequest) returns (PostFooResponse) {
     option (google.api.http) = {
       post: "/test/v1/foo"
       body: "*"
@@ -67,11 +65,10 @@ message PostFooRequest {
   }
 
   WrappedOneof wrapped_oneof = 16;
-
 }
 
 message WrappedOneof {
-  option (sugar.v1.message).oneof_wrapper = true;
+  option (jsonapi.v1.message).is_oneof_wrapper = true;
 
   oneof type {
     string oneof_string = 100;
@@ -99,7 +96,6 @@ message PostFooResponse {
   string field = 3;
 }
 
-
 service FooTopic {
   rpc Foo(FooMessage) returns (google.protobuf.Empty) {}
 }
@@ -109,4 +105,3 @@ message FooMessage {
   string name = 2;
   string field = 3;
 }
-

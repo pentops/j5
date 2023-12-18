@@ -14,6 +14,7 @@ require (
 	github.com/jhump/protoreflect v1.15.3
 	github.com/pentops/o5-runtime-sidecar v0.0.0-20231214005613-dfa320e31fca
 	github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5
+	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/gjson v1.17.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231127180814-3a041ad873d4
 	google.golang.org/grpc v1.59.0
@@ -40,8 +41,10 @@ require (
 	github.com/aws/smithy-go v1.18.1 // indirect
 	github.com/bufbuild/protocompile v0.6.1-0.20231108163138-146b831231f7 // indirect
 	github.com/bufbuild/protovalidate-go v0.4.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/cel-go v0.18.2 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect

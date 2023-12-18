@@ -106,17 +106,52 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*Sch
 
 	for ii := 0; ii < src.Fields().Len(); ii++ {
 		field := src.Fields().Get(ii)
-		prop, err := ss.buildSchemaProperty(field)
-		if err != nil {
-			return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
-		}
 
 		if field.IsList() {
+			prop, err := ss.buildSchemaProperty(field)
+			if err != nil {
+				return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
+			}
 			prop.SchemaItem = SchemaItem{
 				ItemType: ArrayItem{
 					Items: prop.SchemaItem,
 				},
 			}
+			obj.Properties = append(obj.Properties, prop)
+			continue
+
+		}
+		if field.IsMap() {
+			keyProp, err := ss.buildSchemaProperty(field.MapKey())
+			if err != nil {
+				return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
+			}
+
+			valueProp, err := ss.buildSchemaProperty(field.MapValue())
+			if err != nil {
+				return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
+			}
+
+			src := field
+			prop := &ObjectProperty{
+				ProtoFieldName:   string(src.Name()),
+				ProtoFieldNumber: int(src.Number()),
+				Name:             string(src.JSONName()),
+				Description:      commentDescription(src),
+			}
+			prop.SchemaItem = SchemaItem{
+				ItemType: MapItem{
+					KeyProperty:   keyProp.SchemaItem,
+					ValueProperty: valueProp.SchemaItem,
+				},
+			}
+			obj.Properties = append(obj.Properties, prop)
+			continue
+		}
+
+		prop, err := ss.buildSchemaProperty(field)
+		if err != nil {
+			return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 		}
 
 		inOneof := field.ContainingOneof()
@@ -613,9 +648,13 @@ func wktSchema(src protoreflect.MessageDescriptor) (*SchemaItem, bool) {
 
 	case "google.protobuf.Struct":
 		return &SchemaItem{
-			ItemType: &ObjectItem{
-				GoTypeName:           "map[string]interface{}",
-				AdditionalProperties: true,
+			ItemType: &MapItem{
+				KeyProperty: SchemaItem{
+					ItemType: StringItem{},
+				},
+				ValueProperty: SchemaItem{
+					ItemType: EmptySchemaItem{},
+				},
 			},
 		}, true
 
@@ -715,6 +754,12 @@ func (si SchemaItem) MarshalJSON() ([]byte, error) {
 	return json.Marshal(propOut)
 }
 
+type EmptySchemaItem struct{}
+
+func (ri EmptySchemaItem) TypeName() string {
+	return "object"
+}
+
 type StringItem struct {
 	Format  string `json:"format,omitempty"`
 	Example string `json:"example,omitempty"`
@@ -806,12 +851,20 @@ type ArrayRules struct {
 	UniqueItems Optional[bool]   `json:"uniqueItems,omitempty"`
 }
 
+type MapItem struct {
+	ValueProperty SchemaItem `json:"additionalProperties,omitempty"`
+	KeyProperty   SchemaItem `json:"x-key-property,omitempty"` // Only used for maps
+}
+
+func (mi MapItem) TypeName() string {
+	return "object"
+}
+
 type ObjectItem struct {
 	ObjectRules
-	Properties           []*ObjectProperty `json:"properties,omitempty"`
-	Required             []string          `json:"required,omitempty"`
-	AdditionalProperties bool              `json:"additionalProperties,omitempty"`
-	debug                string
+	Properties []*ObjectProperty `json:"properties,omitempty"`
+	Required   []string          `json:"required,omitempty"`
+	debug      string
 
 	FullProtoName string `json:"x-proto-full-name"`
 	ProtoName     string `json:"x-proto-name"`

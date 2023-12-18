@@ -2,6 +2,7 @@ package gogen
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -16,7 +17,11 @@ type Options struct {
 	AddGoPrefix       string
 }
 
-func (o Options) ToGoPackage(pkg string) string {
+func (o Options) ToGoPackage(pkg string) (string, error) {
+	if pkg == "" {
+		return "", fmt.Errorf("empty package")
+	}
+
 	if o.TrimPackagePrefix != "" {
 		pkg = strings.TrimPrefix(pkg, o.TrimPackagePrefix)
 	}
@@ -26,6 +31,9 @@ func (o Options) ToGoPackage(pkg string) string {
 	pkg = strings.TrimSuffix(pkg, ".sandbox")
 
 	parts := strings.Split(pkg, ".")
+	if len(parts) < 2 {
+		return "", fmt.Errorf("invalid package: %s", pkg)
+	}
 	nextName := parts[len(parts)-2]
 	parts = append(parts, nextName)
 
@@ -34,7 +42,7 @@ func (o Options) ToGoPackage(pkg string) string {
 	if o.AddGoPrefix != "" {
 		pkg = path.Join(o.AddGoPrefix, pkg)
 	}
-	return pkg
+	return pkg, nil
 }
 
 func scalarTypeName(item jsonapi.SchemaItem) (*DataType, error) {
@@ -96,7 +104,25 @@ type builder struct {
 	options  Options
 }
 
-func WriteGoCode(document *structure.Built, outputDir string, options Options) error {
+type FileWriter interface {
+	WriteFile(name string, data []byte) error
+}
+
+type DirFileWriter string
+
+func (fw DirFileWriter) WriteFile(relPath string, data []byte) error {
+	fullPath := filepath.Join(string(fw), relPath)
+	dirName := filepath.Dir(fullPath)
+	if err := os.MkdirAll(dirName, 0755); err != nil {
+		return fmt.Errorf("mkdirall for %s: %w", fullPath, err)
+	}
+	if err := os.WriteFile(fullPath, data, 0644); err != nil {
+		return fmt.Errorf("writefile for %s: %w", fullPath, err)
+	}
+	return nil
+}
+
+func WriteGoCode(document *structure.Built, output FileWriter, options Options) error {
 
 	fileSet := NewFileSet(options.AddGoPrefix)
 
@@ -111,7 +137,7 @@ func WriteGoCode(document *structure.Built, outputDir string, options Options) e
 		return err
 	}
 
-	return fileSet.WriteAll(outputDir)
+	return fileSet.WriteAll(output)
 }
 
 func (bb *builder) buildTypeName(schema jsonapi.SchemaItem) (*DataType, error) {
@@ -132,10 +158,13 @@ func (bb *builder) buildTypeName(schema jsonapi.SchemaItem) (*DataType, error) {
 		case *jsonapi.ObjectItem:
 
 			if err := bb.addObject(referredType); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("referencedType in %s: %w", schema.Ref, err)
 			}
 
-			objectPackage := bb.options.ToGoPackage(referredType.GRPCPackage)
+			objectPackage, err := bb.options.ToGoPackage(referredType.GRPCPackage)
+			if err != nil {
+				return nil, fmt.Errorf("referredType in %s: %w", schema.Ref, err)
+			}
 
 			return &DataType{
 				Name:    referredType.GoTypeName,
@@ -161,10 +190,27 @@ func (bb *builder) buildTypeName(schema jsonapi.SchemaItem) (*DataType, error) {
 		}, nil
 	}
 
+	if mapType, ok := schema.ItemType.(jsonapi.MapItem); ok {
+		keyType, err := bb.buildTypeName(mapType.KeyProperty)
+		if err != nil {
+			return nil, fmt.Errorf("map key: %w", err)
+		}
+		valueType, err := bb.buildTypeName(mapType.ValueProperty)
+		if err != nil {
+			return nil, fmt.Errorf("map value: %w", err)
+		}
+
+		return &DataType{
+			Name:    fmt.Sprintf("map[%s]%s", keyType.Name, valueType.Name),
+			Pointer: false,
+		}, nil
+
+	}
+
 	if objectType, ok := schema.ItemType.(*jsonapi.ObjectItem); ok {
 
 		if err := bb.addObject(objectType); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("directObject: %w", err)
 		}
 
 		return &DataType{
@@ -189,7 +235,7 @@ func (bb *builder) jsonField(property *jsonapi.ObjectProperty) (*Field, error) {
 
 	dataType, err := bb.buildTypeName(property.SchemaItem)
 	if err != nil {
-		return nil, fmt.Errorf("building type %#v: %w", property.Name, err)
+		return nil, fmt.Errorf("building field %s: %w", property.Name, err)
 	}
 
 	if !dataType.Pointer && !dataType.Slice && property.Optional {
@@ -205,7 +251,10 @@ func (bb *builder) jsonField(property *jsonapi.ObjectProperty) (*Field, error) {
 }
 
 func (bb *builder) addObject(object *jsonapi.ObjectItem) error {
-	objectPackage := bb.options.ToGoPackage(object.GRPCPackage)
+	objectPackage, err := bb.options.ToGoPackage(object.GRPCPackage)
+	if err != nil {
+		return fmt.Errorf("object package name '%s': %w", object.GoTypeName, err)
+	}
 	gen, err := bb.fileSet.File(objectPackage, filepath.Base(objectPackage))
 	if err != nil {
 		return err
@@ -239,9 +288,11 @@ func (bb *builder) addObject(object *jsonapi.ObjectItem) error {
 func (bb *builder) root() error {
 
 	for _, pkgsss := range bb.document.Packages {
-		fullGoPackage := bb.options.ToGoPackage(pkgsss.Name)
+		fullGoPackage, err := bb.options.ToGoPackage(pkgsss.Name)
+		if err != nil {
+			return err
+		}
 		for _, operation := range pkgsss.Methods {
-
 			if err := bb.addOperation(fullGoPackage, operation); err != nil {
 				return err
 			}
@@ -363,7 +414,7 @@ func (bb *builder) addOperation(fullGoPackage string, operation *structure.Metho
 	for _, property := range responseSchema.Properties {
 		field, err := bb.jsonField(property)
 		if err != nil {
-			return err
+			return fmt.Errorf("%s.ResponseBody: %w", operation.FullGrpcName, err)
 		}
 		responseStruct.Fields = append(responseStruct.Fields, field)
 	}

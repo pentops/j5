@@ -3,11 +3,13 @@ package jsonapi
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	"github.com/pentops/jsonapi/testproto/gen/testpb"
+	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -200,6 +202,70 @@ func TestSchemaTypesSimple(t *testing.T) {
 
 }
 
+func TestTestProtoSchemaTypes(t *testing.T) {
+
+	ss := NewSchemaSet(Options{
+		ShortEnums: &ShortEnumsOption{
+			StrictUnmarshal: true,
+		},
+		WrapOneof: true,
+	})
+
+	fooDesc := (&testpb.PostFooRequest{}).ProtoReflect().Descriptor()
+
+	t.Log(protojson.Format(protodesc.ToDescriptorProto(fooDesc)))
+
+	schemaItem, err := ss.BuildSchemaObject(fooDesc)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	dd, err := MarshalDynamic(schemaItem)
+	if err != nil {
+		t.Fatal(err.Error())
+	}
+
+	assertProperty := func(name string, expected map[string]interface{}) {
+		t.Run(name, func(t *testing.T) {
+			dd.PrintAt(t, fmt.Sprintf("properties.%s", name))
+			dd.AssertEqualSet(t, fmt.Sprintf("properties.%s", name), expected)
+		})
+
+	}
+
+	assertProperty("sString", map[string]interface{}{
+		"type":             "string",
+		"x-proto-name":     "s_string",
+		"x-proto-number":   1,
+		"x-proto-optional": false,
+	})
+
+	assertProperty("oString", map[string]interface{}{
+		"type":             "string",
+		"x-proto-name":     "o_string",
+		"x-proto-number":   2,
+		"x-proto-optional": true,
+	})
+
+	assertProperty("rString", map[string]interface{}{
+		"type":             "array",
+		"x-proto-name":     "r_string",
+		"x-proto-number":   3,
+		"x-proto-optional": false,
+		"items.type":       "string",
+	})
+
+	assertProperty("mapStringString", map[string]interface{}{
+		"type":                      "object",
+		"x-proto-name":              "map_string_string",
+		"x-proto-number":            15,
+		"x-proto-optional":          false,
+		"additionalProperties.type": "string",
+		"x-key-property.type":       "string",
+	})
+
+}
+
 func TestSchemaTypesComplex(t *testing.T) {
 
 	ss := NewSchemaSet(Options{
@@ -247,6 +313,47 @@ func TestSchemaTypesComplex(t *testing.T) {
 			"x-proto-name":              "TestMessage",
 			"type":                      "object",
 			"properties.testField.type": "array",
+		},
+	}, {
+		name: "map<string>string",
+		proto: &descriptorpb.FileDescriptorProto{
+			// Proto compiler creates an array of Key Value pairs for a
+			// map[string]string
+			Name:    proto.String("test.proto"),
+			Package: proto.String("test"),
+			MessageType: []*descriptorpb.DescriptorProto{{
+				Name: proto.String("TestMessage"),
+				Field: []*descriptorpb.FieldDescriptorProto{{
+					Name:     proto.String("test_field"),
+					Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+					TypeName: proto.String("test.TestMessage.TestFieldEntry"),
+					Number:   proto.Int32(1),
+					Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
+				}},
+				NestedType: []*descriptorpb.DescriptorProto{{
+					Name: proto.String("TestFieldEntry"),
+					Field: []*descriptorpb.FieldDescriptorProto{{
+						Name:     proto.String("key"),
+						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						Number:   proto.Int32(1),
+						JsonName: proto.String("key"),
+					}, {
+						Name:     proto.String("value"),
+						Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+						Number:   proto.Int32(2),
+						JsonName: proto.String("value"),
+					}},
+					Options: &descriptorpb.MessageOptions{
+						MapEntry: proto.Bool(true),
+					},
+				}},
+			}},
+		},
+		expected: map[string]interface{}{
+			"x-proto-name":              "TestMessage",
+			"type":                      "object",
+			"properties.testField.type": "object",
+			"properties.testField.additionalProperties.type": "string",
 		},
 	}, {
 		name: "enum field",
@@ -345,6 +452,7 @@ func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constr
 }
 
 func msgDesscriptorToReflection(t testing.TB, fileDescriptor *descriptorpb.FileDescriptorProto) protoreflect.MessageDescriptor {
+	t.Helper()
 	files, err := protodesc.NewFiles(&descriptorpb.FileDescriptorSet{
 		File: []*descriptorpb.FileDescriptorProto{fileDescriptor},
 	})
@@ -515,6 +623,15 @@ func (d *DynamicJSON) Print(t testing.TB) {
 	t.Log(string(d.JSON))
 }
 
+func (d *DynamicJSON) PrintAt(t testing.TB, path string) {
+	val := gjson.Get(d.JSON, path)
+	if val.Exists() {
+		t.Log(val.String())
+	} else {
+		t.Log("path not found")
+	}
+}
+
 func (d *DynamicJSON) Get(path string) (interface{}, bool) {
 	val := gjson.Get(d.JSON, path)
 	if val.Exists() {
@@ -551,10 +668,7 @@ func (d *DynamicJSON) AssertEqual(t testing.TB, path string, value interface{}) 
 		}
 		t.Errorf("expected len(%d), got non len object %T", value, actual)
 	default:
-
-		if !reflect.DeepEqual(actual, value) {
-			t.Errorf("expected %q, got %q", value, actual)
-		}
+		assert.EqualValues(t, value, actual, "at path %q", path)
 	}
 }
 
@@ -562,5 +676,17 @@ func (d *DynamicJSON) AssertNotSet(t testing.TB, path string) {
 	_, ok := d.Get(path)
 	if ok {
 		t.Errorf("path %q was set", path)
+	}
+}
+
+func (d *DynamicJSON) AssertEqualSet(t testing.TB, path string, expected map[string]interface{}) {
+	t.Helper()
+	for key, expectSet := range expected {
+		pathKey := key
+		if path != "" {
+			pathKey = fmt.Sprintf("%s.%s", path, key)
+		}
+
+		d.AssertEqual(t, pathKey, expectSet)
 	}
 }
