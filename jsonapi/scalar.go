@@ -137,6 +137,6 @@ func (dec *decoder) decodeScalarField(field protoreflect.FieldDescriptor) (proto
 		// End copy
 
 	default:
-		return protoreflect.Value{}, fmt.Errorf("unsupported field kind %v", field.Kind())
+		return protoreflect.Value{}, fmt.Errorf("unsupported scalar kind %v", field.Kind())
 	}
 }

@@ -373,20 +373,86 @@ func (bb *builder) addOperation(fullGoPackage string, operation *structure.Metho
 		requestStruct.Fields = append(requestStruct.Fields, field)
 		pathParameters[parameter.Name] = field
 	}
+
+	queryMethod := &Function{
+		Name:       "QueryParameters",
+		Parameters: []*Parameter{},
+		Returns: []*Parameter{{
+			DataType: DataType{
+				Name:    "Values",
+				Package: "net/url",
+			},
+		}, {
+			DataType: DataType{
+				Name: "error",
+			},
+		}},
+		StringGen: gen.ChildGen(),
+	}
+
+	queryMethod.P("  values := ", DataType{Package: "net/url", Name: "Values"}, "{}")
+
+	usedQuery := false
+
 	for _, parameter := range operation.QueryParameters {
-		typeName, err := bb.buildTypeName(parameter.Schema)
+		usedQuery = true
+		dataType, err := bb.buildTypeName(parameter.Schema)
 		if err != nil {
 			return err
 		}
 
+		if !dataType.Pointer && !dataType.Slice && !parameter.Required {
+			dataType.Pointer = true
+		}
+
 		requestStruct.Fields = append(requestStruct.Fields, &Field{
 			Name:     GoName(parameter.Name),
-			DataType: *typeName,
+			DataType: *dataType,
 			Tags: map[string]string{
 				"query": parameter.Name,
 				"json":  "-",
 			},
 		})
+
+		schema := parameter.Schema
+		if parameter.Schema.Ref != "" {
+			si, ok := bb.document.Schemas[parameter.Schema.Ref]
+			if !ok {
+				return fmt.Errorf("Unknown ref: %s", parameter.Schema.Ref)
+			}
+			schema = *si
+		}
+
+		switch schema.ItemType.(type) {
+		case jsonapi.StringItem:
+			if parameter.Required {
+				queryMethod.P("  values.Set(\"", parameter.Name, "\", s.", GoName(parameter.Name), ")")
+			} else {
+				queryMethod.P("  if s.", GoName(parameter.Name), " != nil {")
+				queryMethod.P("    values.Set(\"", parameter.Name, "\", *s.", GoName(parameter.Name), ")")
+				queryMethod.P("  }")
+			}
+
+		case *jsonapi.ObjectItem:
+			// include as JSON
+			queryMethod.P("  if s.", GoName(parameter.Name), " != nil {")
+			queryMethod.P("    bb, err := ", DataType{Package: "encoding/json", Name: "Marshal"}, "(s.", GoName(parameter.Name), ")")
+			queryMethod.P("    if err != nil {")
+			queryMethod.P("      return nil, err")
+			queryMethod.P("    }")
+			queryMethod.P("    values.Set(\"", parameter.Name, "\", string(bb))")
+			queryMethod.P("  }")
+
+		default:
+			queryMethod.P(" // Skipping query parameter ", parameter.Name, " of type ", dataType.Name)
+			//queryMethod.P("    values.Set(\"", parameter.Name, "\", fmt.Sprintf(\"%v\", *s.", GoName(parameter.Name), "))")
+		}
+	}
+
+	queryMethod.P("  return values, nil")
+
+	if usedQuery {
+		requestStruct.Methods = append(requestStruct.Methods, queryMethod)
 	}
 
 	if operation.RequestBody != nil {
