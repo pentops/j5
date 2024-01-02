@@ -203,9 +203,12 @@ func pushS3(ctx context.Context, bb []byte, destinations ...string) error {
 
 		log.Printf("Uploading to %s", dest)
 
+		// url.Parse will take s3://foobucket/keyname and turn keyname into "/keyname" which we want to be "keyname"
+		k := strings.Replace(s3URL.Path, "/", "", 1)
+
 		_, err = s3Client.PutObject(ctx, &s3.PutObjectInput{
 			Bucket: &s3URL.Host,
-			Key:    &s3URL.Path,
+			Key:    &k,
 			Body:   strings.NewReader(string(bb)),
 		})
 
