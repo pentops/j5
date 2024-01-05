@@ -4,8 +4,8 @@ deps:
   - remote: buf.build
     owner: bufbuild
     repository: protovalidate
-    commit: 1baebb0a15184714854fa1ddfd22a29b
-    digest: shake256:ecd24ac37ca4f1ea65d816ae98e2a977e5004076ac957de9aedc0d4b517c66eaf3b7c8d6c7669ffd6e2eca5e8a5705372bed339ba47a608b37183ef1ee4f8baf
+    commit: e097f827e65240ac9fd4b1158849a8fc
+    digest: shake256:f19252436fd9ded945631e2ffaaed28247a92c9015ccf55ae99db9fb3d9600c4fdb00fd2d3bd7701026ec2fd4715c5129e6ae517c25a59ba690020cfe80bf8ad
   - remote: buf.build
     owner: googleapis
     repository: googleapis
@@ -14,10 +14,5 @@ deps:
   - remote: buf.build
     owner: pentops
     repository: jsonapi
-    commit: 980caada2004484cac9c7d70178e53cc
-    digest: shake256:a4c8e7936a0dd75ede80bf7b6f8778ec420b63cffc452c26f819b0c6f60fa8f6587e4752a4683cb995b293fc74362f2218d9e7117d580fabb4a9646b120df5d0
-  - remote: buf.build
-    owner: pentops
-    repository: listify
-    commit: 12f9f3ecae8d45c8bd5b1317ff75212c
-    digest: shake256:cb181bb3547f4df550c1f2cd91d6f91cabfc3e28c643c42c9f3c9db9c8cd4bd9e23ff5c9951b2d310dbbfa5fcbc4d30c09becd6fd98581eafbc3733fdec24dd9
+    commit: 5806f7bc7d2749cfbfec69a330a4951e
+    digest: shake256:a36f08d7c63288ce067b2e50c828362d1f97276ab879e65fa6e1d55388803a8570b2fcc9c269ee10a1610c79fa9b39db630f18590e3e593d06135735726ab5f1
