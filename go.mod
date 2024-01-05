@@ -13,6 +13,7 @@ require (
 	github.com/google/uuid v1.4.0
 	github.com/jhump/protoreflect v1.15.3
 	github.com/pentops/o5-runtime-sidecar v0.0.0-20231214005613-dfa320e31fca
+	github.com/pentops/runner v0.0.0-20231219070819-c4878d5565d8
 	github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5
 	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/gjson v1.17.0
@@ -44,6 +45,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/cel-go v0.18.2 // indirect
+	github.com/pentops/log.go v0.0.0-20230815045424-6ebbd9ef2576 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
