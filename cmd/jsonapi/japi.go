@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"log"
 	"net/url"
@@ -16,72 +15,39 @@ import (
 	"github.com/pentops/jsonapi/gogen"
 	"github.com/pentops/jsonapi/structure"
 	"github.com/pentops/jsonapi/swagger"
+	"github.com/pentops/runner/commander"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 )
 
+var Version = "dev"
+
 func main() {
-	ctx := context.Background()
 
-	args := os.Args[1:]
-	if len(args) == 0 {
-		usage()
-	}
+	cmdGroup := commander.NewCommandSet()
 
-	switch args[0] {
+	cmdGroup.Add("push", commander.NewCommand(runPush))
 
-	case "push":
-		if err := runPush(ctx, os.Args[2:]); err != nil {
-			log.Fatal(err.Error())
-		}
+	genGroup := commander.NewCommandSet()
+	genGroup.Add("image", commander.NewCommand(runImage))
+	genGroup.Add("gocode", commander.NewCommand(runGocode))
+	genGroup.Add("jdef", commander.NewCommand(runJdef))
+	genGroup.Add("swagger", commander.NewCommand(runSwagger))
+	genGroup.Add("code-generator-request", commander.NewCommand(runCodeGeneratorRequest))
 
-	case "image":
-		if err := runImage(ctx, os.Args[2:]); err != nil {
-			log.Fatal(err.Error())
-		}
+	cmdGroup.Add("generate", genGroup)
 
-	case "gocode":
-		if err := runGocode(ctx, os.Args[2:]); err != nil {
-			log.Fatal(err.Error())
-		}
-
-	case "jdef":
-		if err := runJdef(ctx, os.Args[2:]); err != nil {
-			log.Fatal(err.Error())
-		}
-
-	case "swagger":
-		if err := runSwagger(ctx, os.Args[2:]); err != nil {
-			log.Fatal(err.Error())
-		}
-
-	default:
-		usage()
-	}
-
+	cmdGroup.RunMain("japi", Version)
 }
 
-func usage() {
-	name := os.Args[0]
-	fmt.Printf(`Usage: %s <command> [options]`, name)
-	os.Exit(1)
-
-}
-
-func runGocode(ctx context.Context, osArgs []string) error {
-	args := flag.NewFlagSet("swagger", flag.ExitOnError)
-	src := args.String("src", ".", "Source directory containing jsonapi.yaml and buf.lock.yaml")
-	outputDir := args.String("output-dir", "", "Directory to write go source")
-	trimPackagePrefix := args.String("trim-package-prefix", "", "Prefix to trim from go package names")
-	addGoPrefix := args.String("add-go-prefix", "", "Prefix to add to go package names")
-	if err := args.Parse(osArgs); err != nil {
-		return err
-	}
-
-	if *outputDir == "" {
-		log.Fatal("output-dir is required")
-	}
-
-	image, err := structure.ReadImageFromSourceDir(ctx, *src)
+func runGocode(ctx context.Context, cfg struct {
+	Source            string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
+	OutputDir         string `flag:"output-dir" description:"Directory to write go source"`
+	TrimPackagePrefix string `flag:"trim-package-prefix" default:"" description:"Prefix to trim from go package names"`
+	AddGoPrefix       string `flag:"add-go-prefix" default:"" description:"Prefix to add to go package names"`
+}) error {
+	image, err := structure.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		return err
 	}
@@ -92,11 +58,11 @@ func runGocode(ctx context.Context, osArgs []string) error {
 	}
 
 	options := gogen.Options{
-		TrimPackagePrefix: *trimPackagePrefix,
-		AddGoPrefix:       *addGoPrefix,
+		TrimPackagePrefix: cfg.TrimPackagePrefix,
+		AddGoPrefix:       cfg.AddGoPrefix,
 	}
 
-	output := gogen.DirFileWriter(*outputDir)
+	output := gogen.DirFileWriter(cfg.OutputDir)
 
 	if err := gogen.WriteGoCode(jdefDoc, output, options); err != nil {
 		return err
@@ -105,26 +71,19 @@ func runGocode(ctx context.Context, osArgs []string) error {
 	return nil
 }
 
-func runPush(ctx context.Context, osArgs []string) error {
-	args := flag.NewFlagSet("image", flag.ExitOnError)
-	src := args.String("src", ".", "Source directory containing jsonapi.yaml and buf.lock.yaml")
-	version := args.String("version", "", "Version to push")
-	latest := args.Bool("latest", false, "Push as latest")
-	bucket := args.String("bucket", "", "S3 bucket to push to")
-	prefix := args.String("prefix", "", "S3 prefix to push to")
-	if err := args.Parse(osArgs); err != nil {
-		return err
-	}
+func runPush(ctx context.Context, cfg struct {
+	Source  string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
+	Version string `flag:"version" default:"" description:"Version to push"`
+	Latest  bool   `flag:"latest" description:"Push as latest"`
+	Bucket  string `flag:"bucket" description:"S3 bucket to push to"`
+	Prefix  string `flag:"prefix" description:"S3 prefix to push to"`
+}) error {
 
-	if *bucket == "" {
-		return fmt.Errorf("bucket is required")
-	}
-
-	if (!*latest) && *version == "" {
+	if (!cfg.Latest) && cfg.Version == "" {
 		return fmt.Errorf("version, latest or both are required")
 	}
 
-	image, err := structure.ReadImageFromSourceDir(ctx, *src)
+	image, err := structure.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		return err
 	}
@@ -136,33 +95,30 @@ func runPush(ctx context.Context, osArgs []string) error {
 
 	versions := []string{}
 
-	if *latest {
+	if cfg.Latest {
 		versions = append(versions, "latest")
 	}
 
-	if *version != "" {
-		versions = append(versions, *version)
+	if cfg.Version != "" {
+		versions = append(versions, cfg.Version)
 	}
 
 	destinations := make([]string, len(versions))
 	for i, version := range versions {
-		p := path.Join(*prefix, image.Registry.Organization, image.Registry.Name, version, "image.bin")
-		destinations[i] = fmt.Sprintf("s3://%s/%s", *bucket, p)
+		p := path.Join(cfg.Prefix, image.Registry.Organization, image.Registry.Name, version, "image.bin")
+		destinations[i] = fmt.Sprintf("s3://%s/%s", cfg.Bucket, p)
 	}
 
 	return pushS3(ctx, bb, destinations...)
 
 }
 
-func runImage(ctx context.Context, osArgs []string) error {
-	args := flag.NewFlagSet("image", flag.ExitOnError)
-	src := args.String("src", ".", "Source directory containing jsonapi.yaml and buf.lock.yaml")
-	pushDest := args.String("output", "-", "Destination to push image to. - for stdout, s3://bucket/prefix, otherwise a file")
-	if err := args.Parse(osArgs); err != nil {
-		return err
-	}
+func runImage(ctx context.Context, cfg struct {
+	Source string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
+	Output string `flag:"output" default:"-" description:"Destination to push image to. - for stdout, s3://bucket/prefix, otherwise a file"`
+}) error {
 
-	image, err := structure.ReadImageFromSourceDir(ctx, *src)
+	image, err := structure.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		return err
 	}
@@ -171,17 +127,21 @@ func runImage(ctx context.Context, osArgs []string) error {
 	if err != nil {
 		return err
 	}
+	return writeBytes(ctx, cfg.Output, bb)
 
-	if *pushDest == "-" {
-		os.Stdout.Write(bb)
+}
+
+func writeBytes(ctx context.Context, to string, data []byte) error {
+	if to == "-" {
+		os.Stdout.Write(data)
 		return nil
 	}
 
-	if strings.HasPrefix(*pushDest, "s3://") {
-		return pushS3(ctx, bb, *pushDest)
+	if strings.HasPrefix(to, "s3://") {
+		return pushS3(ctx, data, to)
 	}
 
-	return os.WriteFile(*pushDest, bb, 0644)
+	return os.WriteFile(to, data, 0644)
 }
 
 func pushS3(ctx context.Context, bb []byte, destinations ...string) error {
@@ -220,14 +180,12 @@ func pushS3(ctx context.Context, bb []byte, destinations ...string) error {
 	return nil
 }
 
-func runSwagger(ctx context.Context, osArgs []string) error {
-	args := flag.NewFlagSet("swagger", flag.ExitOnError)
-	src := args.String("src", ".", "Source directory containing jsonapi.yaml and buf.lock.yaml")
-	if err := args.Parse(osArgs); err != nil {
-		return err
-	}
+func runSwagger(ctx context.Context, cfg struct {
+	Source string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
+	Output string `flag:"output" default:"-" description:"Destination to push image to. - for stdout, s3://bucket/key, otherwise a file"`
+}) error {
 
-	image, err := structure.ReadImageFromSourceDir(ctx, *src)
+	image, err := structure.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		return err
 	}
@@ -247,18 +205,15 @@ func runSwagger(ctx context.Context, osArgs []string) error {
 		return err
 	}
 
-	fmt.Println(string(asJson))
-	return nil
+	return writeBytes(ctx, cfg.Output, asJson)
 }
 
-func runJdef(ctx context.Context, osArgs []string) error {
-	args := flag.NewFlagSet("jdef", flag.ExitOnError)
-	src := args.String("src", ".", "Source directory containing jsonapi.yaml and buf.lock.yaml")
-	if err := args.Parse(osArgs); err != nil {
-		return err
-	}
+func runJdef(ctx context.Context, cfg struct {
+	Source string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
+	Output string `flag:"output" default:"-" description:"Destination to push json image to. - for stdout, s3://bucket/key, otherwise a local file"`
+}) error {
 
-	image, err := structure.ReadImageFromSourceDir(ctx, *src)
+	image, err := structure.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -268,11 +223,45 @@ func runJdef(ctx context.Context, osArgs []string) error {
 		log.Fatal(err.Error())
 	}
 
-	json, err := json.Marshal(document)
+	asJson, err := json.Marshal(document)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	fmt.Println(string(json))
-	return nil
+	return writeBytes(ctx, cfg.Output, asJson)
+}
+
+func runCodeGeneratorRequest(ctx context.Context, cfg struct {
+	Source        string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
+	Output        string `flag:"output" default:"-" description:"Destination to push proto binary image to. - for stdout, s3://bucket/key, otherwise a local file. Format determined by suffix: .txt = textproto .json = protojson, else proto binary"`
+	PackagePrefix string `flag:"package-prefix" default:"" description:"proto package prefix to generate"`
+}) error {
+
+	descriptors, err := structure.ReadFileDescriptorSet(ctx, cfg.Source)
+	if err != nil {
+		return err
+	}
+
+	options := structure.CodeGenOptions{
+		PackagePrefix: cfg.PackagePrefix,
+	}
+	genRequest, err := structure.CodeGeneratorRequestFromDescriptors(options, descriptors)
+	if err != nil {
+		return err
+	}
+
+	if strings.HasSuffix(cfg.Output, ".txt") {
+		return writeBytes(ctx, cfg.Output, []byte(prototext.Format(genRequest)))
+	}
+
+	if strings.HasSuffix(cfg.Output, ".json") {
+		return writeBytes(ctx, cfg.Output, []byte(protojson.Format(genRequest)))
+	}
+
+	bb, err := proto.Marshal(genRequest)
+	if err != nil {
+		return err
+	}
+
+	return writeBytes(ctx, cfg.Output, bb)
 }
