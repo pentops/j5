@@ -12,7 +12,7 @@ require (
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/google/uuid v1.4.0
 	github.com/jhump/protoreflect v1.15.3
-	github.com/pentops/o5-runtime-sidecar v0.0.0-20231214005613-dfa320e31fca
+	github.com/pentops/o5-runtime-sidecar v0.0.6
 	github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5
 	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/gjson v1.17.0
@@ -48,7 +48,7 @@ require (
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
 	github.com/tidwall/pretty v1.2.0 // indirect
-	golang.org/x/exp v0.0.0-20231206192017-f3f8817b8deb // indirect
+	golang.org/x/exp v0.0.0-20240103183307-be819d1f06fc // indirect
 	golang.org/x/net v0.19.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
 	golang.org/x/sys v0.15.0 // indirect
