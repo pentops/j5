@@ -16,6 +16,8 @@ import (
 	"github.com/pentops/jsonapi/structure"
 	"github.com/pentops/jsonapi/swagger"
 	"github.com/pentops/runner/commander"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -32,6 +34,8 @@ func main() {
 	genGroup.Add("gocode", commander.NewCommand(runGocode))
 	genGroup.Add("jdef", commander.NewCommand(runJdef))
 	genGroup.Add("swagger", commander.NewCommand(runSwagger))
+	genGroup.Add("code-generator-request", commander.NewCommand(runCodeGeneratorRequest))
+
 	cmdGroup.Add("generate", genGroup)
 
 	cmdGroup.RunMain("japi", Version)
@@ -225,4 +229,39 @@ func runJdef(ctx context.Context, cfg struct {
 	}
 
 	return writeBytes(ctx, cfg.Output, asJson)
+}
+
+func runCodeGeneratorRequest(ctx context.Context, cfg struct {
+	Source        string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
+	Output        string `flag:"output" default:"-" description:"Destination to push proto binary image to. - for stdout, s3://bucket/key, otherwise a local file. Format determined by suffix: .txt = textproto .json = protojson, else proto binary"`
+	PackagePrefix string `flag:"package-prefix" default:"" description:"proto package prefix to generate"`
+}) error {
+
+	descriptors, err := structure.ReadFileDescriptorSet(ctx, cfg.Source)
+	if err != nil {
+		return err
+	}
+
+	options := structure.CodeGenOptions{
+		PackagePrefix: cfg.PackagePrefix,
+	}
+	genRequest, err := structure.CodeGeneratorRequestFromDescriptors(options, descriptors)
+	if err != nil {
+		return err
+	}
+
+	if strings.HasSuffix(cfg.Output, ".txt") {
+		return writeBytes(ctx, cfg.Output, []byte(prototext.Format(genRequest)))
+	}
+
+	if strings.HasSuffix(cfg.Output, ".json") {
+		return writeBytes(ctx, cfg.Output, []byte(protojson.Format(genRequest)))
+	}
+
+	bb, err := proto.Marshal(genRequest)
+	if err != nil {
+		return err
+	}
+
+	return writeBytes(ctx, cfg.Output, bb)
 }
