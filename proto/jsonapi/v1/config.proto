@@ -50,7 +50,7 @@ message RegistryConfig {
 }
 
 message ProtoBuildConfig {
-  string gen_config_file = 1;
+  string label = 1;
   repeated ProtoBuildPlugin plugins = 2;
 
   oneof package_type {
@@ -88,7 +88,6 @@ message DockerSpec {
   repeated string entrypoint = 4;
   repeated string command = 5;
   bool pull = 6;
-  DockerRegistryAuth auth = 7;
 }
 
 message DockerRegistryAuth {
