@@ -25,9 +25,12 @@ type Config struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Packages []*PackageConfig `protobuf:"bytes,1,rep,name=packages,proto3" json:"packages,omitempty"`
-	Options  *CodecOptions    `protobuf:"bytes,2,opt,name=options,proto3" json:"options,omitempty"`
-	Registry *RegistryConfig  `protobuf:"bytes,3,opt,name=registry,proto3" json:"registry,omitempty"`
+	Packages            []*PackageConfig      `protobuf:"bytes,1,rep,name=packages,proto3" json:"packages,omitempty"`
+	Options             *CodecOptions         `protobuf:"bytes,2,opt,name=options,proto3" json:"options,omitempty"`
+	Registry            *RegistryConfig       `protobuf:"bytes,3,opt,name=registry,proto3" json:"registry,omitempty"`
+	ProtoBuilds         []*ProtoBuildConfig   `protobuf:"bytes,4,rep,name=proto_builds,json=protoBuilds,proto3" json:"proto_builds,omitempty"`
+	Git                 *GitConfig            `protobuf:"bytes,5,opt,name=git,proto3" json:"git,omitempty"`
+	DockerRegistryAuths []*DockerRegistryAuth `protobuf:"bytes,6,rep,name=docker_registry_auths,json=dockerRegistryAuths,proto3" json:"docker_registry_auths,omitempty"`
 }
 
 func (x *Config) Reset() {
@@ -83,6 +86,81 @@ func (x *Config) GetRegistry() *RegistryConfig {
 	return nil
 }
 
+func (x *Config) GetProtoBuilds() []*ProtoBuildConfig {
+	if x != nil {
+		return x.ProtoBuilds
+	}
+	return nil
+}
+
+func (x *Config) GetGit() *GitConfig {
+	if x != nil {
+		return x.Git
+	}
+	return nil
+}
+
+func (x *Config) GetDockerRegistryAuths() []*DockerRegistryAuth {
+	if x != nil {
+		return x.DockerRegistryAuths
+	}
+	return nil
+}
+
+// When code is managed through git, configures mapping between git branches,
+// tags and commits to output version tags.
+type GitConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// used to determine if a commit is the 'latest' or 'main' or 'stable' branch.
+	// defaults to /refs/heads/main
+	// accepts wildcard *
+	// e.g. /refs/heads/main or /refs/tags/v*
+	// Will become 'latest' in go mod packages
+	Main string `protobuf:"bytes,1,opt,name=main,proto3" json:"main,omitempty"`
+}
+
+func (x *GitConfig) Reset() {
+	*x = GitConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_jsonapi_v1_config_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *GitConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GitConfig) ProtoMessage() {}
+
+func (x *GitConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_jsonapi_v1_config_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GitConfig.ProtoReflect.Descriptor instead.
+func (*GitConfig) Descriptor() ([]byte, []int) {
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GitConfig) GetMain() string {
+	if x != nil {
+		return x.Main
+	}
+	return ""
+}
+
 type PackageConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -96,7 +174,7 @@ type PackageConfig struct {
 func (x *PackageConfig) Reset() {
 	*x = PackageConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_jsonapi_v1_config_proto_msgTypes[1]
+		mi := &file_jsonapi_v1_config_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -109,7 +187,7 @@ func (x *PackageConfig) String() string {
 func (*PackageConfig) ProtoMessage() {}
 
 func (x *PackageConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_jsonapi_v1_config_proto_msgTypes[1]
+	mi := &file_jsonapi_v1_config_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -122,7 +200,7 @@ func (x *PackageConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageConfig.ProtoReflect.Descriptor instead.
 func (*PackageConfig) Descriptor() ([]byte, []int) {
-	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{1}
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *PackageConfig) GetLabel() string {
@@ -159,7 +237,7 @@ type CodecOptions struct {
 func (x *CodecOptions) Reset() {
 	*x = CodecOptions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_jsonapi_v1_config_proto_msgTypes[2]
+		mi := &file_jsonapi_v1_config_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -172,7 +250,7 @@ func (x *CodecOptions) String() string {
 func (*CodecOptions) ProtoMessage() {}
 
 func (x *CodecOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_jsonapi_v1_config_proto_msgTypes[2]
+	mi := &file_jsonapi_v1_config_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -185,7 +263,7 @@ func (x *CodecOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CodecOptions.ProtoReflect.Descriptor instead.
 func (*CodecOptions) Descriptor() ([]byte, []int) {
-	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{2}
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CodecOptions) GetTrimSubPackages() []string {
@@ -221,7 +299,7 @@ type ShortEnumOptions struct {
 func (x *ShortEnumOptions) Reset() {
 	*x = ShortEnumOptions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_jsonapi_v1_config_proto_msgTypes[3]
+		mi := &file_jsonapi_v1_config_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -234,7 +312,7 @@ func (x *ShortEnumOptions) String() string {
 func (*ShortEnumOptions) ProtoMessage() {}
 
 func (x *ShortEnumOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_jsonapi_v1_config_proto_msgTypes[3]
+	mi := &file_jsonapi_v1_config_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -247,7 +325,7 @@ func (x *ShortEnumOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShortEnumOptions.ProtoReflect.Descriptor instead.
 func (*ShortEnumOptions) Descriptor() ([]byte, []int) {
-	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{3}
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ShortEnumOptions) GetUnspecifiedSuffix() string {
@@ -276,7 +354,7 @@ type RegistryConfig struct {
 func (x *RegistryConfig) Reset() {
 	*x = RegistryConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_jsonapi_v1_config_proto_msgTypes[4]
+		mi := &file_jsonapi_v1_config_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -289,7 +367,7 @@ func (x *RegistryConfig) String() string {
 func (*RegistryConfig) ProtoMessage() {}
 
 func (x *RegistryConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_jsonapi_v1_config_proto_msgTypes[4]
+	mi := &file_jsonapi_v1_config_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -302,7 +380,7 @@ func (x *RegistryConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegistryConfig.ProtoReflect.Descriptor instead.
 func (*RegistryConfig) Descriptor() ([]byte, []int) {
-	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{4}
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *RegistryConfig) GetOrganization() string {
@@ -319,12 +397,559 @@ func (x *RegistryConfig) GetName() string {
 	return ""
 }
 
+type ProtoBuildConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	GenConfigFile string              `protobuf:"bytes,1,opt,name=gen_config_file,json=genConfigFile,proto3" json:"gen_config_file,omitempty"`
+	Plugins       []*ProtoBuildPlugin `protobuf:"bytes,2,rep,name=plugins,proto3" json:"plugins,omitempty"`
+	// Types that are assignable to PackageType:
+	//
+	//	*ProtoBuildConfig_GoProxy_
+	PackageType isProtoBuildConfig_PackageType `protobuf_oneof:"package_type"`
+}
+
+func (x *ProtoBuildConfig) Reset() {
+	*x = ProtoBuildConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_jsonapi_v1_config_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ProtoBuildConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProtoBuildConfig) ProtoMessage() {}
+
+func (x *ProtoBuildConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_jsonapi_v1_config_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProtoBuildConfig.ProtoReflect.Descriptor instead.
+func (*ProtoBuildConfig) Descriptor() ([]byte, []int) {
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ProtoBuildConfig) GetGenConfigFile() string {
+	if x != nil {
+		return x.GenConfigFile
+	}
+	return ""
+}
+
+func (x *ProtoBuildConfig) GetPlugins() []*ProtoBuildPlugin {
+	if x != nil {
+		return x.Plugins
+	}
+	return nil
+}
+
+func (m *ProtoBuildConfig) GetPackageType() isProtoBuildConfig_PackageType {
+	if m != nil {
+		return m.PackageType
+	}
+	return nil
+}
+
+func (x *ProtoBuildConfig) GetGoProxy() *ProtoBuildConfig_GoProxy {
+	if x, ok := x.GetPackageType().(*ProtoBuildConfig_GoProxy_); ok {
+		return x.GoProxy
+	}
+	return nil
+}
+
+type isProtoBuildConfig_PackageType interface {
+	isProtoBuildConfig_PackageType()
+}
+
+type ProtoBuildConfig_GoProxy_ struct {
+	GoProxy *ProtoBuildConfig_GoProxy `protobuf:"bytes,10,opt,name=go_proxy,json=goProxy,proto3,oneof"`
+}
+
+func (*ProtoBuildConfig_GoProxy_) isProtoBuildConfig_PackageType() {}
+
+type ProtoBuildPlugin struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// used only in logging and errors
+	Label string `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	// a docker container which will receive stdin and pipe stdout
+	// input is google.protobuf.compiler.CodeGeneratorRequest
+	// output is google.protobuf.compiler.CodeGeneratorResponse
+	Docker     *DockerSpec `protobuf:"bytes,2,opt,name=docker,proto3" json:"docker,omitempty"`
+	Parameters []string    `protobuf:"bytes,3,rep,name=parameters,proto3" json:"parameters,omitempty"`
+}
+
+func (x *ProtoBuildPlugin) Reset() {
+	*x = ProtoBuildPlugin{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_jsonapi_v1_config_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ProtoBuildPlugin) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProtoBuildPlugin) ProtoMessage() {}
+
+func (x *ProtoBuildPlugin) ProtoReflect() protoreflect.Message {
+	mi := &file_jsonapi_v1_config_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProtoBuildPlugin.ProtoReflect.Descriptor instead.
+func (*ProtoBuildPlugin) Descriptor() ([]byte, []int) {
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ProtoBuildPlugin) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *ProtoBuildPlugin) GetDocker() *DockerSpec {
+	if x != nil {
+		return x.Docker
+	}
+	return nil
+}
+
+func (x *ProtoBuildPlugin) GetParameters() []string {
+	if x != nil {
+		return x.Parameters
+	}
+	return nil
+}
+
+type DockerSpec struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Image      string              `protobuf:"bytes,2,opt,name=image,proto3" json:"image,omitempty"`
+	Env        []string            `protobuf:"bytes,3,rep,name=env,proto3" json:"env,omitempty"`
+	Entrypoint []string            `protobuf:"bytes,4,rep,name=entrypoint,proto3" json:"entrypoint,omitempty"`
+	Command    []string            `protobuf:"bytes,5,rep,name=command,proto3" json:"command,omitempty"`
+	Pull       bool                `protobuf:"varint,6,opt,name=pull,proto3" json:"pull,omitempty"`
+	Auth       *DockerRegistryAuth `protobuf:"bytes,7,opt,name=auth,proto3" json:"auth,omitempty"`
+}
+
+func (x *DockerSpec) Reset() {
+	*x = DockerSpec{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_jsonapi_v1_config_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DockerSpec) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DockerSpec) ProtoMessage() {}
+
+func (x *DockerSpec) ProtoReflect() protoreflect.Message {
+	mi := &file_jsonapi_v1_config_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DockerSpec.ProtoReflect.Descriptor instead.
+func (*DockerSpec) Descriptor() ([]byte, []int) {
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *DockerSpec) GetImage() string {
+	if x != nil {
+		return x.Image
+	}
+	return ""
+}
+
+func (x *DockerSpec) GetEnv() []string {
+	if x != nil {
+		return x.Env
+	}
+	return nil
+}
+
+func (x *DockerSpec) GetEntrypoint() []string {
+	if x != nil {
+		return x.Entrypoint
+	}
+	return nil
+}
+
+func (x *DockerSpec) GetCommand() []string {
+	if x != nil {
+		return x.Command
+	}
+	return nil
+}
+
+func (x *DockerSpec) GetPull() bool {
+	if x != nil {
+		return x.Pull
+	}
+	return false
+}
+
+func (x *DockerSpec) GetAuth() *DockerRegistryAuth {
+	if x != nil {
+		return x.Auth
+	}
+	return nil
+}
+
+type DockerRegistryAuth struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Matches which images this auth applies to
+	// e.g. ghrc.io/* or *.dkr.ecr.*.amazonaws.com/*
+	Registry string `protobuf:"bytes,1,opt,name=registry,proto3" json:"registry,omitempty"`
+	// Supplies the method for auth.
+	// Not retuired if the registry matches a known pattern.
+	//
+	// Types that are assignable to Auth:
+	//
+	//	*DockerRegistryAuth_Basic_
+	//	*DockerRegistryAuth_AwsEcs
+	//	*DockerRegistryAuth_Github_
+	Auth isDockerRegistryAuth_Auth `protobuf_oneof:"auth"`
+}
+
+func (x *DockerRegistryAuth) Reset() {
+	*x = DockerRegistryAuth{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_jsonapi_v1_config_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DockerRegistryAuth) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DockerRegistryAuth) ProtoMessage() {}
+
+func (x *DockerRegistryAuth) ProtoReflect() protoreflect.Message {
+	mi := &file_jsonapi_v1_config_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DockerRegistryAuth.ProtoReflect.Descriptor instead.
+func (*DockerRegistryAuth) Descriptor() ([]byte, []int) {
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *DockerRegistryAuth) GetRegistry() string {
+	if x != nil {
+		return x.Registry
+	}
+	return ""
+}
+
+func (m *DockerRegistryAuth) GetAuth() isDockerRegistryAuth_Auth {
+	if m != nil {
+		return m.Auth
+	}
+	return nil
+}
+
+func (x *DockerRegistryAuth) GetBasic() *DockerRegistryAuth_Basic {
+	if x, ok := x.GetAuth().(*DockerRegistryAuth_Basic_); ok {
+		return x.Basic
+	}
+	return nil
+}
+
+func (x *DockerRegistryAuth) GetAwsEcs() *DockerRegistryAuth_AWSECS {
+	if x, ok := x.GetAuth().(*DockerRegistryAuth_AwsEcs); ok {
+		return x.AwsEcs
+	}
+	return nil
+}
+
+func (x *DockerRegistryAuth) GetGithub() *DockerRegistryAuth_Github {
+	if x, ok := x.GetAuth().(*DockerRegistryAuth_Github_); ok {
+		return x.Github
+	}
+	return nil
+}
+
+type isDockerRegistryAuth_Auth interface {
+	isDockerRegistryAuth_Auth()
+}
+
+type DockerRegistryAuth_Basic_ struct {
+	Basic *DockerRegistryAuth_Basic `protobuf:"bytes,10,opt,name=basic,proto3,oneof"`
+}
+
+type DockerRegistryAuth_AwsEcs struct {
+	AwsEcs *DockerRegistryAuth_AWSECS `protobuf:"bytes,11,opt,name=aws_ecs,json=awsEcs,proto3,oneof"` // default if *.dkr.ecr.*.amazonaws.com/*
+}
+
+type DockerRegistryAuth_Github_ struct {
+	Github *DockerRegistryAuth_Github `protobuf:"bytes,12,opt,name=github,proto3,oneof"` // default if ghrc.io/*
+}
+
+func (*DockerRegistryAuth_Basic_) isDockerRegistryAuth_Auth() {}
+
+func (*DockerRegistryAuth_AwsEcs) isDockerRegistryAuth_Auth() {}
+
+func (*DockerRegistryAuth_Github_) isDockerRegistryAuth_Auth() {}
+
+// GoProxy serves a go module using the go module proxy protocol
+// https://golang.org/cmd/go/#hdr-Module_proxy_protocol
+// The 'canonical' URL of the module should be a HTTP page which redirects
+// to the registry server, e.g.:
+// <meta name="go-import" content="example.org mod https://code.org/moduleproxy">
+// This allows the commit info from the source to map directly to the built
+// package, where using VCS requires a new commit for the build.
+type ProtoBuildConfig_GoProxy struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Path      string `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`                              // e.g. github.com/pentops/o5-go
+	GoModFile string `protobuf:"bytes,2,opt,name=go_mod_file,json=goModFile,proto3" json:"go_mod_file,omitempty"` // e.g. ./ext/builder/go.mod
+}
+
+func (x *ProtoBuildConfig_GoProxy) Reset() {
+	*x = ProtoBuildConfig_GoProxy{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_jsonapi_v1_config_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ProtoBuildConfig_GoProxy) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProtoBuildConfig_GoProxy) ProtoMessage() {}
+
+func (x *ProtoBuildConfig_GoProxy) ProtoReflect() protoreflect.Message {
+	mi := &file_jsonapi_v1_config_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProtoBuildConfig_GoProxy.ProtoReflect.Descriptor instead.
+func (*ProtoBuildConfig_GoProxy) Descriptor() ([]byte, []int) {
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{6, 0}
+}
+
+func (x *ProtoBuildConfig_GoProxy) GetPath() string {
+	if x != nil {
+		return x.Path
+	}
+	return ""
+}
+
+func (x *ProtoBuildConfig_GoProxy) GetGoModFile() string {
+	if x != nil {
+		return x.GoModFile
+	}
+	return ""
+}
+
+type DockerRegistryAuth_Basic struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Username       string `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	PasswordEnvVar string `protobuf:"bytes,2,opt,name=password_env_var,json=passwordEnvVar,proto3" json:"password_env_var,omitempty"`
+}
+
+func (x *DockerRegistryAuth_Basic) Reset() {
+	*x = DockerRegistryAuth_Basic{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_jsonapi_v1_config_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DockerRegistryAuth_Basic) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DockerRegistryAuth_Basic) ProtoMessage() {}
+
+func (x *DockerRegistryAuth_Basic) ProtoReflect() protoreflect.Message {
+	mi := &file_jsonapi_v1_config_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DockerRegistryAuth_Basic.ProtoReflect.Descriptor instead.
+func (*DockerRegistryAuth_Basic) Descriptor() ([]byte, []int) {
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{9, 0}
+}
+
+func (x *DockerRegistryAuth_Basic) GetUsername() string {
+	if x != nil {
+		return x.Username
+	}
+	return ""
+}
+
+func (x *DockerRegistryAuth_Basic) GetPasswordEnvVar() string {
+	if x != nil {
+		return x.PasswordEnvVar
+	}
+	return ""
+}
+
+type DockerRegistryAuth_AWSECS struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *DockerRegistryAuth_AWSECS) Reset() {
+	*x = DockerRegistryAuth_AWSECS{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_jsonapi_v1_config_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DockerRegistryAuth_AWSECS) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DockerRegistryAuth_AWSECS) ProtoMessage() {}
+
+func (x *DockerRegistryAuth_AWSECS) ProtoReflect() protoreflect.Message {
+	mi := &file_jsonapi_v1_config_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DockerRegistryAuth_AWSECS.ProtoReflect.Descriptor instead.
+func (*DockerRegistryAuth_AWSECS) Descriptor() ([]byte, []int) {
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{9, 1}
+}
+
+type DockerRegistryAuth_Github struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	TokenEnvVar string `protobuf:"bytes,1,opt,name=token_env_var,json=tokenEnvVar,proto3" json:"token_env_var,omitempty"` // defaults to GITHUB_TOKEN
+}
+
+func (x *DockerRegistryAuth_Github) Reset() {
+	*x = DockerRegistryAuth_Github{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_jsonapi_v1_config_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DockerRegistryAuth_Github) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DockerRegistryAuth_Github) ProtoMessage() {}
+
+func (x *DockerRegistryAuth_Github) ProtoReflect() protoreflect.Message {
+	mi := &file_jsonapi_v1_config_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DockerRegistryAuth_Github.ProtoReflect.Descriptor instead.
+func (*DockerRegistryAuth_Github) Descriptor() ([]byte, []int) {
+	return file_jsonapi_v1_config_proto_rawDescGZIP(), []int{9, 2}
+}
+
+func (x *DockerRegistryAuth_Github) GetTokenEnvVar() string {
+	if x != nil {
+		return x.TokenEnvVar
+	}
+	return ""
+}
+
 var File_jsonapi_v1_config_proto protoreflect.FileDescriptor
 
 var file_jsonapi_v1_config_proto_rawDesc = []byte{
 	0x0a, 0x17, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e,
 	0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0a, 0x6a, 0x73, 0x6f, 0x6e, 0x61,
-	0x70, 0x69, 0x2e, 0x76, 0x31, 0x22, 0xab, 0x01, 0x0a, 0x06, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x70, 0x69, 0x2e, 0x76, 0x31, 0x22, 0xe9, 0x02, 0x0a, 0x06, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
 	0x12, 0x35, 0x0a, 0x08, 0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03,
 	0x28, 0x0b, 0x32, 0x19, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e,
 	0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x08, 0x70,
@@ -335,36 +960,110 @@ var file_jsonapi_v1_config_proto_rawDesc = []byte{
 	0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e,
 	0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73,
 	0x74, 0x72, 0x79, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x08, 0x72, 0x65, 0x67, 0x69, 0x73,
-	0x74, 0x72, 0x79, 0x22, 0x4f, 0x0a, 0x0d, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x43, 0x6f,
-	0x6e, 0x66, 0x69, 0x67, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x52, 0x05, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61,
-	0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x14,
-	0x0a, 0x05, 0x70, 0x72, 0x6f, 0x73, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x70,
-	0x72, 0x6f, 0x73, 0x65, 0x22, 0x98, 0x01, 0x0a, 0x0c, 0x43, 0x6f, 0x64, 0x65, 0x63, 0x4f, 0x70,
-	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x2a, 0x0a, 0x11, 0x74, 0x72, 0x69, 0x6d, 0x5f, 0x73, 0x75,
-	0x62, 0x5f, 0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09,
-	0x52, 0x0f, 0x74, 0x72, 0x69, 0x6d, 0x53, 0x75, 0x62, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65,
-	0x73, 0x12, 0x1d, 0x0a, 0x0a, 0x77, 0x72, 0x61, 0x70, 0x5f, 0x6f, 0x6e, 0x65, 0x6f, 0x66, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x77, 0x72, 0x61, 0x70, 0x4f, 0x6e, 0x65, 0x6f, 0x66,
-	0x12, 0x3d, 0x0a, 0x0b, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x5f, 0x65, 0x6e, 0x75, 0x6d, 0x73, 0x18,
-	0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e,
-	0x76, 0x31, 0x2e, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x45, 0x6e, 0x75, 0x6d, 0x4f, 0x70, 0x74, 0x69,
-	0x6f, 0x6e, 0x73, 0x52, 0x0a, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x45, 0x6e, 0x75, 0x6d, 0x73, 0x22,
-	0x6c, 0x0a, 0x10, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x45, 0x6e, 0x75, 0x6d, 0x4f, 0x70, 0x74, 0x69,
-	0x6f, 0x6e, 0x73, 0x12, 0x2d, 0x0a, 0x12, 0x75, 0x6e, 0x73, 0x70, 0x65, 0x63, 0x69, 0x66, 0x69,
-	0x65, 0x64, 0x5f, 0x73, 0x75, 0x66, 0x66, 0x69, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
-	0x11, 0x75, 0x6e, 0x73, 0x70, 0x65, 0x63, 0x69, 0x66, 0x69, 0x65, 0x64, 0x53, 0x75, 0x66, 0x66,
-	0x69, 0x78, 0x12, 0x29, 0x0a, 0x10, 0x73, 0x74, 0x72, 0x69, 0x63, 0x74, 0x5f, 0x75, 0x6e, 0x6d,
-	0x61, 0x72, 0x73, 0x68, 0x61, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0f, 0x73, 0x74,
-	0x72, 0x69, 0x63, 0x74, 0x55, 0x6e, 0x6d, 0x61, 0x72, 0x73, 0x68, 0x61, 0x6c, 0x22, 0x48, 0x0a,
-	0x0e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12,
-	0x22, 0x0a, 0x0c, 0x6f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x6f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74,
-	0x69, 0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28,
-	0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x42, 0x2e, 0x5a, 0x2c, 0x67, 0x69, 0x74, 0x68, 0x75,
-	0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x74, 0x6f, 0x70, 0x73, 0x2f, 0x6a, 0x73,
-	0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x76, 0x31, 0x2f, 0x6a, 0x73, 0x6f,
-	0x6e, 0x61, 0x70, 0x69, 0x5f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x74, 0x72, 0x79, 0x12, 0x3f, 0x0a, 0x0c, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x5f, 0x62, 0x75, 0x69,
+	0x6c, 0x64, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x73, 0x6f, 0x6e,
+	0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x42, 0x75, 0x69, 0x6c,
+	0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x0b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x42, 0x75,
+	0x69, 0x6c, 0x64, 0x73, 0x12, 0x27, 0x0a, 0x03, 0x67, 0x69, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x15, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x47,
+	0x69, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x03, 0x67, 0x69, 0x74, 0x12, 0x52, 0x0a,
+	0x15, 0x64, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x5f, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79,
+	0x5f, 0x61, 0x75, 0x74, 0x68, 0x73, 0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a,
+	0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72,
+	0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x41, 0x75, 0x74, 0x68, 0x52, 0x13, 0x64, 0x6f,
+	0x63, 0x6b, 0x65, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x41, 0x75, 0x74, 0x68,
+	0x73, 0x22, 0x1f, 0x0a, 0x09, 0x47, 0x69, 0x74, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x12,
+	0x0a, 0x04, 0x6d, 0x61, 0x69, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6d, 0x61,
+	0x69, 0x6e, 0x22, 0x4f, 0x0a, 0x0d, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x43, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x05, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d,
+	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x14, 0x0a,
+	0x05, 0x70, 0x72, 0x6f, 0x73, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x70, 0x72,
+	0x6f, 0x73, 0x65, 0x22, 0x98, 0x01, 0x0a, 0x0c, 0x43, 0x6f, 0x64, 0x65, 0x63, 0x4f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x12, 0x2a, 0x0a, 0x11, 0x74, 0x72, 0x69, 0x6d, 0x5f, 0x73, 0x75, 0x62,
+	0x5f, 0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52,
+	0x0f, 0x74, 0x72, 0x69, 0x6d, 0x53, 0x75, 0x62, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x73,
+	0x12, 0x1d, 0x0a, 0x0a, 0x77, 0x72, 0x61, 0x70, 0x5f, 0x6f, 0x6e, 0x65, 0x6f, 0x66, 0x18, 0x02,
+	0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x77, 0x72, 0x61, 0x70, 0x4f, 0x6e, 0x65, 0x6f, 0x66, 0x12,
+	0x3d, 0x0a, 0x0b, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x5f, 0x65, 0x6e, 0x75, 0x6d, 0x73, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76,
+	0x31, 0x2e, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x45, 0x6e, 0x75, 0x6d, 0x4f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x52, 0x0a, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x45, 0x6e, 0x75, 0x6d, 0x73, 0x22, 0x6c,
+	0x0a, 0x10, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x45, 0x6e, 0x75, 0x6d, 0x4f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x12, 0x2d, 0x0a, 0x12, 0x75, 0x6e, 0x73, 0x70, 0x65, 0x63, 0x69, 0x66, 0x69, 0x65,
+	0x64, 0x5f, 0x73, 0x75, 0x66, 0x66, 0x69, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x11,
+	0x75, 0x6e, 0x73, 0x70, 0x65, 0x63, 0x69, 0x66, 0x69, 0x65, 0x64, 0x53, 0x75, 0x66, 0x66, 0x69,
+	0x78, 0x12, 0x29, 0x0a, 0x10, 0x73, 0x74, 0x72, 0x69, 0x63, 0x74, 0x5f, 0x75, 0x6e, 0x6d, 0x61,
+	0x72, 0x73, 0x68, 0x61, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0f, 0x73, 0x74, 0x72,
+	0x69, 0x63, 0x74, 0x55, 0x6e, 0x6d, 0x61, 0x72, 0x73, 0x68, 0x61, 0x6c, 0x22, 0x48, 0x0a, 0x0e,
+	0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x22,
+	0x0a, 0x0c, 0x6f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0c, 0x6f, 0x72, 0x67, 0x61, 0x6e, 0x69, 0x7a, 0x61, 0x74, 0x69,
+	0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x84, 0x02, 0x0a, 0x10, 0x50, 0x72, 0x6f, 0x74, 0x6f,
+	0x42, 0x75, 0x69, 0x6c, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x26, 0x0a, 0x0f, 0x67,
+	0x65, 0x6e, 0x5f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x66, 0x69, 0x6c, 0x65, 0x18, 0x01,
+	0x20, 0x01, 0x28, 0x09, 0x52, 0x0d, 0x67, 0x65, 0x6e, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x46,
+	0x69, 0x6c, 0x65, 0x12, 0x36, 0x0a, 0x07, 0x70, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73, 0x18, 0x02,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76,
+	0x31, 0x2e, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x50, 0x6c, 0x75, 0x67,
+	0x69, 0x6e, 0x52, 0x07, 0x70, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73, 0x12, 0x41, 0x0a, 0x08, 0x67,
+	0x6f, 0x5f, 0x70, 0x72, 0x6f, 0x78, 0x79, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x24, 0x2e,
+	0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x74, 0x6f,
+	0x42, 0x75, 0x69, 0x6c, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x47, 0x6f, 0x50, 0x72,
+	0x6f, 0x78, 0x79, 0x48, 0x00, 0x52, 0x07, 0x67, 0x6f, 0x50, 0x72, 0x6f, 0x78, 0x79, 0x1a, 0x3d,
+	0x0a, 0x07, 0x47, 0x6f, 0x50, 0x72, 0x6f, 0x78, 0x79, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x61, 0x74,
+	0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x12, 0x1e, 0x0a,
+	0x0b, 0x67, 0x6f, 0x5f, 0x6d, 0x6f, 0x64, 0x5f, 0x66, 0x69, 0x6c, 0x65, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x09, 0x67, 0x6f, 0x4d, 0x6f, 0x64, 0x46, 0x69, 0x6c, 0x65, 0x42, 0x0e, 0x0a,
+	0x0c, 0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x5f, 0x74, 0x79, 0x70, 0x65, 0x22, 0x78, 0x0a,
+	0x10, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x50, 0x6c, 0x75, 0x67, 0x69,
+	0x6e, 0x12, 0x14, 0x0a, 0x05, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x05, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x12, 0x2e, 0x0a, 0x06, 0x64, 0x6f, 0x63, 0x6b, 0x65,
+	0x72, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70,
+	0x69, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x53, 0x70, 0x65, 0x63, 0x52,
+	0x06, 0x64, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x12, 0x1e, 0x0a, 0x0a, 0x70, 0x61, 0x72, 0x61, 0x6d,
+	0x65, 0x74, 0x65, 0x72, 0x73, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x0a, 0x70, 0x61, 0x72,
+	0x61, 0x6d, 0x65, 0x74, 0x65, 0x72, 0x73, 0x22, 0xb6, 0x01, 0x0a, 0x0a, 0x44, 0x6f, 0x63, 0x6b,
+	0x65, 0x72, 0x53, 0x70, 0x65, 0x63, 0x12, 0x14, 0x0a, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x12, 0x10, 0x0a, 0x03,
+	0x65, 0x6e, 0x76, 0x18, 0x03, 0x20, 0x03, 0x28, 0x09, 0x52, 0x03, 0x65, 0x6e, 0x76, 0x12, 0x1e,
+	0x0a, 0x0a, 0x65, 0x6e, 0x74, 0x72, 0x79, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x18, 0x04, 0x20, 0x03,
+	0x28, 0x09, 0x52, 0x0a, 0x65, 0x6e, 0x74, 0x72, 0x79, 0x70, 0x6f, 0x69, 0x6e, 0x74, 0x12, 0x18,
+	0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x18, 0x05, 0x20, 0x03, 0x28, 0x09, 0x52,
+	0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x75, 0x6c, 0x6c,
+	0x18, 0x06, 0x20, 0x01, 0x28, 0x08, 0x52, 0x04, 0x70, 0x75, 0x6c, 0x6c, 0x12, 0x32, 0x0a, 0x04,
+	0x61, 0x75, 0x74, 0x68, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x73, 0x6f,
+	0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x52, 0x65,
+	0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x41, 0x75, 0x74, 0x68, 0x52, 0x04, 0x61, 0x75, 0x74, 0x68,
+	0x22, 0x80, 0x03, 0x0a, 0x12, 0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73,
+	0x74, 0x72, 0x79, 0x41, 0x75, 0x74, 0x68, 0x12, 0x1a, 0x0a, 0x08, 0x72, 0x65, 0x67, 0x69, 0x73,
+	0x74, 0x72, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x72, 0x65, 0x67, 0x69, 0x73,
+	0x74, 0x72, 0x79, 0x12, 0x3c, 0x0a, 0x05, 0x62, 0x61, 0x73, 0x69, 0x63, 0x18, 0x0a, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x24, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e,
+	0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x41, 0x75,
+	0x74, 0x68, 0x2e, 0x42, 0x61, 0x73, 0x69, 0x63, 0x48, 0x00, 0x52, 0x05, 0x62, 0x61, 0x73, 0x69,
+	0x63, 0x12, 0x40, 0x0a, 0x07, 0x61, 0x77, 0x73, 0x5f, 0x65, 0x63, 0x73, 0x18, 0x0b, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x25, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31, 0x2e,
+	0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x41, 0x75,
+	0x74, 0x68, 0x2e, 0x41, 0x57, 0x53, 0x45, 0x43, 0x53, 0x48, 0x00, 0x52, 0x06, 0x61, 0x77, 0x73,
+	0x45, 0x63, 0x73, 0x12, 0x3f, 0x0a, 0x06, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x18, 0x0c, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x25, 0x2e, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2e, 0x76, 0x31,
+	0x2e, 0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x41,
+	0x75, 0x74, 0x68, 0x2e, 0x47, 0x69, 0x74, 0x68, 0x75, 0x62, 0x48, 0x00, 0x52, 0x06, 0x67, 0x69,
+	0x74, 0x68, 0x75, 0x62, 0x1a, 0x4d, 0x0a, 0x05, 0x42, 0x61, 0x73, 0x69, 0x63, 0x12, 0x1a, 0x0a,
+	0x08, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x08, 0x75, 0x73, 0x65, 0x72, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x28, 0x0a, 0x10, 0x70, 0x61, 0x73,
+	0x73, 0x77, 0x6f, 0x72, 0x64, 0x5f, 0x65, 0x6e, 0x76, 0x5f, 0x76, 0x61, 0x72, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x0e, 0x70, 0x61, 0x73, 0x73, 0x77, 0x6f, 0x72, 0x64, 0x45, 0x6e, 0x76,
+	0x56, 0x61, 0x72, 0x1a, 0x08, 0x0a, 0x06, 0x41, 0x57, 0x53, 0x45, 0x43, 0x53, 0x1a, 0x2c, 0x0a,
+	0x06, 0x47, 0x69, 0x74, 0x68, 0x75, 0x62, 0x12, 0x22, 0x0a, 0x0d, 0x74, 0x6f, 0x6b, 0x65, 0x6e,
+	0x5f, 0x65, 0x6e, 0x76, 0x5f, 0x76, 0x61, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b,
+	0x74, 0x6f, 0x6b, 0x65, 0x6e, 0x45, 0x6e, 0x76, 0x56, 0x61, 0x72, 0x42, 0x06, 0x0a, 0x04, 0x61,
+	0x75, 0x74, 0x68, 0x42, 0x2e, 0x5a, 0x2c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
+	0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x74, 0x6f, 0x70, 0x73, 0x2f, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70,
+	0x69, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x76, 0x31, 0x2f, 0x6a, 0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69,
+	0x5f, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -379,24 +1078,43 @@ func file_jsonapi_v1_config_proto_rawDescGZIP() []byte {
 	return file_jsonapi_v1_config_proto_rawDescData
 }
 
-var file_jsonapi_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_jsonapi_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
 var file_jsonapi_v1_config_proto_goTypes = []interface{}{
-	(*Config)(nil),           // 0: jsonapi.v1.Config
-	(*PackageConfig)(nil),    // 1: jsonapi.v1.PackageConfig
-	(*CodecOptions)(nil),     // 2: jsonapi.v1.CodecOptions
-	(*ShortEnumOptions)(nil), // 3: jsonapi.v1.ShortEnumOptions
-	(*RegistryConfig)(nil),   // 4: jsonapi.v1.RegistryConfig
+	(*Config)(nil),                    // 0: jsonapi.v1.Config
+	(*GitConfig)(nil),                 // 1: jsonapi.v1.GitConfig
+	(*PackageConfig)(nil),             // 2: jsonapi.v1.PackageConfig
+	(*CodecOptions)(nil),              // 3: jsonapi.v1.CodecOptions
+	(*ShortEnumOptions)(nil),          // 4: jsonapi.v1.ShortEnumOptions
+	(*RegistryConfig)(nil),            // 5: jsonapi.v1.RegistryConfig
+	(*ProtoBuildConfig)(nil),          // 6: jsonapi.v1.ProtoBuildConfig
+	(*ProtoBuildPlugin)(nil),          // 7: jsonapi.v1.ProtoBuildPlugin
+	(*DockerSpec)(nil),                // 8: jsonapi.v1.DockerSpec
+	(*DockerRegistryAuth)(nil),        // 9: jsonapi.v1.DockerRegistryAuth
+	(*ProtoBuildConfig_GoProxy)(nil),  // 10: jsonapi.v1.ProtoBuildConfig.GoProxy
+	(*DockerRegistryAuth_Basic)(nil),  // 11: jsonapi.v1.DockerRegistryAuth.Basic
+	(*DockerRegistryAuth_AWSECS)(nil), // 12: jsonapi.v1.DockerRegistryAuth.AWSECS
+	(*DockerRegistryAuth_Github)(nil), // 13: jsonapi.v1.DockerRegistryAuth.Github
 }
 var file_jsonapi_v1_config_proto_depIdxs = []int32{
-	1, // 0: jsonapi.v1.Config.packages:type_name -> jsonapi.v1.PackageConfig
-	2, // 1: jsonapi.v1.Config.options:type_name -> jsonapi.v1.CodecOptions
-	4, // 2: jsonapi.v1.Config.registry:type_name -> jsonapi.v1.RegistryConfig
-	3, // 3: jsonapi.v1.CodecOptions.short_enums:type_name -> jsonapi.v1.ShortEnumOptions
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	2,  // 0: jsonapi.v1.Config.packages:type_name -> jsonapi.v1.PackageConfig
+	3,  // 1: jsonapi.v1.Config.options:type_name -> jsonapi.v1.CodecOptions
+	5,  // 2: jsonapi.v1.Config.registry:type_name -> jsonapi.v1.RegistryConfig
+	6,  // 3: jsonapi.v1.Config.proto_builds:type_name -> jsonapi.v1.ProtoBuildConfig
+	1,  // 4: jsonapi.v1.Config.git:type_name -> jsonapi.v1.GitConfig
+	9,  // 5: jsonapi.v1.Config.docker_registry_auths:type_name -> jsonapi.v1.DockerRegistryAuth
+	4,  // 6: jsonapi.v1.CodecOptions.short_enums:type_name -> jsonapi.v1.ShortEnumOptions
+	7,  // 7: jsonapi.v1.ProtoBuildConfig.plugins:type_name -> jsonapi.v1.ProtoBuildPlugin
+	10, // 8: jsonapi.v1.ProtoBuildConfig.go_proxy:type_name -> jsonapi.v1.ProtoBuildConfig.GoProxy
+	8,  // 9: jsonapi.v1.ProtoBuildPlugin.docker:type_name -> jsonapi.v1.DockerSpec
+	9,  // 10: jsonapi.v1.DockerSpec.auth:type_name -> jsonapi.v1.DockerRegistryAuth
+	11, // 11: jsonapi.v1.DockerRegistryAuth.basic:type_name -> jsonapi.v1.DockerRegistryAuth.Basic
+	12, // 12: jsonapi.v1.DockerRegistryAuth.aws_ecs:type_name -> jsonapi.v1.DockerRegistryAuth.AWSECS
+	13, // 13: jsonapi.v1.DockerRegistryAuth.github:type_name -> jsonapi.v1.DockerRegistryAuth.Github
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_jsonapi_v1_config_proto_init() }
@@ -418,7 +1136,7 @@ func file_jsonapi_v1_config_proto_init() {
 			}
 		}
 		file_jsonapi_v1_config_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*PackageConfig); i {
+			switch v := v.(*GitConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -430,7 +1148,7 @@ func file_jsonapi_v1_config_proto_init() {
 			}
 		}
 		file_jsonapi_v1_config_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CodecOptions); i {
+			switch v := v.(*PackageConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -442,7 +1160,7 @@ func file_jsonapi_v1_config_proto_init() {
 			}
 		}
 		file_jsonapi_v1_config_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ShortEnumOptions); i {
+			switch v := v.(*CodecOptions); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -454,6 +1172,18 @@ func file_jsonapi_v1_config_proto_init() {
 			}
 		}
 		file_jsonapi_v1_config_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ShortEnumOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_jsonapi_v1_config_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RegistryConfig); i {
 			case 0:
 				return &v.state
@@ -465,6 +1195,110 @@ func file_jsonapi_v1_config_proto_init() {
 				return nil
 			}
 		}
+		file_jsonapi_v1_config_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ProtoBuildConfig); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_jsonapi_v1_config_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ProtoBuildPlugin); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_jsonapi_v1_config_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DockerSpec); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_jsonapi_v1_config_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DockerRegistryAuth); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_jsonapi_v1_config_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*ProtoBuildConfig_GoProxy); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_jsonapi_v1_config_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DockerRegistryAuth_Basic); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_jsonapi_v1_config_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DockerRegistryAuth_AWSECS); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_jsonapi_v1_config_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*DockerRegistryAuth_Github); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+	}
+	file_jsonapi_v1_config_proto_msgTypes[6].OneofWrappers = []interface{}{
+		(*ProtoBuildConfig_GoProxy_)(nil),
+	}
+	file_jsonapi_v1_config_proto_msgTypes[9].OneofWrappers = []interface{}{
+		(*DockerRegistryAuth_Basic_)(nil),
+		(*DockerRegistryAuth_AwsEcs)(nil),
+		(*DockerRegistryAuth_Github_)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
@@ -472,7 +1306,7 @@ func file_jsonapi_v1_config_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_jsonapi_v1_config_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   14,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
