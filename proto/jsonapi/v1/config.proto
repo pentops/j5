@@ -4,11 +4,27 @@ package jsonapi.v1;
 
 option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
 
-
 message Config {
   repeated PackageConfig packages = 1;
   CodecOptions options = 2;
   RegistryConfig registry = 3;
+
+  repeated ProtoBuildConfig proto_builds = 4;
+
+  GitConfig git = 5;
+
+  repeated DockerRegistryAuth docker_registry_auths = 6;
+}
+
+// When code is managed through git, configures mapping between git branches,
+// tags and commits to output version tags.
+message GitConfig {
+  // used to determine if a commit is the 'latest' or 'main' or 'stable' branch.
+  // defaults to /refs/heads/main
+  // accepts wildcard *
+  // e.g. /refs/heads/main or /refs/tags/v*
+  // Will become 'latest' in go mod packages
+  string main = 1;
 }
 
 message PackageConfig {
@@ -31,4 +47,73 @@ message ShortEnumOptions {
 message RegistryConfig {
   string organization = 1;
   string name = 2;
+}
+
+message ProtoBuildConfig {
+  string gen_config_file = 1;
+  repeated ProtoBuildPlugin plugins = 2;
+
+  oneof package_type {
+    GoProxy go_proxy = 10;
+  }
+
+  // GoProxy serves a go module using the go module proxy protocol
+  // https://golang.org/cmd/go/#hdr-Module_proxy_protocol
+  // The 'canonical' URL of the module should be a HTTP page which redirects
+  // to the registry server, e.g.:
+  // <meta name="go-import" content="example.org mod https://code.org/moduleproxy">
+  // This allows the commit info from the source to map directly to the built
+  // package, where using VCS requires a new commit for the build.
+  message GoProxy {
+    string path = 1; // e.g. github.com/pentops/o5-go
+    string go_mod_file = 2; // e.g. ./ext/builder/go.mod
+  }
+}
+
+message ProtoBuildPlugin {
+  // used only in logging and errors
+  string label = 1;
+
+  // a docker container which will receive stdin and pipe stdout
+  // input is google.protobuf.compiler.CodeGeneratorRequest
+  // output is google.protobuf.compiler.CodeGeneratorResponse
+  DockerSpec docker = 2;
+
+  repeated string parameters = 3;
+}
+
+message DockerSpec {
+  string image = 2;
+  repeated string env = 3;
+  repeated string entrypoint = 4;
+  repeated string command = 5;
+  bool pull = 6;
+  DockerRegistryAuth auth = 7;
+}
+
+message DockerRegistryAuth {
+  // Matches which images this auth applies to
+  // e.g. ghrc.io/* or *.dkr.ecr.*.amazonaws.com/*
+  string registry = 1;
+
+  // Supplies the method for auth.
+  // Not retuired if the registry matches a known pattern.
+  oneof auth {
+    Basic basic = 10;
+    AWSECS aws_ecs = 11; // default if *.dkr.ecr.*.amazonaws.com/*
+    Github github = 12; // default if ghrc.io/*
+  }
+
+  message Basic {
+    string username = 1;
+    string password_env_var = 2;
+  }
+
+  message AWSECS {
+    // TODO: Options for aws auth. Current implementations assume ec2 metadata.
+  }
+
+  message Github {
+    string token_env_var = 1; // defaults to GITHUB_TOKEN
+  }
 }
