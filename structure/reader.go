@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -79,6 +78,15 @@ func ReadFileDescriptorSet(ctx context.Context, src string) (*descriptorpb.FileD
 	}, nil
 }
 
+var ConfigPaths = []string{
+	"j5.yaml",
+	"jsonapi.yaml",
+	"j5.yml",
+	"jsonapi.yml",
+	"ext/j5/j5.yaml",
+	"ext/j5/j5.yml",
+}
+
 func ReadImageFromSourceDir(ctx context.Context, src string) (*jsonapi_pb.Image, error) {
 	fileStat, err := os.Lstat(src)
 	if err != nil {
@@ -88,13 +96,21 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*jsonapi_pb.Image,
 		return nil, fmt.Errorf("src must be a directory")
 	}
 
-	configData, err := os.ReadFile(filepath.Join(src, "jsonapi.yaml"))
-	if err != nil {
-		log.Fatal(err.Error())
+	var configData []byte
+	for _, filename := range ConfigPaths {
+		configData, err = os.ReadFile(filepath.Join(src, filename))
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
+		}
+		break
 	}
+
 	config := &config_j5pb.Config{}
 	if err := protoyaml.Unmarshal(configData, config); err != nil {
-		log.Fatal(err.Error())
+		return nil, err
 	}
 
 	extFiles, err := getDeps(ctx, src)
