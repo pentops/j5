@@ -12,7 +12,9 @@ require (
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/google/uuid v1.4.0
 	github.com/jhump/protoreflect v1.15.3
+	github.com/pentops/o5-go v0.0.0-20240108212127-807bf5c29410
 	github.com/pentops/o5-runtime-sidecar v0.0.6
+	github.com/pentops/runner v0.0.0-20231219070819-c4878d5565d8
 	github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5
 	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/gjson v1.17.0
@@ -40,10 +42,11 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.26.1 // indirect
 	github.com/aws/smithy-go v1.18.1 // indirect
 	github.com/bufbuild/protocompile v0.6.1-0.20231108163138-146b831231f7 // indirect
-	github.com/bufbuild/protovalidate-go v0.4.1 // indirect
+	github.com/bufbuild/protovalidate-go v0.4.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/cel-go v0.18.2 // indirect
+	github.com/pentops/log.go v0.0.0-20231218074934-67aedcab3fa4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package j5.builder.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "j5/config/v1/config.proto";
+import "o5/messaging/v1/annotations.proto";
+
+option go_package = "github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb";
+
+service BuilderTopic {
+  option (o5.messaging.v1.config).unicast.name = "j5-builder-input";
+  rpc BuildProto(BuildProtoMessage) returns (google.protobuf.Empty) {}
+  rpc BuildAPI(BuildAPIMessage) returns (google.protobuf.Empty) {}
+}
+
+message CommitInfo {
+  string owner = 1 [(buf.validate.field).required = true];
+  string repo = 2 [(buf.validate.field).required = true];
+  string hash = 3 [(buf.validate.field).required = true];
+
+  google.protobuf.Timestamp time = 4 [(buf.validate.field).required = true];
+  repeated string aliases = 5;
+}
+
+message BuildProtoMessage {
+  CommitInfo commit = 1 [(buf.validate.field).required = true];
+
+  // contains one single proto build definition, otherwise is the config
+  // as pulled from the source.
+  j5.config.v1.Config config = 2 [(buf.validate.field).required = true];
+}
+
+message BuildAPIMessage {
+  CommitInfo commit = 1 [(buf.validate.field).required = true];
+
+  // contains fields relating to JSON API build, i.e. excludes other build
+  // configs.
+  j5.config.v1.Config config = 2 [(buf.validate.field).required = true];
+}

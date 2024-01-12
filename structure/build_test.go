@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
 	"github.com/pentops/jsonapi/jsonapi"
 	"github.com/pentops/o5-runtime-sidecar/testproto"
@@ -151,7 +152,7 @@ func TestBuild(t *testing.T) {
 		}},
 	}
 
-	built, err := BuildFromDescriptors(&jsonapi_pb.Config{
+	built, err := BuildFromDescriptors(&config_j5pb.Config{
 		Packages: []*jsonapi_pb.PackageConfig{{
 			Label: "Test",
 			Name:  "test.v1",

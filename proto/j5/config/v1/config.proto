@@ -1,19 +1,20 @@
 syntax = "proto3";
 
-package jsonapi.v1;
+package j5.config.v1;
 
-option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
+import "jsonapi/v1/image.proto";
+
+option go_package = "github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb";
 
 message Config {
-  repeated PackageConfig packages = 1;
-  CodecOptions options = 2;
-  RegistryConfig registry = 3;
+  repeated jsonapi.v1.PackageConfig packages = 1;
+
+  jsonapi.v1.CodecOptions options = 2;
+  jsonapi.v1.RegistryConfig registry = 3;
 
   repeated ProtoBuildConfig proto_builds = 4;
 
   GitConfig git = 5;
-
-  repeated DockerRegistryAuth docker_registry_auths = 6;
 }
 
 // When code is managed through git, configures mapping between git branches,
@@ -25,28 +26,6 @@ message GitConfig {
   // e.g. /refs/heads/main or /refs/tags/v*
   // Will become 'latest' in go mod packages
   string main = 1;
-}
-
-message PackageConfig {
-  string label = 1;
-  string name = 2;
-  string prose = 3;
-}
-
-message CodecOptions {
-  repeated string trim_sub_packages = 1;
-  bool wrap_oneof = 2;
-  ShortEnumOptions short_enums = 3;
-}
-
-message ShortEnumOptions {
-  string unspecified_suffix = 1;
-  bool strict_unmarshal = 2;
-}
-
-message RegistryConfig {
-  string organization = 1;
-  string name = 2;
 }
 
 message ProtoBuildConfig {
@@ -90,6 +69,10 @@ message DockerSpec {
   bool pull = 6;
 }
 
+// TODO: This currently floats without a config, we need to decide if it belongs
+// in the repo config or builder shared config. The complication is that the
+// builder has access to all pulled images on the host, so linking this to the
+// repo is a bit misleading.
 message DockerRegistryAuth {
   // Matches which images this auth applies to
   // e.g. ghrc.io/* or *.dkr.ecr.*.amazonaws.com/*

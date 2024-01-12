@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
 	"github.com/pentops/jsonapi/jsonapi"
 	"google.golang.org/genproto/googleapis/api/annotations"
@@ -125,7 +126,7 @@ func BuildFromImage(image *jsonapi_pb.Image) (*Built, error) {
 		File: image.File,
 	}
 
-	config := &jsonapi_pb.Config{
+	config := &config_j5pb.Config{
 		Packages: image.Packages,
 		Options:  image.Codec,
 	}
@@ -133,7 +134,7 @@ func BuildFromImage(image *jsonapi_pb.Image) (*Built, error) {
 	return BuildFromDescriptors(config, descriptors, proseResolver)
 }
 
-func BuildFromDescriptors(config *jsonapi_pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*Built, error) {
+func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*Built, error) {
 
 	codecOptions := jsonapi.Options{
 		ShortEnums: &jsonapi.ShortEnumsOption{
