@@ -15,6 +15,7 @@ import (
 	"github.com/go-yaml/yaml"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -91,7 +92,7 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*jsonapi_pb.Image,
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	config := &jsonapi_pb.Config{}
+	config := &config_j5pb.Config{}
 	if err := protoyaml.Unmarshal(configData, config); err != nil {
 		log.Fatal(err.Error())
 	}

@@ -3,7 +3,6 @@ syntax = "proto3";
 package jsonapi.v1;
 
 import "google/protobuf/descriptor.proto";
-import "jsonapi/v1/config.proto";
 
 option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
 
@@ -18,4 +17,26 @@ message Image {
 message ProseFile {
   string path = 1;
   bytes content = 2;
+}
+
+message PackageConfig {
+  string label = 1;
+  string name = 2;
+  string prose = 3;
+}
+
+message RegistryConfig {
+  string organization = 1;
+  string name = 2;
+}
+
+message CodecOptions {
+  repeated string trim_sub_packages = 1;
+  bool wrap_oneof = 2;
+  ShortEnumOptions short_enums = 3;
+}
+
+message ShortEnumOptions {
+  string unspecified_suffix = 1;
+  bool strict_unmarshal = 2;
 }
