@@ -25,18 +25,25 @@ message CommitInfo {
   repeated string aliases = 5;
 }
 
+message CheckRun {
+  string name = 1;
+  int64 id = 2;
+}
+
 message BuildProtoMessage {
   CommitInfo commit = 1 [(buf.validate.field).required = true];
+  CheckRun check_run = 2 [(buf.validate.field).required = true];
 
   // contains one single proto build definition, otherwise is the config
   // as pulled from the source.
-  j5.config.v1.Config config = 2 [(buf.validate.field).required = true];
+  j5.config.v1.Config config = 3 [(buf.validate.field).required = true];
 }
 
 message BuildAPIMessage {
   CommitInfo commit = 1 [(buf.validate.field).required = true];
+  CheckRun check_run = 2 [(buf.validate.field).required = true];
 
   // contains fields relating to JSON API build, i.e. excludes other build
   // configs.
-  j5.config.v1.Config config = 2 [(buf.validate.field).required = true];
+  j5.config.v1.Config config = 3 [(buf.validate.field).required = true];
 }
