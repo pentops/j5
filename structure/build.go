@@ -9,7 +9,6 @@ import (
 
 	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
-	"github.com/pentops/jsonapi/jsonapi"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -18,55 +17,11 @@ import (
 )
 
 type builder struct {
-	schemas  *jsonapi.SchemaSet
+	schemas  *SchemaSet
 	packages []*jsonapi_pb.Package
 
 	trimPackages []string
 }
-
-/*
-type Built struct {
-	Packages []*Package                     `json:"packages"`
-	Schemas  map[string]*jsonapi.SchemaItem `json:"schemas"`
-}
-
-
-type Package struct {
-	Label  string `json:"label"`
-	Name   string `json:"name"`
-	Hidden bool   `json:"hidden"`
-
-	Introduction string       `json:"introduction,omitempty"`
-	Methods      []*Method    `json:"methods"`
-	Events       []*EventSpec `json:"events"`
-}
-
-type Method struct {
-	GrpcServiceName string `json:"grpcServiceName"`
-	GrpcMethodName  string `json:"grpcMethodName"`
-	FullGrpcName    string `json:"fullGrpcName"`
-
-	HTTPMethod      string              `json:"httpMethod"`
-	HTTPPath        string              `json:"httpPath"`
-	RequestBody     *jsonapi.SchemaItem `json:"requestBody,omitempty"`
-	ResponseBody    *jsonapi.SchemaItem `json:"responseBody,omitempty"`
-	QueryParameters []*Parameter        `json:"queryParameters,omitempty"`
-	PathParameters  []*Parameter        `json:"pathParameters,omitempty"`
-}
-
-type EventSpec struct {
-	Name        string              `json:"name"`
-	StateSchema *jsonapi.SchemaItem `json:"stateSchema,omitempty"`
-	EventSchema *jsonapi.SchemaItem `json:"eventSchema,omitempty"`
-}
-
-type Parameter struct {
-	Name        string             `json:"name"`
-	Description string             `json:"description,omitempty"`
-	Required    bool               `json:"required,omitempty"`
-	Schema      jsonapi.SchemaItem `json:"schema"`
-}
-*/
 
 type ProseResolver interface {
 	ResolveProse(filename string) (string, error)
@@ -139,21 +94,6 @@ func BuildFromImage(image *jsonapi_pb.Image) (*jsonapi_pb.API, error) {
 
 func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*jsonapi_pb.API, error) {
 
-	codecOptions := jsonapi.Options{
-		ShortEnums: &jsonapi.ShortEnumsOption{
-			UnspecifiedSuffix: "UNSPECIFIED",
-			StrictUnmarshal:   true,
-		},
-		WrapOneof: config.Options.WrapOneof,
-	}
-
-	if config.Options.ShortEnums != nil {
-		codecOptions.ShortEnums = &jsonapi.ShortEnumsOption{
-			UnspecifiedSuffix: config.Options.ShortEnums.UnspecifiedSuffix,
-			StrictUnmarshal:   config.Options.ShortEnums.StrictUnmarshal,
-		}
-	}
-
 	services := make([]protoreflect.ServiceDescriptor, 0)
 	descFiles, err := protodesc.NewFiles(descriptors)
 	if err != nil {
@@ -175,7 +115,7 @@ func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.
 	}
 
 	b := builder{
-		schemas:      jsonapi.NewSchemaSet(codecOptions),
+		schemas:      NewSchemaSet(config.Options),
 		trimPackages: trimSuffixes,
 	}
 
@@ -233,11 +173,7 @@ func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.
 
 	schemas := map[string]*jsonapi_pb.Schema{}
 	for name, schema := range b.schemas.Schemas {
-		proto, err := schema.ToProto()
-		if err != nil {
-			return nil, err
-		}
-		schemas[name] = proto
+		schemas[name] = schema
 	}
 	bb := &jsonapi_pb.API{
 		Packages: b.packages,
@@ -364,7 +300,7 @@ func convertPath(path string, requestObject protoreflect.MessageDescriptor) (str
 	return strings.Join(parts, "/"), nil
 }
 
-func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDescriptor) (*Method, error) {
+func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDescriptor) (*jsonapi_pb.Method, error) {
 
 	methodOptions := method.Options().(*descriptorpb.MethodOptions)
 	httpOpt := proto.GetExtension(methodOptions, annotations.E_Http).(*annotations.HttpRule)
@@ -401,11 +337,11 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 		return nil, err
 	}
 
-	builtMethod := &Method{
+	builtMethod := &jsonapi_pb.Method{
 		GrpcServiceName: string(method.Parent().Name()),
 		GrpcMethodName:  string(method.Name()),
-		HTTPMethod:      httpMethod,
-		HTTPPath:        converted,
+		HttpMethod:      httpMethod,
+		HttpPath:        converted,
 		FullGrpcName:    fmt.Sprintf("/%s/%s", serviceName, method.Name()),
 	}
 
@@ -421,7 +357,7 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 		return nil, err
 	}
 
-	requestObject := request.ItemType.(*jsonapi.ObjectItem)
+	requestObject := request.GetObjectItem()
 
 	for _, paramStr := range rePathParameter.FindAllString(httpPath, -1) {
 		name := paramStr[1 : len(paramStr)-1]
@@ -430,34 +366,49 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 			return nil, fmt.Errorf("path parameter %q is not a top level field", name)
 		}
 
-		prop, ok := requestObject.PopProperty(parts[0])
+		prop, ok := popProperty(requestObject, parts[0])
 		if !ok {
 			return nil, fmt.Errorf("path parameter %q not found in request object", name)
 		}
 
-		prop.Skip = true
-		builtMethod.PathParameters = append(builtMethod.PathParameters, &Parameter{
+		builtMethod.PathParameters = append(builtMethod.PathParameters, &jsonapi_pb.Parameter{
 			Name:     prop.Name,
 			Required: true,
-			Schema:   prop.SchemaItem,
+			Schema:   prop.Schema,
 		})
 	}
 
 	if httpOpt.Body == "" {
 		// TODO: This should probably be based on the annotation setting of body
 		for _, param := range requestObject.Properties {
-			builtMethod.QueryParameters = append(builtMethod.QueryParameters, &Parameter{
+			builtMethod.QueryParameters = append(builtMethod.QueryParameters, &jsonapi_pb.Parameter{
 				Name:     param.Name,
 				Required: false,
-				Schema:   param.SchemaItem,
+				Schema:   param.Schema,
 			})
 		}
 	} else if httpOpt.Body == "*" {
-		request.ItemType = requestObject
+		request.Type = &jsonapi_pb.Schema_ObjectItem{
+			ObjectItem: requestObject,
+		}
 		builtMethod.RequestBody = request
 	} else {
 		return nil, fmt.Errorf("unsupported body type %q", httpOpt.Body)
 	}
 
 	return builtMethod, nil
+}
+
+func popProperty(obj *jsonapi_pb.ObjectItem, name string) (*jsonapi_pb.ObjectProperty, bool) {
+	newProps := make([]*jsonapi_pb.ObjectProperty, 0, len(obj.Properties)-1)
+	var found *jsonapi_pb.ObjectProperty
+	for _, prop := range obj.Properties {
+		if prop.ProtoFieldName == name {
+			found = prop
+			continue
+		}
+		newProps = append(newProps, prop)
+	}
+	obj.Properties = newProps
+	return found, found != nil
 }

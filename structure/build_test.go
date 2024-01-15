@@ -1,16 +1,14 @@
 package structure
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
 	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
-	"github.com/pentops/jsonapi/jsonapi"
 	"github.com/pentops/o5-runtime-sidecar/testproto"
-	"github.com/stretchr/testify/assert"
 	"google.golang.org/genproto/googleapis/api/annotations"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -94,58 +92,63 @@ func TestBuild(t *testing.T) {
 		},
 	}
 
-	want := &Built{
-		Packages: []*Package{{
+	want := &jsonapi_pb.API{
+		Packages: []*jsonapi_pb.Package{{
 			Label: "Test",
 			Name:  "test.v1",
-			Methods: []*Method{{
+			Methods: []*jsonapi_pb.Method{{
 				GrpcServiceName: "TestService",
 				FullGrpcName:    "/test.v1.TestService/Test",
 				GrpcMethodName:  "Test",
-				HTTPMethod:      "get",
-				HTTPPath:        "/test/:testField",
-				ResponseBody: &jsonapi.SchemaItem{
-					ItemType: &jsonapi.ObjectItem{
-						FullProtoName: "test.v1.TestResponse",
-						ProtoName:     "TestResponse",
-						ObjectRules:   jsonapi.ObjectRules{},
-						IsOneof:       false,
-						GoPackageName: "github.com/pentops/jsonapi/test_pb",
-						GoTypeName:    "TestResponse",
-						GRPCPackage:   "test.v1",
-						Properties: []*jsonapi.ObjectProperty{{
-							Name:             "testField",
-							Description:      "",
-							ProtoFieldName:   "test_field",
-							ProtoFieldNumber: 1,
-							Skip:             false,
-							Optional:         true,
-							Required:         false,
-							WriteOnly:        false,
-							SchemaItem: jsonapi.SchemaItem{
-								Description: "",
-								ItemType:    jsonapi.StringItem{},
-							},
-						}, {
-							Name:             "msg",
-							Description:      "",
-							ProtoFieldName:   "msg",
-							ProtoFieldNumber: 2,
-							Required:         false,
-							Skip:             false,
-							Optional:         true,
-							SchemaItem: jsonapi.SchemaItem{
-								Ref: "test.v1.Nested",
-							},
-						}},
+				HttpMethod:      "get",
+				HttpPath:        "/test/:testField",
+				ResponseBody: &jsonapi_pb.Schema{
+					Type: &jsonapi_pb.Schema_ObjectItem{
+						ObjectItem: &jsonapi_pb.ObjectItem{
+							ProtoFullName:    "test.v1.TestResponse",
+							ProtoMessageName: "TestResponse",
+							//Rules:            &jsonapi_pb.ObjectRules{},
+							GoPackageName:   "github.com/pentops/jsonapi/test_pb",
+							GoTypeName:      "TestResponse",
+							GrpcPackageName: "test.v1",
+							Properties: []*jsonapi_pb.ObjectProperty{{
+								Name:               "testField",
+								Description:        "",
+								ProtoFieldName:     "test_field",
+								ProtoFieldNumber:   1,
+								ExplicitlyOptional: true,
+								Required:           false,
+								WriteOnly:          false,
+								Schema: &jsonapi_pb.Schema{
+									Description: "",
+									Type: &jsonapi_pb.Schema_StringItem{
+										StringItem: &jsonapi_pb.StringItem{},
+									},
+								},
+							}, {
+								Name:               "msg",
+								Description:        "",
+								ProtoFieldName:     "msg",
+								ProtoFieldNumber:   2,
+								Required:           false,
+								ExplicitlyOptional: true,
+								Schema: &jsonapi_pb.Schema{
+									Type: &jsonapi_pb.Schema_Ref{
+										Ref: "test.v1.Nested",
+									},
+								},
+							}},
+						},
 					},
 				},
-				PathParameters: []*Parameter{{
+				PathParameters: []*jsonapi_pb.Parameter{{
 					Name:        "testField",
 					Description: "",
 					Required:    true,
-					Schema: jsonapi.SchemaItem{
-						ItemType: jsonapi.StringItem{},
+					Schema: &jsonapi_pb.Schema{
+						Type: &jsonapi_pb.Schema_StringItem{
+							StringItem: &jsonapi_pb.StringItem{},
+						},
 					},
 				}},
 			}},
@@ -167,15 +170,10 @@ func TestBuild(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	bb, err := json.MarshalIndent(built, "", "  ")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Log(string(bb))
-
 	// Packages are controlled by this package, should equal in full. Schema
 	// tests are in the jsonapi package.
-	assert.Equal(t, want.Packages, built.Packages)
+
+	assertEqualProto(t, want.Packages[0], built.Packages[0])
 
 	if _, ok := built.Schemas["test.v1.TestRequest"]; ok {
 		t.Fatal("TestRequest should not be registered as a schema, but was")
@@ -186,15 +184,14 @@ func TestBuild(t *testing.T) {
 		t.Fatal("schema not found")
 	}
 
-	if tn := refSchema.ItemType.TypeName(); tn != "object" {
-		t.Fatalf("unexpected type: %s", tn)
-	}
-
 	if refSchema.Description != "Message Comment" {
 		t.Errorf("unexpected description: '%s'", refSchema.Description)
 	}
 
-	asObject := refSchema.ItemType.(*jsonapi.ObjectItem)
+	asObject := refSchema.GetObjectItem()
+	if asObject == nil {
+		t.Fatal("schema is not an object")
+	}
 	if len(asObject.Properties) != 2 {
 		t.Fatalf("unexpected properties: %d", len(asObject.Properties))
 	}
@@ -213,7 +210,7 @@ func TestBuild(t *testing.T) {
 		t.Errorf("unexpected field name: '%s'", fEnum.Name)
 	}
 
-	ref := fEnum.SchemaItem.Ref
+	ref := fEnum.Schema.GetRef()
 	if ref == "" {
 		t.Fatal("ref is nil")
 	}
@@ -223,16 +220,63 @@ func TestBuild(t *testing.T) {
 		t.Fatalf("schema not found: '%s'", ref)
 	}
 
-	enumType, ok := schemaEnum.ItemType.(jsonapi.EnumItem)
-	if !ok {
-		t.Fatalf("unexpected type: %T", fEnum.SchemaItem.ItemType)
+	enumType := schemaEnum.GetEnumItem()
+	if enumType == nil {
+		t.Fatalf("unexpected type: %T", fEnum.Schema.Type)
 	}
 
-	if enumType.Enum[0] != "UNSPECIFIED" {
-		t.Errorf("unexpected enum value: '%s'", enumType.Enum[0])
+	if enumType.Options[0].Name != "UNSPECIFIED" {
+		t.Errorf("unexpected enum value: '%s'", enumType.Options[0])
 	}
-	if enumType.Enum[1] != "FOO" {
-		t.Errorf("unexpected enum value: '%s'", enumType.Enum[1])
+	if enumType.Options[1].Name != "FOO" {
+		t.Errorf("unexpected enum value: '%s'", enumType.Options[1])
+	}
+
+}
+
+func assertEqualProto(t *testing.T, want, got proto.Message) {
+	t.Helper()
+	wantJSON := protojson.Format(want)
+	gotJSON := protojson.Format(got)
+	if string(wantJSON) == string(gotJSON) {
+		t.Log("STRINGS MATCH")
+	}
+
+	matched := true
+
+	lineA := 0
+	lineB := 0
+
+	wantLines := strings.Split(string(wantJSON), "\n")
+	gotLines := strings.Split(string(gotJSON), "\n")
+	for {
+		if lineA >= len(wantLines) || lineB >= len(gotLines) {
+			break
+		}
+		wantLine := string(wantLines[lineA])
+		gotLine := string(gotLines[lineB])
+		if wantLine != gotLine {
+			matched = false
+			t.Logf("  !W: %s", wantLine)
+			t.Logf("  !G: %s", gotLine)
+			t.Log(strings.Repeat(`/\`, 10))
+		} else {
+			t.Logf("   OK: %s", wantLine)
+		}
+		lineA++
+		lineB++
+	}
+	if lineA < len(wantLines) {
+		matched = false
+		t.Logf("  !A: %s", strings.Join(wantLines[lineA:], "\n"))
+	}
+	if lineB < len(gotLines) {
+		matched = false
+		t.Logf("  !B: %s", strings.Join(gotLines[lineB:], "\n"))
+	}
+
+	if !matched {
+		t.Errorf("unexpected JSON")
 	}
 
 }

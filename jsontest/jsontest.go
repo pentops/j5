@@ -7,6 +7,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/tidwall/gjson"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 type Asserter struct {
@@ -14,11 +16,20 @@ type Asserter struct {
 }
 
 func NewAsserter(v interface{}) (*Asserter, error) {
-	val, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return nil, err
+	var val string
+
+	protoVal, ok := v.(proto.Message)
+	if ok {
+		val = protojson.Format(protoVal)
+
+	} else {
+		bb, err := json.MarshalIndent(v, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		val = string(bb)
 	}
-	return &Asserter{JSON: string(val)}, nil
+	return &Asserter{JSON: val}, nil
 }
 
 func (d *Asserter) Print(t testing.TB) {

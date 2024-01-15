@@ -3,8 +3,6 @@ package swagger
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
 )
 
 // Schema is a JSON Schema wrapper for any of the high level types.
@@ -23,17 +21,16 @@ func (s *Schema) MarshalJSON() ([]byte, error) {
 		})
 	}
 	if s.OneOf != nil {
-		return json.Marshal(s.OneOf)
+		return json.Marshal(map[string]interface{}{
+			"oneOf": s.OneOf,
+		})
 	}
 	if s.AnyOf != nil {
-		return json.Marshal(s.AnyOf)
+		return json.Marshal(map[string]interface{}{
+			"oneOf": s.AnyOf,
+		})
 	}
 	return json.Marshal(s.SchemaItem)
-}
-
-func convertSchema(schema *jsonapi_pb.Schema) (*Schema, error) {
-	out := &Schema{}
-	return out, fmt.Errorf("not implemented")
 }
 
 type SchemaItem struct {
@@ -42,6 +39,10 @@ type SchemaItem struct {
 }
 
 func (si SchemaItem) MarshalJSON() ([]byte, error) {
+	if si.Type == nil {
+		return nil, fmt.Errorf("no type set")
+	}
+
 	base := map[string]interface{}{}
 	base["type"] = si.Type.TypeName()
 	if si.Description != "" {
@@ -66,9 +67,9 @@ func (ri EmptySchemaItem) TypeName() string {
 }
 
 type StringItem struct {
-	Format    string           `json:"format,omitempty"`
-	Example   string           `json:"example,omitempty"`
-	Pattern   string           `json:"pattern,omitempty"`
+	Format    Optional[string] `json:"format,omitempty"`
+	Example   Optional[string] `json:"example,omitempty"`
+	Pattern   Optional[string] `json:"pattern,omitempty"`
 	MinLength Optional[uint64] `json:"minLength,omitempty"`
 	MaxLength Optional[uint64] `json:"maxLength,omitempty"`
 }
@@ -128,7 +129,7 @@ func (ri BooleanItem) TypeName() string {
 }
 
 type ArrayItem struct {
-	Items       SchemaItem       `json:"items,omitempty"`
+	Items       *Schema          `json:"items,omitempty"`
 	MinItems    Optional[uint64] `json:"minItems,omitempty"`
 	MaxItems    Optional[uint64] `json:"maxItems,omitempty"`
 	UniqueItems Optional[bool]   `json:"uniqueItems,omitempty"`
@@ -155,10 +156,6 @@ type ObjectItem struct {
 	ProtoName     string `json:"x-proto-name"`
 	IsOneof       bool   `json:"x-is-oneof,omitempty"`
 
-	GoPackageName string `json:"-"`
-	GoTypeName    string `json:"-"`
-	GRPCPackage   string `json:"-"`
-
 	MinProperties Optional[uint64] `json:"minProperties,omitempty"`
 	MaxProperties Optional[uint64] `json:"maxProperties,omitempty"`
 }
@@ -168,11 +165,60 @@ func (ri *ObjectItem) TypeName() string {
 }
 
 type ObjectProperty struct {
-	Schema
+	*Schema
 	ReadOnly         bool   `json:"readOnly,omitempty"`
 	WriteOnly        bool   `json:"writeOnly,omitempty"`
 	Description      string `json:"description,omitempty"`
 	ProtoFieldName   string `json:"x-proto-name,omitempty"`
-	ProtoFieldNumber int    `json:"x-proto-number,omitempty"`
+	ProtoFieldNumber int32  `json:"x-proto-number,omitempty"`
 	Optional         bool   `json:"x-proto-optional"` // The proto field is marked as optional, go code etc should use a pointer
+}
+
+func (op *ObjectProperty) MarshalJSON() ([]byte, error) {
+
+	base := map[string]interface{}{
+		"readOnly":  op.ReadOnly,
+		"writeOnly": op.WriteOnly,
+	}
+	if op.Description != "" {
+		base["description"] = op.Description
+	}
+	if op.ProtoFieldName != "" {
+		base["x-proto-name"] = op.ProtoFieldName
+	}
+	if op.ProtoFieldNumber != 0 {
+		base["x-proto-number"] = op.ProtoFieldNumber
+	}
+	if op.Optional {
+		base["x-proto-optional"] = op.Optional
+	}
+
+	if op.Schema == nil {
+		return nil, fmt.Errorf("no schema on object property")
+	}
+
+	if op.Schema.Ref != nil {
+		base["$ref"] = *op.Schema.Ref
+	} else if op.Schema.OneOf != nil {
+		base["oneOf"] = op.Schema.OneOf
+	} else if op.Schema.AnyOf != nil {
+		base["anyOf"] = op.Schema.AnyOf
+	} else if op.Schema.SchemaItem != nil {
+		si := op.Schema.SchemaItem
+		if si.Type == nil {
+			return nil, fmt.Errorf("no type set")
+		}
+
+		base["type"] = si.Type.TypeName()
+		if si.Description != "" {
+			base["description"] = si.Description
+		}
+		if err := jsonStructFields(si.Type, base); err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, fmt.Errorf("no valid child in object property")
+	}
+	return json.Marshal(base)
+
 }

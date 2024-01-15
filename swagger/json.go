@@ -15,6 +15,25 @@ func (o Optional[T]) ValOk() (interface{}, bool) {
 	return o.Value, o.Set
 }
 
+func Some[T any](val T) Optional[T] {
+	return Optional[T]{
+		Value: val,
+		Set:   true,
+	}
+}
+
+func Maybe[T any](val *T) Optional[T] {
+	if val == nil {
+		return Optional[T]{
+			Set: false,
+		}
+	}
+	return Optional[T]{
+		Value: *val,
+		Set:   true,
+	}
+}
+
 func Value[T any](val T) Optional[T] {
 	return Optional[T]{
 		Value: val,

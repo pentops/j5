@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -44,72 +43,6 @@ type EnumValueDescription struct {
 	Name        string `json:"name"`
 	Number      int32  `json:"number"`
 	Description string `json:"description"`
-}
-
-func (se *ShortEnumsOption) EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules) ([]EnumValueDescription, error) {
-
-	specMap := map[int32]struct{}{}
-	var notIn bool
-	var isIn bool
-
-	if constraint != nil {
-		if constraint.NotIn != nil {
-			for _, notIn := range constraint.NotIn {
-				specMap[notIn] = struct{}{}
-			}
-			notIn = true
-
-		} else if constraint.In != nil {
-			for _, in := range constraint.In {
-				specMap[in] = struct{}{}
-			}
-			isIn = true
-		}
-	}
-
-	if notIn && isIn {
-		return nil, fmt.Errorf("enum cannot have both in and not_in constraints")
-	}
-
-	values := make([]EnumValueDescription, 0, src.Len())
-	for ii := 0; ii < src.Len(); ii++ {
-		option := src.Get(ii)
-		number := int32(option.Number())
-
-		if notIn {
-			_, exclude := specMap[number]
-			if exclude {
-				continue
-			}
-		} else if isIn {
-			_, include := specMap[number]
-			if !include {
-				continue
-			}
-		}
-
-		values = append(values, EnumValueDescription{
-			Name:        string(option.Name()),
-			Number:      number,
-			Description: commentDescription(option),
-		})
-	}
-
-	if se == nil {
-		return values, nil
-	}
-
-	suffix := se.unspecifiedSuffix()
-	unspecifiedVal := string(src.Get(0).Name())
-	if !strings.HasSuffix(unspecifiedVal, suffix) {
-		return nil, fmt.Errorf("enum does not have an unspecified value ending in %q", suffix)
-	}
-	trimPrefix := strings.TrimSuffix(unspecifiedVal, suffix)
-
-	for ii := range values {
-		values[ii].Name = strings.TrimPrefix(values[ii].Name, trimPrefix)
-	}
-	return values, nil
 }
 
 func (se *ShortEnumsOption) unspecifiedSuffix() string {
