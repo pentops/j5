@@ -2,11 +2,11 @@ package swagger
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
 
-	"github.com/pentops/jsonapi/jsonapi"
-	"github.com/pentops/jsonapi/structure"
+	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
 )
 
 type Document struct {
@@ -16,7 +16,86 @@ type Document struct {
 	Components Components `json:"components"`
 }
 
-func BuildSwagger(b *structure.Built) (*Document, error) {
+func (dd *Document) GetSchema(name string) (*Schema, bool) {
+	name = strings.TrimPrefix(name, "#/components/schemas/")
+	schema, ok := dd.Components.Schemas[name]
+	return schema, ok
+}
+
+type Info struct {
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Version     string `json:"version"`
+}
+
+type Components struct {
+	Schemas         map[string]*Schema     `json:"schemas"`
+	SecuritySchemes map[string]interface{} `json:"securitySchemes"`
+}
+
+type OperationHeader struct {
+	Method string `json:"-"`
+	Path   string `json:"-"`
+
+	OperationID  string      `json:"operationId,omitempty"`
+	Summary      string      `json:"summary,omitempty"`
+	Description  string      `json:"description,omitempty"`
+	DisplayOrder int         `json:"x-display-order"`
+	Parameters   []Parameter `json:"parameters,omitempty"`
+
+	GrpcServiceName string `json:"x-grpc-service"`
+	GrpcMethodName  string `json:"x-grpc-method"`
+}
+
+type Operation struct {
+	OperationHeader
+	RequestBody  *RequestBody `json:"requestBody,omitempty"`
+	ResponseBody *Response    `json:"-"`
+	Responses    *ResponseSet `json:"responses,omitempty"`
+}
+
+func (oo Operation) MapKey() string {
+	return oo.Method
+}
+
+type ResponseSet []Response
+
+func (rs ResponseSet) MarshalJSON() ([]byte, error) {
+	return OrderedMap[Response](rs).MarshalJSON()
+}
+
+type RequestBody struct {
+	Description string           `json:"description,omitempty"`
+	Required    bool             `json:"required,omitempty"`
+	Content     OperationContent `json:"content"`
+}
+type Response struct {
+	Code        int              `json:"-"`
+	Description string           `json:"description"`
+	Content     OperationContent `json:"content"`
+}
+
+func (rs Response) MapKey() string {
+	return strconv.Itoa(rs.Code)
+}
+
+type OperationContent struct {
+	JSON *OperationSchema `json:"application/json,omitempty"`
+}
+
+type OperationSchema struct {
+	Schema *Schema `json:"schema"`
+}
+
+type Parameter struct {
+	Name        string  `json:"name"`
+	In          string  `json:"in"`
+	Description string  `json:"description,omitempty"`
+	Required    bool    `json:"required,omitempty"`
+	Schema      *Schema `json:"schema"`
+}
+
+func BuildSwagger(b *jsonapi_pb.API) (*Document, error) {
 	doc := &Document{
 		OpenAPI: "3.0.0",
 		Components: Components{
@@ -26,42 +105,61 @@ func BuildSwagger(b *structure.Built) (*Document, error) {
 
 	for _, pkg := range b.Packages {
 		for _, method := range pkg.Methods {
-			doc.addMethod(method)
+			err := doc.addMethod(method)
+			if err != nil {
+				return nil, fmt.Errorf("package %s method %s: %w", pkg.Name, method.FullGrpcName, err)
+			}
 		}
 	}
 
-	doc.Components.Schemas = b.Schemas
+	schemas := make(map[string]*Schema)
+	for key, src := range b.Schemas {
+		schema, err := convertSchema(src)
+		if err != nil {
+			return nil, err
+		}
+		schemas[key] = schema
+	}
+	doc.Components.Schemas = schemas
 
 	return doc, nil
 }
 
-func (dd *Document) addMethod(method *structure.Method) {
+func (dd *Document) addMethod(method *jsonapi_pb.Method) error {
 
 	parameters := make([]Parameter, 0)
 	for _, param := range method.PathParameters {
+		schema, err := convertSchema(param.Schema)
+		if err != nil {
+			return fmt.Errorf("path param %s: %w", param.Name, err)
+		}
 		parameters = append(parameters, Parameter{
 			Name:        param.Name,
 			In:          "path",
 			Description: param.Description,
 			Required:    true,
-			Schema:      param.Schema,
+			Schema:      schema,
 		})
 	}
 
 	for _, param := range method.QueryParameters {
+		schema, err := convertSchema(param.Schema)
+		if err != nil {
+			return fmt.Errorf("query param %s: %w", param.Name, err)
+		}
 		parameters = append(parameters, Parameter{
 			Name:        param.Name,
 			In:          "query",
 			Description: param.Description,
 			Required:    param.Required,
-			Schema:      param.Schema,
+			Schema:      schema,
 		})
 	}
 
 	operation := &Operation{
 		OperationHeader: OperationHeader{
-			Method:          method.HTTPMethod,
-			Path:            method.HTTPPath,
+			Method:          method.HttpMethod,
+			Path:            method.HttpPath,
 			OperationID:     method.FullGrpcName,
 			GrpcMethodName:  method.GrpcMethodName,
 			GrpcServiceName: method.GrpcServiceName,
@@ -70,22 +168,30 @@ func (dd *Document) addMethod(method *structure.Method) {
 		},
 	}
 
+	responseSchema, err := convertSchema(method.ResponseBody)
+	if err != nil {
+		return fmt.Errorf("response body: %w", err)
+	}
 	operation.Responses = &ResponseSet{{
 		Code:        200,
 		Description: "OK",
 		Content: OperationContent{
 			JSON: &OperationSchema{
-				Schema: *method.ResponseBody,
+				Schema: responseSchema,
 			},
 		},
 	}}
 
 	if method.RequestBody != nil {
+		requestSchema, err := convertSchema(method.RequestBody)
+		if err != nil {
+			return err
+		}
 		operation.RequestBody = &RequestBody{
 			Required: true,
 			Content: OperationContent{
 				JSON: &OperationSchema{
-					Schema: *method.RequestBody,
+					Schema: requestSchema,
 				},
 			},
 		}
@@ -93,7 +199,7 @@ func (dd *Document) addMethod(method *structure.Method) {
 
 	found := false
 	for _, pathItem := range dd.Paths {
-		if pathItem.MapKey() == method.HTTPPath {
+		if pathItem.MapKey() == method.HttpPath {
 			pathItem.AddOperation(operation)
 			found = true
 			break
@@ -105,18 +211,7 @@ func (dd *Document) addMethod(method *structure.Method) {
 		dd.Paths = append(dd.Paths, pathItem)
 	}
 
-}
-
-func (dd *Document) GetSchema(name string) (*jsonapi.SchemaItem, bool) {
-	name = strings.TrimPrefix(name, "#/components/schemas/")
-	schema, ok := dd.Components.Schemas[name]
-	return schema, ok
-}
-
-type Info struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Version     string `json:"version"`
+	return nil
 }
 
 type PathSet []*PathItem
@@ -142,32 +237,6 @@ func (pi PathItem) MapKey() string {
 	return pi[0].Path
 }
 
-type Components struct {
-	Schemas         map[string]*jsonapi.SchemaItem `json:"schemas"`
-	SecuritySchemes map[string]interface{}         `json:"securitySchemes"`
-}
-
-type OperationHeader struct {
-	Method string `json:"-"`
-	Path   string `json:"-"`
-
-	OperationID  string      `json:"operationId,omitempty"`
-	Summary      string      `json:"summary,omitempty"`
-	Description  string      `json:"description,omitempty"`
-	DisplayOrder int         `json:"x-display-order"`
-	Parameters   []Parameter `json:"parameters,omitempty"`
-
-	GrpcServiceName string `json:"x-grpc-service"`
-	GrpcMethodName  string `json:"x-grpc-method"`
-}
-
-type Operation struct {
-	OperationHeader
-	RequestBody  *RequestBody `json:"requestBody,omitempty"`
-	ResponseBody *Response    `json:"-"`
-	Responses    *ResponseSet `json:"responses,omitempty"`
-}
-
 type MapItem interface {
 	MapKey() string
 }
@@ -187,45 +256,4 @@ func (om OrderedMap[T]) MarshalJSON() ([]byte, error) {
 	}
 	outStr := "{" + strings.Join(fields, ",") + "}"
 	return []byte(outStr), nil
-}
-
-type ResponseSet []Response
-
-func (rs ResponseSet) MarshalJSON() ([]byte, error) {
-	return OrderedMap[Response](rs).MarshalJSON()
-}
-
-type RequestBody struct {
-	Description string           `json:"description,omitempty"`
-	Required    bool             `json:"required,omitempty"`
-	Content     OperationContent `json:"content"`
-}
-type Response struct {
-	Code        int              `json:"-"`
-	Description string           `json:"description"`
-	Content     OperationContent `json:"content"`
-}
-
-type OperationContent struct {
-	JSON *OperationSchema `json:"application/json,omitempty"`
-}
-
-type OperationSchema struct {
-	Schema jsonapi.SchemaItem `json:"schema"`
-}
-
-func (rs Response) MapKey() string {
-	return strconv.Itoa(rs.Code)
-}
-
-func (oo Operation) MapKey() string {
-	return oo.Method
-}
-
-type Parameter struct {
-	Name        string             `json:"name"`
-	In          string             `json:"in"`
-	Description string             `json:"description,omitempty"`
-	Required    bool               `json:"required,omitempty"`
-	Schema      jsonapi.SchemaItem `json:"schema"`
 }

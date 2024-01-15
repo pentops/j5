@@ -1,14 +1,12 @@
 package jsonapi
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	"github.com/pentops/jsonapi/jsontest"
 	"github.com/pentops/jsonapi/testproto/gen/testpb"
-	"github.com/stretchr/testify/assert"
-	"github.com/tidwall/gjson"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -16,7 +14,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldConstraints) *DynamicJSON {
+func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldConstraints) *jsontest.Asserter {
 	ss := NewSchemaSet(Options{
 		ShortEnums: &ShortEnumsOption{
 			StrictUnmarshal: true,
@@ -43,7 +41,7 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 	}
 	prop := obj.Properties[0]
 
-	dd, err := MarshalDynamic(prop)
+	dd, err := jsontest.NewAsserter(prop)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -220,7 +218,7 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	dd, err := MarshalDynamic(schemaItem)
+	dd, err := jsontest.NewAsserter(schemaItem)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -292,7 +290,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 		expected: map[string]interface{}{
 			"x-proto-name": "TestMessage",
 			"type":         "object",
-			"properties":   LenEqual(0),
+			"properties":   jsontest.LenEqual(0),
 		},
 	}, {
 		name: "array field",
@@ -395,7 +393,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 		expected: map[string]interface{}{
 			"x-proto-name":              "TestMessage",
 			"type":                      "object",
-			"properties":                LenEqual(1),
+			"properties":                jsontest.LenEqual(1),
 			"properties.testField.$ref": "test.TestEnum",
 		},
 		expectedRefs: map[string]map[string]interface{}{
@@ -411,7 +409,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 				t.Fatal(err.Error())
 			}
 
-			dd, err := MarshalDynamic(schemaItem)
+			dd, err := jsontest.NewAsserter(schemaItem)
 			if err != nil {
 				t.Fatal(err.Error())
 			}
@@ -427,7 +425,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 				if !ok {
 					t.Fatalf("schema %q not found", path)
 				}
-				ddRef, err := MarshalDynamic(schema)
+				ddRef, err := jsontest.NewAsserter(schema)
 				if err != nil {
 					t.Fatal(err.Error())
 				}
@@ -583,7 +581,7 @@ func TestSchemaJSONMarshal(t *testing.T) {
 		},
 	}
 
-	out, err := MarshalDynamic(object)
+	out, err := jsontest.NewAsserter(object)
 	if err != nil {
 		t.Error(err)
 	}
@@ -605,88 +603,4 @@ func TestSchemaJSONMarshal(t *testing.T) {
 
 	out.AssertEqual(t, "properties.ref.$ref", "#/definitions/foo")
 
-}
-
-type DynamicJSON struct {
-	JSON string
-}
-
-func MarshalDynamic(v interface{}) (*DynamicJSON, error) {
-	val, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-	return &DynamicJSON{JSON: string(val)}, nil
-}
-
-func (d *DynamicJSON) Print(t testing.TB) {
-	t.Log(string(d.JSON))
-}
-
-func (d *DynamicJSON) PrintAt(t testing.TB, path string) {
-	val := gjson.Get(d.JSON, path)
-	if val.Exists() {
-		t.Log(val.String())
-	} else {
-		t.Log("path not found")
-	}
-}
-
-func (d *DynamicJSON) Get(path string) (interface{}, bool) {
-	val := gjson.Get(d.JSON, path)
-	if val.Exists() {
-		return val.Value(), true
-	}
-	return nil, false
-}
-
-type LenEqual int
-
-func (d *DynamicJSON) AssertEqual(t testing.TB, path string, value interface{}) {
-	t.Helper()
-	actual, ok := d.Get(path)
-	if !ok {
-		t.Errorf("path %q not found", path)
-		return
-	}
-
-	switch value.(type) {
-	case LenEqual:
-		actualSlice, ok := actual.([]interface{})
-		if ok {
-			if len(actualSlice) != int(value.(LenEqual)) {
-				t.Errorf("expected %d, got %d", value, len(actualSlice))
-			}
-			return
-		}
-		actualMap, ok := actual.(map[string]interface{})
-		if ok {
-			if len(actualMap) != int(value.(LenEqual)) {
-				t.Errorf("expected %d, got %d", value, len(actualMap))
-			}
-			return
-		}
-		t.Errorf("expected len(%d), got non len object %T", value, actual)
-	default:
-		assert.EqualValues(t, value, actual, "at path %q", path)
-	}
-}
-
-func (d *DynamicJSON) AssertNotSet(t testing.TB, path string) {
-	_, ok := d.Get(path)
-	if ok {
-		t.Errorf("path %q was set", path)
-	}
-}
-
-func (d *DynamicJSON) AssertEqualSet(t testing.TB, path string, expected map[string]interface{}) {
-	t.Helper()
-	for key, expectSet := range expected {
-		pathKey := key
-		if path != "" {
-			pathKey = fmt.Sprintf("%s.%s", path, key)
-		}
-
-		d.AssertEqual(t, pathKey, expectSet)
-	}
 }

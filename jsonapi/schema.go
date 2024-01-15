@@ -701,6 +701,10 @@ type SchemaItem struct {
 	Description string `json:"description,omitempty"`
 }
 
+func (si SchemaItem) ToProto() (*jsonapi_pb.Schema, error) {
+	return nil, fmt.Errorf("not done")
+}
+
 func (si SchemaItem) fieldMap() (map[string]json.RawMessage, error) {
 	if si.Ref != "" {
 		if len(si.OneOf) > 0 || len(si.AnyOf) > 0 || si.ItemType != nil {

@@ -6,7 +6,7 @@ option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
 
 message API {
   repeated Package packages = 1;
-  map<string,Schema> schemas = 2;
+  map<string, Schema> schemas = 2;
 }
 
 message Package {
@@ -17,6 +17,7 @@ message Package {
   string introduction = 4;
   repeated Method methods = 5;
   repeated Entity entities = 6;
+  repeated EventSpec events = 7;
 }
 
 message Method {
@@ -32,6 +33,12 @@ message Method {
   repeated Parameter path_parameters = 9;
 }
 
+message EventSpec {
+  string name = 1;
+  Schema state_schema = 2;
+  Schema event_schema = 3;
+}
+
 message Entity {
   Schema state_schema = 1;
   Schema event_schema = 2;
@@ -45,7 +52,7 @@ message Parameter {
 }
 
 message Schema {
-  oneof type{
+  oneof type {
     string ref = 1;
     SchemaItem item = 2;
   }
@@ -113,8 +120,7 @@ message IntegerRules {
   int64 multiple_of = 5;
 }
 
-message BooleanItem {
-}
+message BooleanItem {}
 
 message ArrayItem {
   ArrayRules rules = 1;
@@ -156,4 +162,3 @@ message ObjectRules {
   uint64 min_properties = 1;
   uint64 max_properties = 2;
 }
-

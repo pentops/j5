@@ -17,17 +17,19 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
+type builder struct {
+	schemas  *jsonapi.SchemaSet
+	packages []*jsonapi_pb.Package
+
+	trimPackages []string
+}
+
+/*
 type Built struct {
 	Packages []*Package                     `json:"packages"`
 	Schemas  map[string]*jsonapi.SchemaItem `json:"schemas"`
 }
 
-type builder struct {
-	schemas  *jsonapi.SchemaSet
-	packages []*Package
-
-	trimPackages []string
-}
 
 type Package struct {
 	Label  string `json:"label"`
@@ -64,6 +66,7 @@ type Parameter struct {
 	Required    bool               `json:"required,omitempty"`
 	Schema      jsonapi.SchemaItem `json:"schema"`
 }
+*/
 
 type ProseResolver interface {
 	ResolveProse(filename string) (string, error)
@@ -119,7 +122,7 @@ func imageResolver(proseFiles []*jsonapi_pb.ProseFile) ProseResolver {
 	return mr
 }
 
-func BuildFromImage(image *jsonapi_pb.Image) (*Built, error) {
+func BuildFromImage(image *jsonapi_pb.Image) (*jsonapi_pb.API, error) {
 	proseResolver := imageResolver(image.Prose)
 
 	descriptors := &descriptorpb.FileDescriptorSet{
@@ -134,7 +137,7 @@ func BuildFromImage(image *jsonapi_pb.Image) (*Built, error) {
 	return BuildFromDescriptors(config, descriptors, proseResolver)
 }
 
-func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*Built, error) {
+func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*jsonapi_pb.API, error) {
 
 	codecOptions := jsonapi.Options{
 		ShortEnums: &jsonapi.ShortEnumsOption{
@@ -190,7 +193,7 @@ func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.
 			prose = removeMarkdownHeader(prose)
 		}
 
-		b.packages = append(b.packages, &Package{
+		b.packages = append(b.packages, &jsonapi_pb.Package{
 			Name:         pkg.Name,
 			Label:        pkg.Label,
 			Introduction: prose,
@@ -228,15 +231,23 @@ func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.
 
 	}
 
-	bb := &Built{
+	schemas := map[string]*jsonapi_pb.Schema{}
+	for name, schema := range b.schemas.Schemas {
+		proto, err := schema.ToProto()
+		if err != nil {
+			return nil, err
+		}
+		schemas[name] = proto
+	}
+	bb := &jsonapi_pb.API{
 		Packages: b.packages,
-		Schemas:  b.schemas.Schemas,
+		Schemas:  schemas,
 	}
 
 	return bb, nil
 }
 
-func (bb *builder) getPackage(file protoreflect.FileDescriptor) (*Package, error) {
+func (bb *builder) getPackage(file protoreflect.FileDescriptor) (*jsonapi_pb.Package, error) {
 
 	name := string(file.Package())
 
@@ -244,7 +255,7 @@ func (bb *builder) getPackage(file protoreflect.FileDescriptor) (*Package, error
 		name = strings.TrimSuffix(name, trimSuffix)
 	}
 
-	var pkg *Package
+	var pkg *jsonapi_pb.Package
 	for _, search := range bb.packages {
 		if search.Name == name {
 			pkg = search
@@ -253,7 +264,7 @@ func (bb *builder) getPackage(file protoreflect.FileDescriptor) (*Package, error
 	}
 
 	if pkg == nil {
-		pkg = &Package{
+		pkg = &jsonapi_pb.Package{
 			Name: name,
 		}
 		bb.packages = append(bb.packages, pkg)
@@ -279,7 +290,7 @@ func (bb *builder) addEvents(src protoreflect.ServiceDescriptor) error {
 			return err
 		}
 
-		eventSpec := &EventSpec{
+		eventSpec := &jsonapi_pb.EventSpec{
 			Name:        string(method.Name()),
 			EventSchema: eventSchema,
 		}
