@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
 	"github.com/pentops/jsonapi/jsonapi"
-	"github.com/pentops/jsonapi/structure"
 )
 
 type Options struct {
@@ -45,10 +45,18 @@ func (o Options) ToGoPackage(pkg string) (string, error) {
 	return pkg, nil
 }
 
-func scalarTypeName(item jsonapi.SchemaItem) (*DataType, error) {
-	switch item := item.ItemType.(type) {
-	case jsonapi.StringItem:
-		switch item.Format {
+func scalarTypeName(item *jsonapi_pb.Schema) (*DataType, error) {
+	switch itemRaw := item.Type.(type) {
+	case *jsonapi_pb.Schema_StringItem:
+		item := itemRaw.StringItem
+		if item.Format == nil {
+			return &DataType{
+				Name:    "string",
+				Pointer: false,
+			}, nil
+		}
+
+		switch *item.Format {
 		case "", "uuid", "date", "email":
 			return &DataType{
 				Name:    "string",
@@ -69,25 +77,25 @@ func scalarTypeName(item jsonapi.SchemaItem) (*DataType, error) {
 			return nil, fmt.Errorf("Unknown string format: %s", item.Format)
 		}
 
-	case jsonapi.NumberItem:
+	case *jsonapi_pb.Schema_NumberItem:
 		return &DataType{
 			Name:    "float64",
 			Pointer: false,
 		}, nil
 
-	case jsonapi.IntegerItem:
+	case *jsonapi_pb.Schema_IntegerItem:
 		return &DataType{
 			Name:    "int64",
 			Pointer: false,
 		}, nil
 
-	case jsonapi.BooleanItem:
+	case *jsonapi_pb.Schema_BooleanItem:
 		return &DataType{
 			Name:    "bool",
 			Pointer: false,
 		}, nil
 
-	case jsonapi.EnumItem:
+	case *jsonapi_pb.Schema_EnumItem:
 		return &DataType{
 			Name:    "string",
 			Pointer: false,
@@ -99,7 +107,7 @@ func scalarTypeName(item jsonapi.SchemaItem) (*DataType, error) {
 }
 
 type builder struct {
-	document *structure.Built
+	document *jsonapi_pb.API
 	fileSet  *FileSet
 	options  Options
 }
@@ -122,7 +130,7 @@ func (fw DirFileWriter) WriteFile(relPath string, data []byte) error {
 	return nil
 }
 
-func WriteGoCode(document *structure.Built, output FileWriter, options Options) error {
+func WriteGoCode(document *jsonapi_pb.API, output FileWriter, options Options) error {
 
 	fileSet := NewFileSet(options.AddGoPrefix)
 
@@ -140,34 +148,35 @@ func WriteGoCode(document *structure.Built, output FileWriter, options Options) 
 	return fileSet.WriteAll(output)
 }
 
-func (bb *builder) buildTypeName(schema jsonapi.SchemaItem) (*DataType, error) {
+func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 
-	if schema.Ref != "" {
-		refVal, ok := bb.document.Schemas[schema.Ref]
+	switch schemaType := schema.Type.(type) {
+	case *jsonapi_pb.Schema_Ref:
+		refVal, ok := bb.document.Schemas[schemaType.Ref]
 		if !ok {
-			return nil, fmt.Errorf("Unknown ref: %s", schema.Ref)
+			return nil, fmt.Errorf("Unknown ref: %s", schemaType.Ref)
 		}
 
-		switch referredType := refVal.ItemType.(type) {
-		case jsonapi.EnumItem:
+		switch referredType := refVal.Type.(type) {
+		case *jsonapi_pb.Schema_EnumItem:
 			return &DataType{
 				Name:    "string",
 				Pointer: false,
 			}, nil
 
-		case *jsonapi.ObjectItem:
+		case *jsonapi_pb.Schema_ObjectItem:
 
 			if err := bb.addObject(referredType); err != nil {
-				return nil, fmt.Errorf("referencedType in %s: %w", schema.Ref, err)
+				return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref, err)
 			}
 
-			objectPackage, err := bb.options.ToGoPackage(referredType.GRPCPackage)
+			objectPackage, err := bb.options.ToGoPackage(referredType.ObjectItem.GrpcPackageName)
 			if err != nil {
-				return nil, fmt.Errorf("referredType in %s: %w", schema.Ref, err)
+				return nil, fmt.Errorf("referredType in %s: %w", schemaType.Ref, err)
 			}
 
 			return &DataType{
-				Name:    referredType.GoTypeName,
+				Name:    referredType.ObjectItem.GoTypeName,
 				Package: objectPackage,
 				Pointer: true,
 			}, nil
@@ -175,9 +184,10 @@ func (bb *builder) buildTypeName(schema jsonapi.SchemaItem) (*DataType, error) {
 		default:
 			return nil, fmt.Errorf("Unknown ref type: %T", referredType)
 		}
-	}
 
-	if arrayType, ok := schema.ItemType.(jsonapi.ArrayItem); ok {
+	case *jsonapi_pb.Schema_ArrayItem:
+		arrayType := schemaType.ArrayItem
+
 		itemType, err := bb.buildTypeName(arrayType.Items)
 		if err != nil {
 			return nil, err
@@ -188,26 +198,21 @@ func (bb *builder) buildTypeName(schema jsonapi.SchemaItem) (*DataType, error) {
 			Pointer: itemType.Pointer,
 			Slice:   true,
 		}, nil
-	}
 
-	if mapType, ok := schema.ItemType.(jsonapi.MapItem); ok {
-		keyType, err := bb.buildTypeName(mapType.KeyProperty)
-		if err != nil {
-			return nil, fmt.Errorf("map key: %w", err)
-		}
-		valueType, err := bb.buildTypeName(mapType.ValueProperty)
+	case *jsonapi_pb.Schema_MapItem:
+		mapType := schemaType.MapItem
+		valueType, err := bb.buildTypeName(mapType.ItemSchema)
 		if err != nil {
 			return nil, fmt.Errorf("map value: %w", err)
 		}
 
 		return &DataType{
-			Name:    fmt.Sprintf("map[%s]%s", keyType.Name, valueType.Name),
+			Name:    fmt.Sprintf("map[string]%s", valueType.Name),
 			Pointer: false,
 		}, nil
 
-	}
-
-	if objectType, ok := schema.ItemType.(*jsonapi.ObjectItem); ok {
+	case *jsonapi_pb.Schema_ObjectItem:
+		objectType := schemaType.ObjectItem
 
 		if err := bb.addObject(objectType); err != nil {
 			return nil, fmt.Errorf("directObject: %w", err)
@@ -224,7 +229,7 @@ func (bb *builder) buildTypeName(schema jsonapi.SchemaItem) (*DataType, error) {
 
 }
 
-func (bb *builder) jsonField(property *jsonapi.ObjectProperty) (*Field, error) {
+func (bb *builder) jsonField(property *jsonapi_pb.ObjectProperty) (*Field, error) {
 
 	tags := map[string]string{}
 
@@ -233,12 +238,12 @@ func (bb *builder) jsonField(property *jsonapi.ObjectProperty) (*Field, error) {
 		tags["json"] += ",omitempty"
 	}
 
-	dataType, err := bb.buildTypeName(property.SchemaItem)
+	dataType, err := bb.buildTypeName(property.Schema)
 	if err != nil {
 		return nil, fmt.Errorf("building field %s: %w", property.Name, err)
 	}
 
-	if !dataType.Pointer && !dataType.Slice && property.Optional {
+	if !dataType.Pointer && !dataType.Slice && property.ExplicitlyOptional {
 		dataType.Pointer = true
 	}
 
@@ -250,8 +255,8 @@ func (bb *builder) jsonField(property *jsonapi.ObjectProperty) (*Field, error) {
 
 }
 
-func (bb *builder) addObject(object *jsonapi.ObjectItem) error {
-	objectPackage, err := bb.options.ToGoPackage(object.GRPCPackage)
+func (bb *builder) addObject(object *jsonapi_pb.ObjectItem) error {
+	objectPackage, err := bb.options.ToGoPackage(object.GrpcPackageName)
 	if err != nil {
 		return fmt.Errorf("object package name '%s': %w", object.GoTypeName, err)
 	}
@@ -269,7 +274,7 @@ func (bb *builder) addObject(object *jsonapi.ObjectItem) error {
 		Name: object.GoTypeName,
 		Comment: fmt.Sprintf(
 			"Proto: %s",
-			object.FullProtoName,
+			object.ProtoFullName,
 		),
 	}
 	gen.types[object.GoTypeName] = structType
@@ -301,7 +306,7 @@ func (bb *builder) root() error {
 	return nil
 }
 
-func (bb *builder) addOperation(fullGoPackage string, operation *structure.Method) error {
+func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Method) error {
 
 	goPackageName := path.Base(fullGoPackage)
 	gen, err := bb.fileSet.File(fullGoPackage, goPackageName)
