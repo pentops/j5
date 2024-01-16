@@ -26,6 +26,13 @@ message GetFooRequest {
   string id = 1;
   int64 number = 2;
   repeated float numbers = 3;
+  QueryMessage query = 4;
+  string multiple_word = 5;
+}
+
+message QueryMessage {
+  string a = 1;
+  string b = 2;
 }
 
 message GetFooResponse {
