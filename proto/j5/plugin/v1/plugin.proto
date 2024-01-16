@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package j5.config.v1;
+
+import "jsonapi/v1/image.proto";
+
+option go_package = "github.com/pentops/jsonapi/gen/j5/plugin/v1/plugin_j5pb";
+
+message CodeGenerationRequest {
+
+}
+
+message CodeGenerationResponse {
+  repeated File files = 1;
+}
+
+message File {
+  string name = 1;
+  string content = 2;
+}

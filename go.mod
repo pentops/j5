@@ -12,6 +12,7 @@ require (
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/google/uuid v1.4.0
 	github.com/jhump/protoreflect v1.15.3
+	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
 	github.com/pentops/o5-go v0.0.0-20240108212127-807bf5c29410
 	github.com/pentops/o5-runtime-sidecar v0.0.6
 	github.com/pentops/runner v0.0.0-20231219070819-c4878d5565d8
