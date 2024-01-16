@@ -1,20 +1,41 @@
 syntax = "proto3";
 
-package j5.config.v1;
+package j5.source.v1;
 
-import "jsonapi/v1/image.proto";
+option go_package = "github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb";
 
-option go_package = "github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb";
-
+// Config represents the config file (j5.yaml) for a repo.
 message Config {
-  repeated jsonapi.v1.PackageConfig packages = 1;
+  repeated PackageConfig packages = 1;
 
-  jsonapi.v1.CodecOptions options = 2;
-  jsonapi.v1.RegistryConfig registry = 3;
+  CodecOptions options = 2;
+  RegistryConfig registry = 3;
 
   repeated ProtoBuildConfig proto_builds = 4;
 
   GitConfig git = 5;
+}
+
+message PackageConfig {
+  string label = 1;
+  string name = 2;
+  string prose = 3;
+}
+
+message RegistryConfig {
+  string organization = 1;
+  string name = 2;
+}
+
+message CodecOptions {
+  repeated string trim_sub_packages = 1;
+  bool wrap_oneof = 2;
+  ShortEnumOptions short_enums = 3;
+}
+
+message ShortEnumOptions {
+  string unspecified_suffix = 1;
+  bool strict_unmarshal = 2;
 }
 
 // When code is managed through git, configures mapping between git branches,

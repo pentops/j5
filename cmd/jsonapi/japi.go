@@ -13,11 +13,10 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/pentops/jsonapi/gogen"
+	"github.com/pentops/jsonapi/source"
 	"github.com/pentops/jsonapi/structure"
 	"github.com/pentops/jsonapi/swagger"
 	"github.com/pentops/runner/commander"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -34,7 +33,6 @@ func main() {
 	genGroup.Add("gocode", commander.NewCommand(runGocode))
 	genGroup.Add("jdef", commander.NewCommand(runJdef))
 	genGroup.Add("swagger", commander.NewCommand(runSwagger))
-	genGroup.Add("code-generator-request", commander.NewCommand(runCodeGeneratorRequest))
 
 	cmdGroup.Add("generate", genGroup)
 
@@ -47,7 +45,7 @@ func runGocode(ctx context.Context, cfg struct {
 	TrimPackagePrefix string `flag:"trim-package-prefix" default:"" description:"Prefix to trim from go package names"`
 	AddGoPrefix       string `flag:"add-go-prefix" default:"" description:"Prefix to add to go package names"`
 }) error {
-	image, err := structure.ReadImageFromSourceDir(ctx, cfg.Source)
+	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		return err
 	}
@@ -83,7 +81,7 @@ func runPush(ctx context.Context, cfg struct {
 		return fmt.Errorf("version, latest or both are required")
 	}
 
-	image, err := structure.ReadImageFromSourceDir(ctx, cfg.Source)
+	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		return err
 	}
@@ -118,7 +116,7 @@ func runImage(ctx context.Context, cfg struct {
 	Output string `flag:"output" default:"-" description:"Destination to push image to. - for stdout, s3://bucket/prefix, otherwise a file"`
 }) error {
 
-	image, err := structure.ReadImageFromSourceDir(ctx, cfg.Source)
+	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		return err
 	}
@@ -185,7 +183,7 @@ func runSwagger(ctx context.Context, cfg struct {
 	Output string `flag:"output" default:"-" description:"Destination to push image to. - for stdout, s3://bucket/key, otherwise a file"`
 }) error {
 
-	image, err := structure.ReadImageFromSourceDir(ctx, cfg.Source)
+	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		return err
 	}
@@ -213,7 +211,7 @@ func runJdef(ctx context.Context, cfg struct {
 	Output string `flag:"output" default:"-" description:"Destination to push json image to. - for stdout, s3://bucket/key, otherwise a local file"`
 }) error {
 
-	image, err := structure.ReadImageFromSourceDir(ctx, cfg.Source)
+	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -229,39 +227,4 @@ func runJdef(ctx context.Context, cfg struct {
 	}
 
 	return writeBytes(ctx, cfg.Output, asJson)
-}
-
-func runCodeGeneratorRequest(ctx context.Context, cfg struct {
-	Source        string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
-	Output        string `flag:"output" default:"-" description:"Destination to push proto binary image to. - for stdout, s3://bucket/key, otherwise a local file. Format determined by suffix: .txt = textproto .json = protojson, else proto binary"`
-	PackagePrefix string `flag:"package-prefix" default:"" description:"proto package prefix to generate"`
-}) error {
-
-	descriptors, err := structure.ReadFileDescriptorSet(ctx, cfg.Source)
-	if err != nil {
-		return err
-	}
-
-	options := structure.CodeGenOptions{
-		PackagePrefix: cfg.PackagePrefix,
-	}
-	genRequest, err := structure.CodeGeneratorRequestFromDescriptors(options, descriptors)
-	if err != nil {
-		return err
-	}
-
-	if strings.HasSuffix(cfg.Output, ".txt") {
-		return writeBytes(ctx, cfg.Output, []byte(prototext.Format(genRequest)))
-	}
-
-	if strings.HasSuffix(cfg.Output, ".json") {
-		return writeBytes(ctx, cfg.Output, []byte(protojson.Format(genRequest)))
-	}
-
-	bb, err := proto.Marshal(genRequest)
-	if err != nil {
-		return err
-	}
-
-	return writeBytes(ctx, cfg.Output, bb)
 }

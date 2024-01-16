@@ -1,4 +1,4 @@
-package structure
+package source
 
 import (
 	"bytes"
@@ -14,8 +14,7 @@ import (
 	"github.com/go-yaml/yaml"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/proto"
@@ -24,6 +23,15 @@ import (
 	registry_spb "buf.build/gen/go/bufbuild/buf/grpc/go/buf/alpha/registry/v1alpha1/registryv1alpha1grpc"
 	registry_pb "buf.build/gen/go/bufbuild/buf/protocolbuffers/go/buf/alpha/registry/v1alpha1"
 )
+
+var ConfigPaths = []string{
+	"j5.yaml",
+	"jsonapi.yaml",
+	"j5.yml",
+	"jsonapi.yml",
+	"ext/j5/j5.yaml",
+	"ext/j5/j5.yml",
+}
 
 type BufLockFile struct {
 	Deps []*BufLockFileDependency `yaml:"deps"`
@@ -78,16 +86,7 @@ func ReadFileDescriptorSet(ctx context.Context, src string) (*descriptorpb.FileD
 	}, nil
 }
 
-var ConfigPaths = []string{
-	"j5.yaml",
-	"jsonapi.yaml",
-	"j5.yml",
-	"jsonapi.yml",
-	"ext/j5/j5.yaml",
-	"ext/j5/j5.yml",
-}
-
-func ReadImageFromSourceDir(ctx context.Context, src string) (*jsonapi_pb.Image, error) {
+func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.SourceImage, error) {
 	fileStat, err := os.Lstat(src)
 	if err != nil {
 		return nil, err
@@ -108,7 +107,7 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*jsonapi_pb.Image,
 		break
 	}
 
-	config := &config_j5pb.Config{}
+	config := &source_j5pb.Config{}
 	if err := protoyaml.Unmarshal(configData, config); err != nil {
 		return nil, err
 	}
@@ -118,7 +117,7 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*jsonapi_pb.Image,
 		return nil, err
 	}
 
-	proseFiles := []*jsonapi_pb.ProseFile{}
+	proseFiles := []*source_j5pb.ProseFile{}
 	filenames := []string{}
 	err = filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -141,7 +140,7 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*jsonapi_pb.Image,
 			if err != nil {
 				return err
 			}
-			proseFiles = append(proseFiles, &jsonapi_pb.ProseFile{
+			proseFiles = append(proseFiles, &source_j5pb.ProseFile{
 				Path:    rel,
 				Content: data,
 			})
@@ -174,7 +173,7 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*jsonapi_pb.Image,
 
 	realDesc := desc.ToFileDescriptorSet(customDesc...)
 
-	return &jsonapi_pb.Image{
+	return &source_j5pb.SourceImage{
 		File:     realDesc.File,
 		Packages: config.Packages,
 		Codec:    config.Options,

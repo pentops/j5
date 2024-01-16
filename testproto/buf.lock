@@ -14,5 +14,15 @@ deps:
   - remote: buf.build
     owner: pentops
     repository: jsonapi
-    commit: 5806f7bc7d2749cfbfec69a330a4951e
-    digest: shake256:a36f08d7c63288ce067b2e50c828362d1f97276ab879e65fa6e1d55388803a8570b2fcc9c269ee10a1610c79fa9b39db630f18590e3e593d06135735726ab5f1
+    commit: 423a73ebc4664d989f442e00f1054fff
+    digest: shake256:9f829396308133e78ec39223140ba1ee62b7c1a5c693e41424b299d1d0e631641aa1ffe4c2b143e8fafe023c1c51edb7f60bfc66a776a07427790cfd5cec4de8
+  - remote: buf.build
+    owner: pentops
+    repository: o5
+    commit: ed6659ac63e04e49a8b29c96d9a6cd4b
+    digest: shake256:8709eaa61176c38181b31097692f3fe4c2850b89854a2762755aaf1856336210d236f5da14db04bf4edaf2341460ec02c0188d50aa1ecdb2937c00b169b0fed8
+  - remote: buf.build
+    owner: pentops
+    repository: psm
+    commit: a6d90bfa8a004e4bb46eeeb6cde8e49f
+    digest: shake256:f7e2afee34cbd7357d15a01d1bac845a666c485a6ab43915fdf2b76b75e762c0883f3a60e6600fc93024b88b1dcb4bbc432ca7d0c25b54fed0a83df991e830cc

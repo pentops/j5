@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
 )
 
 type Document struct {
@@ -95,37 +95,7 @@ type Parameter struct {
 	Schema      *Schema `json:"schema"`
 }
 
-func BuildSwagger(b *jsonapi_pb.API) (*Document, error) {
-	doc := &Document{
-		OpenAPI: "3.0.0",
-		Components: Components{
-			SecuritySchemes: make(map[string]interface{}),
-		},
-	}
-
-	for _, pkg := range b.Packages {
-		for _, method := range pkg.Methods {
-			err := doc.addMethod(method)
-			if err != nil {
-				return nil, fmt.Errorf("package %s method %s: %w", pkg.Name, method.FullGrpcName, err)
-			}
-		}
-	}
-
-	schemas := make(map[string]*Schema)
-	for key, src := range b.Schemas {
-		schema, err := convertSchema(src)
-		if err != nil {
-			return nil, err
-		}
-		schemas[key] = schema
-	}
-	doc.Components.Schemas = schemas
-
-	return doc, nil
-}
-
-func (dd *Document) addMethod(method *jsonapi_pb.Method) error {
+func (dd *Document) addMethod(method *schema_j5pb.Method) error {
 
 	parameters := make([]Parameter, 0)
 	for _, param := range method.PathParameters {

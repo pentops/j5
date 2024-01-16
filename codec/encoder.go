@@ -1,4 +1,4 @@
-package jsonapi
+package codec
 
 import (
 	"bytes"
@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -75,7 +75,7 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 
 	isOneofWrapper := false
 	msgOptions := msg.Descriptor().Options()
-	ext := proto.GetExtension(msgOptions, jsonapi_pb.E_Message).(*jsonapi_pb.MessageOptions)
+	ext := proto.GetExtension(msgOptions, ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
 	if ext != nil {
 		isOneofWrapper = ext.IsOneofWrapper
 	}

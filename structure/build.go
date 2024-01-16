@@ -2,13 +2,11 @@ package structure
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -18,73 +16,19 @@ import (
 
 type builder struct {
 	schemas  *SchemaSet
-	packages []*jsonapi_pb.Package
+	packages []*schema_j5pb.Package
 
 	trimPackages []string
 }
 
-type ProseResolver interface {
-	ResolveProse(filename string) (string, error)
-}
-
-type DirResolver string
-
-func (dr DirResolver) ResolveProse(filename string) (string, error) {
-	data, err := os.ReadFile(filepath.Join(string(dr), filename))
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
-type mapResolver map[string]string
-
-func (mr mapResolver) ResolveProse(filename string) (string, error) {
-	data, ok := mr[filename]
-	if !ok {
-		return "", fmt.Errorf("prose file %q not found", filename)
-	}
-	return data, nil
-}
-
-func removeMarkdownHeader(data string) string {
-	// only look at the first 5 lines, that should be well enough to deal with
-	// both title formats (# or \n===), and a few trailing empty lines
-
-	lines := strings.SplitN(data, "\n", 5)
-	if len(lines) == 0 {
-		return ""
-	}
-	if strings.HasPrefix(lines[0], "# ") {
-		lines = lines[1:]
-	} else if strings.HasPrefix(lines[1], "==") {
-		lines = lines[2:]
-	}
-
-	// Remove any leading empty lines
-	for len(lines) > 1 && strings.TrimSpace(lines[0]) == "" {
-		lines = lines[1:]
-	}
-
-	return strings.Join(lines, "\n")
-}
-
-func imageResolver(proseFiles []*jsonapi_pb.ProseFile) ProseResolver {
-	mr := make(mapResolver)
-	for _, proseFile := range proseFiles {
-		mr[proseFile.Path] = string(proseFile.Content)
-	}
-	return mr
-}
-
-func BuildFromImage(image *jsonapi_pb.Image) (*jsonapi_pb.API, error) {
+func BuildFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 	proseResolver := imageResolver(image.Prose)
 
 	descriptors := &descriptorpb.FileDescriptorSet{
 		File: image.File,
 	}
 
-	config := &config_j5pb.Config{
+	config := &source_j5pb.Config{
 		Packages: image.Packages,
 		Options:  image.Codec,
 	}
@@ -92,7 +36,7 @@ func BuildFromImage(image *jsonapi_pb.Image) (*jsonapi_pb.API, error) {
 	return BuildFromDescriptors(config, descriptors, proseResolver)
 }
 
-func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*jsonapi_pb.API, error) {
+func BuildFromDescriptors(config *source_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*schema_j5pb.API, error) {
 
 	services := make([]protoreflect.ServiceDescriptor, 0)
 	descFiles, err := protodesc.NewFiles(descriptors)
@@ -133,7 +77,7 @@ func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.
 			prose = removeMarkdownHeader(prose)
 		}
 
-		b.packages = append(b.packages, &jsonapi_pb.Package{
+		b.packages = append(b.packages, &schema_j5pb.Package{
 			Name:         pkg.Name,
 			Label:        pkg.Label,
 			Introduction: prose,
@@ -171,11 +115,11 @@ func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.
 
 	}
 
-	schemas := map[string]*jsonapi_pb.Schema{}
+	schemas := map[string]*schema_j5pb.Schema{}
 	for name, schema := range b.schemas.Schemas {
 		schemas[name] = schema
 	}
-	bb := &jsonapi_pb.API{
+	bb := &schema_j5pb.API{
 		Packages: b.packages,
 		Schemas:  schemas,
 	}
@@ -183,7 +127,7 @@ func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.
 	return bb, nil
 }
 
-func (bb *builder) getPackage(file protoreflect.FileDescriptor) *jsonapi_pb.Package {
+func (bb *builder) getPackage(file protoreflect.FileDescriptor) *schema_j5pb.Package {
 
 	name := string(file.Package())
 
@@ -191,7 +135,7 @@ func (bb *builder) getPackage(file protoreflect.FileDescriptor) *jsonapi_pb.Pack
 		name = strings.TrimSuffix(name, trimSuffix)
 	}
 
-	var pkg *jsonapi_pb.Package
+	var pkg *schema_j5pb.Package
 	for _, search := range bb.packages {
 		if search.Name == name {
 			pkg = search
@@ -200,7 +144,7 @@ func (bb *builder) getPackage(file protoreflect.FileDescriptor) *jsonapi_pb.Pack
 	}
 
 	if pkg == nil {
-		pkg = &jsonapi_pb.Package{
+		pkg = &schema_j5pb.Package{
 			Name: name,
 		}
 		bb.packages = append(bb.packages, pkg)
@@ -226,7 +170,7 @@ func (bb *builder) addEvents(src protoreflect.ServiceDescriptor) error {
 			return err
 		}
 
-		eventSpec := &jsonapi_pb.EventSpec{
+		eventSpec := &schema_j5pb.EventSpec{
 			Name:        string(method.Name()),
 			EventSchema: eventSchema,
 		}
@@ -294,7 +238,7 @@ func convertPath(path string, requestObject protoreflect.MessageDescriptor) (str
 	return strings.Join(parts, "/"), nil
 }
 
-func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDescriptor) (*jsonapi_pb.Method, error) {
+func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDescriptor) (*schema_j5pb.Method, error) {
 
 	methodOptions := method.Options().(*descriptorpb.MethodOptions)
 	httpOpt := proto.GetExtension(methodOptions, annotations.E_Http).(*annotations.HttpRule)
@@ -331,7 +275,7 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 		return nil, err
 	}
 
-	builtMethod := &jsonapi_pb.Method{
+	builtMethod := &schema_j5pb.Method{
 		GrpcServiceName: string(method.Parent().Name()),
 		GrpcMethodName:  string(method.Name()),
 		HttpMethod:      httpMethod,
@@ -365,7 +309,7 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 			return nil, fmt.Errorf("path parameter %q not found in request object", name)
 		}
 
-		builtMethod.PathParameters = append(builtMethod.PathParameters, &jsonapi_pb.Parameter{
+		builtMethod.PathParameters = append(builtMethod.PathParameters, &schema_j5pb.Parameter{
 			Name:     prop.Name,
 			Required: true,
 			Schema:   prop.Schema,
@@ -375,14 +319,14 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 	if httpOpt.Body == "" {
 		// TODO: This should probably be based on the annotation setting of body
 		for _, param := range requestObject.Properties {
-			builtMethod.QueryParameters = append(builtMethod.QueryParameters, &jsonapi_pb.Parameter{
+			builtMethod.QueryParameters = append(builtMethod.QueryParameters, &schema_j5pb.Parameter{
 				Name:     param.Name,
 				Required: false,
 				Schema:   param.Schema,
 			})
 		}
 	} else if httpOpt.Body == "*" {
-		request.Type = &jsonapi_pb.Schema_ObjectItem{
+		request.Type = &schema_j5pb.Schema_ObjectItem{
 			ObjectItem: requestObject,
 		}
 		builtMethod.RequestBody = request
@@ -393,9 +337,9 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 	return builtMethod, nil
 }
 
-func popProperty(obj *jsonapi_pb.ObjectItem, name string) (*jsonapi_pb.ObjectProperty, bool) {
-	newProps := make([]*jsonapi_pb.ObjectProperty, 0, len(obj.Properties)-1)
-	var found *jsonapi_pb.ObjectProperty
+func popProperty(obj *schema_j5pb.ObjectItem, name string) (*schema_j5pb.ObjectProperty, bool) {
+	newProps := make([]*schema_j5pb.ObjectProperty, 0, len(obj.Properties)-1)
+	var found *schema_j5pb.ObjectProperty
 	for _, prop := range obj.Properties {
 		if prop.ProtoFieldName == name {
 			found = prop

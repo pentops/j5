@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package j5.source.v1;
+
+import "google/protobuf/descriptor.proto";
+import "j5/source/v1/config.proto";
+
+option go_package = "github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb";
+
+// Image is a parsed source image, similar to google.protobuf.Descriptor but
+// with the J5 config, and some non-proto files
+message SourceImage {
+  repeated google.protobuf.FileDescriptorProto file = 1;
+  repeated PackageConfig packages = 2;
+  repeated ProseFile prose = 3;
+  CodecOptions codec = 4;
+  RegistryConfig registry = 5;
+}
+
+message ProseFile {
+  string path = 1;
+  bytes content = 2;
+}

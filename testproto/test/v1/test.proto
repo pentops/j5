@@ -5,7 +5,7 @@ package test.v1;
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
-import "jsonapi/v1/annotations.proto";
+import "j5/ext/v1/annotations.proto";
 
 option go_package = "github.com/pentops/custom-proto-api/testproto/gen/testpb";
 
@@ -68,7 +68,7 @@ message PostFooRequest {
 }
 
 message WrappedOneof {
-  option (jsonapi.v1.message).is_oneof_wrapper = true;
+  option (j5.ext.v1.message).is_oneof_wrapper = true;
 
   oneof type {
     string oneof_string = 100;

@@ -3,7 +3,7 @@ package swagger
 import (
 	"testing"
 
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/jsontest"
 )
 
@@ -11,17 +11,17 @@ func TestConvertSchema(t *testing.T) {
 
 	for _, tc := range []struct {
 		name  string
-		input *jsonapi_pb.Schema
+		input *schema_j5pb.Schema
 		want  map[string]interface{}
 	}{{
 		name: "string",
-		input: &jsonapi_pb.Schema{
+		input: &schema_j5pb.Schema{
 			Description: "desc",
-			Type: &jsonapi_pb.Schema_StringItem{
-				StringItem: &jsonapi_pb.StringItem{
+			Type: &schema_j5pb.Schema_StringItem{
+				StringItem: &schema_j5pb.StringItem{
 					Format:  Ptr("uuid"),
 					Example: Ptr("example"),
-					Rules: &jsonapi_pb.StringRules{
+					Rules: &schema_j5pb.StringRules{
 						Pattern:   Ptr("regex-pattern"),
 						MinLength: Ptr(uint64(1)),
 						MaxLength: Ptr(uint64(2)),
@@ -40,11 +40,11 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "number",
-		input: &jsonapi_pb.Schema{
-			Type: &jsonapi_pb.Schema_NumberItem{
-				NumberItem: &jsonapi_pb.NumberItem{
+		input: &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_NumberItem{
+				NumberItem: &schema_j5pb.NumberItem{
 					Format: "double",
-					Rules: &jsonapi_pb.NumberRules{
+					Rules: &schema_j5pb.NumberRules{
 						Minimum:          Ptr(0.0),
 						Maximum:          Ptr(100.0),
 						ExclusiveMinimum: Ptr(true),
@@ -63,10 +63,10 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "enum",
-		input: &jsonapi_pb.Schema{
-			Type: &jsonapi_pb.Schema_EnumItem{
-				EnumItem: &jsonapi_pb.EnumItem{
-					Options: []*jsonapi_pb.EnumItem_Value{{
+		input: &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_EnumItem{
+				EnumItem: &schema_j5pb.EnumItem{
+					Options: []*schema_j5pb.EnumItem_Value{{
 						Name:        "FOO",
 						Description: "Foo Description",
 					}, {
@@ -88,9 +88,9 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "object",
-		input: &jsonapi_pb.Schema{
-			Type: &jsonapi_pb.Schema_ObjectItem{
-				ObjectItem: &jsonapi_pb.ObjectItem{
+		input: &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_ObjectItem{
+				ObjectItem: &schema_j5pb.ObjectItem{
 					GoPackageName:   "Go Package",
 					GoTypeName:      "Go Type",
 					GrpcPackageName: "Grpc Package",
@@ -98,18 +98,18 @@ func TestConvertSchema(t *testing.T) {
 					ProtoFullName:    "long",
 					ProtoMessageName: "short",
 
-					Rules: &jsonapi_pb.ObjectRules{
+					Rules: &schema_j5pb.ObjectRules{
 						MinProperties: Ptr(uint64(1)),
 						MaxProperties: Ptr(uint64(2)),
 					},
-					Properties: []*jsonapi_pb.ObjectProperty{{
+					Properties: []*schema_j5pb.ObjectProperty{{
 						Name:             "foo",
 						Required:         true,
 						ProtoFieldName:   "foo",
 						ProtoFieldNumber: 1,
-						Schema: &jsonapi_pb.Schema{
-							Type: &jsonapi_pb.Schema_StringItem{
-								StringItem: &jsonapi_pb.StringItem{},
+						Schema: &schema_j5pb.Schema{
+							Type: &schema_j5pb.Schema_StringItem{
+								StringItem: &schema_j5pb.StringItem{},
 							},
 						},
 					}, {
@@ -117,9 +117,9 @@ func TestConvertSchema(t *testing.T) {
 						Required:         false,
 						ProtoFieldName:   "bar",
 						ProtoFieldNumber: 2,
-						Schema: &jsonapi_pb.Schema{
-							Type: &jsonapi_pb.Schema_StringItem{
-								StringItem: &jsonapi_pb.StringItem{},
+						Schema: &schema_j5pb.Schema{
+							Type: &schema_j5pb.Schema_StringItem{
+								StringItem: &schema_j5pb.StringItem{},
 							},
 						},
 					}},
@@ -138,15 +138,15 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "array",
-		input: &jsonapi_pb.Schema{
-			Type: &jsonapi_pb.Schema_ArrayItem{
-				ArrayItem: &jsonapi_pb.ArrayItem{
-					Items: &jsonapi_pb.Schema{
-						Type: &jsonapi_pb.Schema_StringItem{
-							StringItem: &jsonapi_pb.StringItem{},
+		input: &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_ArrayItem{
+				ArrayItem: &schema_j5pb.ArrayItem{
+					Items: &schema_j5pb.Schema{
+						Type: &schema_j5pb.Schema_StringItem{
+							StringItem: &schema_j5pb.StringItem{},
 						},
 					},
-					Rules: &jsonapi_pb.ArrayRules{
+					Rules: &schema_j5pb.ArrayRules{
 						MinItems:    Ptr(uint64(1)),
 						MaxItems:    Ptr(uint64(2)),
 						UniqueItems: Ptr(true),
