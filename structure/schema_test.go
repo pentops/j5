@@ -6,7 +6,8 @@ import (
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/jsontest"
 	"github.com/pentops/jsonapi/testproto/gen/testpb"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -17,8 +18,8 @@ import (
 )
 
 func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldConstraints) *jsontest.Asserter {
-	ss := NewSchemaSet(&jsonapi_pb.CodecOptions{
-		ShortEnums: &jsonapi_pb.ShortEnumOptions{
+	ss := NewSchemaSet(&source_j5pb.CodecOptions{
+		ShortEnums: &source_j5pb.ShortEnumOptions{
 			StrictUnmarshal: true,
 		},
 		WrapOneof: true,
@@ -37,7 +38,7 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	obj, ok := schemaItem.Type.(*jsonapi_pb.Schema_ObjectItem)
+	obj, ok := schemaItem.Type.(*schema_j5pb.Schema_ObjectItem)
 	if !ok {
 		t.Fatalf("expected object item, got %T", schemaItem.Type)
 	}
@@ -203,8 +204,8 @@ func TestSchemaTypesSimple(t *testing.T) {
 
 func TestTestProtoSchemaTypes(t *testing.T) {
 
-	ss := NewSchemaSet(&jsonapi_pb.CodecOptions{
-		ShortEnums: &jsonapi_pb.ShortEnumOptions{
+	ss := NewSchemaSet(&source_j5pb.CodecOptions{
+		ShortEnums: &source_j5pb.ShortEnumOptions{
 			StrictUnmarshal: true,
 		},
 		WrapOneof: true,
@@ -219,7 +220,7 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	obj := schemaItem.Type.(*jsonapi_pb.Schema_ObjectItem)
+	obj := schemaItem.Type.(*schema_j5pb.Schema_ObjectItem)
 	assertProperty := func(name string, expected map[string]interface{}) {
 		for _, prop := range obj.ObjectItem.Properties {
 			if prop.Name == name {
@@ -264,8 +265,8 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 
 func TestSchemaTypesComplex(t *testing.T) {
 
-	ss := NewSchemaSet(&jsonapi_pb.CodecOptions{
-		ShortEnums: &jsonapi_pb.ShortEnumOptions{
+	ss := NewSchemaSet(&source_j5pb.CodecOptions{
+		ShortEnums: &source_j5pb.ShortEnumOptions{
 			StrictUnmarshal: true,
 		},
 		WrapOneof: true,

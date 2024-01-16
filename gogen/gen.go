@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
 )
 
 type Options struct {
@@ -45,7 +45,7 @@ func (o Options) ToGoPackage(pkg string) (string, error) {
 }
 
 type builder struct {
-	document *jsonapi_pb.API
+	document *schema_j5pb.API
 	fileSet  *FileSet
 	options  Options
 }
@@ -68,7 +68,7 @@ func (fw DirFileWriter) WriteFile(relPath string, data []byte) error {
 	return nil
 }
 
-func WriteGoCode(document *jsonapi_pb.API, output FileWriter, options Options) error {
+func WriteGoCode(document *schema_j5pb.API, output FileWriter, options Options) error {
 
 	fileSet := NewFileSet(options.AddGoPrefix)
 
@@ -86,23 +86,23 @@ func WriteGoCode(document *jsonapi_pb.API, output FileWriter, options Options) e
 	return fileSet.WriteAll(output)
 }
 
-func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
+func (bb *builder) buildTypeName(schema *schema_j5pb.Schema) (*DataType, error) {
 
 	switch schemaType := schema.Type.(type) {
-	case *jsonapi_pb.Schema_Ref:
+	case *schema_j5pb.Schema_Ref:
 		refVal, ok := bb.document.Schemas[schemaType.Ref]
 		if !ok {
 			return nil, fmt.Errorf("Unknown ref: %s", schemaType.Ref)
 		}
 
 		switch referredType := refVal.Type.(type) {
-		case *jsonapi_pb.Schema_EnumItem:
+		case *schema_j5pb.Schema_EnumItem:
 			return &DataType{
 				Name:    "string",
 				Pointer: false,
 			}, nil
 
-		case *jsonapi_pb.Schema_ObjectItem:
+		case *schema_j5pb.Schema_ObjectItem:
 
 			if err := bb.addObject(referredType.ObjectItem); err != nil {
 				return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref, err)
@@ -119,7 +119,7 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 				Pointer: true,
 			}, nil
 
-		case *jsonapi_pb.Schema_OneofWrapper:
+		case *schema_j5pb.Schema_OneofWrapper:
 
 			if err := bb.addOneofWrapper(referredType.OneofWrapper); err != nil {
 				return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref, err)
@@ -140,7 +140,7 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 			return nil, fmt.Errorf("Unknown ref type: %T", referredType)
 		}
 
-	case *jsonapi_pb.Schema_ArrayItem:
+	case *schema_j5pb.Schema_ArrayItem:
 		arrayType := schemaType.ArrayItem
 
 		itemType, err := bb.buildTypeName(arrayType.Items)
@@ -154,7 +154,7 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 			Slice:   true,
 		}, nil
 
-	case *jsonapi_pb.Schema_MapItem:
+	case *schema_j5pb.Schema_MapItem:
 		mapType := schemaType.MapItem
 		valueType, err := bb.buildTypeName(mapType.ItemSchema)
 		if err != nil {
@@ -166,7 +166,7 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 			Pointer: false,
 		}, nil
 
-	case *jsonapi_pb.Schema_ObjectItem:
+	case *schema_j5pb.Schema_ObjectItem:
 		objectType := schemaType.ObjectItem
 
 		if err := bb.addObject(objectType); err != nil {
@@ -178,7 +178,7 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 			Pointer: true,
 		}, nil
 
-	case *jsonapi_pb.Schema_OneofWrapper:
+	case *schema_j5pb.Schema_OneofWrapper:
 		wrapperType := schemaType.OneofWrapper
 
 		if err := bb.addOneofWrapper(wrapperType); err != nil {
@@ -190,7 +190,7 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 			Pointer: true,
 		}, nil
 
-	case *jsonapi_pb.Schema_StringItem:
+	case *schema_j5pb.Schema_StringItem:
 		item := schemaType.StringItem
 		if item.Format == nil {
 			return &DataType{
@@ -220,25 +220,25 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 			return nil, fmt.Errorf("Unknown string format: %s", *item.Format)
 		}
 
-	case *jsonapi_pb.Schema_NumberItem:
+	case *schema_j5pb.Schema_NumberItem:
 		return &DataType{
 			Name:    "float64",
 			Pointer: false,
 		}, nil
 
-	case *jsonapi_pb.Schema_IntegerItem:
+	case *schema_j5pb.Schema_IntegerItem:
 		return &DataType{
 			Name:    "int64",
 			Pointer: false,
 		}, nil
 
-	case *jsonapi_pb.Schema_BooleanItem:
+	case *schema_j5pb.Schema_BooleanItem:
 		return &DataType{
 			Name:    "bool",
 			Pointer: false,
 		}, nil
 
-	case *jsonapi_pb.Schema_EnumItem:
+	case *schema_j5pb.Schema_EnumItem:
 		return &DataType{
 			Name:    "string",
 			Pointer: false,
@@ -250,7 +250,7 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 
 }
 
-func (bb *builder) jsonField(property *jsonapi_pb.ObjectProperty) (*Field, error) {
+func (bb *builder) jsonField(property *schema_j5pb.ObjectProperty) (*Field, error) {
 
 	tags := map[string]string{}
 
@@ -276,7 +276,7 @@ func (bb *builder) jsonField(property *jsonapi_pb.ObjectProperty) (*Field, error
 
 }
 
-func (bb *builder) addObject(object *jsonapi_pb.ObjectItem) error {
+func (bb *builder) addObject(object *schema_j5pb.ObjectItem) error {
 	objectPackage, err := bb.options.ToGoPackage(object.GrpcPackageName)
 	if err != nil {
 		return fmt.Errorf("object package name '%s': %w", object.GoTypeName, err)
@@ -311,7 +311,7 @@ func (bb *builder) addObject(object *jsonapi_pb.ObjectItem) error {
 	return nil
 
 }
-func (bb *builder) addOneofWrapper(wrapper *jsonapi_pb.OneofWrapperItem) error {
+func (bb *builder) addOneofWrapper(wrapper *schema_j5pb.OneofWrapperItem) error {
 	objectPackage, err := bb.options.ToGoPackage(wrapper.GrpcPackageName)
 	if err != nil {
 		return fmt.Errorf("object package name '%s': %w", wrapper.GoTypeName, err)
@@ -362,7 +362,7 @@ func (bb *builder) root() error {
 	return nil
 }
 
-func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Method) error {
+func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Method) error {
 
 	goPackageName := path.Base(fullGoPackage)
 	gen, err := bb.fileSet.File(fullGoPackage, goPackageName)
@@ -476,7 +476,7 @@ func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Meth
 		})
 
 		schema := parameter.Schema
-		if ref, ok := schema.Type.(*jsonapi_pb.Schema_Ref); ok {
+		if ref, ok := schema.Type.(*schema_j5pb.Schema_Ref); ok {
 			// type assertion instead of GetRef() and nil check because
 			// strings aren't nil.
 			si, ok := bb.document.Schemas[ref.Ref]
@@ -488,7 +488,7 @@ func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Meth
 
 		switch schema.Type.(type) {
 
-		case *jsonapi_pb.Schema_StringItem:
+		case *schema_j5pb.Schema_StringItem:
 			if parameter.Required {
 				queryMethod.P("  values.Set(\"", parameter.Name, "\", s.", GoName(parameter.Name), ")")
 			} else {
@@ -497,7 +497,7 @@ func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Meth
 				queryMethod.P("  }")
 			}
 
-		case *jsonapi_pb.Schema_ObjectItem:
+		case *schema_j5pb.Schema_ObjectItem:
 			// include as JSON
 			queryMethod.P("  if s.", GoName(parameter.Name), " != nil {")
 			queryMethod.P("    bb, err := ", DataType{Package: "encoding/json", Name: "Marshal"}, "(s.", GoName(parameter.Name), ")")

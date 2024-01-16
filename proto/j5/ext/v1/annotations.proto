@@ -1,11 +1,10 @@
 syntax = "proto3";
 
-package jsonapi.v1;
+package j5.ext.v1;
 
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
-
+option go_package = "github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb";
 
 extend google.protobuf.MessageOptions {
   MessageOptions message = 90443353;
@@ -17,7 +16,6 @@ message MessageOptions {
   // x-oneof flag set.
   bool is_oneof_wrapper = 1;
 }
-
 
 extend google.protobuf.OneofOptions {
   OneofOptions oneof = 90443355;

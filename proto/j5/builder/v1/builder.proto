@@ -5,7 +5,7 @@ package j5.builder.v1;
 import "buf/validate/validate.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
-import "j5/config/v1/config.proto";
+import "j5/source/v1/config.proto";
 import "o5/messaging/v1/annotations.proto";
 
 option go_package = "github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb";
@@ -36,7 +36,7 @@ message BuildProtoMessage {
 
   // contains one single proto build definition, otherwise is the config
   // as pulled from the source.
-  j5.config.v1.Config config = 3 [(buf.validate.field).required = true];
+  j5.source.v1.Config config = 3 [(buf.validate.field).required = true];
 }
 
 message BuildAPIMessage {
@@ -45,5 +45,5 @@ message BuildAPIMessage {
 
   // contains fields relating to JSON API build, i.e. excludes other build
   // configs.
-  j5.config.v1.Config config = 3 [(buf.validate.field).required = true];
+  j5.source.v1.Config config = 3 [(buf.validate.field).required = true];
 }

@@ -3,13 +3,44 @@ package swagger
 import (
 	"fmt"
 
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
 )
 
-func convertSchema(schema *jsonapi_pb.Schema) (*Schema, error) {
+// BuildSwagger converts the J5 Document to a Swagger Document
+func BuildSwagger(b *schema_j5pb.API) (*Document, error) {
+	doc := &Document{
+		OpenAPI: "3.0.0",
+		Components: Components{
+			SecuritySchemes: make(map[string]interface{}),
+		},
+	}
+
+	for _, pkg := range b.Packages {
+		for _, method := range pkg.Methods {
+			err := doc.addMethod(method)
+			if err != nil {
+				return nil, fmt.Errorf("package %s method %s: %w", pkg.Name, method.FullGrpcName, err)
+			}
+		}
+	}
+
+	schemas := make(map[string]*Schema)
+	for key, src := range b.Schemas {
+		schema, err := convertSchema(src)
+		if err != nil {
+			return nil, err
+		}
+		schemas[key] = schema
+	}
+	doc.Components.Schemas = schemas
+
+	return doc, nil
+}
+
+func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 
 	switch special := schema.Type.(type) {
-	case *jsonapi_pb.Schema_Ref:
+	case *schema_j5pb.Schema_Ref:
 		return &Schema{
 			Ref: Ptr(special.Ref),
 		}, nil
@@ -24,28 +55,28 @@ func convertSchema(schema *jsonapi_pb.Schema) (*Schema, error) {
 	var err error
 	switch t := schema.Type.(type) {
 
-	case *jsonapi_pb.Schema_StringItem:
+	case *schema_j5pb.Schema_StringItem:
 		out.SchemaItem.Type = convertStringItem(t.StringItem)
 
-	case *jsonapi_pb.Schema_IntegerItem:
+	case *schema_j5pb.Schema_IntegerItem:
 		out.SchemaItem.Type = convertIntegerItem(t.IntegerItem)
 
-	case *jsonapi_pb.Schema_EnumItem:
+	case *schema_j5pb.Schema_EnumItem:
 		out.SchemaItem.Type = convertEnumItem(t.EnumItem)
 
-	case *jsonapi_pb.Schema_NumberItem:
+	case *schema_j5pb.Schema_NumberItem:
 		out.SchemaItem.Type = convertNumberItem(t.NumberItem)
 
-	case *jsonapi_pb.Schema_BooleanItem:
+	case *schema_j5pb.Schema_BooleanItem:
 		out.SchemaItem.Type = convertBooleanItem(t.BooleanItem)
 
-	case *jsonapi_pb.Schema_ArrayItem:
+	case *schema_j5pb.Schema_ArrayItem:
 		out.SchemaItem.Type, err = convertArrayItem(t.ArrayItem)
 		if err != nil {
 			return nil, err
 		}
 
-	case *jsonapi_pb.Schema_ObjectItem:
+	case *schema_j5pb.Schema_ObjectItem:
 		out.SchemaItem.Type, err = convertObjectItem(t.ObjectItem)
 		if err != nil {
 			return nil, err
@@ -57,7 +88,7 @@ func convertSchema(schema *jsonapi_pb.Schema) (*Schema, error) {
 	return out, nil
 }
 
-func convertStringItem(item *jsonapi_pb.StringItem) *StringItem {
+func convertStringItem(item *schema_j5pb.StringItem) *StringItem {
 	out := &StringItem{
 		Format:  Maybe(item.Format),
 		Example: Maybe(item.Example),
@@ -72,7 +103,7 @@ func convertStringItem(item *jsonapi_pb.StringItem) *StringItem {
 	return out
 }
 
-func convertIntegerItem(item *jsonapi_pb.IntegerItem) *IntegerItem {
+func convertIntegerItem(item *schema_j5pb.IntegerItem) *IntegerItem {
 	out := &IntegerItem{
 		Format: item.Format,
 	}
@@ -88,7 +119,7 @@ func convertIntegerItem(item *jsonapi_pb.IntegerItem) *IntegerItem {
 	return out
 }
 
-func convertNumberItem(item *jsonapi_pb.NumberItem) *NumberItem {
+func convertNumberItem(item *schema_j5pb.NumberItem) *NumberItem {
 	out := &NumberItem{
 		Format: item.Format,
 	}
@@ -104,7 +135,7 @@ func convertNumberItem(item *jsonapi_pb.NumberItem) *NumberItem {
 	return out
 }
 
-func convertBooleanItem(item *jsonapi_pb.BooleanItem) *BooleanItem {
+func convertBooleanItem(item *schema_j5pb.BooleanItem) *BooleanItem {
 	out := &BooleanItem{}
 
 	if item.Rules != nil {
@@ -114,7 +145,7 @@ func convertBooleanItem(item *jsonapi_pb.BooleanItem) *BooleanItem {
 	return out
 }
 
-func convertEnumItem(item *jsonapi_pb.EnumItem) *EnumItem {
+func convertEnumItem(item *schema_j5pb.EnumItem) *EnumItem {
 	out := &EnumItem{}
 
 	for _, val := range item.Options {
@@ -128,7 +159,7 @@ func convertEnumItem(item *jsonapi_pb.EnumItem) *EnumItem {
 	return out
 }
 
-func convertArrayItem(item *jsonapi_pb.ArrayItem) (*ArrayItem, error) {
+func convertArrayItem(item *schema_j5pb.ArrayItem) (*ArrayItem, error) {
 	items, err := convertSchema(item.Items)
 	if err != nil {
 		return nil, err
@@ -147,7 +178,7 @@ func convertArrayItem(item *jsonapi_pb.ArrayItem) (*ArrayItem, error) {
 	return out, nil
 }
 
-func convertObjectItem(item *jsonapi_pb.ObjectItem) (*ObjectItem, error) {
+func convertObjectItem(item *schema_j5pb.ObjectItem) (*ObjectItem, error) {
 	out := &ObjectItem{
 		Properties:    map[string]*ObjectProperty{},
 		FullProtoName: item.ProtoFullName,

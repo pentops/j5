@@ -7,7 +7,8 @@ import (
 	"go/token"
 	"testing"
 
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/structure"
 	"github.com/pentops/jsonapi/testproto/gen/testpb"
 	"github.com/stretchr/testify/assert"
@@ -29,14 +30,14 @@ func (o TestOutput) WriteFile(name string, data []byte) error {
 
 func TestTestProtoGen(t *testing.T) {
 
-	ss := structure.NewSchemaSet(&jsonapi_pb.CodecOptions{
-		ShortEnums: &jsonapi_pb.ShortEnumOptions{
+	ss := structure.NewSchemaSet(&source_j5pb.CodecOptions{
+		ShortEnums: &source_j5pb.ShortEnumOptions{
 			StrictUnmarshal: true,
 		},
 		WrapOneof: true,
 	})
 
-	mustBuildSchema := func(desc protoreflect.MessageDescriptor) *jsonapi_pb.Schema {
+	mustBuildSchema := func(desc protoreflect.MessageDescriptor) *schema_j5pb.Schema {
 		schemaItem, err := ss.BuildSchemaObject(desc)
 		if err != nil {
 			t.Fatal(err.Error())
@@ -45,13 +46,13 @@ func TestTestProtoGen(t *testing.T) {
 
 	}
 
-	jdef := &jsonapi_pb.API{
-		Packages: []*jsonapi_pb.Package{{
+	jdef := &schema_j5pb.API{
+		Packages: []*schema_j5pb.Package{{
 			Label:        "package label",
 			Name:         "test.v1",
 			Hidden:       false,
 			Introduction: "FOOBAR",
-			Methods: []*jsonapi_pb.Method{{
+			Methods: []*schema_j5pb.Method{{
 				GrpcServiceName: "TestService",
 				FullGrpcName:    "/test.v1.TestService/Test",
 				GrpcMethodName:  "PostFoo",

@@ -7,23 +7,25 @@ import (
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"github.com/google/uuid"
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type SchemaSet struct {
-	Options *jsonapi_pb.CodecOptions
-	Schemas map[string]*jsonapi_pb.Schema
+	Options *source_j5pb.CodecOptions
+	Schemas map[string]*schema_j5pb.Schema
 
 	seen map[string]bool
 }
 
-func NewSchemaSet(options *jsonapi_pb.CodecOptions) *SchemaSet {
+func NewSchemaSet(options *source_j5pb.CodecOptions) *SchemaSet {
 	return &SchemaSet{
 		Options: options,
-		Schemas: make(map[string]*jsonapi_pb.Schema),
+		Schemas: make(map[string]*schema_j5pb.Schema),
 		seen:    make(map[string]bool),
 	}
 }
@@ -40,22 +42,22 @@ func walkName(src protoreflect.MessageDescriptor) string {
 	return fmt.Sprintf("%s_%s", walkName(msg), goTypeName)
 
 }
-func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*jsonapi_pb.Schema, error) {
+func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, error) {
 
 	goTypeName := walkName(src)
 
-	properties := make([]*jsonapi_pb.ObjectProperty, 0, src.Fields().Len())
+	properties := make([]*schema_j5pb.ObjectProperty, 0, src.Fields().Len())
 
 	isOneof := false
-	options := proto.GetExtension(src.Options(), jsonapi_pb.E_Message).(*jsonapi_pb.MessageOptions)
+	options := proto.GetExtension(src.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
 	if options != nil {
 		if options.IsOneofWrapper {
 			isOneof = true
 		}
 	}
 
-	oneofs := make(map[string]*jsonapi_pb.OneofWrapperItem)
-	pendingOneofProps := make(map[string]*jsonapi_pb.ObjectProperty)
+	oneofs := make(map[string]*schema_j5pb.OneofWrapperItem)
+	pendingOneofProps := make(map[string]*schema_j5pb.ObjectProperty)
 
 	if !isOneof {
 		for idx := 0; idx < src.Oneofs().Len(); idx++ {
@@ -63,7 +65,7 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*jso
 			if oneof.IsSynthetic() {
 				continue
 			}
-			ext := proto.GetExtension(oneof.Options(), jsonapi_pb.E_Oneof).(*jsonapi_pb.OneofOptions)
+			ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
 
 			if ext == nil || !ext.Expose {
 				fmt.Fprintf(os.Stderr, "WARN: no def for oneof %s.%s\n", src.FullName(), oneof.Name())
@@ -72,19 +74,19 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*jso
 
 			oneofName := string(oneof.Name())
 			syntheticTypeName := fmt.Sprintf("%s_%s", src.Name(), oneofName)
-			oneofObject := &jsonapi_pb.OneofWrapperItem{
+			oneofObject := &schema_j5pb.OneofWrapperItem{
 				ProtoFullName:    string(oneof.FullName()),
 				ProtoMessageName: oneofName,
 				GoTypeName:       syntheticTypeName,
 				GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
 				GrpcPackageName:  string(src.ParentFile().Package()),
 			}
-			prop := &jsonapi_pb.ObjectProperty{
+			prop := &schema_j5pb.ObjectProperty{
 				ProtoFieldName: string(oneof.Name()),
 				Name:           string(oneof.Name()),
 				Description:    commentDescription(src),
-				Schema: &jsonapi_pb.Schema{
-					Type: &jsonapi_pb.Schema_OneofWrapper{
+				Schema: &schema_j5pb.Schema{
+					Type: &schema_j5pb.Schema_OneofWrapper{
 						OneofWrapper: oneofObject,
 					},
 				},
@@ -103,9 +105,9 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*jso
 			if err != nil {
 				return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 			}
-			prop.Schema = &jsonapi_pb.Schema{
-				Type: &jsonapi_pb.Schema_ArrayItem{
-					ArrayItem: &jsonapi_pb.ArrayItem{
+			prop.Schema = &schema_j5pb.Schema{
+				Type: &schema_j5pb.Schema_ArrayItem{
+					ArrayItem: &schema_j5pb.ArrayItem{
 						Items: prop.Schema,
 					},
 				},
@@ -123,14 +125,14 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*jso
 			}
 
 			src := field
-			prop := &jsonapi_pb.ObjectProperty{
+			prop := &schema_j5pb.ObjectProperty{
 				ProtoFieldName:   string(src.Name()),
 				ProtoFieldNumber: int32(src.Number()),
 				Name:             string(src.JSONName()),
 				Description:      commentDescription(src),
-				Schema: &jsonapi_pb.Schema{
-					Type: &jsonapi_pb.Schema_MapItem{
-						MapItem: &jsonapi_pb.MapItem{
+				Schema: &schema_j5pb.Schema{
+					Type: &schema_j5pb.Schema_MapItem{
+						MapItem: &schema_j5pb.MapItem{
 							ItemSchema: valueProp.Schema,
 						},
 					},
@@ -176,10 +178,10 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*jso
 	description := commentDescription(src)
 
 	if isOneof {
-		return &jsonapi_pb.Schema{
+		return &schema_j5pb.Schema{
 			Description: description,
-			Type: &jsonapi_pb.Schema_OneofWrapper{
-				OneofWrapper: &jsonapi_pb.OneofWrapperItem{
+			Type: &schema_j5pb.Schema_OneofWrapper{
+				OneofWrapper: &schema_j5pb.OneofWrapperItem{
 					ProtoFullName:    string(src.FullName()),
 					ProtoMessageName: string(src.Name()),
 					GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
@@ -192,10 +194,10 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*jso
 
 	}
 
-	return &jsonapi_pb.Schema{
+	return &schema_j5pb.Schema{
 		Description: description,
-		Type: &jsonapi_pb.Schema_ObjectItem{
-			ObjectItem: &jsonapi_pb.ObjectItem{
+		Type: &schema_j5pb.Schema_ObjectItem{
+			ObjectItem: &schema_j5pb.ObjectItem{
 				ProtoFullName:    string(src.FullName()),
 				ProtoMessageName: string(src.Name()),
 				GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
@@ -265,14 +267,14 @@ func quickUUID() string {
 	return lastUUID.String()
 }
 
-func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jsonapi_pb.ObjectProperty, error) {
+func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*schema_j5pb.ObjectProperty, error) {
 
-	prop := &jsonapi_pb.ObjectProperty{
+	prop := &schema_j5pb.ObjectProperty{
 		ProtoFieldName:   string(src.Name()),
 		ProtoFieldNumber: int32(src.Number()),
 		Name:             string(src.JSONName()),
 		Description:      commentDescription(src),
-		Schema: &jsonapi_pb.Schema{
+		Schema: &schema_j5pb.Schema{
 			Description: commentDescription(src),
 		},
 	}
@@ -298,14 +300,14 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 	switch src.Kind() {
 	case protoreflect.BoolKind:
 		boolConstraint := constraint.GetBool()
-		boolItem := &jsonapi_pb.BooleanItem{}
+		boolItem := &schema_j5pb.BooleanItem{}
 
 		if boolConstraint != nil {
 			if boolConstraint.Const != nil {
 				boolItem.Rules.Const = boolConstraint.Const
 			}
 		}
-		prop.Schema.Type = &jsonapi_pb.Schema_BooleanItem{
+		prop.Schema.Type = &schema_j5pb.Schema_BooleanItem{
 			BooleanItem: boolItem,
 		}
 		prop.Required = true
@@ -317,18 +319,18 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 			return nil, err
 		}
 
-		protoValues := make([]*jsonapi_pb.EnumItem_Value, 0, len(values))
+		protoValues := make([]*schema_j5pb.EnumItem_Value, 0, len(values))
 		for _, value := range values {
-			protoValues = append(protoValues, &jsonapi_pb.EnumItem_Value{
+			protoValues = append(protoValues, &schema_j5pb.EnumItem_Value{
 				Name:        value.Name,
 				Description: value.Description,
 			})
 		}
 
-		refSchemaItem := &jsonapi_pb.Schema{
+		refSchemaItem := &schema_j5pb.Schema{
 			Description: commentDescription(src),
-			Type: &jsonapi_pb.Schema_EnumItem{
-				EnumItem: &jsonapi_pb.EnumItem{
+			Type: &schema_j5pb.Schema_EnumItem{
+				EnumItem: &schema_j5pb.EnumItem{
 					Options: protoValues,
 				},
 			},
@@ -337,16 +339,16 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 		refName := string(src.Enum().FullName())
 		ss.Schemas[refName] = refSchemaItem
 
-		prop.Schema.Type = &jsonapi_pb.Schema_Ref{
+		prop.Schema.Type = &schema_j5pb.Schema_Ref{
 			Ref: refName,
 		}
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
 
-		var integerRules *jsonapi_pb.IntegerRules
+		var integerRules *schema_j5pb.IntegerRules
 		int32Constraint := constraint.GetInt32()
 		if int32Constraint != nil {
-			integerRules = &jsonapi_pb.IntegerRules{}
+			integerRules = &schema_j5pb.IntegerRules{}
 			if int32Constraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
@@ -377,17 +379,17 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 			}
 
 		}
-		prop.Schema.Type = &jsonapi_pb.Schema_IntegerItem{
-			IntegerItem: &jsonapi_pb.IntegerItem{
+		prop.Schema.Type = &schema_j5pb.Schema_IntegerItem{
+			IntegerItem: &schema_j5pb.IntegerItem{
 				Format: "int32",
 				Rules:  integerRules,
 			},
 		}
 	case protoreflect.Uint32Kind:
-		var integerRules *jsonapi_pb.IntegerRules
+		var integerRules *schema_j5pb.IntegerRules
 		uint32Constraint := constraint.GetUint32()
 		if uint32Constraint != nil {
-			integerRules = &jsonapi_pb.IntegerRules{}
+			integerRules = &schema_j5pb.IntegerRules{}
 			if uint32Constraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
@@ -418,18 +420,18 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 			}
 		}
 
-		prop.Schema.Type = &jsonapi_pb.Schema_IntegerItem{
-			IntegerItem: &jsonapi_pb.IntegerItem{
+		prop.Schema.Type = &schema_j5pb.Schema_IntegerItem{
+			IntegerItem: &schema_j5pb.IntegerItem{
 				Format: "uint32",
 				Rules:  integerRules,
 			},
 		}
 
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind:
-		var integerRules *jsonapi_pb.IntegerRules
+		var integerRules *schema_j5pb.IntegerRules
 		int64Constraint := constraint.GetInt64()
 		if int64Constraint != nil {
-			integerRules = &jsonapi_pb.IntegerRules{}
+			integerRules = &schema_j5pb.IntegerRules{}
 			if int64Constraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
@@ -460,18 +462,18 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 			}
 		}
 
-		prop.Schema.Type = &jsonapi_pb.Schema_IntegerItem{
-			IntegerItem: &jsonapi_pb.IntegerItem{
+		prop.Schema.Type = &schema_j5pb.Schema_IntegerItem{
+			IntegerItem: &schema_j5pb.IntegerItem{
 				Format: "int64",
 				Rules:  integerRules,
 			},
 		}
 
 	case protoreflect.FloatKind:
-		var numberRules *jsonapi_pb.NumberRules
+		var numberRules *schema_j5pb.NumberRules
 		floatConstraint := constraint.GetFloat()
 		if floatConstraint != nil {
-			numberRules = &jsonapi_pb.NumberRules{}
+			numberRules = &schema_j5pb.NumberRules{}
 			if floatConstraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
@@ -502,18 +504,18 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 			}
 		}
 
-		prop.Schema.Type = &jsonapi_pb.Schema_NumberItem{
-			NumberItem: &jsonapi_pb.NumberItem{
+		prop.Schema.Type = &schema_j5pb.Schema_NumberItem{
+			NumberItem: &schema_j5pb.NumberItem{
 				Format: "float",
 				Rules:  numberRules,
 			},
 		}
 
 	case protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind, protoreflect.DoubleKind:
-		var numberRules *jsonapi_pb.NumberRules
+		var numberRules *schema_j5pb.NumberRules
 		floatConstraint := constraint.GetDouble()
 		if floatConstraint != nil {
-			numberRules = &jsonapi_pb.NumberRules{}
+			numberRules = &schema_j5pb.NumberRules{}
 			if floatConstraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
@@ -544,22 +546,22 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 			}
 		}
 
-		prop.Schema.Type = &jsonapi_pb.Schema_NumberItem{
-			NumberItem: &jsonapi_pb.NumberItem{
+		prop.Schema.Type = &schema_j5pb.Schema_NumberItem{
+			NumberItem: &schema_j5pb.NumberItem{
 				Format: "float",
 				Rules:  numberRules,
 			},
 		}
 
 	case protoreflect.StringKind:
-		stringItem := &jsonapi_pb.StringItem{}
+		stringItem := &schema_j5pb.StringItem{}
 		if constraint != nil && constraint.Type != nil {
 			stringConstraint, ok := constraint.Type.(*validate.FieldConstraints_String_)
 			if !ok {
 				return nil, fmt.Errorf("wrong constraint type for string: %T", constraint.Type)
 			}
 
-			stringItem.Rules = &jsonapi_pb.StringRules{}
+			stringItem.Rules = &schema_j5pb.StringRules{}
 			constraint := stringConstraint.String_
 
 			stringItem.Rules.MinLength = constraint.MinLen
@@ -623,13 +625,13 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 
 		}
 
-		prop.Schema.Type = &jsonapi_pb.Schema_StringItem{
+		prop.Schema.Type = &schema_j5pb.Schema_StringItem{
 			StringItem: stringItem,
 		}
 
 	case protoreflect.BytesKind:
-		prop.Schema.Type = &jsonapi_pb.Schema_StringItem{
-			StringItem: &jsonapi_pb.StringItem{
+		prop.Schema.Type = &schema_j5pb.Schema_StringItem{
+			StringItem: &schema_j5pb.StringItem{
 				Format: Ptr("byte"),
 			},
 		}
@@ -640,7 +642,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 			prop.Schema = wktschema
 
 		} else {
-			prop.Schema.Type = &jsonapi_pb.Schema_Ref{
+			prop.Schema.Type = &schema_j5pb.Schema_Ref{
 				Ref: string(src.Message().FullName()),
 			}
 			if err := ss.addSchemaObject(src.Message()); err != nil {
@@ -663,7 +665,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*jso
 
 }
 
-func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules, se *jsonapi_pb.ShortEnumOptions) ([]*jsonapi_pb.EnumItem_Value, error) {
+func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules, se *source_j5pb.ShortEnumOptions) ([]*schema_j5pb.EnumItem_Value, error) {
 
 	specMap := map[int32]struct{}{}
 	var notIn bool
@@ -688,7 +690,7 @@ func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.Enum
 		return nil, fmt.Errorf("enum cannot have both in and not_in constraints")
 	}
 
-	values := make([]*jsonapi_pb.EnumItem_Value, 0, src.Len())
+	values := make([]*schema_j5pb.EnumItem_Value, 0, src.Len())
 	for ii := 0; ii < src.Len(); ii++ {
 		option := src.Get(ii)
 		number := int32(option.Number())
@@ -705,7 +707,7 @@ func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.Enum
 			}
 		}
 
-		values = append(values, &jsonapi_pb.EnumItem_Value{
+		values = append(values, &schema_j5pb.EnumItem_Value{
 			Name:        string(option.Name()),
 			Number:      number,
 			Description: commentDescription(option),
@@ -737,33 +739,33 @@ func Ptr[T any](val T) *T {
 	return &val
 }
 
-func wktSchema(src protoreflect.MessageDescriptor) (*jsonapi_pb.Schema, bool) {
+func wktSchema(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, bool) {
 
 	switch string(src.FullName()) {
 	case "google.protobuf.Timestamp":
-		return &jsonapi_pb.Schema{
-			Type: &jsonapi_pb.Schema_StringItem{
-				StringItem: &jsonapi_pb.StringItem{
+		return &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_StringItem{
+				StringItem: &schema_j5pb.StringItem{
 					Format: Ptr("date-time"),
 				},
 			},
 		}, true
 	case "google.protobuf.Duration":
-		return &jsonapi_pb.Schema{
-			Type: &jsonapi_pb.Schema_StringItem{
-				StringItem: &jsonapi_pb.StringItem{
+		return &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_StringItem{
+				StringItem: &schema_j5pb.StringItem{
 					Format: Ptr("duration"),
 				},
 			},
 		}, true
 
 	case "google.protobuf.Struct":
-		return &jsonapi_pb.Schema{
-			Type: &jsonapi_pb.Schema_MapItem{
-				MapItem: &jsonapi_pb.MapItem{
-					ItemSchema: &jsonapi_pb.Schema{
-						Type: &jsonapi_pb.Schema_Empty{
-							Empty: &jsonapi_pb.EmptySchemmaItem{},
+		return &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_MapItem{
+				MapItem: &schema_j5pb.MapItem{
+					ItemSchema: &schema_j5pb.Schema{
+						Type: &schema_j5pb.Schema_Empty{
+							Empty: &schema_j5pb.EmptySchemmaItem{},
 						},
 					},
 				},
@@ -787,7 +789,7 @@ func (ss *SchemaSet) addSchemaObject(src protoreflect.MessageDescriptor) error {
 	}
 
 	// Prevents recursion errors
-	ss.Schemas[string(src.FullName())] = &jsonapi_pb.Schema{}
+	ss.Schemas[string(src.FullName())] = &schema_j5pb.Schema{}
 
 	schema, err := ss.BuildSchemaObject(src)
 	if err != nil {

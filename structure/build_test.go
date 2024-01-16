@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
-	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
+	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
 	"github.com/pentops/o5-runtime-sidecar/testproto"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -92,26 +92,26 @@ func TestBuild(t *testing.T) {
 		},
 	}
 
-	want := &jsonapi_pb.API{
-		Packages: []*jsonapi_pb.Package{{
+	want := &schema_j5pb.API{
+		Packages: []*schema_j5pb.Package{{
 			Label: "Test",
 			Name:  "test.v1",
-			Methods: []*jsonapi_pb.Method{{
+			Methods: []*schema_j5pb.Method{{
 				GrpcServiceName: "TestService",
 				FullGrpcName:    "/test.v1.TestService/Test",
 				GrpcMethodName:  "Test",
 				HttpMethod:      "get",
 				HttpPath:        "/test/:testField",
-				ResponseBody: &jsonapi_pb.Schema{
-					Type: &jsonapi_pb.Schema_ObjectItem{
-						ObjectItem: &jsonapi_pb.ObjectItem{
+				ResponseBody: &schema_j5pb.Schema{
+					Type: &schema_j5pb.Schema_ObjectItem{
+						ObjectItem: &schema_j5pb.ObjectItem{
 							ProtoFullName:    "test.v1.TestResponse",
 							ProtoMessageName: "TestResponse",
-							//Rules:            &jsonapi_pb.ObjectRules{},
+							//Rules:            &schema_j5pb.ObjectRules{},
 							GoPackageName:   "github.com/pentops/jsonapi/test_pb",
 							GoTypeName:      "TestResponse",
 							GrpcPackageName: "test.v1",
-							Properties: []*jsonapi_pb.ObjectProperty{{
+							Properties: []*schema_j5pb.ObjectProperty{{
 								Name:               "testField",
 								Description:        "",
 								ProtoFieldName:     "test_field",
@@ -119,10 +119,10 @@ func TestBuild(t *testing.T) {
 								ExplicitlyOptional: true,
 								Required:           false,
 								WriteOnly:          false,
-								Schema: &jsonapi_pb.Schema{
+								Schema: &schema_j5pb.Schema{
 									Description: "",
-									Type: &jsonapi_pb.Schema_StringItem{
-										StringItem: &jsonapi_pb.StringItem{},
+									Type: &schema_j5pb.Schema_StringItem{
+										StringItem: &schema_j5pb.StringItem{},
 									},
 								},
 							}, {
@@ -132,8 +132,8 @@ func TestBuild(t *testing.T) {
 								ProtoFieldNumber:   2,
 								Required:           false,
 								ExplicitlyOptional: true,
-								Schema: &jsonapi_pb.Schema{
-									Type: &jsonapi_pb.Schema_Ref{
+								Schema: &schema_j5pb.Schema{
+									Type: &schema_j5pb.Schema_Ref{
 										Ref: "test.v1.Nested",
 									},
 								},
@@ -141,13 +141,13 @@ func TestBuild(t *testing.T) {
 						},
 					},
 				},
-				PathParameters: []*jsonapi_pb.Parameter{{
+				PathParameters: []*schema_j5pb.Parameter{{
 					Name:        "testField",
 					Description: "",
 					Required:    true,
-					Schema: &jsonapi_pb.Schema{
-						Type: &jsonapi_pb.Schema_StringItem{
-							StringItem: &jsonapi_pb.StringItem{},
+					Schema: &schema_j5pb.Schema{
+						Type: &schema_j5pb.Schema_StringItem{
+							StringItem: &schema_j5pb.StringItem{},
 						},
 					},
 				}},
@@ -155,13 +155,13 @@ func TestBuild(t *testing.T) {
 		}},
 	}
 
-	built, err := BuildFromDescriptors(&config_j5pb.Config{
-		Packages: []*jsonapi_pb.PackageConfig{{
+	built, err := BuildFromDescriptors(&source_j5pb.Config{
+		Packages: []*source_j5pb.PackageConfig{{
 			Label: "Test",
 			Name:  "test.v1",
 		}},
-		Options: &jsonapi_pb.CodecOptions{
-			ShortEnums: &jsonapi_pb.ShortEnumOptions{},
+		Options: &source_j5pb.CodecOptions{
+			ShortEnums: &source_j5pb.ShortEnumOptions{},
 		},
 	}, &descriptorpb.FileDescriptorSet{
 		File: []*descriptorpb.FileDescriptorProto{descriptors},

@@ -1,10 +1,10 @@
 syntax = "proto3";
 
-package jsonapi.v1;
+package j5.schema.v1;
 
-import "jsonapi/v1/schema.proto";
+import "j5/schema/v1/schema.proto";
 
-option go_package = "github.com/pentops/jsonapi/gen/v1/jsonapi_pb";
+option go_package = "github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb";
 
 message API {
   repeated Package packages = 1;
