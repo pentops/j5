@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/pentops/jsonapi/gen/v1/jsonapi_pb"
-	"github.com/pentops/jsonapi/jsonapi"
 )
 
 type Options struct {
@@ -43,67 +42,6 @@ func (o Options) ToGoPackage(pkg string) (string, error) {
 		pkg = path.Join(o.AddGoPrefix, pkg)
 	}
 	return pkg, nil
-}
-
-func scalarTypeName(item *jsonapi_pb.Schema) (*DataType, error) {
-	switch itemRaw := item.Type.(type) {
-	case *jsonapi_pb.Schema_StringItem:
-		item := itemRaw.StringItem
-		if item.Format == nil {
-			return &DataType{
-				Name:    "string",
-				Pointer: false,
-			}, nil
-		}
-
-		switch *item.Format {
-		case "", "uuid", "date", "email":
-			return &DataType{
-				Name:    "string",
-				Pointer: false,
-			}, nil
-		case "date-time":
-			return &DataType{
-				Name:    "Time",
-				Pointer: true,
-				Package: "time",
-			}, nil
-		case "byte":
-			return &DataType{
-				Name:    "[]byte",
-				Pointer: false,
-			}, nil
-		default:
-			return nil, fmt.Errorf("Unknown string format: %s", item.Format)
-		}
-
-	case *jsonapi_pb.Schema_NumberItem:
-		return &DataType{
-			Name:    "float64",
-			Pointer: false,
-		}, nil
-
-	case *jsonapi_pb.Schema_IntegerItem:
-		return &DataType{
-			Name:    "int64",
-			Pointer: false,
-		}, nil
-
-	case *jsonapi_pb.Schema_BooleanItem:
-		return &DataType{
-			Name:    "bool",
-			Pointer: false,
-		}, nil
-
-	case *jsonapi_pb.Schema_EnumItem:
-		return &DataType{
-			Name:    "string",
-			Pointer: false,
-		}, nil
-
-	default:
-		return nil, fmt.Errorf("Unknown type: %T\n", item)
-	}
 }
 
 type builder struct {
@@ -166,7 +104,7 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 
 		case *jsonapi_pb.Schema_ObjectItem:
 
-			if err := bb.addObject(referredType); err != nil {
+			if err := bb.addObject(referredType.ObjectItem); err != nil {
 				return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref, err)
 			}
 
@@ -177,6 +115,23 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 
 			return &DataType{
 				Name:    referredType.ObjectItem.GoTypeName,
+				Package: objectPackage,
+				Pointer: true,
+			}, nil
+
+		case *jsonapi_pb.Schema_OneofWrapper:
+
+			if err := bb.addOneofWrapper(referredType.OneofWrapper); err != nil {
+				return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref, err)
+			}
+
+			objectPackage, err := bb.options.ToGoPackage(referredType.OneofWrapper.GrpcPackageName)
+			if err != nil {
+				return nil, fmt.Errorf("referredType in %s: %w", schemaType.Ref, err)
+			}
+
+			return &DataType{
+				Name:    referredType.OneofWrapper.GoTypeName,
 				Package: objectPackage,
 				Pointer: true,
 			}, nil
@@ -223,9 +178,75 @@ func (bb *builder) buildTypeName(schema *jsonapi_pb.Schema) (*DataType, error) {
 			Pointer: true,
 		}, nil
 
-	}
+	case *jsonapi_pb.Schema_OneofWrapper:
+		wrapperType := schemaType.OneofWrapper
 
-	return scalarTypeName(schema)
+		if err := bb.addOneofWrapper(wrapperType); err != nil {
+			return nil, fmt.Errorf("oneofWrapper: %w", err)
+		}
+
+		return &DataType{
+			Name:    wrapperType.GoTypeName,
+			Pointer: true,
+		}, nil
+
+	case *jsonapi_pb.Schema_StringItem:
+		item := schemaType.StringItem
+		if item.Format == nil {
+			return &DataType{
+				Name:    "string",
+				Pointer: false,
+			}, nil
+		}
+
+		switch *item.Format {
+		case "uuid", "date", "email":
+			return &DataType{
+				Name:    "string",
+				Pointer: false,
+			}, nil
+		case "date-time":
+			return &DataType{
+				Name:    "Time",
+				Pointer: true,
+				Package: "time",
+			}, nil
+		case "byte":
+			return &DataType{
+				Name:    "[]byte",
+				Pointer: false,
+			}, nil
+		default:
+			return nil, fmt.Errorf("Unknown string format: %s", *item.Format)
+		}
+
+	case *jsonapi_pb.Schema_NumberItem:
+		return &DataType{
+			Name:    "float64",
+			Pointer: false,
+		}, nil
+
+	case *jsonapi_pb.Schema_IntegerItem:
+		return &DataType{
+			Name:    "int64",
+			Pointer: false,
+		}, nil
+
+	case *jsonapi_pb.Schema_BooleanItem:
+		return &DataType{
+			Name:    "bool",
+			Pointer: false,
+		}, nil
+
+	case *jsonapi_pb.Schema_EnumItem:
+		return &DataType{
+			Name:    "string",
+			Pointer: false,
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("Unknown type: %T\n", schema.Type)
+	}
 
 }
 
@@ -283,6 +304,41 @@ func (bb *builder) addObject(object *jsonapi_pb.ObjectItem) error {
 		field, err := bb.jsonField(property)
 		if err != nil {
 			return fmt.Errorf("object %s: %w", object.GoTypeName, err)
+		}
+		structType.Fields = append(structType.Fields, field)
+	}
+
+	return nil
+
+}
+func (bb *builder) addOneofWrapper(wrapper *jsonapi_pb.OneofWrapperItem) error {
+	objectPackage, err := bb.options.ToGoPackage(wrapper.GrpcPackageName)
+	if err != nil {
+		return fmt.Errorf("object package name '%s': %w", wrapper.GoTypeName, err)
+	}
+	gen, err := bb.fileSet.File(objectPackage, filepath.Base(objectPackage))
+	if err != nil {
+		return err
+	}
+
+	_, ok := gen.types[wrapper.GoTypeName]
+	if ok {
+		return nil
+	}
+
+	structType := &Struct{
+		Name: wrapper.GoTypeName,
+		Comment: fmt.Sprintf(
+			"Proto: %s",
+			wrapper.ProtoFullName,
+		),
+	}
+	gen.types[wrapper.GoTypeName] = structType
+
+	for _, property := range wrapper.Properties {
+		field, err := bb.jsonField(property)
+		if err != nil {
+			return fmt.Errorf("object %s: %w", wrapper.GoTypeName, err)
 		}
 		structType.Fields = append(structType.Fields, field)
 	}
@@ -420,16 +476,19 @@ func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Meth
 		})
 
 		schema := parameter.Schema
-		if parameter.Schema.Ref != "" {
-			si, ok := bb.document.Schemas[parameter.Schema.Ref]
+		if ref, ok := schema.Type.(*jsonapi_pb.Schema_Ref); ok {
+			// type assertion instead of GetRef() and nil check because
+			// strings aren't nil.
+			si, ok := bb.document.Schemas[ref.Ref]
 			if !ok {
-				return fmt.Errorf("Unknown ref: %s", parameter.Schema.Ref)
+				return fmt.Errorf("Unknown ref: %s", ref)
 			}
-			schema = *si
+			schema = si
 		}
 
-		switch schema.ItemType.(type) {
-		case jsonapi.StringItem:
+		switch schema.Type.(type) {
+
+		case *jsonapi_pb.Schema_StringItem:
 			if parameter.Required {
 				queryMethod.P("  values.Set(\"", parameter.Name, "\", s.", GoName(parameter.Name), ")")
 			} else {
@@ -438,7 +497,7 @@ func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Meth
 				queryMethod.P("  }")
 			}
 
-		case *jsonapi.ObjectItem:
+		case *jsonapi_pb.Schema_ObjectItem:
 			// include as JSON
 			queryMethod.P("  if s.", GoName(parameter.Name), " != nil {")
 			queryMethod.P("    bb, err := ", DataType{Package: "encoding/json", Name: "Marshal"}, "(s.", GoName(parameter.Name), ")")
@@ -461,7 +520,10 @@ func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Meth
 	}
 
 	if operation.RequestBody != nil {
-		requestSchema := operation.RequestBody.ItemType.(*jsonapi.ObjectItem)
+		requestSchema := operation.RequestBody.GetObjectItem()
+		if requestSchema == nil {
+			return fmt.Errorf("request body is not an object")
+		}
 		for _, property := range requestSchema.Properties {
 			field, err := bb.jsonField(property)
 			if err != nil {
@@ -481,7 +543,10 @@ func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Meth
 
 	gen.types[responseType] = responseStruct
 
-	responseSchema := operation.ResponseBody.ItemType.(*jsonapi.ObjectItem)
+	responseSchema := operation.ResponseBody.GetObjectItem()
+	if responseSchema == nil {
+		return fmt.Errorf("response body is not an object")
+	}
 	for _, property := range responseSchema.Properties {
 		field, err := bb.jsonField(property)
 		if err != nil {
@@ -518,7 +583,7 @@ func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Meth
 		StringGen: gen.ChildGen(),
 	}
 
-	pathParts := strings.Split(operation.HTTPPath, "/")
+	pathParts := strings.Split(operation.HttpPath, "/")
 	pathParams := make([]string, 0)
 	for idx, part := range pathParts {
 		if len(part) == 0 {
@@ -544,7 +609,7 @@ func (bb *builder) addOperation(fullGoPackage string, operation *jsonapi_pb.Meth
 	requestMethod.P("  )")
 
 	requestMethod.P("  resp := &", responseType, "{}")
-	requestMethod.P("  err := s.Request(ctx, \"", strings.ToUpper(operation.HTTPMethod), "\", path, req, resp)")
+	requestMethod.P("  err := s.Request(ctx, \"", strings.ToUpper(operation.HttpMethod), "\", path, req, resp)")
 	requestMethod.P("  if err != nil {")
 	requestMethod.P("    return nil, err")
 	requestMethod.P("  }")

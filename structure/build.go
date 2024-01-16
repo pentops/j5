@@ -183,7 +183,7 @@ func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.
 	return bb, nil
 }
 
-func (bb *builder) getPackage(file protoreflect.FileDescriptor) (*jsonapi_pb.Package, error) {
+func (bb *builder) getPackage(file protoreflect.FileDescriptor) *jsonapi_pb.Package {
 
 	name := string(file.Package())
 
@@ -206,7 +206,7 @@ func (bb *builder) getPackage(file protoreflect.FileDescriptor) (*jsonapi_pb.Pac
 		bb.packages = append(bb.packages, pkg)
 	}
 
-	return pkg, nil
+	return pkg
 }
 
 func (bb *builder) addEvents(src protoreflect.ServiceDescriptor) error {
@@ -241,10 +241,7 @@ func (bb *builder) addEvents(src protoreflect.ServiceDescriptor) error {
 			eventSpec.StateSchema = stateSchema
 		}
 
-		pkg, err := bb.getPackage(method.ParentFile())
-		if err != nil {
-			return err
-		}
+		pkg := bb.getPackage(method.ParentFile())
 
 		pkg.Events = append(pkg.Events, eventSpec)
 
@@ -263,10 +260,7 @@ func (bb *builder) addService(src protoreflect.ServiceDescriptor) error {
 			return err
 		}
 
-		pkg, err := bb.getPackage(method.ParentFile())
-		if err != nil {
-			return err
-		}
+		pkg := bb.getPackage(method.ParentFile())
 
 		pkg.Methods = append(pkg.Methods, builtMethod)
 
