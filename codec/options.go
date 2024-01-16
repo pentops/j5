@@ -39,12 +39,6 @@ type ShortEnumsOption struct {
 	StrictUnmarshal bool
 }
 
-type EnumValueDescription struct {
-	Name        string `json:"name"`
-	Number      int32  `json:"number"`
-	Description string `json:"description"`
-}
-
 func (se *ShortEnumsOption) unspecifiedSuffix() string {
 	if se.UnspecifiedSuffix != "" {
 		return se.UnspecifiedSuffix
