@@ -11,7 +11,7 @@ message Schema {
     // Special Cases
     string ref = 10;
 
-    EmptySchemmaItem empty = 11;
+    AnySchemmaItem any = 11;
     OneofWrapperItem oneof_wrapper = 12;
     // OneOf
     // AnyOf
@@ -151,4 +151,4 @@ message MapItem {
 message MapRules {}
 
 // Allows anything
-message EmptySchemmaItem {}
+message AnySchemmaItem {}
