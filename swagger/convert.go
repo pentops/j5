@@ -82,8 +82,14 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 			return nil, err
 		}
 
+	case *schema_j5pb.Schema_OneofWrapper:
+		out.SchemaItem.Type, err = convertOneofWrapper(t.OneofWrapper)
+		if err != nil {
+			return nil, err
+		}
+
 	default:
-		return nil, fmt.Errorf("unknown type %T", t)
+		return nil, fmt.Errorf("unknown schema type for swagger %T", t)
 	}
 	return out, nil
 }
@@ -188,7 +194,7 @@ func convertObjectItem(item *schema_j5pb.ObjectItem) (*ObjectItem, error) {
 	for _, prop := range item.Properties {
 		schema, err := convertSchema(prop.Schema)
 		if err != nil {
-			return nil, fmt.Errorf("object property %s: %w", prop.Name, err)
+			return nil, fmt.Errorf("object property '%s': %w", prop.Name, err)
 		}
 		out.Properties[prop.Name] = &ObjectProperty{
 			Schema:           schema,
@@ -201,6 +207,33 @@ func convertObjectItem(item *schema_j5pb.ObjectItem) (*ObjectItem, error) {
 		}
 		if prop.Required {
 			out.Required = append(out.Required, prop.Name)
+		}
+	}
+
+	return out, nil
+
+}
+func convertOneofWrapper(item *schema_j5pb.OneofWrapperItem) (*ObjectItem, error) {
+	out := &ObjectItem{
+		Properties:    map[string]*ObjectProperty{},
+		FullProtoName: item.ProtoFullName,
+		ProtoName:     item.ProtoMessageName,
+		IsOneof:       true,
+	}
+
+	for _, prop := range item.Properties {
+		schema, err := convertSchema(prop.Schema)
+		if err != nil {
+			return nil, fmt.Errorf("oneof property '%s': %w", prop.Name, err)
+		}
+		out.Properties[prop.Name] = &ObjectProperty{
+			Schema:           schema,
+			ReadOnly:         prop.ReadOnly,
+			WriteOnly:        prop.WriteOnly,
+			Description:      prop.Description,
+			ProtoFieldName:   prop.ProtoFieldName,
+			ProtoFieldNumber: prop.ProtoFieldNumber,
+			Optional:         prop.ExplicitlyOptional,
 		}
 	}
 

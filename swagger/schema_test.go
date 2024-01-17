@@ -137,6 +137,49 @@ func TestConvertSchema(t *testing.T) {
 			"properties.bar.type":           "string",
 		},
 	}, {
+		name: "oneof",
+		input: &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_OneofWrapper{
+				OneofWrapper: &schema_j5pb.OneofWrapperItem{
+					GoPackageName:   "Go Package",
+					GoTypeName:      "Go Type",
+					GrpcPackageName: "Grpc Package",
+
+					ProtoFullName:    "long",
+					ProtoMessageName: "short",
+
+					Properties: []*schema_j5pb.ObjectProperty{{
+						Name:             "foo",
+						ProtoFieldName:   "foo",
+						ProtoFieldNumber: 1,
+						Schema: &schema_j5pb.Schema{
+							Type: &schema_j5pb.Schema_StringItem{
+								StringItem: &schema_j5pb.StringItem{},
+							},
+						},
+					}, {
+						Name:             "bar",
+						ProtoFieldName:   "bar",
+						ProtoFieldNumber: 2,
+						Schema: &schema_j5pb.Schema{
+							Type: &schema_j5pb.Schema_StringItem{
+								StringItem: &schema_j5pb.StringItem{},
+							},
+						},
+					}},
+				},
+			},
+		},
+		want: map[string]interface{}{
+			"type":                        "object",
+			"x-proto-name":                "short",
+			"x-proto-full-name":           "long",
+			"properties.foo.type":         "string",
+			"properties.foo.x-proto-name": "foo",
+			"properties.bar.type":         "string",
+			"properties.bar.x-proto-name": "bar",
+		},
+	}, {
 		name: "array",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_ArrayItem{
