@@ -764,8 +764,8 @@ func wktSchema(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, bool) {
 			Type: &schema_j5pb.Schema_MapItem{
 				MapItem: &schema_j5pb.MapItem{
 					ItemSchema: &schema_j5pb.Schema{
-						Type: &schema_j5pb.Schema_Empty{
-							Empty: &schema_j5pb.EmptySchemmaItem{},
+						Type: &schema_j5pb.Schema_Any{
+							Any: &schema_j5pb.AnySchemmaItem{},
 						},
 					},
 				},

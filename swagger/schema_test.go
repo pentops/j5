@@ -204,6 +204,35 @@ func TestConvertSchema(t *testing.T) {
 			"maxItems":    2,
 			"uniqueItems": true,
 		},
+	}, {
+		name: "map",
+		input: &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_MapItem{
+				MapItem: &schema_j5pb.MapItem{
+					ItemSchema: &schema_j5pb.Schema{
+						Type: &schema_j5pb.Schema_StringItem{
+							StringItem: &schema_j5pb.StringItem{},
+						},
+					},
+				},
+			},
+		},
+		want: map[string]interface{}{
+			"type":                      "object",
+			"additionalProperties.type": "string",
+			"x-key-property.type":       "string",
+		},
+	}, {
+		name: "any",
+		input: &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_Any{
+				Any: &schema_j5pb.AnySchemmaItem{},
+			},
+		},
+		want: map[string]interface{}{
+			"type":                 "object",
+			"additionalProperties": true,
+		},
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 

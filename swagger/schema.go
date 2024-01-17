@@ -140,11 +140,19 @@ func (ri ArrayItem) TypeName() string {
 }
 
 type MapSchemaItem struct {
-	ValueProperty SchemaItem `json:"additionalProperties,omitempty"`
-	KeyProperty   SchemaItem `json:"x-key-property,omitempty"` // Only used for maps
+	ValueProperty *Schema `json:"additionalProperties,omitempty"`
+	KeyProperty   *Schema `json:"x-key-property,omitempty"` // Only used for maps
 }
 
 func (mi MapSchemaItem) TypeName() string {
+	return "object"
+}
+
+type AnySchemaItem struct {
+	AdditionalProperties bool `json:"additionalProperties"`
+}
+
+func (ri AnySchemaItem) TypeName() string {
 	return "object"
 }
 

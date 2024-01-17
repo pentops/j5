@@ -55,6 +55,11 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 	var err error
 	switch t := schema.Type.(type) {
 
+	case *schema_j5pb.Schema_Any:
+		out.SchemaItem.Type = &AnySchemaItem{
+			AdditionalProperties: true,
+		}
+
 	case *schema_j5pb.Schema_StringItem:
 		out.SchemaItem.Type = convertStringItem(t.StringItem)
 
@@ -84,6 +89,12 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 
 	case *schema_j5pb.Schema_OneofWrapper:
 		out.SchemaItem.Type, err = convertOneofWrapper(t.OneofWrapper)
+		if err != nil {
+			return nil, err
+		}
+
+	case *schema_j5pb.Schema_MapItem:
+		out.SchemaItem.Type, err = convertMapItem(t.MapItem)
 		if err != nil {
 			return nil, err
 		}
@@ -211,8 +222,8 @@ func convertObjectItem(item *schema_j5pb.ObjectItem) (*ObjectItem, error) {
 	}
 
 	return out, nil
-
 }
+
 func convertOneofWrapper(item *schema_j5pb.OneofWrapperItem) (*ObjectItem, error) {
 	out := &ObjectItem{
 		Properties:    map[string]*ObjectProperty{},
@@ -238,4 +249,22 @@ func convertOneofWrapper(item *schema_j5pb.OneofWrapperItem) (*ObjectItem, error
 	}
 
 	return out, nil
+}
+
+func convertMapItem(item *schema_j5pb.MapItem) (*MapSchemaItem, error) {
+	schema, err := convertSchema(item.ItemSchema)
+	if err != nil {
+		return nil, err
+	}
+
+	out := &MapSchemaItem{
+		ValueProperty: schema,
+		KeyProperty: &Schema{
+			SchemaItem: &SchemaItem{
+				Type: &StringItem{},
+			},
+		},
+	}
+	return out, nil
+
 }
