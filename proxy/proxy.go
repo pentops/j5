@@ -21,10 +21,18 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-// AuthHeadersFunc translates a request into headers to pass on to the remote server
+// AuthHeaders translates a request into headers to pass on to the remote server
 // Errors which implement gRPC status will be returned to the client as HTTP
 // errors, otherwise 500 with a log line
+type AuthHeaders interface {
+	AuthHeaders(context.Context, *http.Request) (map[string]string, error)
+}
+
 type AuthHeadersFunc func(context.Context, *http.Request) (map[string]string, error)
+
+func (f AuthHeadersFunc) AuthHeaders(ctx context.Context, r *http.Request) (map[string]string, error) {
+	return f(ctx, r)
+}
 
 type Invoker interface {
 	// Invoke is desined for gRPC ClientConn.Invoke, the two interfaces should
@@ -98,6 +106,8 @@ func (rr *Router) StaticJSON(path string, document interface{}) error {
 	return nil
 }
 
+// RegisterService calls RegisterGRPCMethod on all methods of the service with
+// default config.
 func (rr *Router) RegisterService(ctx context.Context, ss protoreflect.ServiceDescriptor, conn Invoker) error {
 	methods := ss.Methods()
 	for ii := 0; ii < methods.Len(); ii++ {
@@ -113,9 +123,9 @@ func (rr *Router) RegisterService(ctx context.Context, ss protoreflect.ServiceDe
 }
 
 type GRPCMethodConfig struct {
-	AuthFunc AuthHeadersFunc
-	Invoker  Invoker
-	Method   protoreflect.MethodDescriptor
+	AuthHeaders AuthHeaders
+	Invoker     Invoker
+	Method      protoreflect.MethodDescriptor
 }
 
 func (rr *Router) RegisterGRPCMethod(ctx context.Context, config GRPCMethodConfig) error {
@@ -172,7 +182,7 @@ func (rr *Router) buildMethod(config GRPCMethodConfig) (*grpcMethod, error) {
 		ForwardResponseHeaders: rr.ForwardResponseHeaders,
 		ForwardRequestHeaders:  rr.ForwardRequestHeaders,
 		Codec:                  rr.Codec,
-		authHeaders:            config.AuthFunc,
+		authHeaders:            config.AuthHeaders,
 	}
 
 	return handler, nil
@@ -189,7 +199,7 @@ type grpcMethod struct {
 	ForwardResponseHeaders map[string]bool
 	ForwardRequestHeaders  map[string]bool
 	Codec                  Codec
-	authHeaders            AuthHeadersFunc
+	authHeaders            AuthHeaders
 }
 
 func (mm *grpcMethod) mapRequest(r *http.Request) (protoreflect.Message, error) {
@@ -250,7 +260,7 @@ func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx = log.WithField(ctx, "passthroughHeaders", md)
 
 	if mm.authHeaders != nil {
-		authHeaders, err := mm.authHeaders(ctx, r)
+		authHeaders, err := mm.authHeaders.AuthHeaders(ctx, r)
 		if err != nil {
 			doUserError(ctx, w, err)
 			return
