@@ -10,7 +10,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pentops/log.go/log"
-	"github.com/pentops/o5-go/auth/v1/auth_pb"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -22,12 +21,14 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-// AuthFunc translates a request into headers to pass on to the remote server
+// AuthHeadersFunc translates a request into headers to pass on to the remote server
 // Errors which implement gRPC status will be returned to the client as HTTP
 // errors, otherwise 500 with a log line
-type AuthFunc func(context.Context, *http.Request) (map[string]string, error)
+type AuthHeadersFunc func(context.Context, *http.Request) (map[string]string, error)
 
 type Invoker interface {
+	// Invoke is desined for gRPC ClientConn.Invoke, the two interfaces should
+	// be protos...
 	Invoke(context.Context, string, interface{}, interface{}, ...grpc.CallOption) error
 }
 
@@ -43,8 +44,6 @@ type Router struct {
 	Codec                  Codec
 
 	middleware []func(http.Handler) http.Handler
-
-	AuthFunc AuthFunc
 }
 
 func NewRouter(codec Codec) *Router {
@@ -103,15 +102,24 @@ func (rr *Router) RegisterService(ctx context.Context, ss protoreflect.ServiceDe
 	methods := ss.Methods()
 	for ii := 0; ii < methods.Len(); ii++ {
 		method := methods.Get(ii)
-		if err := rr.registerMethod(ctx, method, conn); err != nil {
+		if err := rr.RegisterGRPCMethod(ctx, GRPCMethodConfig{
+			Method:  method,
+			Invoker: conn,
+		}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (rr *Router) registerMethod(ctx context.Context, method protoreflect.MethodDescriptor, conn Invoker) error {
-	handler, err := rr.buildMethod(method, conn)
+type GRPCMethodConfig struct {
+	AuthFunc AuthHeadersFunc
+	Invoker  Invoker
+	Method   protoreflect.MethodDescriptor
+}
+
+func (rr *Router) RegisterGRPCMethod(ctx context.Context, config GRPCMethodConfig) error {
+	handler, err := rr.buildMethod(config)
 	if err != nil {
 		return err
 	}
@@ -124,12 +132,10 @@ func (rr *Router) registerMethod(ctx context.Context, method protoreflect.Method
 	return nil
 }
 
-func (rr *Router) buildMethod(method protoreflect.MethodDescriptor, conn Invoker) (*Method, error) {
-	serviceName := method.Parent().(protoreflect.ServiceDescriptor).FullName()
-	methodOptions := method.Options().(*descriptorpb.MethodOptions)
+func (rr *Router) buildMethod(config GRPCMethodConfig) (*grpcMethod, error) {
+	serviceName := config.Method.Parent().(protoreflect.ServiceDescriptor).FullName()
+	methodOptions := config.Method.Options().(*descriptorpb.MethodOptions)
 	httpOpt := proto.GetExtension(methodOptions, annotations.E_Http).(*annotations.HttpRule)
-
-	authOpt := proto.GetExtension(methodOptions, auth_pb.E_Auth).(*auth_pb.AuthMethodOptions)
 
 	var httpMethod string
 	var httpPath string
@@ -155,44 +161,25 @@ func (rr *Router) buildMethod(method protoreflect.MethodDescriptor, conn Invoker
 		return nil, fmt.Errorf("unsupported http method %T", pt)
 	}
 
-	handler := &Method{
+	handler := &grpcMethod{
 		// the 'FullName' method of MethodDescriptor returns this in the wrong format, i.e. all dots.
-		FullName:               fmt.Sprintf("/%s/%s", serviceName, method.Name()),
-		Input:                  method.Input(),
-		Output:                 method.Output(),
-		Invoker:                conn,
+		FullName:               fmt.Sprintf("/%s/%s", serviceName, config.Method.Name()),
+		Input:                  config.Method.Input(),
+		Output:                 config.Method.Output(),
+		Invoker:                config.Invoker,
 		HTTPMethod:             httpMethod,
 		HTTPPath:               httpPath,
 		ForwardResponseHeaders: rr.ForwardResponseHeaders,
 		ForwardRequestHeaders:  rr.ForwardRequestHeaders,
 		Codec:                  rr.Codec,
-	}
-
-	if authOpt != nil {
-		switch authOpt.AuthMethod.(type) {
-		case *auth_pb.AuthMethodOptions_None:
-			handler.authFunc = nil
-		case *auth_pb.AuthMethodOptions_JwtBearer:
-			if rr.AuthFunc == nil {
-				return nil, fmt.Errorf("auth method %T requires a global auth function", authOpt.AuthMethod)
-			}
-			handler.authFunc = func(ctx context.Context, r *http.Request) (map[string]string, error) {
-
-				authed, err := rr.AuthFunc(ctx, r)
-				if err != nil {
-					return nil, err
-				}
-				// TODO: Scopes etc
-				return authed, nil
-			}
-		}
+		authHeaders:            config.AuthFunc,
 	}
 
 	return handler, nil
 
 }
 
-type Method struct {
+type grpcMethod struct {
 	FullName               string
 	Input                  protoreflect.MessageDescriptor
 	Output                 protoreflect.MessageDescriptor
@@ -202,10 +189,10 @@ type Method struct {
 	ForwardResponseHeaders map[string]bool
 	ForwardRequestHeaders  map[string]bool
 	Codec                  Codec
-	authFunc               AuthFunc
+	authHeaders            AuthHeadersFunc
 }
 
-func (mm *Method) mapRequest(r *http.Request) (protoreflect.Message, error) {
+func (mm *grpcMethod) mapRequest(r *http.Request) (protoreflect.Message, error) {
 	inputMessage := dynamicpb.NewMessage(mm.Input)
 	reqBody, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -236,7 +223,7 @@ func (mm *Method) mapRequest(r *http.Request) (protoreflect.Message, error) {
 	return inputMessage, nil
 }
 
-func (mm *Method) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 	ctx = log.WithFields(ctx, map[string]interface{}{
 		"httpMethod": r.Method,
@@ -262,8 +249,8 @@ func (mm *Method) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx = log.WithField(ctx, "passthroughHeaders", md)
 
-	if mm.authFunc != nil {
-		authHeaders, err := mm.authFunc(ctx, r)
+	if mm.authHeaders != nil {
+		authHeaders, err := mm.authHeaders(ctx, r)
 		if err != nil {
 			doUserError(ctx, w, err)
 			return
