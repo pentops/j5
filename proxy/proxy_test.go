@@ -34,7 +34,10 @@ func TestGetHandlerMapping(t *testing.T) {
 
 	rr := NewRouter(codec.NewCodec(testCodecOptions))
 
-	method, err := rr.buildMethod(fd, nil)
+	method, err := rr.buildMethod(GRPCMethodConfig{
+		Method:  fd,
+		Invoker: nil,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +136,10 @@ func TestBodyHandlerMapping(t *testing.T) {
 	fd := testpb.File_test_v1_test_proto.Services().Get(0).Methods().Get(1)
 
 	rr := NewRouter(codec.NewCodec(testCodecOptions))
-	method, err := rr.buildMethod(fd, nil)
+	method, err := rr.buildMethod(GRPCMethodConfig{
+		Method:  fd,
+		Invoker: nil,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -200,7 +206,7 @@ func protoCopy(from, to proto.Message) error {
 	return nil
 }
 
-func roundTrip(method *Method, req *http.Request, reqBody, resBody proto.Message) *httptest.ResponseRecorder {
+func roundTrip(method *grpcMethod, req *http.Request, reqBody, resBody proto.Message) *httptest.ResponseRecorder {
 	rw := &httptest.ResponseRecorder{
 		Body: &bytes.Buffer{},
 	}
