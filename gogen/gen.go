@@ -114,9 +114,10 @@ func (bb *builder) buildTypeName(schema *schema_j5pb.Schema) (*DataType, error) 
 			}
 
 			return &DataType{
-				Name:    referredType.ObjectItem.GoTypeName,
-				Package: objectPackage,
-				Pointer: true,
+				Name:      referredType.ObjectItem.GoTypeName,
+				GoPackage: objectPackage,
+				J5Package: referredType.ObjectItem.GrpcPackageName,
+				Pointer:   true,
 			}, nil
 
 		case *schema_j5pb.Schema_OneofWrapper:
@@ -131,9 +132,10 @@ func (bb *builder) buildTypeName(schema *schema_j5pb.Schema) (*DataType, error) 
 			}
 
 			return &DataType{
-				Name:    referredType.OneofWrapper.GoTypeName,
-				Package: objectPackage,
-				Pointer: true,
+				Name:      referredType.OneofWrapper.GoTypeName,
+				GoPackage: objectPackage,
+				Pointer:   true,
+				J5Package: referredType.OneofWrapper.GrpcPackageName,
 			}, nil
 
 		default:
@@ -149,9 +151,11 @@ func (bb *builder) buildTypeName(schema *schema_j5pb.Schema) (*DataType, error) 
 		}
 
 		return &DataType{
-			Name:    itemType.Name,
-			Pointer: itemType.Pointer,
-			Slice:   true,
+			Name:      itemType.Name,
+			Pointer:   itemType.Pointer,
+			J5Package: itemType.J5Package,
+			GoPackage: itemType.GoPackage,
+			Slice:     true,
 		}, nil
 
 	case *schema_j5pb.Schema_MapItem:
@@ -207,9 +211,9 @@ func (bb *builder) buildTypeName(schema *schema_j5pb.Schema) (*DataType, error) 
 			}, nil
 		case "date-time":
 			return &DataType{
-				Name:    "Time",
-				Pointer: true,
-				Package: "time",
+				Name:      "Time",
+				Pointer:   true,
+				GoPackage: "time",
 			}, nil
 		case "byte":
 			return &DataType{
@@ -335,13 +339,46 @@ func (bb *builder) addOneofWrapper(wrapper *schema_j5pb.OneofWrapperItem) error 
 	}
 	gen.types[wrapper.GoTypeName] = structType
 
+	keyMethod := &Function{
+		Name: "OneofKey",
+		Returns: []*Parameter{{
+			DataType: DataType{
+				Name:    "string",
+				Pointer: false,
+			}},
+		},
+		StringGen: gen.ChildGen(),
+	}
+
+	valueMethod := &Function{
+		Name: "Type",
+		Returns: []*Parameter{{
+			DataType: DataType{
+				Name:    "interface{}",
+				Pointer: false,
+			}},
+		},
+		StringGen: gen.ChildGen(),
+	}
+
 	for _, property := range wrapper.Properties {
 		field, err := bb.jsonField(property)
 		if err != nil {
 			return fmt.Errorf("object %s: %w", wrapper.GoTypeName, err)
 		}
+		field.DataType.Pointer = true
 		structType.Fields = append(structType.Fields, field)
+		keyMethod.P("if s.", field.Name, " != nil {")
+		keyMethod.P("  return \"", property.Name, "\"")
+		keyMethod.P("}")
+		valueMethod.P("if s.", field.Name, " != nil {")
+		valueMethod.P("  return s.", field.Name)
+		valueMethod.P("}")
 	}
+	keyMethod.P("return \"\"")
+	valueMethod.P("return nil")
+
+	structType.Methods = append(structType.Methods, keyMethod, valueMethod)
 
 	return nil
 }
@@ -377,8 +414,8 @@ func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Met
 			Parameters: []*Parameter{{
 				Name: "ctx",
 				DataType: DataType{
-					Package: "context",
-					Name:    "Context",
+					GoPackage: "context",
+					Name:      "Context",
 				},
 			}, {
 				Name:     "method",
@@ -411,7 +448,7 @@ func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Met
 	}
 
 	if _, ok := gen.types[requestType]; ok {
-		return fmt.Errorf("response type %q already exists", responseType)
+		return fmt.Errorf("request type %q already exists", requestType)
 	}
 	gen.types[requestType] = requestStruct
 
@@ -435,87 +472,84 @@ func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Met
 		pathParameters[parameter.Name] = field
 	}
 
-	queryMethod := &Function{
-		Name:       "QueryParameters",
-		Parameters: []*Parameter{},
-		Returns: []*Parameter{{
-			DataType: DataType{
-				Name:    "Values",
-				Package: "net/url",
-			},
-		}, {
-			DataType: DataType{
-				Name: "error",
-			},
-		}},
-		StringGen: gen.ChildGen(),
-	}
-
-	queryMethod.P("  values := ", DataType{Package: "net/url", Name: "Values"}, "{}")
-
-	usedQuery := false
-
-	for _, parameter := range operation.QueryParameters {
-		usedQuery = true
-		dataType, err := bb.buildTypeName(parameter.Schema)
-		if err != nil {
-			return err
+	if len(operation.QueryParameters) > 0 {
+		queryMethod := &Function{
+			Name:       "QueryParameters",
+			Parameters: []*Parameter{},
+			Returns: []*Parameter{{
+				DataType: DataType{
+					Name:      "Values",
+					GoPackage: "net/url",
+				},
+			}, {
+				DataType: DataType{
+					Name: "error",
+				},
+			}},
+			StringGen: gen.ChildGen(),
 		}
 
-		if !dataType.Pointer && !dataType.Slice && !parameter.Required {
-			dataType.Pointer = true
-		}
+		queryMethod.P("  values := ", DataType{GoPackage: "net/url", Name: "Values"}, "{}")
 
-		requestStruct.Fields = append(requestStruct.Fields, &Field{
-			Name:     GoName(parameter.Name),
-			DataType: *dataType,
-			Tags: map[string]string{
-				"query": parameter.Name,
-				"json":  "-",
-			},
-		})
-
-		schema := parameter.Schema
-		if ref, ok := schema.Type.(*schema_j5pb.Schema_Ref); ok {
-			// type assertion instead of GetRef() and nil check because
-			// strings aren't nil.
-			si, ok := bb.document.Schemas[ref.Ref]
-			if !ok {
-				return fmt.Errorf("Unknown ref: %s", ref)
+		for _, parameter := range operation.QueryParameters {
+			dataType, err := bb.buildTypeName(parameter.Schema)
+			if err != nil {
+				return err
 			}
-			schema = si
-		}
 
-		switch schema.Type.(type) {
+			if !dataType.Pointer && !dataType.Slice && !parameter.Required {
+				dataType.Pointer = true
+			}
 
-		case *schema_j5pb.Schema_StringItem:
-			if parameter.Required {
-				queryMethod.P("  values.Set(\"", parameter.Name, "\", s.", GoName(parameter.Name), ")")
-			} else {
+			requestStruct.Fields = append(requestStruct.Fields, &Field{
+				Name:     GoName(parameter.Name),
+				DataType: *dataType,
+				Tags: map[string]string{
+					"query": parameter.Name,
+					"json":  "-",
+				},
+			})
+
+			schema := parameter.Schema
+			if ref, ok := schema.Type.(*schema_j5pb.Schema_Ref); ok {
+				// type assertion instead of GetRef() and nil check because
+				// strings aren't nil.
+				si, ok := bb.document.Schemas[ref.Ref]
+				if !ok {
+					return fmt.Errorf("Unknown ref: %s", ref)
+				}
+				schema = si
+			}
+
+			switch schema.Type.(type) {
+
+			case *schema_j5pb.Schema_StringItem:
+				if parameter.Required {
+					queryMethod.P("  values.Set(\"", parameter.Name, "\", s.", GoName(parameter.Name), ")")
+				} else {
+					queryMethod.P("  if s.", GoName(parameter.Name), " != nil {")
+					queryMethod.P("    values.Set(\"", parameter.Name, "\", *s.", GoName(parameter.Name), ")")
+					queryMethod.P("  }")
+				}
+
+			case *schema_j5pb.Schema_ObjectItem:
+				// include as JSON
 				queryMethod.P("  if s.", GoName(parameter.Name), " != nil {")
-				queryMethod.P("    values.Set(\"", parameter.Name, "\", *s.", GoName(parameter.Name), ")")
+				queryMethod.P("    bb, err := ", DataType{GoPackage: "encoding/json", Name: "Marshal"}, "(s.", GoName(parameter.Name), ")")
+				queryMethod.P("    if err != nil {")
+				queryMethod.P("      return nil, err")
+				queryMethod.P("    }")
+				queryMethod.P("    values.Set(\"", parameter.Name, "\", string(bb))")
 				queryMethod.P("  }")
+
+			default:
+				queryMethod.P(" // Skipping query parameter ", parameter.Name, " of type ", dataType.Name)
+				//queryMethod.P("    values.Set(\"", parameter.Name, "\", fmt.Sprintf(\"%v\", *s.", GoName(parameter.Name), "))")
 			}
-
-		case *schema_j5pb.Schema_ObjectItem:
-			// include as JSON
-			queryMethod.P("  if s.", GoName(parameter.Name), " != nil {")
-			queryMethod.P("    bb, err := ", DataType{Package: "encoding/json", Name: "Marshal"}, "(s.", GoName(parameter.Name), ")")
-			queryMethod.P("    if err != nil {")
-			queryMethod.P("      return nil, err")
-			queryMethod.P("    }")
-			queryMethod.P("    values.Set(\"", parameter.Name, "\", string(bb))")
-			queryMethod.P("  }")
-
-		default:
-			queryMethod.P(" // Skipping query parameter ", parameter.Name, " of type ", dataType.Name)
-			//queryMethod.P("    values.Set(\"", parameter.Name, "\", fmt.Sprintf(\"%v\", *s.", GoName(parameter.Name), "))")
 		}
-	}
 
-	queryMethod.P("  return values, nil")
+		queryMethod.P("  return values, nil")
 
-	if usedQuery {
 		requestStruct.Methods = append(requestStruct.Methods, queryMethod)
 	}
 
@@ -530,6 +564,27 @@ func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Met
 				return err
 			}
 			requestStruct.Fields = append(requestStruct.Fields, field)
+
+			if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageRequest" {
+				setter := &Function{
+					Name:     "SetPageToken",
+					TakesPtr: true,
+					Parameters: []*Parameter{{
+						Name: "pageToken",
+						DataType: DataType{
+							Name:    "string",
+							Pointer: false,
+						}},
+					},
+					StringGen: gen.ChildGen(),
+				}
+				setter.P("if s.", field.Name, " == nil {")
+				setter.P("  s.", field.Name, " = ", field.DataType.Addr(), "{}")
+				setter.P("}")
+				setter.P("s.", field.Name, ".Token = &pageToken")
+
+				requestStruct.Methods = append(requestStruct.Methods, setter)
+			}
 		}
 	}
 
@@ -547,12 +602,53 @@ func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Met
 	if responseSchema == nil {
 		return fmt.Errorf("response body is not an object")
 	}
+
+	var pageResponseField *Field
+
+	sliceFields := make([]*Field, 0)
 	for _, property := range responseSchema.Properties {
 		field, err := bb.jsonField(property)
 		if err != nil {
 			return fmt.Errorf("%s.ResponseBody: %w", operation.FullGrpcName, err)
 		}
 		responseStruct.Fields = append(responseStruct.Fields, field)
+		if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageResponse" {
+			pageResponseField = field
+		} else if field.DataType.Slice {
+			sliceFields = append(sliceFields, field)
+		}
+	}
+
+	if pageResponseField != nil {
+		setter := &Function{
+			Name: "GetPageToken",
+			Returns: []*Parameter{{
+				DataType: DataType{
+					Name:    "string",
+					Pointer: true,
+				}},
+			},
+			StringGen: gen.ChildGen(),
+		}
+		setter.P("if s.", pageResponseField.Name, " == nil {")
+		setter.P("  return nil")
+		setter.P("}")
+		setter.P("return s.", pageResponseField.Name, ".NextToken")
+		responseStruct.Methods = append(responseStruct.Methods, setter)
+
+		// Special case for list responses
+		if len(sliceFields) == 1 {
+			field := sliceFields[0]
+			setter := &Function{
+				Name: "GetItems",
+				Returns: []*Parameter{{
+					DataType: field.DataType.AsSlice(),
+				}},
+				StringGen: gen.ChildGen(),
+			}
+			setter.P("return s.", field.Name)
+			responseStruct.Methods = append(responseStruct.Methods, setter)
+		}
 	}
 
 	requestMethod := &Function{
@@ -560,8 +656,8 @@ func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Met
 		Parameters: []*Parameter{{
 			Name: "ctx",
 			DataType: DataType{
-				Package: "context",
-				Name:    "Context",
+				GoPackage: "context",
+				Name:      "Context",
 			},
 		}, {
 			Name: "req",
@@ -602,7 +698,7 @@ func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Met
 		}
 	}
 
-	requestMethod.P("  path := ", DataType{Package: "fmt", Name: "Sprintf"}, "(\"", strings.Join(pathParts, "/"), "\", ")
+	requestMethod.P("  path := ", DataType{GoPackage: "fmt", Name: "Sprintf"}, "(\"", strings.Join(pathParts, "/"), "\", ")
 	for _, param := range pathParams {
 		requestMethod.P("   ", param, ", ")
 	}

@@ -236,7 +236,7 @@ func TestConvertSchema(t *testing.T) {
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 
-			output, err := convertSchema(tc.input)
+			output, err := ConvertSchema(tc.input)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -26,7 +26,7 @@ func BuildSwagger(b *schema_j5pb.API) (*Document, error) {
 
 	schemas := make(map[string]*Schema)
 	for key, src := range b.Schemas {
-		schema, err := convertSchema(src)
+		schema, err := ConvertSchema(src)
 		if err != nil {
 			return nil, err
 		}
@@ -37,7 +37,7 @@ func BuildSwagger(b *schema_j5pb.API) (*Document, error) {
 	return doc, nil
 }
 
-func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
+func ConvertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 
 	switch special := schema.Type.(type) {
 	case *schema_j5pb.Schema_Ref:
@@ -177,7 +177,7 @@ func convertEnumItem(item *schema_j5pb.EnumItem) *EnumItem {
 }
 
 func convertArrayItem(item *schema_j5pb.ArrayItem) (*ArrayItem, error) {
-	items, err := convertSchema(item.Items)
+	items, err := ConvertSchema(item.Items)
 	if err != nil {
 		return nil, err
 	}
@@ -203,7 +203,7 @@ func convertObjectItem(item *schema_j5pb.ObjectItem) (*ObjectItem, error) {
 	}
 
 	for _, prop := range item.Properties {
-		schema, err := convertSchema(prop.Schema)
+		schema, err := ConvertSchema(prop.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("object property '%s': %w", prop.Name, err)
 		}
@@ -233,7 +233,7 @@ func convertOneofWrapper(item *schema_j5pb.OneofWrapperItem) (*ObjectItem, error
 	}
 
 	for _, prop := range item.Properties {
-		schema, err := convertSchema(prop.Schema)
+		schema, err := ConvertSchema(prop.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("oneof property '%s': %w", prop.Name, err)
 		}
@@ -252,7 +252,7 @@ func convertOneofWrapper(item *schema_j5pb.OneofWrapperItem) (*ObjectItem, error
 }
 
 func convertMapItem(item *schema_j5pb.MapItem) (*MapSchemaItem, error) {
-	schema, err := convertSchema(item.ItemSchema)
+	schema, err := ConvertSchema(item.ItemSchema)
 	if err != nil {
 		return nil, err
 	}

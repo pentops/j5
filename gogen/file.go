@@ -51,16 +51,16 @@ func (g *StringGen) ChildGen() *StringGen {
 func (g *StringGen) P(v ...interface{}) {
 	for _, x := range v {
 		if packaged, ok := x.(DataType); ok {
-			if packaged.Package == "" {
+			if packaged.GoPackage == "" {
 				fmt.Fprint(g.buf, packaged.Prefix(), packaged.Name)
 				continue
 			}
 
-			specified := packaged.Package
+			specified := packaged.GoPackage
 			if specified == g.myPackage {
 				fmt.Fprint(g.buf, packaged.Prefix(), packaged.Name)
 			} else {
-				importedName := g.ImportPath(packaged.Package)
+				importedName := g.ImportPath(packaged.GoPackage)
 				fmt.Fprint(g.buf, packaged.Prefix(), importedName, ".", packaged.Name)
 			}
 		} else {
@@ -218,10 +218,33 @@ type Field struct {
 }
 
 type DataType struct {
-	Name    string // string or GoIdent
-	Package string // Leave empty for no package
-	Pointer bool
-	Slice   bool
+	Name      string // string or GoIdent
+	GoPackage string // Leave empty for no package
+	J5Package string
+	Pointer   bool
+	TakeAddr  bool
+	Slice     bool
+}
+
+func (dt DataType) Addr() DataType {
+	return DataType{
+		Name:      dt.Name,
+		GoPackage: dt.GoPackage,
+		J5Package: dt.J5Package,
+		Pointer:   false,
+		TakeAddr:  true,
+		Slice:     dt.Slice,
+	}
+
+}
+func (dt DataType) AsSlice() DataType {
+	return DataType{
+		Name:      dt.Name,
+		GoPackage: dt.GoPackage,
+		J5Package: dt.J5Package,
+		Pointer:   dt.Pointer,
+		Slice:     true,
+	}
 }
 
 func (dt DataType) Prefix() string {
@@ -233,6 +256,8 @@ func (dt DataType) Prefix() string {
 		ptr = "[]"
 	} else if dt.Pointer {
 		ptr = "*"
+	} else if dt.TakeAddr {
+		ptr = "&"
 	}
 	return ptr
 }
@@ -244,6 +269,7 @@ type Parameter struct {
 
 type Function struct {
 	Name       string
+	TakesPtr   bool
 	Parameters []*Parameter
 	Returns    []*Parameter
 	*StringGen
@@ -293,6 +319,9 @@ func (f *Function) PrintAsMethod(gen *StringGen, methodOf string) {
 	parts := f.signature()
 	parts = append(parts, " {")
 
+	if f.TakesPtr {
+		methodOf = "*" + methodOf
+	}
 	gen.P(append([]interface{}{
 		"func (s ", methodOf, ") ",
 	}, parts...)...)

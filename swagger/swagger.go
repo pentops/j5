@@ -99,7 +99,7 @@ func (dd *Document) addMethod(method *schema_j5pb.Method) error {
 
 	parameters := make([]Parameter, 0)
 	for _, param := range method.PathParameters {
-		schema, err := convertSchema(param.Schema)
+		schema, err := ConvertSchema(param.Schema)
 		if err != nil {
 			return fmt.Errorf("path param %s: %w", param.Name, err)
 		}
@@ -113,7 +113,7 @@ func (dd *Document) addMethod(method *schema_j5pb.Method) error {
 	}
 
 	for _, param := range method.QueryParameters {
-		schema, err := convertSchema(param.Schema)
+		schema, err := ConvertSchema(param.Schema)
 		if err != nil {
 			return fmt.Errorf("query param %s: %w", param.Name, err)
 		}
@@ -138,7 +138,7 @@ func (dd *Document) addMethod(method *schema_j5pb.Method) error {
 		},
 	}
 
-	responseSchema, err := convertSchema(method.ResponseBody)
+	responseSchema, err := ConvertSchema(method.ResponseBody)
 	if err != nil {
 		return fmt.Errorf("response body: %w", err)
 	}
@@ -153,7 +153,7 @@ func (dd *Document) addMethod(method *schema_j5pb.Method) error {
 	}}
 
 	if method.RequestBody != nil {
-		requestSchema, err := convertSchema(method.RequestBody)
+		requestSchema, err := ConvertSchema(method.RequestBody)
 		if err != nil {
 			return err
 		}
