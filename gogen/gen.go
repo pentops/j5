@@ -501,14 +501,16 @@ func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Met
 				dataType.Pointer = true
 			}
 
-			requestStruct.Fields = append(requestStruct.Fields, &Field{
+			field := &Field{
 				Name:     GoName(parameter.Name),
 				DataType: *dataType,
 				Tags: map[string]string{
 					"query": parameter.Name,
 					"json":  "-",
 				},
-			})
+			}
+
+			requestStruct.Fields = append(requestStruct.Fields, field)
 
 			schema := parameter.Schema
 			if ref, ok := schema.Type.(*schema_j5pb.Schema_Ref); ok {
@@ -565,26 +567,29 @@ func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Met
 			}
 			requestStruct.Fields = append(requestStruct.Fields, field)
 
-			if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageRequest" {
-				setter := &Function{
-					Name:     "SetPageToken",
-					TakesPtr: true,
-					Parameters: []*Parameter{{
-						Name: "pageToken",
-						DataType: DataType{
-							Name:    "string",
-							Pointer: false,
-						}},
-					},
-					StringGen: gen.ChildGen(),
-				}
-				setter.P("if s.", field.Name, " == nil {")
-				setter.P("  s.", field.Name, " = ", field.DataType.Addr(), "{}")
-				setter.P("}")
-				setter.P("s.", field.Name, ".Token = &pageToken")
+		}
+	}
 
-				requestStruct.Methods = append(requestStruct.Methods, setter)
+	for _, field := range requestStruct.Fields {
+		if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageRequest" {
+			setter := &Function{
+				Name:     "SetPageToken",
+				TakesPtr: true,
+				Parameters: []*Parameter{{
+					Name: "pageToken",
+					DataType: DataType{
+						Name:    "string",
+						Pointer: false,
+					}},
+				},
+				StringGen: gen.ChildGen(),
 			}
+			setter.P("if s.", field.Name, " == nil {")
+			setter.P("  s.", field.Name, " = ", field.DataType.Addr(), "{}")
+			setter.P("}")
+			setter.P("s.", field.Name, ".Token = &pageToken")
+
+			requestStruct.Methods = append(requestStruct.Methods, setter)
 		}
 	}
 
