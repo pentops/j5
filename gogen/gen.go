@@ -8,7 +8,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 )
 
 type Options struct {

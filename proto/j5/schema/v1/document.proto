@@ -4,7 +4,7 @@ package j5.schema.v1;
 
 import "j5/schema/v1/schema.proto";
 
-option go_package = "github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb";
+option go_package = "github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb";
 
 message API {
   repeated Package packages = 1;
