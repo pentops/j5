@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/jsonapi/gen/j5/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/jsontest"
 	"github.com/pentops/jsonapi/testproto/gen/testpb"
 	"google.golang.org/protobuf/encoding/protojson"

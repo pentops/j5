@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package j5.types.v1;
+
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/pentops/jsonapi/j5types";
+
+message Decimal {
+  string string = 1 [(buf.validate.field).string = {pattern: "^(\\d*\\.\\d+$|\\d+)$"} /* # decimals are surprisingly strange to regex. */ /* # To support 1.1 1 0.1 and .1 */ /* # Matches either: # d*.d+ or d+ */];
+}
