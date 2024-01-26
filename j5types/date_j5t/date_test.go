@@ -7,8 +7,8 @@ import (
 )
 
 // Type Assertions
-var d1 encoding.TextMarshaler = NewDate(2019, 1, 20)
-var d2 encoding.TextUnmarshaler = NewDate(2019, 1, 20)
+var _ encoding.TextMarshaler = NewDate(2019, 1, 20)
+var _ encoding.TextUnmarshaler = NewDate(2019, 1, 20)
 
 func TestDate(t *testing.T) {
 
