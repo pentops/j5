@@ -11,12 +11,14 @@ require (
 	github.com/bufbuild/protoyaml-go v0.1.6
 	github.com/go-yaml/yaml v2.1.0+incompatible
 	github.com/google/uuid v1.4.0
+	github.com/gorilla/mux v1.8.1
 	github.com/jhump/protoreflect v1.15.3
-	github.com/nsf/jsondiff v0.0.0-20230430225905-43f6cf3098c1
+	github.com/pentops/log.go v0.0.0-20231218074934-67aedcab3fa4
 	github.com/pentops/o5-go v0.0.0-20240108212127-807bf5c29410
 	github.com/pentops/o5-runtime-sidecar v0.0.6
 	github.com/pentops/runner v0.0.0-20231219070819-c4878d5565d8
 	github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5
+	github.com/shopspring/decimal v1.3.1
 	github.com/stretchr/testify v1.8.4
 	github.com/tidwall/gjson v1.17.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231127180814-3a041ad873d4
@@ -47,8 +49,6 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/cel-go v0.18.2 // indirect
-	github.com/gorilla/mux v1.8.1 // indirect
-	github.com/pentops/log.go v0.0.0-20231218074934-67aedcab3fa4 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect

@@ -3,6 +3,8 @@ package codec
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -29,6 +31,9 @@ const (
 	WKTBytes  = "BytesValue"
 
 	WKTEmpty = "Empty"
+
+	JTDate    = protoreflect.FullName("j5.types.date.v1.Date")
+	JTDecimal = protoreflect.FullName("j5.types.decimal.v1.Decimal")
 )
 
 type marshalFunc func(*encoder, protoreflect.Message) error
@@ -36,7 +41,9 @@ type marshalFunc func(*encoder, protoreflect.Message) error
 type unmarshalFunc func(*decoder, protoreflect.Message) error
 
 // wellKnownTypeMarshaler returns a marshal function if the message type
-// has specialized serialization behavior. It returns nil otherwise.
+// has specialized serialization behavior, either by the official spec, or j5
+// types.
+// It returns nil otherwise.
 func wellKnownTypeMarshaler(name protoreflect.FullName) marshalFunc {
 	if name.Parent() == WKTProtoNamespace {
 		switch name.Name() {
@@ -61,11 +68,20 @@ func wellKnownTypeMarshaler(name protoreflect.FullName) marshalFunc {
 			return marshalEmpty
 		}
 	}
+
+	switch name {
+	case JTDate:
+		return marshalDate
+	case JTDecimal:
+		return marshalWrapperType
+	}
 	return nil
 }
 
 // wellKnownTypeUnmarshaler returns a unmarshal function if the message type
-// has specialized serialization behavior. It returns nil otherwise.
+// has specialized serialization behavior, either by the official spec, or j5
+// types.
+// It returns nil otherwise.
 func wellKnownTypeUnmarshaler(name protoreflect.FullName) unmarshalFunc {
 	if name.Parent() == WKTProtoNamespace {
 		switch name.Name() {
@@ -90,6 +106,14 @@ func wellKnownTypeUnmarshaler(name protoreflect.FullName) unmarshalFunc {
 			return unmarshalEmpty
 		}
 	}
+
+	switch name {
+	case JTDate:
+		return unmarshalDate
+	case JTDecimal:
+		return unmarshalWrapperType
+	}
+
 	return nil
 }
 
@@ -158,4 +182,54 @@ func marshalWrapperType(e *encoder, msg protoreflect.Message) error {
 	fd := msg.Descriptor().Fields().ByName("value")
 	val := msg.Get(fd)
 	return e.encodeValue(fd, val)
+}
+
+func unmarshalDate(d *decoder, msg protoreflect.Message) error {
+	tok, err := d.Token()
+	if err != nil {
+		return err
+	}
+
+	stringVal, ok := tok.(string)
+	if !ok {
+		return fmt.Errorf("expected date as a string but got %v", tok)
+	}
+
+	stringParts := strings.Split(stringVal, "-")
+	if len(stringParts) != 3 {
+		return fmt.Errorf("expected date as a string but got %v", tok)
+	}
+
+	for idx, key := range []protoreflect.Name{"year", "month", "day"} {
+		field := msg.Descriptor().Fields().ByName(key)
+		if field == nil {
+			return fmt.Errorf("field %s not found", key)
+		}
+
+		intVal, err := strconv.ParseInt(stringParts[idx], 10, 32)
+		if err != nil {
+			return fmt.Errorf("expected date as yyyy-mm-dd, got %s", stringVal)
+		}
+
+		msg.Set(field, protoreflect.ValueOf(int32(intVal)))
+	}
+
+	return nil
+}
+
+func marshalDate(e *encoder, msg protoreflect.Message) error {
+
+	intParts := make([]int32, 3)
+	for idx, key := range []protoreflect.Name{"year", "month", "day"} {
+		field := msg.Descriptor().Fields().ByName(key)
+		if field == nil {
+			return fmt.Errorf("field %s not found", key)
+		}
+
+		val := msg.Get(field).Int()
+		intParts[idx] = int32(val)
+	}
+
+	stringVal := fmt.Sprintf("%04d-%02d-%02d", intParts[0], intParts[1], intParts[2])
+	return e.addJSON(stringVal)
 }
