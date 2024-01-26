@@ -11,8 +11,12 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/pentops/jsonapi/j5types/date_j5t"
+	"github.com/pentops/jsonapi/prototest"
 	"github.com/pentops/jsonapi/testproto/gen/testpb"
 )
 
@@ -205,6 +209,94 @@ func TestUnmarshal(t *testing.T) {
 
 		})
 	}
+}
+
+func TestScalars(t *testing.T) {
+	// TODO: The tests above should be rewritten to use this method, then retire
+	// testproto.
+
+	type testCase struct {
+		desc   protoreflect.MessageDescriptor
+		asJSON string
+		valMap map[string]protoreflect.Value
+	}
+
+	runTest := func(t testing.TB, tc testCase) {
+
+		msgIn := dynamicpb.NewMessage(tc.desc)
+
+		for key, val := range tc.valMap {
+			field := tc.desc.Fields().ByName(protoreflect.Name(key))
+			if field == nil {
+				t.Fatalf("field %s not found", key)
+			}
+			msgIn.Set(field, val)
+		}
+
+		asJSON, err := Encode(Options{}, msgIn.ProtoReflect())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		CompareJSON(t, []byte(tc.asJSON), asJSON)
+
+		msgOut := dynamicpb.NewMessage(tc.desc)
+		if err := Decode(Options{}, []byte(tc.asJSON), msgOut.ProtoReflect()); err != nil {
+			t.Fatal(err)
+		}
+
+		if !proto.Equal(msgIn, msgOut) {
+			t.Fatalf("proto equal, expected %s but got %s", msgIn, msgOut)
+		}
+
+	}
+
+	t.Run("string", func(t *testing.T) {
+		runTest(t, testCase{
+			desc:   prototest.SingleMessage(t, "string sString = 1;"),
+			asJSON: `{"sString":"val"}`,
+			valMap: map[string]protoreflect.Value{
+				"sString": protoreflect.ValueOfString("val"),
+			},
+		})
+	})
+
+	t.Run("optional string", func(t *testing.T) {
+		msg := prototest.SingleMessage(t, "optional string foo = 1;")
+
+		runTest(t, testCase{
+			desc:   msg,
+			asJSON: `{"foo":"val"}`,
+			valMap: map[string]protoreflect.Value{
+				"foo": protoreflect.ValueOfString("val"),
+			},
+		})
+
+		runTest(t, testCase{
+			desc:   msg,
+			asJSON: `{}`,
+			valMap: map[string]protoreflect.Value{},
+		})
+	})
+
+	t.Run("date", func(t *testing.T) {
+		msg := prototest.SingleMessage(t,
+			prototest.WithMessageImports("j5/types/date/v1/date.proto"),
+			"j5.types.date.v1.Date date = 1;")
+		dateVal := &date_j5t.Date{
+			Year:  2020,
+			Month: 12,
+			Day:   30,
+		}
+		runTest(t, testCase{
+			desc:   msg,
+			asJSON: `{"date":"2020-12-30"}`,
+			valMap: map[string]protoreflect.Value{
+				"date": protoreflect.ValueOfMessage(dateVal.ProtoReflect()),
+			},
+		})
+	})
+
 }
 
 func CompareJSON(t testing.TB, wantSRC, gotSRC []byte) {

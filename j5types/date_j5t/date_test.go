@@ -1,4 +1,4 @@
-package j5types
+package date_j5t
 
 import (
 	"encoding"

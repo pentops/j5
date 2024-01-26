@@ -1,0 +1,41 @@
+type reflectedDecimal struct {
+	val *Decimal
+}
+
+func (x *reflectedDecimal) Descriptor() protoreflect.MessageDescriptor {
+	return file_j5_types_decimal_v1_decimal_proto_msgTypes[0].Descriptor()
+}
+
+func (x *reflectedDecimal) Type() protoreflect.MessageType {
+	return &file_j5_types_decimal_v1_decimal_proto_msgTypes[0]
+}
+
+func (x *reflectedDecimal) New() protoreflect.Message {
+	return &reflectedDecimal{
+		val: &Decimal{},
+	}
+}
+
+func (x *reflectedDecimal) Interface() protoreflect.ProtoMessage {
+	return x.val
+}
+
+func (x *reflectedDecimal) Range(f func(protoreflect.FieldDescriptor, protoreflect.Value) bool) {
+}
+
+func (x *reflectedDecimal) Has(fd protoreflect.FieldDescriptor) bool {
+}
+
+func (x *reflectedDecimal) Clear(fd protoreflect.FieldDescriptor) {
+
+}
+
+func (x *reflectedDecimal) Get(fd protoreflect.FieldDescriptor) protoreflect.Value {
+}
+
+func (x *reflectedDecimal) Set(fd protoreflect.FieldDescriptor, v protoreflect.Value) {
+}
+
+
+
+
