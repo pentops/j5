@@ -558,7 +558,15 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 		if constraint != nil && constraint.Type != nil {
 			stringConstraint, ok := constraint.Type.(*validate.FieldConstraints_String_)
 			if !ok {
-				return nil, fmt.Errorf("wrong constraint type for string: %T", constraint.Type)
+				repeatedConstraint, ok := constraint.Type.(*validate.FieldConstraints_Repeated)
+				if !ok {
+					return nil, fmt.Errorf("wrong constraint type for string: %T", constraint.Type)
+				}
+
+				stringConstraint, ok = repeatedConstraint.Repeated.Items.Type.(*validate.FieldConstraints_String_)
+				if !ok {
+					return nil, fmt.Errorf("wrong constraint type for repeated string: %T", repeatedConstraint.Repeated)
+				}
 			}
 
 			stringItem.Rules = &schema_j5pb.StringRules{}
