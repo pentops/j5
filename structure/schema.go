@@ -289,6 +289,12 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 		// constraint.IgnoreEmpty doesn't really apply
 	}
 
+	// if the constraint is repeated, unwrap it
+	repeatedConstraint, ok := constraint.Type.(*validate.FieldConstraints_Repeated)
+	if ok {
+		constraint = repeatedConstraint.Repeated.Items
+	}
+
 	if !prop.Required && src.HasOptionalKeyword() {
 		prop.ExplicitlyOptional = true
 	}
@@ -558,15 +564,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 		if constraint != nil && constraint.Type != nil {
 			stringConstraint, ok := constraint.Type.(*validate.FieldConstraints_String_)
 			if !ok {
-				repeatedConstraint, ok := constraint.Type.(*validate.FieldConstraints_Repeated)
-				if !ok {
-					return nil, fmt.Errorf("wrong constraint type for string: %T", constraint.Type)
-				}
-
-				stringConstraint, ok = repeatedConstraint.Repeated.Items.Type.(*validate.FieldConstraints_String_)
-				if !ok {
-					return nil, fmt.Errorf("wrong constraint type for repeated string: %T", repeatedConstraint.Repeated)
-				}
+				return nil, fmt.Errorf("wrong constraint type for string: %T", constraint.Type)
 			}
 
 			stringItem.Rules = &schema_j5pb.StringRules{}
