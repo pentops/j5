@@ -286,7 +286,14 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 		if constraint.Required {
 			prop.Required = true
 		}
+
 		// constraint.IgnoreEmpty doesn't really apply
+
+		// if the constraint is repeated, unwrap it
+		repeatedConstraint, ok := constraint.Type.(*validate.FieldConstraints_Repeated)
+		if ok {
+			constraint = repeatedConstraint.Repeated.Items
+		}
 	}
 
 	if !prop.Required && src.HasOptionalKeyword() {
