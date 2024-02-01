@@ -57,7 +57,6 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 }
 
 func TestStringSchemaTypes(t *testing.T) {
-
 	for _, tt := range []struct {
 		name       string
 		constraint *validate.StringRules
@@ -199,11 +198,9 @@ func TestSchemaTypesSimple(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func TestTestProtoSchemaTypes(t *testing.T) {
-
 	ss := NewSchemaSet(&source_j5pb.CodecOptions{
 		ShortEnums: &source_j5pb.ShortEnumOptions{
 			StrictUnmarshal: true,
@@ -260,11 +257,9 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 		"protoFieldNumber":                     15,
 		"schema.mapItem.itemSchema.stringItem": map[string]interface{}{},
 	})
-
 }
 
 func TestSchemaTypesComplex(t *testing.T) {
-
 	ss := NewSchemaSet(&source_j5pb.CodecOptions{
 		ShortEnums: &source_j5pb.ShortEnumOptions{
 			StrictUnmarshal: true,
@@ -431,7 +426,6 @@ func TestSchemaTypesComplex(t *testing.T) {
 
 		})
 	}
-
 }
 
 func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constraints *validate.FieldConstraints) *descriptorpb.FieldDescriptorProto {

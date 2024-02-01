@@ -37,7 +37,6 @@ func BuildFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 }
 
 func BuildFromDescriptors(config *source_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*schema_j5pb.API, error) {
-
 	services := make([]protoreflect.ServiceDescriptor, 0)
 	descFiles, err := protodesc.NewFiles(descriptors)
 	if err != nil {
