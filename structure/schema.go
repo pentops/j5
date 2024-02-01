@@ -10,6 +10,8 @@ import (
 	"github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -83,7 +85,7 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*sch
 			}
 			prop := &schema_j5pb.ObjectProperty{
 				ProtoFieldName: string(oneof.Name()),
-				Name:           string(oneof.Name()),
+				Name:           camelCase(oneofName),
 				Description:    commentDescription(src),
 				Schema: &schema_j5pb.Schema{
 					Type: &schema_j5pb.Schema_OneofWrapper{
@@ -207,6 +209,12 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*sch
 			},
 		},
 	}, nil
+}
+
+func camelCase(s string) string {
+	caser := cases.Title(language.English)
+	s = caser.String(strings.ReplaceAll(s, "_", " "))
+	return strings.ReplaceAll(strings.ToLower(s[:1])+s[1:], " ", "")
 }
 
 func commentDescription(src protoreflect.Descriptor) string {
