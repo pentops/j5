@@ -268,7 +268,6 @@ func quickUUID() string {
 }
 
 func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*schema_j5pb.ObjectProperty, error) {
-
 	prop := &schema_j5pb.ObjectProperty{
 		ProtoFieldName:   string(src.Name()),
 		ProtoFieldNumber: int32(src.Number()),
@@ -351,7 +350,6 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 		}
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
-
 		var integerRules *schema_j5pb.IntegerRules
 		int32Constraint := constraint.GetInt32()
 		if int32Constraint != nil {
@@ -392,6 +390,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 				Rules:  integerRules,
 			},
 		}
+
 	case protoreflect.Uint32Kind:
 		var integerRules *schema_j5pb.IntegerRules
 		uint32Constraint := constraint.GetUint32()
@@ -673,7 +672,6 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 }
 
 func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules, se *source_j5pb.ShortEnumOptions) ([]*schema_j5pb.EnumItem_Value, error) {
-
 	specMap := map[int32]struct{}{}
 	var notIn bool
 	var isIn bool
