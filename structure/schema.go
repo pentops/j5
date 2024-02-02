@@ -45,7 +45,6 @@ func walkName(src protoreflect.MessageDescriptor) string {
 
 }
 func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, error) {
-
 	goTypeName := walkName(src)
 
 	properties := make([]*schema_j5pb.ObjectProperty, 0, src.Fields().Len())
@@ -676,7 +675,6 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 	}
 
 	return prop, nil
-
 }
 
 func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules, se *source_j5pb.ShortEnumOptions) ([]*schema_j5pb.EnumItem_Value, error) {
@@ -753,7 +751,6 @@ func Ptr[T any](val T) *T {
 }
 
 func wktSchema(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, bool) {
-
 	switch string(src.FullName()) {
 	case "google.protobuf.Timestamp":
 		return &schema_j5pb.Schema{
@@ -763,6 +760,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, bool) {
 				},
 			},
 		}, true
+
 	case "google.protobuf.Duration":
 		return &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_StringItem{
@@ -784,15 +782,12 @@ func wktSchema(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, bool) {
 				},
 			},
 		}, true
-
 	}
 
 	return nil, false
-
 }
 
 func (ss *SchemaSet) addSchemaObject(src protoreflect.MessageDescriptor) error {
-
 	if _, ok := ss.Schemas[string(src.FullName())]; ok {
 		return nil
 	}
@@ -812,5 +807,4 @@ func (ss *SchemaSet) addSchemaObject(src protoreflect.MessageDescriptor) error {
 	ss.Schemas[string(src.FullName())] = schema
 
 	return nil
-
 }

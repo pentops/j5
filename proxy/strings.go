@@ -99,7 +99,6 @@ var mappersFromString = map[protoreflect.Kind]mapperFromString{
 }
 
 func setFieldFromString(codec Codec, inputMessage protoreflect.Message, fd protoreflect.FieldDescriptor, provided string) error {
-
 	if fd.Kind() == protoreflect.MessageKind {
 		msg := inputMessage.NewField(fd).Message()
 		if err := codec.ToProto([]byte(provided), msg); err != nil {
@@ -138,7 +137,6 @@ func getField(descriptor protoreflect.MessageDescriptor, name string) protorefle
 }
 
 func setFieldFromStrings(codec Codec, inputMessage protoreflect.Message, key string, provided []string) error {
-
 	descriptor := inputMessage.Descriptor()
 
 	parts := strings.SplitN(key, ".", 2)
