@@ -210,7 +210,6 @@ func runJdef(ctx context.Context, cfg struct {
 	Source string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
 	Output string `flag:"output" default:"-" description:"Destination to push json image to. - for stdout, s3://bucket/key, otherwise a local file"`
 }) error {
-
 	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
 		log.Fatal(err.Error())
