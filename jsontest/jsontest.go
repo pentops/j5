@@ -18,11 +18,17 @@ type Asserter struct {
 func NewAsserter(v interface{}) (*Asserter, error) {
 	var val string
 
-	protoVal, ok := v.(proto.Message)
-	if ok {
-		val = protojson.Format(protoVal)
+	switch v := v.(type) {
+	case string:
+		val = v
 
-	} else {
+	case []byte:
+		val = string(v)
+
+	case proto.Message:
+		val = protojson.Format(v)
+
+	default:
 		bb, err := json.MarshalIndent(v, "", "  ")
 		if err != nil {
 			return nil, err
