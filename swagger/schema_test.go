@@ -87,6 +87,16 @@ func TestConvertSchema(t *testing.T) {
 			"enum.1":               "BAR",
 		},
 	}, {
+		name: "ref",
+		input: &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_Ref{
+				Ref: "#/definitions/foo",
+			},
+		},
+		want: map[string]interface{}{
+			"$ref": "#/definitions/foo",
+		},
+	}, {
 		name: "object",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_ObjectItem{
@@ -343,5 +353,4 @@ func TestSchemaJSONMarshal(t *testing.T) {
 	out.AssertEqual(t, "properties.object.properties.foo.type", "string")
 
 	out.AssertEqual(t, "properties.ref.$ref", "#/definitions/foo")
-
 }

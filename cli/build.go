@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/pentops/jsonapi/source"
 	"github.com/pentops/jsonapi/structure"
+	"github.com/pentops/jsonapi/structure/jdef"
 	"github.com/pentops/jsonapi/swagger"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -72,20 +73,25 @@ func RunSwagger(ctx context.Context, cfg BuildConfig) error {
 func RunJDef(ctx context.Context, cfg BuildConfig) error {
 	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
 	if err != nil {
-		log.Fatal(err.Error())
+		return err
 	}
 
 	document, err := structure.BuildFromImage(image)
 	if err != nil {
-		log.Fatal(err.Error())
+		return err
 	}
 
-	asJson, err := protojson.Marshal(document)
+	jDefJSON, err := jdef.FromProto(document)
 	if err != nil {
-		log.Fatal(err.Error())
+		return err
 	}
 
-	return writeBytes(ctx, cfg.Output, asJson)
+	jDefJSONBytes, err := json.Marshal(jDefJSON)
+	if err != nil {
+		return err
+	}
+
+	return writeBytes(ctx, cfg.Output, jDefJSONBytes)
 }
 
 func writeBytes(ctx context.Context, to string, data []byte) error {

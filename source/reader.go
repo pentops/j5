@@ -17,8 +17,6 @@ import (
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/descriptorpb"
 
 	registry_spb "buf.build/gen/go/bufbuild/buf/grpc/go/buf/alpha/registry/v1alpha1/registryv1alpha1grpc"
 	registry_pb "buf.build/gen/go/bufbuild/buf/protocolbuffers/go/buf/alpha/registry/v1alpha1"
@@ -33,57 +31,16 @@ var ConfigPaths = []string{
 	"ext/j5/j5.yml",
 }
 
-type BufLockFile struct {
-	Deps []*BufLockFileDependency `yaml:"deps"`
+type bufLockFile struct {
+	Deps []*bufLockFileDependency `yaml:"deps"`
 }
 
-type BufLockFileDependency struct {
+type bufLockFileDependency struct {
 	Remote     string `yaml:"remote"`
 	Owner      string `yaml:"owner"`
 	Repository string `yaml:"repository"`
 	Commit     string `yaml:"commit"`
 	Digest     string `yaml:"digest"`
-}
-
-func ReadFileDescriptorSet(ctx context.Context, src string) (*descriptorpb.FileDescriptorSet, error) {
-	descriptors := &descriptorpb.FileDescriptorSet{}
-
-	if src == "-" {
-		protoData, err := io.ReadAll(os.Stdin)
-		if err != nil {
-			return nil, err
-		}
-		if err := proto.Unmarshal(protoData, descriptors); err != nil {
-			return nil, err
-		}
-		return descriptors, nil
-	}
-
-	fileStat, err := os.Lstat(src)
-	if err != nil {
-		return nil, err
-	}
-
-	if !fileStat.IsDir() {
-		protoData, err := os.ReadFile(src)
-		if err != nil {
-			return nil, err
-		}
-		if err := proto.Unmarshal(protoData, descriptors); err != nil {
-			return nil, err
-		}
-
-		return descriptors, nil
-	}
-
-	image, err := ReadImageFromSourceDir(ctx, src)
-	if err != nil {
-		return nil, err
-	}
-
-	return &descriptorpb.FileDescriptorSet{
-		File: image.File,
-	}, nil
 }
 
 func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.SourceImage, error) {
@@ -191,7 +148,7 @@ func getDeps(ctx context.Context, src string) (map[string][]byte, error) {
 		return nil, err
 	}
 
-	bufLockFile := &BufLockFile{}
+	bufLockFile := &bufLockFile{}
 	if err := yaml.Unmarshal(lockFile, bufLockFile); err != nil {
 		return nil, err
 	}
