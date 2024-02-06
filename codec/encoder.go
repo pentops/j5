@@ -142,7 +142,6 @@ func (enc *encoder) encodeMapField(field protoreflect.FieldDescriptor, value pro
 	valDesc := field.MapValue()
 
 	value.Map().Range(func(key protoreflect.MapKey, val protoreflect.Value) bool {
-		fmt.Printf("enc key %v\n", key.Interface())
 		if !first {
 			enc.fieldSep()
 		}
