@@ -782,6 +782,13 @@ func wktSchema(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, bool) {
 				},
 			},
 		}, true
+
+	case "google.protobuf.Any":
+		return &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_Any{
+				Any: &schema_j5pb.AnySchemmaItem{},
+			},
+		}, true
 	}
 
 	return nil, false
