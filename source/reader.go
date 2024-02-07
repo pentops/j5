@@ -17,6 +17,7 @@ import (
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/protobuf/types/descriptorpb"
 
 	registry_spb "buf.build/gen/go/bufbuild/buf/grpc/go/buf/alpha/registry/v1alpha1/registryv1alpha1grpc"
 	registry_pb "buf.build/gen/go/bufbuild/buf/protocolbuffers/go/buf/alpha/registry/v1alpha1"
@@ -43,7 +44,7 @@ type bufLockFileDependency struct {
 	Digest     string `yaml:"digest"`
 }
 
-func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.SourceImage, error) {
+func ReadImageFromSourceDir(ctx context.Context, src string, resolveDeps bool) (*source_j5pb.SourceImage, error) {
 	fileStat, err := os.Lstat(src)
 	if err != nil {
 		return nil, err
@@ -69,9 +70,12 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 		return nil, err
 	}
 
-	extFiles, err := getDeps(ctx, src)
-	if err != nil {
-		return nil, err
+	var extFiles map[string][]byte
+	if resolveDeps {
+		extFiles, err = getDeps(ctx, src)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	proseFiles := []*source_j5pb.ProseFile{}
@@ -123,15 +127,27 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 		},
 	}
 
-	customDesc, err := parser.ParseFiles(filenames...)
-	if err != nil {
-		return nil, err
+	var files []*descriptorpb.FileDescriptorProto
+
+	if resolveDeps {
+		customDesc, err := parser.ParseFiles(filenames...)
+		if err != nil {
+			return nil, err
+		}
+
+		realDesc := desc.ToFileDescriptorSet(customDesc...)
+		files = realDesc.File
+	} else {
+		customDesc, err := parser.ParseFilesButDoNotLink(filenames...)
+		if err != nil {
+			return nil, err
+		}
+
+		files = customDesc
 	}
 
-	realDesc := desc.ToFileDescriptorSet(customDesc...)
-
 	return &source_j5pb.SourceImage{
-		File:     realDesc.File,
+		File:     files,
 		Packages: config.Packages,
 		Codec:    config.Options,
 		Prose:    proseFiles,

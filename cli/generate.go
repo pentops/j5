@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pentops/jsonapi/gogen"
 	"github.com/pentops/jsonapi/source"
@@ -21,14 +22,14 @@ func runGocode(ctx context.Context, cfg struct {
 	TrimPackagePrefix string `flag:"trim-package-prefix" default:"" description:"Prefix to trim from go package names"`
 	AddGoPrefix       string `flag:"add-go-prefix" default:"" description:"Prefix to add to go package names"`
 }) error {
-	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
+	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source, true)
 	if err != nil {
-		return err
+		return fmt.Errorf("read source: %w", err)
 	}
 
 	jdefDoc, err := structure.BuildFromImage(image)
 	if err != nil {
-		return err
+		return fmt.Errorf("build structure: %w", err)
 	}
 
 	options := gogen.Options{

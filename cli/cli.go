@@ -24,6 +24,8 @@ func CommandSet() *commander.CommandSet {
 	generateGroup := GenerateSet()
 	cmdGroup.Add("generate", generateGroup)
 
+	cmdGroup.Add("lint", commander.NewCommand(runValidate))
+
 	return cmdGroup
 
 }
@@ -40,7 +42,7 @@ func runPush(ctx context.Context, cfg struct {
 		return fmt.Errorf("version, latest or both are required")
 	}
 
-	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
+	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source, true)
 	if err != nil {
 		return err
 	}

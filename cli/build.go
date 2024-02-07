@@ -33,7 +33,7 @@ type BuildConfig struct {
 }
 
 func RunImage(ctx context.Context, cfg BuildConfig) error {
-	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
+	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source, true)
 	if err != nil {
 		return err
 	}
@@ -47,14 +47,14 @@ func RunImage(ctx context.Context, cfg BuildConfig) error {
 }
 
 func RunSwagger(ctx context.Context, cfg BuildConfig) error {
-	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
+	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source, true)
 	if err != nil {
-		return err
+		return fmt.Errorf("read source: %w", err)
 	}
 
 	jdefDoc, err := structure.BuildFromImage(image)
 	if err != nil {
-		return err
+		return fmt.Errorf("build structure: %w", err)
 	}
 
 	swaggerDoc, err := swagger.BuildSwagger(jdefDoc)
@@ -71,7 +71,7 @@ func RunSwagger(ctx context.Context, cfg BuildConfig) error {
 }
 
 func RunJDef(ctx context.Context, cfg BuildConfig) error {
-	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
+	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source, true)
 	if err != nil {
 		return err
 	}
