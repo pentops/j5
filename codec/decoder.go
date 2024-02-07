@@ -63,14 +63,15 @@ func (d *decoder) Options() Options {
 }
 
 func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
-	wktDecoder := wellKnownType(msg.Descriptor().FullName())
-	if wktDecoder != nil {
-		return wktDecoder.Unmarshal(dec, msg)
-	}
 
 	customDecoder, ok := dec.options.CustomEntities[msg.Descriptor().FullName()]
 	if ok {
 		return customDecoder.Unmarshal(dec, msg)
+	}
+
+	wkt, ok := wktCustomEntities[msg.Descriptor().FullName()]
+	if ok {
+		return wkt.Unmarshal(dec, msg)
 	}
 
 	if err := dec.startObject(); err != nil {

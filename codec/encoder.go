@@ -219,8 +219,8 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 		return customDecoder.Marshal(newSafeEncoder(enc), msg)
 	}
 
-	wktEncoder := wellKnownType(msg.Descriptor().FullName())
-	if wktEncoder != nil {
+	wktEncoder, ok := wktCustomEntities[msg.Descriptor().FullName()]
+	if ok {
 		return wktEncoder.Marshal(newSafeEncoder(enc), msg)
 	}
 

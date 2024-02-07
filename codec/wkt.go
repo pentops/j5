@@ -17,70 +17,17 @@ func unexpectedTokenError(got, expected interface{}) error {
 var wktCustomEntities = map[protoreflect.FullName]CustomEntity{
 	protoreflect.FullName("j5.types.date.v1.Date"):       &dateEntity{},
 	protoreflect.FullName("j5.types.decimal.v1.Decimal"): &wrapperEntity{},
-}
-
-const (
-	WKTProtoNamespace = "google.protobuf"
-	WKTAny            = "Any"
-	WKTTimestamp      = "Timestamp"
-	WKTDuration       = "Duration"
-
-	WKTBool   = "BoolValue"
-	WKTInt32  = "Int32Value"
-	WKTInt64  = "Int64Value"
-	WKTUInt32 = "UInt32Value"
-	WKTUInt64 = "UInt64Value"
-	WKTFloat  = "FloatValue"
-	WKTDouble = "DoubleValue"
-	WKTString = "StringValue"
-	WKTBytes  = "BytesValue"
-
-	WKTEmpty = "Empty"
-
-	JTDate    = protoreflect.FullName("j5.types.date.v1.Date")
-	JTDecimal = protoreflect.FullName("j5.types.decimal.v1.Decimal")
-)
-
-type marshalFunc func(*encoder, protoreflect.Message) error
-
-type unmarshalFunc func(*decoder, protoreflect.Message) error
-
-// wellKnownTypeMarshaler returns a marshal function if the message type
-// has specialized serialization behavior, either by the official spec, or j5
-// types.
-// It returns nil otherwise.
-func wellKnownType(name protoreflect.FullName) CustomEntity {
-	if name.Parent() == WKTProtoNamespace {
-		switch name.Name() {
-		//case WKTAny:
-		//	return marshalAny
-		case WKTTimestamp:
-			return timestampEntity{}
-		//case WKTDuration:
-		//	return marshalDuration
-		case
-			WKTBool,
-			WKTInt32,
-			WKTInt64,
-			WKTUInt32,
-			WKTUInt64,
-			WKTFloat,
-			WKTDouble,
-			WKTString,
-			WKTBytes:
-			return wrapperEntity{}
-		case WKTEmpty:
-			return emptyEntity{}
-		}
-	}
-
-	switch name {
-	case JTDate:
-		return dateEntity{}
-	case JTDecimal:
-		return wrapperEntity{}
-	}
-	return nil
+	protoreflect.FullName("google.protobuf.Timestamp"):   &timestampEntity{},
+	protoreflect.FullName("google.protobuf.BoolValue"):   &wrapperEntity{},
+	protoreflect.FullName("google.protobuf.Int32Value"):  &wrapperEntity{},
+	protoreflect.FullName("google.protobuf.Int64Value"):  &wrapperEntity{},
+	protoreflect.FullName("google.protobuf.UInt32Value"): &wrapperEntity{},
+	protoreflect.FullName("google.protobuf.UInt64Value"): &wrapperEntity{},
+	protoreflect.FullName("google.protobuf.FloatValue"):  &wrapperEntity{},
+	protoreflect.FullName("google.protobuf.DoubleValue"): &wrapperEntity{},
+	protoreflect.FullName("google.protobuf.StringValue"): &wrapperEntity{},
+	protoreflect.FullName("google.protobuf.BytesValue"):  &wrapperEntity{},
+	protoreflect.FullName("google.protobuf.Empty"):       &emptyEntity{},
 }
 
 type timestampEntity struct{}
@@ -210,6 +157,5 @@ func (dateEntity) Marshal(e Encoder, msg protoreflect.Message) error {
 	}
 
 	stringVal := fmt.Sprintf("%04d-%02d-%02d", intParts[0], intParts[1], intParts[2])
-	e.String(stringVal)
-	return nil
+	return e.String(stringVal)
 }
