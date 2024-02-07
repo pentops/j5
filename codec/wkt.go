@@ -14,6 +14,11 @@ func unexpectedTokenError(got, expected interface{}) error {
 	return fmt.Errorf("unexpected token %v, expected %v", got, expected)
 }
 
+var wktCustomEntities = map[protoreflect.FullName]CustomEntity{
+	protoreflect.FullName("j5.types.date.v1.Date"):       &dateEntity{},
+	protoreflect.FullName("j5.types.decimal.v1.Decimal"): &wrapperEntity{},
+}
+
 const (
 	WKTProtoNamespace = "google.protobuf"
 	WKTAny            = "Any"
@@ -44,13 +49,13 @@ type unmarshalFunc func(*decoder, protoreflect.Message) error
 // has specialized serialization behavior, either by the official spec, or j5
 // types.
 // It returns nil otherwise.
-func wellKnownTypeMarshaler(name protoreflect.FullName) marshalFunc {
+func wellKnownType(name protoreflect.FullName) CustomEntity {
 	if name.Parent() == WKTProtoNamespace {
 		switch name.Name() {
 		//case WKTAny:
 		//	return marshalAny
 		case WKTTimestamp:
-			return marshalTimestamp
+			return timestampEntity{}
 		//case WKTDuration:
 		//	return marshalDuration
 		case
@@ -63,61 +68,24 @@ func wellKnownTypeMarshaler(name protoreflect.FullName) marshalFunc {
 			WKTDouble,
 			WKTString,
 			WKTBytes:
-			return marshalWrapperType
+			return wrapperEntity{}
 		case WKTEmpty:
-			return marshalEmpty
+			return emptyEntity{}
 		}
 	}
 
 	switch name {
 	case JTDate:
-		return marshalDate
+		return dateEntity{}
 	case JTDecimal:
-		return marshalWrapperType
+		return wrapperEntity{}
 	}
 	return nil
 }
 
-// wellKnownTypeUnmarshaler returns a unmarshal function if the message type
-// has specialized serialization behavior, either by the official spec, or j5
-// types.
-// It returns nil otherwise.
-func wellKnownTypeUnmarshaler(name protoreflect.FullName) unmarshalFunc {
-	if name.Parent() == WKTProtoNamespace {
-		switch name.Name() {
-		//case WKTAny:
-		//	return unmarshalAny
-		case WKTTimestamp:
-			return unmarshalTimestamp
-		//case WKTDuration:
-		//	return unmarshalDuration
-		case
-			WKTBool,
-			WKTInt32,
-			WKTInt64,
-			WKTUInt32,
-			WKTUInt64,
-			WKTFloat,
-			WKTDouble,
-			WKTString,
-			WKTBytes:
-			return unmarshalWrapperType
-		case WKTEmpty:
-			return unmarshalEmpty
-		}
-	}
+type timestampEntity struct{}
 
-	switch name {
-	case JTDate:
-		return unmarshalDate
-	case JTDecimal:
-		return unmarshalWrapperType
-	}
-
-	return nil
-}
-
-func unmarshalTimestamp(dec *decoder, msg protoreflect.Message) error {
+func (timestampEntity) Unmarshal(dec Decoder, msg protoreflect.Message) error {
 	tok, err := dec.Token()
 	if err != nil {
 		return err
@@ -138,17 +106,19 @@ func unmarshalTimestamp(dec *decoder, msg protoreflect.Message) error {
 	return nil
 }
 
-func marshalTimestamp(enc *encoder, msg protoreflect.Message) error {
+func (timestampEntity) Marshal(enc Encoder, msg protoreflect.Message) error {
 	seconds := msg.Get(msg.Descriptor().Fields().ByName("seconds")).Int()
 	nanos := msg.Get(msg.Descriptor().Fields().ByName("nanos")).Int()
 	t := time.Unix(seconds, nanos).In(time.UTC)
 
-	return enc.addJSON(t.Format(time.RFC3339Nano))
+	return enc.String(t.Format(time.RFC3339Nano))
 }
 
-func unmarshalWrapperType(dec *decoder, m protoreflect.Message) error {
+type wrapperEntity struct{}
+
+func (wrapperEntity) Unmarshal(dec Decoder, m protoreflect.Message) error {
 	fd := m.Descriptor().Fields().ByName("value")
-	val, err := dec.decodeScalarField(fd)
+	val, err := decodeScalarField(dec, fd)
 	if err != nil {
 		return err
 	}
@@ -156,7 +126,15 @@ func unmarshalWrapperType(dec *decoder, m protoreflect.Message) error {
 	return nil
 }
 
-func unmarshalEmpty(d *decoder, msg protoreflect.Message) error {
+func (wrapperEntity) Marshal(e Encoder, msg protoreflect.Message) error {
+	fd := msg.Descriptor().Fields().ByName("value")
+	val := msg.Get(fd)
+	return e.Scalar(fd.Kind(), val)
+}
+
+type emptyEntity struct{}
+
+func (emptyEntity) Unmarshal(d Decoder, msg protoreflect.Message) error {
 	tok, err := d.Token()
 	if err != nil {
 		return err
@@ -174,17 +152,19 @@ func unmarshalEmpty(d *decoder, msg protoreflect.Message) error {
 	return nil
 }
 
-func marshalEmpty(e *encoder, msg protoreflect.Message) error {
-	return e.addJSON("{}")
+func (emptyEntity) Marshal(e Encoder, msg protoreflect.Message) error {
+	if err := e.BeginObject(); err != nil {
+		return err
+	}
+	if err := e.End(); err != nil {
+		return err
+	}
+	return nil
 }
 
-func marshalWrapperType(e *encoder, msg protoreflect.Message) error {
-	fd := msg.Descriptor().Fields().ByName("value")
-	val := msg.Get(fd)
-	return e.encodeValue(fd, val)
-}
+type dateEntity struct{}
 
-func unmarshalDate(d *decoder, msg protoreflect.Message) error {
+func (dateEntity) Unmarshal(d Decoder, msg protoreflect.Message) error {
 	tok, err := d.Token()
 	if err != nil {
 		return err
@@ -217,8 +197,7 @@ func unmarshalDate(d *decoder, msg protoreflect.Message) error {
 	return nil
 }
 
-func marshalDate(e *encoder, msg protoreflect.Message) error {
-
+func (dateEntity) Marshal(e Encoder, msg protoreflect.Message) error {
 	intParts := make([]int32, 3)
 	for idx, key := range []protoreflect.Name{"year", "month", "day"} {
 		field := msg.Descriptor().Fields().ByName(key)
@@ -231,5 +210,6 @@ func marshalDate(e *encoder, msg protoreflect.Message) error {
 	}
 
 	stringVal := fmt.Sprintf("%04d-%02d-%02d", intParts[0], intParts[1], intParts[2])
-	return e.addJSON(stringVal)
+	e.String(stringVal)
+	return nil
 }

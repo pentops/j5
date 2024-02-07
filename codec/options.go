@@ -24,6 +24,20 @@ type Options struct {
 	// becomes { "bar": { "baz": 1 } }
 	// instead of { "baz": 1 }
 	WrapOneof bool
+
+	// CustomEntities use the given encoder/decoder functions directly, for when
+	// the annotations on proto aren't enough to get what you need, you could
+	// fall back to json.Marshal of a custom object.
+	// e.g. "google.protobuf.Timestamp" -> &MyCustomTimestamp{}
+	CustomEntities map[protoreflect.FullName]CustomEntity
+}
+
+type CustomEntity interface {
+	// Marshal encodes the custom entity into a JSON string
+	Marshal(Encoder, protoreflect.Message) error
+
+	// Unmarshal decodes the custom entity from a JSON string
+	Unmarshal(Decoder, protoreflect.Message) error
 }
 
 type ShortEnumsOption struct {

@@ -3,8 +3,10 @@ package swagger
 import (
 	"testing"
 
+	"github.com/pentops/jsonapi/codec"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/jsontest"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func TestConvertSchema(t *testing.T) {
@@ -257,8 +259,27 @@ func TestConvertSchema(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			t.Log("Old Format")
 			out.Print(t)
 			out.AssertEqualSet(t, "", tc.want)
+
+			outNew, err := codec.Encode(codec.Options{
+				CustomEntities: map[protoreflect.FullName]codec.CustomEntity{
+					"j5.schema.v1.Schema": &SchemaEntity{},
+				},
+			}, tc.input.ProtoReflect())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			outNewAssert, err := jsontest.NewAsserter(outNew)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			t.Log("New Format")
+			outNewAssert.Print(t)
+			outNewAssert.AssertEqualSet(t, "", tc.want)
 
 		})
 

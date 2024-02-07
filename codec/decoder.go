@@ -16,15 +16,22 @@ func Decode(opts Options, jsonData []byte, msg protoreflect.Message) error {
 	dec.UseNumber()
 	d2 := &decoder{
 		Decoder: dec,
-		Options: opts,
+		options: opts,
 	}
 	return d2.decodeMessage(msg)
 }
 
+type Decoder interface {
+	Peek() (json.Token, error)
+	Token() (json.Token, error)
+	Options() Options
+	//Bytes() ([]byte, error)
+}
+
 type decoder struct {
 	*json.Decoder
-	next json.Token
-	Options
+	next    json.Token
+	options Options
 }
 
 func (d *decoder) Peek() (json.Token, error) {
@@ -51,10 +58,19 @@ func (d *decoder) Token() (json.Token, error) {
 	return d.Decoder.Token()
 }
 
+func (d *decoder) Options() Options {
+	return d.options
+}
+
 func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
-	wktDecoder := wellKnownTypeUnmarshaler(msg.Descriptor().FullName())
+	wktDecoder := wellKnownType(msg.Descriptor().FullName())
 	if wktDecoder != nil {
-		return wktDecoder(dec, msg)
+		return wktDecoder.Unmarshal(dec, msg)
+	}
+
+	customDecoder, ok := dec.options.CustomEntities[msg.Descriptor().FullName()]
+	if ok {
+		return customDecoder.Unmarshal(dec, msg)
 	}
 
 	if err := dec.startObject(); err != nil {
@@ -91,7 +107,7 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 
 		protoField := fields.ByJSONName(keyTokenStr)
 		if protoField == nil {
-			if !dec.Options.WrapOneof {
+			if !dec.options.WrapOneof {
 				return fmt.Errorf("no such field %s", keyTokenStr)
 			}
 			keyTokenStr = jsonNameToProto(keyTokenStr)
@@ -105,7 +121,7 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 			}
 			continue
 		}
-		if !isOneofWrapper && dec.Options.WrapOneof && protoField.ContainingOneof() != nil {
+		if !isOneofWrapper && dec.options.WrapOneof && protoField.ContainingOneof() != nil {
 			containingOneof := protoField.ContainingOneof()
 			if !containingOneof.IsSynthetic() {
 				ext := proto.GetExtension(containingOneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
@@ -190,7 +206,7 @@ func (dec *decoder) decodeField(msg protoreflect.Message, field protoreflect.Fie
 		return dec.decodeMessageField(msg, field)
 
 	default:
-		scalarVal, err := dec.decodeScalarField(field)
+		scalarVal, err := decodeScalarField(dec, field)
 		if err != nil {
 			return err
 		}
@@ -223,7 +239,7 @@ func (dec *decoder) decodeMapField(msg protoreflect.Message, field protoreflect.
 			break
 		}
 
-		keyValue, err := dec.decodeScalarField(field.MapKey())
+		keyValue, err := decodeScalarField(dec, field.MapKey())
 		if err != nil {
 			return err
 		}
@@ -237,7 +253,7 @@ func (dec *decoder) decodeMapField(msg protoreflect.Message, field protoreflect.
 			list.Set(keyValue.MapKey(), subMsg)
 
 		default:
-			value, err := dec.decodeScalarField(mapValue)
+			value, err := decodeScalarField(dec, mapValue)
 			if err != nil {
 				return err
 			}
@@ -284,7 +300,7 @@ func (dec *decoder) decodeListField(msg protoreflect.Message, field protoreflect
 
 		default:
 
-			value, err := dec.decodeScalarField(field)
+			value, err := decodeScalarField(dec, field)
 			if err != nil {
 				return err
 			}

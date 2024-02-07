@@ -40,7 +40,7 @@ func BuildFromDescriptors(config *source_j5pb.Config, descriptors *descriptorpb.
 	services := make([]protoreflect.ServiceDescriptor, 0)
 	descFiles, err := protodesc.NewFiles(descriptors)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("build descriptors: %w", err)
 	}
 
 	descFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {

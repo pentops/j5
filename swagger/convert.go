@@ -3,8 +3,35 @@ package swagger
 import (
 	"fmt"
 
+	"github.com/pentops/jsonapi/codec"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+type SchemaEntity struct{}
+
+func (SchemaEntity) Unmarshal(dec codec.Decoder, msg protoreflect.Message) error {
+	return fmt.Errorf("not implemented")
+}
+
+func (SchemaEntity) Marshal(e codec.Encoder, msg protoreflect.Message) error {
+	bb, err := proto.Marshal(msg.Interface())
+	if err != nil {
+		return err
+	}
+	schema := &schema_j5pb.Schema{}
+	err = proto.Unmarshal(bb, schema)
+	if err != nil {
+		return err
+	}
+	converted, err := ConvertSchema(schema)
+	if err != nil {
+		return err
+	}
+
+	return e.JSONMarshal(converted)
+}
 
 // BuildSwagger converts the J5 Document to a Swagger Document
 func BuildSwagger(b *schema_j5pb.API) (*Document, error) {

@@ -1,6 +1,7 @@
 package jsontest
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -17,13 +18,16 @@ type Asserter struct {
 
 func NewAsserter(v interface{}) (*Asserter, error) {
 	var val string
+	remarshal := false
 
 	switch v := v.(type) {
 	case string:
 		val = v
+		remarshal = true
 
 	case []byte:
 		val = string(v)
+		remarshal = true
 
 	case proto.Message:
 		val = protojson.Format(v)
@@ -34,6 +38,14 @@ func NewAsserter(v interface{}) (*Asserter, error) {
 			return nil, err
 		}
 		val = string(bb)
+	}
+
+	if remarshal {
+		outBuf := &bytes.Buffer{}
+		if err := json.Indent(outBuf, []byte(val), "", "  "); err != nil {
+			return nil, err
+		}
+		val = outBuf.String()
 	}
 	return &Asserter{JSON: val}, nil
 }

@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func (dec *decoder) decodeScalarField(field protoreflect.FieldDescriptor) (protoreflect.Value, error) {
+func decodeScalarField(dec Decoder, field protoreflect.FieldDescriptor) (protoreflect.Value, error) {
 	tok, err := dec.Token()
 	if err != nil {
 		return protoreflect.Value{}, err
@@ -107,7 +107,7 @@ func (dec *decoder) decodeScalarField(field protoreflect.FieldDescriptor) (proto
 		if !ok {
 			return protoreflect.Value{}, unexpectedTokenError(tok, "string")
 		}
-		enumValue, err := dec.Options.ShortEnums.Decode(field.Enum(), stringVal)
+		enumValue, err := dec.Options().ShortEnums.Decode(field.Enum(), stringVal)
 		if err != nil {
 			return protoreflect.Value{}, err
 		}
