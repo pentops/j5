@@ -194,6 +194,12 @@ func (bb *builder) buildTypeName(schema *schema_j5pb.Schema) (*DataType, error) 
 			Pointer: true,
 		}, nil
 
+	case *schema_j5pb.Schema_Any:
+		return &DataType{
+			Name:    "interface{}",
+			Pointer: false,
+		}, nil
+
 	case *schema_j5pb.Schema_StringItem:
 		item := schemaType.StringItem
 		if item.Format == nil {
@@ -249,7 +255,7 @@ func (bb *builder) buildTypeName(schema *schema_j5pb.Schema) (*DataType, error) 
 		}, nil
 
 	default:
-		return nil, fmt.Errorf("Unknown type: %T\n", schema.Type)
+		return nil, fmt.Errorf("Unknown type for Go Gen: %T\n", schema.Type)
 	}
 
 }
