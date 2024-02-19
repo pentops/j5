@@ -38,10 +38,25 @@ message MethodOptions {
 }
 
 extend google.protobuf.FieldOptions {
-  StringOptions string = 90443357;
+  FieldOptions field = 90443357;
 }
 
-message StringOptions {
+message FieldOptions {
+  oneof type {
+    MessageFieldOptions message = 10;
+    StringFieldOptions string = 11;
+  }
+}
+
+message MessageFieldOptions {
+  // When true, the fields of this message field will be treated as if they
+  // were fields of the parent message during JSON encoding/decoding.
+  // There should be no name conflicts between the fields of the parent and
+  // the fields of the child message field.
+  bool flatten = 1;
+}
+
+message StringFieldOptions {
   StringFormat format = 1;
 }
 
