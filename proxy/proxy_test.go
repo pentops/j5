@@ -80,29 +80,29 @@ func TestGetHandlerMapping(t *testing.T) {
 
 	t.Run("MessageQueryString", func(t *testing.T) {
 		qs := url.Values{}
-		qs.Set("query", `{"a":"aval","b":"bval"}`)
+		qs.Set("ab", `{"a":"aval","b":"bval"}`)
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?"+qs.Encode(), nil)
 		reqToService := &testpb.GetFooRequest{}
 		rw := roundTrip(method, req, reqToService, &testpb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
 		}
-		assert.Equal(t, "aval", reqToService.Query.A)
-		assert.Equal(t, "bval", reqToService.Query.B)
+		assert.Equal(t, "aval", reqToService.Ab.A)
+		assert.Equal(t, "bval", reqToService.Ab.B)
 	})
 
 	t.Run("AltQueryString", func(t *testing.T) {
 		qs := url.Values{}
-		qs.Set("query.a", "aval")
-		qs.Set("query.b", "bval")
+		qs.Set("ab.a", "aval")
+		qs.Set("ab.b", "bval")
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?"+qs.Encode(), nil)
 		reqToService := &testpb.GetFooRequest{}
 		rw := roundTrip(method, req, reqToService, &testpb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
 		}
-		assert.Equal(t, "aval", reqToService.Query.A)
-		assert.Equal(t, "bval", reqToService.Query.B)
+		assert.Equal(t, "aval", reqToService.Ab.A)
+		assert.Equal(t, "bval", reqToService.Ab.B)
 	})
 
 	t.Run("lower_snake query", func(t *testing.T) {
