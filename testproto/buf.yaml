@@ -3,3 +3,4 @@ version: v1
 deps:
   - buf.build/googleapis/googleapis
   - buf.build/pentops/jsonapi
+  - buf.build/pentops/psm

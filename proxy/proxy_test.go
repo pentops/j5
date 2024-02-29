@@ -80,29 +80,29 @@ func TestGetHandlerMapping(t *testing.T) {
 
 	t.Run("MessageQueryString", func(t *testing.T) {
 		qs := url.Values{}
-		qs.Set("query", `{"a":"aval","b":"bval"}`)
+		qs.Set("ab", `{"a":"aval","b":"bval"}`)
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?"+qs.Encode(), nil)
 		reqToService := &testpb.GetFooRequest{}
 		rw := roundTrip(method, req, reqToService, &testpb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
 		}
-		assert.Equal(t, "aval", reqToService.Query.A)
-		assert.Equal(t, "bval", reqToService.Query.B)
+		assert.Equal(t, "aval", reqToService.Ab.A)
+		assert.Equal(t, "bval", reqToService.Ab.B)
 	})
 
 	t.Run("AltQueryString", func(t *testing.T) {
 		qs := url.Values{}
-		qs.Set("query.a", "aval")
-		qs.Set("query.b", "bval")
+		qs.Set("ab.a", "aval")
+		qs.Set("ab.b", "bval")
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?"+qs.Encode(), nil)
 		reqToService := &testpb.GetFooRequest{}
 		rw := roundTrip(method, req, reqToService, &testpb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
 		}
-		assert.Equal(t, "aval", reqToService.Query.A)
-		assert.Equal(t, "bval", reqToService.Query.B)
+		assert.Equal(t, "aval", reqToService.Ab.A)
+		assert.Equal(t, "bval", reqToService.Ab.B)
 	})
 
 	t.Run("lower_snake query", func(t *testing.T) {
@@ -129,6 +129,20 @@ func TestGetHandlerMapping(t *testing.T) {
 		assert.Equal(t, "aval", reqToService.MultipleWord)
 	})
 
+	t.Run("Protostate Query Message query string", func(t *testing.T) {
+		qs := url.Values{}
+		qs.Set("query", `{"filters":[{"type":{"field":{"name":"idVal","type":{"value":"f481d62c-72ff-487b-ba03-50a4a6da83b7"}}}}]}`)
+		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?"+qs.Encode(), nil)
+		reqToService := &testpb.GetFooRequest{}
+		rw := roundTrip(method, req, reqToService, &testpb.GetFooResponse{})
+		if rw.Code != 200 {
+			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
+		}
+
+		assert.Equal(t, 1, len(reqToService.Query.Filters))
+		assert.Equal(t, "idVal", reqToService.Query.Filters[0].GetField().Name)
+		assert.Equal(t, "f481d62c-72ff-487b-ba03-50a4a6da83b7", reqToService.Query.Filters[0].GetField().GetValue())
+	})
 }
 
 func TestBodyHandlerMapping(t *testing.T) {
