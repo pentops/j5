@@ -129,6 +129,20 @@ func TestGetHandlerMapping(t *testing.T) {
 		assert.Equal(t, "aval", reqToService.MultipleWord)
 	})
 
+	t.Run("Protostate Query Message query string", func(t *testing.T) {
+		qs := url.Values{}
+		qs.Set("query", `{"filters":[{"type":{"field":{"name":"idVal","type":{"value":"f481d62c-72ff-487b-ba03-50a4a6da83b7"}}}}]}`)
+		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?"+qs.Encode(), nil)
+		reqToService := &testpb.GetFooRequest{}
+		rw := roundTrip(method, req, reqToService, &testpb.GetFooResponse{})
+		if rw.Code != 200 {
+			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
+		}
+
+		assert.Equal(t, 1, len(reqToService.Query.Filters))
+		assert.Equal(t, "idVal", reqToService.Query.Filters[0].GetField().Name)
+		assert.Equal(t, "f481d62c-72ff-487b-ba03-50a4a6da83b7", reqToService.Query.Filters[0].GetField().GetValue())
+	})
 }
 
 func TestBodyHandlerMapping(t *testing.T) {
