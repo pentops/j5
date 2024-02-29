@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
+import "psm/list/v1/query.proto";
 
 option go_package = "github.com/pentops/custom-proto-api/testproto/gen/testpb";
 
@@ -28,6 +29,8 @@ message GetFooRequest {
   repeated float numbers = 3;
   ABMessage ab = 4;
   string multiple_word = 5;
+
+  psm.list.v1.QueryRequest query = 100;
 }
 
 message ABMessage {
