@@ -40,7 +40,7 @@ func BuildFromDescriptors(config *source_j5pb.Config, descriptors *descriptorpb.
 	services := make([]protoreflect.ServiceDescriptor, 0)
 	descFiles, err := protodesc.NewFiles(descriptors)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("descriptor files: %w", err)
 	}
 
 	descFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {
@@ -71,7 +71,7 @@ func BuildFromDescriptors(config *source_j5pb.Config, descriptors *descriptorpb.
 		if pkg.Prose != "" && proseResolver != nil {
 			prose, err = proseResolver.ResolveProse(pkg.Prose)
 			if err != nil {
-				return nil, fmt.Errorf("package %s: %w", pkg.Name, err)
+				return nil, fmt.Errorf("prose resolver: package %s: %w", pkg.Name, err)
 			}
 			prose = removeMarkdownHeader(prose)
 		}
@@ -97,15 +97,15 @@ func BuildFromDescriptors(config *source_j5pb.Config, descriptors *descriptorpb.
 
 		if strings.HasSuffix(name, "Service") {
 			if err := b.addService(service); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("add service: %w", err)
 			}
 		} else if strings.HasSuffix(name, "Sandbox") {
 			if err := b.addService(service); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("add sandbox: %w", err)
 			}
 		} else if strings.HasSuffix(name, "Events") {
 			if err := b.addEvents(service); err != nil {
-				return nil, err
+				return nil, fmt.Errorf("add events: %w", err)
 			}
 		} else if strings.HasSuffix(name, "Topic") {
 		} else {
