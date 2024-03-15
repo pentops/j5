@@ -14,9 +14,9 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jhump/protoreflect v1.15.5
 	github.com/pentops/log.go v0.0.0-20231218074934-67aedcab3fa4
-	github.com/pentops/o5-go v0.0.0-20240108212127-807bf5c29410
+	github.com/pentops/o5-go v0.0.0-20240314160845-2b96e3296a85
 	github.com/pentops/o5-runtime-sidecar v0.0.6
-	github.com/pentops/protostate v0.0.0-20240229011055-77ef5e76dba9
+	github.com/pentops/protostate v0.0.0-20240313174914-45c9f793911f
 	github.com/pentops/runner v0.0.0-20231219070819-c4878d5565d8
 	github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5
 	github.com/shopspring/decimal v1.3.1
