@@ -210,7 +210,7 @@ func (bb *builder) buildTypeName(schema *schema_j5pb.Schema) (*DataType, error) 
 		}
 
 		switch *item.Format {
-		case "uuid", "date", "email":
+		case "uuid", "date", "email", "uri":
 			return &DataType{
 				Name:    "string",
 				Pointer: false,
