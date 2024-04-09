@@ -41,10 +41,13 @@ func removeMarkdownHeader(data string) string {
 	if len(lines) == 0 {
 		return ""
 	}
-	if strings.HasPrefix(lines[0], "# ") {
-		lines = lines[1:]
-	} else if strings.HasPrefix(lines[1], "==") {
-		lines = lines[2:]
+
+	if len(lines) > 1 {
+		if strings.HasPrefix(lines[0], "# ") {
+			lines = lines[1:]
+		} else if strings.HasPrefix(lines[1], "==") {
+			lines = lines[2:]
+		}
 	}
 
 	// Remove any leading empty lines
