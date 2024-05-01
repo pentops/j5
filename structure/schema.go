@@ -288,7 +288,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 	// second _ prevents a panic when the exception is not set
 	constraint, _ := proto.GetExtension(src.Options(), validate.E_Field).(*validate.FieldConstraints)
 
-	if constraint != nil && !constraint.Skipped {
+	if constraint != nil && constraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
 		if constraint.Required {
 			prop.Required = true
 		}
