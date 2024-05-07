@@ -2,7 +2,6 @@ package structure
 
 import (
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
@@ -14,6 +13,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -391,6 +391,43 @@ func TestSchemaTypesComplex(t *testing.T) {
 				"enumItem.options.1.name": "BAR",
 			},
 		},
+	}, {
+		name: "any field",
+		proto: &descriptorpb.FileDescriptorProto{
+			Name:    proto.String("test.proto"),
+			Package: proto.String("test"),
+			Dependency: []string{
+				"google/protobuf/any.proto",
+			},
+			MessageType: []*descriptorpb.DescriptorProto{{
+				Name: proto.String("TestMessage"),
+				Field: []*descriptorpb.FieldDescriptorProto{
+					fieldWithValidateExtension(&descriptorpb.FieldDescriptorProto{
+						Name:     proto.String("test_field"),
+						Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+						TypeName: proto.String("TestMessage2"),
+						Number:   proto.Int32(1),
+					}, &validate.FieldConstraints{}),
+				},
+			}, {
+				Name: proto.String("TestMessage2"),
+				Field: []*descriptorpb.FieldDescriptorProto{
+					fieldWithValidateExtension(&descriptorpb.FieldDescriptorProto{
+						Name:     proto.String("test_field"),
+						Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+						TypeName: proto.String(".google.protobuf.Any"),
+						Number:   proto.Int32(1),
+					}, &validate.FieldConstraints{
+						Type: &validate.FieldConstraints_Any{
+							Any: &validate.AnyRules{},
+						},
+					}),
+				},
+			}},
+		},
+		expected: map[string]interface{}{
+			"objectItem.properties.0.name": "testFieldf",
+		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			schemaItem, err := ss.BuildSchemaObject(msgDesscriptorToReflection(t, tt.proto))
@@ -439,24 +476,13 @@ func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constr
 
 func msgDesscriptorToReflection(t testing.TB, fileDescriptor *descriptorpb.FileDescriptorProto) protoreflect.MessageDescriptor {
 	t.Helper()
-	files, err := protodesc.NewFiles(&descriptorpb.FileDescriptorSet{
-		File: []*descriptorpb.FileDescriptorProto{fileDescriptor},
-	})
+	file, err := protodesc.NewFile(fileDescriptor, protoregistry.GlobalFiles)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
-	desc, err := files.FindDescriptorByName(protoreflect.FullName(fmt.Sprintf("%s.%s", *fileDescriptor.Package, fileDescriptor.MessageType[0].GetName())))
-	if err != nil {
-		t.Fatal(err.Error())
-	}
-
-	descMsg, ok := desc.(protoreflect.MessageDescriptor)
-	if !ok {
-		t.Fatal("not a message descriptor")
-	}
-
-	return descMsg
+	msgs := file.Messages()
+	return msgs.Get(0)
 }
 
 func TestCommentBuilder(t *testing.T) {

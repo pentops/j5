@@ -3,6 +3,7 @@ syntax = "proto3";
 package test.v1;
 
 import "google/api/annotations.proto";
+import "google/protobuf/any.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
@@ -75,6 +76,8 @@ message PostFooRequest {
   }
 
   WrappedOneof wrapped_oneof = 16;
+
+  google.protobuf.Any any = 17;
 }
 
 message WrappedOneof {
