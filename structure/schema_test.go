@@ -6,10 +6,11 @@ import (
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	"github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/jsonapi/gen/testpb"
 	"github.com/pentops/jsonapi/jsontest"
-	"github.com/pentops/jsonapi/testproto/gen/testpb"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -305,6 +306,40 @@ func TestSchemaTypesComplex(t *testing.T) {
 			"objectItem.properties.0.name": "testField",
 		},
 	}, {
+		name: "flatten",
+		proto: &descriptorpb.FileDescriptorProto{
+			Name:    proto.String("test.proto"),
+			Package: proto.String("test"),
+			MessageType: []*descriptorpb.DescriptorProto{{
+				Name: proto.String("TestMessage"),
+				Field: []*descriptorpb.FieldDescriptorProto{
+					fieldWithExtension(&descriptorpb.FieldDescriptorProto{
+						Name:     proto.String("test_field"),
+						Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+						TypeName: proto.String("test.ChildMessage"),
+						Number:   proto.Int32(1),
+					}, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
+						Type: &ext_j5pb.FieldOptions_Message{
+							Message: &ext_j5pb.MessageFieldOptions{
+								Flatten: true,
+							},
+						},
+					})},
+			}, {
+				Name: proto.String("ChildMessage"),
+				Field: []*descriptorpb.FieldDescriptorProto{{
+					Name:   proto.String("child_field"),
+					Type:   descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+					Number: proto.Int32(1),
+				}},
+			}},
+		},
+		expected: map[string]interface{}{
+			"objectItem.protoMessageName":               "TestMessage",
+			"objectItem.properties.0.name":              "childField",
+			"objectItem.properties.0.schema.stringItem": map[string]interface{}{},
+		},
+	}, {
 		name: "map<string>string",
 		proto: &descriptorpb.FileDescriptorProto{
 			// Proto compiler creates an array of Key Value pairs for a
@@ -429,11 +464,15 @@ func TestSchemaTypesComplex(t *testing.T) {
 }
 
 func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constraints *validate.FieldConstraints) *descriptorpb.FieldDescriptorProto {
+	return fieldWithExtension(field, validate.E_Field, constraints)
+}
+
+func fieldWithExtension(field *descriptorpb.FieldDescriptorProto, extensionType protoreflect.ExtensionType, extensionValue interface{}) *descriptorpb.FieldDescriptorProto {
 	if field.Options == nil {
 		field.Options = &descriptorpb.FieldOptions{}
 	}
 
-	proto.SetExtension(field.Options, validate.E_Field, constraints)
+	proto.SetExtension(field.Options, extensionType, extensionValue)
 	return field
 }
 

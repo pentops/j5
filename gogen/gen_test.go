@@ -9,8 +9,8 @@ import (
 
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/jsonapi/gen/testpb"
 	"github.com/pentops/jsonapi/structure"
-	"github.com/pentops/jsonapi/testproto/gen/testpb"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
