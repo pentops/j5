@@ -14,7 +14,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pentops/jsonapi/codec"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/jsonapi/testproto/gen/testpb"
+	"github.com/pentops/jsonapi/gen/testpb"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"

@@ -15,9 +15,9 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/pentops/jsonapi/gen/testpb"
 	"github.com/pentops/jsonapi/j5types/date_j5t"
 	"github.com/pentops/jsonapi/prototest"
-	"github.com/pentops/jsonapi/testproto/gen/testpb"
 )
 
 func TestUnmarshal(t *testing.T) {
@@ -141,6 +141,17 @@ func TestUnmarshal(t *testing.T) {
 				}, {
 					Id: "bar2",
 				}},
+			},
+		}, {
+
+			name: "flattened messages",
+			json: `{
+				"fieldFromFlattened": "fieldFromFlattenedVal"
+			}`,
+			wantProto: &testpb.PostFooRequest{
+				Flattened: &testpb.FlattenedMessage{
+					FieldFromFlattened: "fieldFromFlattenedVal",
+				},
 			},
 		}, {
 			name: "naked oneof",
