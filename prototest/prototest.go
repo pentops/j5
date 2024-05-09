@@ -41,6 +41,13 @@ func (rs ResultSet) ServiceByName(t testing.TB, name protoreflect.FullName) prot
 
 func DescriptorsFromSource(t testing.TB, source map[string]string) *ResultSet {
 	t.Helper()
+	rs, err := TryDescriptorsFromSource(source)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return rs
+}
+func TryDescriptorsFromSource(source map[string]string) (*ResultSet, error) {
 
 	allFiles := make([]string, 0, len(source))
 	for filename := range source {
@@ -62,7 +69,7 @@ func DescriptorsFromSource(t testing.TB, source map[string]string) *ResultSet {
 
 	customDesc, err := parser.ParseFilesButDoNotLink(allFiles...)
 	if err != nil {
-		t.Fatal(err)
+		return nil, err
 	}
 
 	rs := &ResultSet{
@@ -73,7 +80,7 @@ func DescriptorsFromSource(t testing.TB, source map[string]string) *ResultSet {
 	for _, file := range customDesc {
 		fd, err := protodesc.NewFile(file, protoregistry.GlobalFiles)
 		if err != nil {
-			t.Fatal(err)
+			return nil, err
 		}
 
 		messages := fd.Messages()
@@ -89,7 +96,7 @@ func DescriptorsFromSource(t testing.TB, source map[string]string) *ResultSet {
 		}
 	}
 
-	return rs
+	return rs, nil
 }
 
 type MessageOption func(*messageOption)

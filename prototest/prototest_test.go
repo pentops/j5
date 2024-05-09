@@ -1,6 +1,7 @@
 package prototest
 
 import (
+	"strings"
 	"testing"
 
 	"google.golang.org/protobuf/proto"
@@ -37,7 +38,6 @@ func TestSingletonDescriptor(t *testing.T) {
 		if stringValDynamic.ProtoReflect().Descriptor() != wrapperVal.ProtoReflect().Descriptor() {
 			t.Fatal("descriptors of the two values not equal")
 		}
-
 	}
 
 	t.Run("target", func(t *testing.T) {
@@ -90,6 +90,57 @@ func TestSingletonDescriptor(t *testing.T) {
 		})
 		msgDesc := rs.MessageByName(t, "test.Wrapper")
 		runTest(t, msgDesc)
+
+	})
+
+}
+
+func TestParserErrors(t *testing.T) {
+
+	t.Run("syntax error", func(t *testing.T) {
+
+		_, err := TryDescriptorsFromSource(map[string]string{
+
+			"test.proto": `
+		syntax = "proto3";
+
+		package test;
+
+		message Foo {
+			syntax-error
+		}
+		`,
+		})
+
+		if !strings.Contains(err.Error(), "syntax error") {
+			t.Fatal("expected syntax error")
+		}
+		if err == nil {
+			t.Fatal("expected error")
+		}
+
+	})
+
+	t.Run("missing option", func(t *testing.T) {
+
+		_, err := TryDescriptorsFromSource(map[string]string{
+			"test.proto": `
+		syntax = "proto3";
+
+		package test;
+
+		message Foo {
+			option (foo.bar).thing = 1;
+		}
+		`,
+		})
+		if err == nil {
+			t.Fatal("expected error")
+		}
+
+		if !strings.Contains(err.Error(), "foo.bar") {
+			t.Fatal("expected missing option error")
+		}
 
 	})
 
