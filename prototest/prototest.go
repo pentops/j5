@@ -4,15 +4,19 @@ package prototest
 // into reflection for test cases
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"strings"
 	"testing"
 
 	"github.com/jhump/protoreflect/desc/protoparse"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type ResultSet struct {
@@ -86,7 +90,27 @@ func TryDescriptorsFromSource(source map[string]string) (*ResultSet, error) {
 		messages := fd.Messages()
 		for i := 0; i < messages.Len(); i++ {
 			msg := messages.Get(i)
+
 			rs.messages[msg.FullName()] = msg
+
+			options := msg.Options().(*descriptorpb.MessageOptions)
+			if options != nil {
+				if err := setUninterpretedOptions(options, options.UninterpretedOption); err != nil {
+					return nil, fmt.Errorf("parsing options on %s: %w", msg.FullName(), err)
+				}
+			}
+
+			fields := msg.Fields()
+			for i := 0; i < fields.Len(); i++ {
+				field := fields.Get(i)
+				options := field.Options().(*descriptorpb.FieldOptions)
+				if options != nil {
+					if err := setUninterpretedOptions(options, options.UninterpretedOption); err != nil {
+						return nil, fmt.Errorf("parsing field options on %s: %w", field.FullName(), err)
+					}
+				}
+			}
+
 		}
 
 		services := fd.Services()
@@ -97,6 +121,97 @@ func TryDescriptorsFromSource(source map[string]string) (*ResultSet, error) {
 	}
 
 	return rs, nil
+}
+
+func setUninterpretedOptions(optionsMsg proto.Message, toParse []*descriptorpb.UninterpretedOption) error {
+
+	seen := map[protoreflect.FullName]protoreflect.Message{}
+
+	for _, opt := range toParse {
+		name := opt.Name
+		fullName := protoreflect.FullName(*name[0].NamePart)
+		optionsMessage, ok := seen[fullName]
+		if !ok {
+			extDesc, err := protoregistry.GlobalTypes.FindExtensionByName(fullName)
+			if errors.Is(err, protoregistry.NotFound) {
+				return fmt.Errorf("unknown extension: %s", fullName)
+			} else if err != nil {
+				return fmt.Errorf("find extension: %w", err)
+			}
+			if extDesc == nil {
+				return fmt.Errorf("not found desc: %s", extDesc)
+			}
+			optionsMessage = extDesc.New().Message()
+			proto.SetExtension(optionsMsg, extDesc, optionsMessage.Interface())
+		}
+
+		path := name[1:]
+		err := setOptionField(optionsMessage, path, opt)
+		if err != nil {
+			return fmt.Errorf("error walking path: %w", err)
+		}
+	}
+	return nil
+}
+
+func setOptionField(msg protoreflect.Message, path []*descriptorpb.UninterpretedOption_NamePart, opt *descriptorpb.UninterpretedOption) error {
+	if len(path) == 0 {
+		if opt.AggregateValue == nil {
+			return fmt.Errorf("no aggregate value, but the option is a message")
+		}
+		if err := prototext.Unmarshal([]byte(*opt.AggregateValue), msg.Interface()); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	fieldName := protoreflect.Name(*path[0].NamePart)
+
+	field := msg.Descriptor().Fields().ByName(fieldName)
+	if field == nil {
+		return fmt.Errorf("field not found: %s", fieldName)
+	}
+
+	if len(path) > 1 {
+		if field.Kind() != protoreflect.MessageKind {
+			return fmt.Errorf("field is not a message: %s", fieldName)
+		}
+
+		fieldValue := msg.Mutable(field).Message()
+		if err := setOptionField(fieldValue, path[1:], opt); err != nil {
+			return fmt.Errorf("%s: %w", fieldName, err)
+		}
+	}
+
+	// This is the last element. It is either going to be a message, or a
+	// field scalar.
+
+	// Message is parsed from the textproto
+	if field.Kind() == protoreflect.MessageKind {
+		fieldValue := msg.Mutable(field).Message()
+		return setOptionField(fieldValue, path[1:], opt)
+	}
+
+	// Field is a scalar, warp it in textproto... This is clearly a hack.
+	var srcText string
+
+	if opt.IdentifierValue != nil {
+		srcText = *opt.IdentifierValue
+	} else if opt.NegativeIntValue != nil {
+		srcText = fmt.Sprintf("-%d", *opt.NegativeIntValue)
+	} else if opt.PositiveIntValue != nil {
+		srcText = fmt.Sprintf("%d", *opt.PositiveIntValue)
+	} else {
+		return fmt.Errorf("no identifier value for %s but the option is a scalar (%s)", fieldName, field.Kind())
+	}
+
+	textprotoValue := fmt.Sprintf("%s: %s", *path[0].NamePart, srcText)
+	if err := prototext.Unmarshal([]byte(textprotoValue), msg.Interface()); err != nil {
+		return err
+	}
+
+	return nil
+
 }
 
 type MessageOption func(*messageOption)
