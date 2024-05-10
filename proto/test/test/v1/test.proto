@@ -8,7 +8,7 @@ import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
 import "psm/list/v1/query.proto";
 
-option go_package = "github.com/pentops/custom-proto-api/testproto/gen/testpb";
+option go_package = "github.com/pentops/jsonapi/gen/testpb";
 
 service FooService {
   rpc GetFoo(GetFooRequest) returns (GetFooResponse) {
@@ -75,6 +75,8 @@ message PostFooRequest {
   }
 
   WrappedOneof wrapped_oneof = 16;
+
+  FlattenedMessage flattened = 17 [(j5.ext.v1.field).message.flatten = true];
 }
 
 message WrappedOneof {
@@ -114,4 +116,8 @@ message FooMessage {
   string id = 1;
   string name = 2;
   string field = 3;
+}
+
+message FlattenedMessage {
+  string field_from_flattened = 1;
 }

@@ -51,6 +51,55 @@ func (d *decoder) Token() (json.Token, error) {
 	return d.Decoder.Token()
 }
 
+// Returns a map of json field names to a list of field descriptors that
+// represent the path from the root message to the field. For most fields this
+// will be one field descriptor, but for some the alias may be a path to a
+// nested message field
+func mapMessageFields(msg protoreflect.MessageDescriptor) (map[string][]protoreflect.FieldDescriptor, error) {
+
+	// TODO: Cache the result of this function
+	// TODO: Include oneof maps here
+
+	fields := msg.Fields()
+	flatFields := make(map[string][]protoreflect.FieldDescriptor)
+
+	for idx := 0; idx < fields.Len(); idx++ {
+		field := fields.Get(idx)
+		fieldOptions := proto.GetExtension(field.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
+		if fieldOptions != nil {
+			switch option := fieldOptions.Type.(type) {
+			case *ext_j5pb.FieldOptions_Message:
+				if field.Kind() != protoreflect.MessageKind {
+					return nil, fmt.Errorf("field %s is not a message but has a message annotation", field.FullName())
+				}
+
+				if option.Message.Flatten {
+					subFields := field.Message().Fields()
+					for idx := 0; idx < subFields.Len(); idx++ {
+						subField := subFields.Get(idx)
+						flatFields[subField.JSONName()] = []protoreflect.FieldDescriptor{field, subField}
+
+						if subField.Kind() == protoreflect.MessageKind {
+							subFieldFlatFields, err := mapMessageFields(subField.Message())
+							if err != nil {
+								return nil, fmt.Errorf("mapping subfield %s: %w", subField.FullName(), err)
+							}
+							for subFieldName, subFieldFlatField := range subFieldFlatFields {
+								flatFields[subFieldName] = append([]protoreflect.FieldDescriptor{field}, subFieldFlatField...)
+							}
+						}
+					}
+					continue
+				}
+
+			}
+		}
+		flatFields[field.JSONName()] = []protoreflect.FieldDescriptor{field}
+	}
+
+	return flatFields, nil
+}
+
 func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 	wktDecoder := wellKnownTypeUnmarshaler(msg.Descriptor().FullName())
 	if wktDecoder != nil {
@@ -62,7 +111,6 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 	}
 
 	descriptor := msg.Descriptor()
-	fields := descriptor.Fields()
 	oneofs := descriptor.Oneofs()
 
 	isOneofWrapper := false
@@ -71,6 +119,19 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 	ext := proto.GetExtension(msgOptions, sugar_pb.E_Message).(*sugar_pb.Message)
 	if ext != nil {
 		isOneofWrapper = ext.OneofWrapper
+	}
+
+	fieldAliases, err := mapMessageFields(msg.Descriptor())
+	if err != nil {
+		return fmt.Errorf("mapping fields: %w", err)
+	}
+
+	for key, fields := range fieldAliases {
+		fieldKeys := make([]string, 0, len(fields))
+		for _, field := range fields {
+			fieldKeys = append(fieldKeys, string(field.Name()))
+		}
+		fmt.Printf("key: %s, fields: %v\n", key, fieldKeys)
 	}
 
 	for {
@@ -89,8 +150,8 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 			return fmt.Errorf("expected string key but got %v", keyToken)
 		}
 
-		protoField := fields.ByJSONName(keyTokenStr)
-		if protoField == nil {
+		protoFieldPath, ok := fieldAliases[keyTokenStr]
+		if !ok {
 			if !dec.Options.WrapOneof {
 				return fmt.Errorf("no such field %s", keyTokenStr)
 			}
@@ -105,6 +166,32 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 			}
 			continue
 		}
+
+		var protoField protoreflect.FieldDescriptor
+		settingMessage := msg
+		for {
+			protoField = protoFieldPath[0]
+			if len(protoFieldPath) == 1 {
+				break
+			}
+			protoFieldPath = protoFieldPath[1:]
+
+			// The field should me a message, there are remaining fields in the
+			// path
+			if protoField.Kind() != protoreflect.MessageKind {
+				return fmt.Errorf("field %s is not a message but has a message annotation", protoField.FullName())
+			}
+
+			// if the field is nil, create a new message
+			if !settingMessage.Has(protoField) {
+				subMsg := settingMessage.Mutable(protoField).Message()
+				settingMessage = subMsg
+			} else {
+				settingMessage = settingMessage.Get(protoField).Message()
+			}
+
+		}
+
 		if !isOneofWrapper && dec.Options.WrapOneof && protoField.ContainingOneof() != nil {
 			containingOneof := protoField.ContainingOneof()
 			if !containingOneof.IsSynthetic() {
@@ -116,15 +203,15 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 		}
 
 		if protoField.IsMap() {
-			if err := dec.decodeMapField(msg, protoField); err != nil {
+			if err := dec.decodeMapField(settingMessage, protoField); err != nil {
 				return fmt.Errorf("decoding '%s': %w", keyTokenStr, err)
 			}
 		} else if protoField.IsList() {
-			if err := dec.decodeListField(msg, protoField); err != nil {
+			if err := dec.decodeListField(settingMessage, protoField); err != nil {
 				return fmt.Errorf("decoding '%s[]': %w", keyTokenStr, err)
 			}
 		} else {
-			if err := dec.decodeField(msg, protoField); err != nil {
+			if err := dec.decodeField(settingMessage, protoField); err != nil {
 				return fmt.Errorf("decoding '%s': %w", keyTokenStr, err)
 			}
 		}

@@ -143,6 +143,26 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*sch
 			continue
 		}
 
+		fieldOptions := proto.GetExtension(field.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
+		if fieldOptions != nil {
+			if msgOptions := fieldOptions.GetMessage(); msgOptions != nil {
+				if field.Kind() != protoreflect.MessageKind {
+					return nil, fmt.Errorf("field %s is not a message but has a message annotation", field.FullName())
+				}
+
+				if msgOptions.Flatten {
+					subMessage, err := ss.BuildSchemaObject(field.Message())
+					if err != nil {
+						return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
+					}
+					// inline the properties of the sub-message directly into
+					// this message
+					properties = append(properties, subMessage.GetObjectItem().Properties...)
+					continue
+				}
+			}
+		}
+
 		prop, err := ss.buildSchemaProperty(field)
 		if err != nil {
 			return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)

@@ -4,3 +4,4 @@ deps:
   - buf.build/googleapis/googleapis
   - buf.build/pentops/jsonapi
   - buf.build/pentops/psm
+  - buf.build/pentops/j5

@@ -1,4 +1,5 @@
 version: v1
 directories:
-  - private
   - j5
+  - private
+  - test
