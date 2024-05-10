@@ -11,6 +11,8 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+
+	"github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
 )
 
 func TestSingletonDescriptor(t *testing.T) {
@@ -92,6 +94,49 @@ func TestSingletonDescriptor(t *testing.T) {
 		runTest(t, msgDesc)
 
 	})
+}
+
+func TestAnnotations(t *testing.T) {
+
+	set := DescriptorsFromSource(t, map[string]string{
+
+		"test.proto": `
+		syntax = "proto3";
+
+		import "j5/ext/v1/annotations.proto";
+
+		package test;
+
+
+		message Foo {
+			option (j5.ext.v1.message).is_oneof_wrapper = true;
+
+			string field1 = 1;
+		}
+
+		message Bar {
+			option (j5.ext.v1.message) = {
+				is_oneof_wrapper: true
+			};
+		}
+		`,
+	})
+
+	for _, name := range []string{"Foo", "Bar"} {
+
+		msgDesc := set.MessageByName(t, protoreflect.FullName("test."+name))
+		if msgDesc == nil {
+			t.Fatalf("no %s message", name)
+		}
+
+		opts := proto.GetExtension(msgDesc.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+		if opts == nil {
+			t.Fatalf("no %s options", name)
+		}
+		if !opts.IsOneofWrapper {
+			t.Fatalf("option not set in %s", name)
+		}
+	}
 
 }
 
@@ -139,7 +184,7 @@ func TestParserErrors(t *testing.T) {
 		}
 
 		if !strings.Contains(err.Error(), "foo.bar") {
-			t.Fatal("expected missing option error")
+			t.Fatalf("expected missing option error, got %s", err.Error())
 		}
 
 	})
