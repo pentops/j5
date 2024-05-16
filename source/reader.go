@@ -53,15 +53,23 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 	}
 
 	var configData []byte
+	found := false
 	for _, filename := range ConfigPaths {
 		configData, err = os.ReadFile(filepath.Join(src, filename))
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
 			}
+
 			return nil, err
 		}
+
+		found = true
 		break
+	}
+
+	if !found {
+		return nil, fmt.Errorf("no config file found")
 	}
 
 	config := &source_j5pb.Config{}
