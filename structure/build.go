@@ -28,9 +28,17 @@ func BuildFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 		File: image.File,
 	}
 
+	if len(descriptors.File) < 1 {
+		panic("Expected at least one descriptor file, found none")
+	}
+
 	config := &source_j5pb.Config{
 		Packages: image.Packages,
 		Options:  image.Codec,
+	}
+
+	if config.Packages == nil || config.Options == nil {
+		panic("Expected Packages or Configs from image, found none")
 	}
 
 	return BuildFromDescriptors(config, descriptors, proseResolver)
