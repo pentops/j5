@@ -5,15 +5,26 @@ import (
 	"fmt"
 	"path"
 
+	"runtime/debug"
+
 	"github.com/pentops/jsonapi/source"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/proto"
 )
 
-var Version = "dev"
+var Commit = func() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, setting := range info.Settings {
+			if setting.Key == "vcs.revision" {
+				return setting.Value
+			}
+		}
+	}
+
+	return "dev"
+}()
 
 func CommandSet() *commander.CommandSet {
-
 	cmdGroup := commander.NewCommandSet()
 
 	cmdGroup.Add("push", commander.NewCommand(runPush))
@@ -24,8 +35,15 @@ func CommandSet() *commander.CommandSet {
 	generateGroup := GenerateSet()
 	cmdGroup.Add("generate", generateGroup)
 
-	return cmdGroup
+	cmdGroup.Add("version", commander.NewCommand(runVersion))
 
+	return cmdGroup
+}
+
+func runVersion(ctx context.Context, cfg struct{}) error {
+	fmt.Printf("jsonapi version %v\n", Commit)
+
+	return nil
 }
 
 func runPush(ctx context.Context, cfg struct {
