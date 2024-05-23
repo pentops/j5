@@ -617,8 +617,6 @@ github.com/pentops/protostate v0.0.0-20240430022507-8daef5060f93 h1:sSvKS6RTE0Ki
 github.com/pentops/protostate v0.0.0-20240430022507-8daef5060f93/go.mod h1:OR/JNZv/KtAIgBDJ6e5tSeK7iAUMXhXlMZzj2tvvi4I=
 github.com/pentops/runner v0.0.0-20231219070819-c4878d5565d8 h1:JdNw2okTAbqiKyNiqNkObs9am3Cbkw6zv09qBx07w+I=
 github.com/pentops/runner v0.0.0-20231219070819-c4878d5565d8/go.mod h1:WSA32DlyDDEahNuv5XZP6ymsfKKLTHWVgMLlXsgyF7Y=
-github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5 h1:09bSwWuVlJ2ac3caVja4LBLhywvs6Rhev7uijnBzyAs=
-github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5/go.mod h1:8ggrY3eTtY+8xMOge3jXeMQTCe59lr3Hmi/H5PRNEL0=
 github.com/pkg/errors v0.8.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINEl0=
 github.com/pkg/sftp v1.10.1/go.mod h1:lYOWFsE0bwd1+KfKJaKeuokY15vzFx25BLbzYYoAxZI=

@@ -18,7 +18,7 @@ type Options struct {
 	// In standard protojson, oneof is just a constraint and doesn't appear in
 	// the JSON structure. The oneof name will be a
 	// field in the JSON output with exactly one key set.
-	// When messages are marked as sugar.v1.message.oneof_wrapper = true, this
+	// When messages are marked as j5.ext.v1.message.is_oneof_wrapper = true, this
 	// is not the case (as the wrapper already creates this structure)
 	// e.g. message Foo { oneof bar { int32 baz = 1; } }
 	// becomes { "bar": { "baz": 1 } }
