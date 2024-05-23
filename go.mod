@@ -19,7 +19,6 @@ require (
 	github.com/pentops/o5-runtime-sidecar v0.0.6
 	github.com/pentops/protostate v0.0.0-20240430022507-8daef5060f93
 	github.com/pentops/runner v0.0.0-20231219070819-c4878d5565d8
-	github.com/pentops/sugar-go v0.0.0-20231029194349-ec12ec0132c5
 	github.com/shopspring/decimal v1.3.1
 	github.com/stretchr/testify v1.9.0
 	github.com/tidwall/gjson v1.17.0

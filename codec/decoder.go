@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
-	"github.com/pentops/sugar-go/v1/sugar_pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -116,9 +115,9 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 	isOneofWrapper := false
 
 	msgOptions := msg.Descriptor().Options()
-	ext := proto.GetExtension(msgOptions, sugar_pb.E_Message).(*sugar_pb.Message)
+	ext := proto.GetExtension(msgOptions, ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
 	if ext != nil {
-		isOneofWrapper = ext.OneofWrapper
+		isOneofWrapper = ext.IsOneofWrapper
 	}
 
 	fieldAliases, err := mapMessageFields(msg.Descriptor())
