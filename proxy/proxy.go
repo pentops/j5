@@ -85,6 +85,17 @@ func (rr *Router) SetNotFoundHandler(handler http.Handler) {
 	rr.router.NotFoundHandler = handler
 }
 
+func (rr *Router) HealthCheck(path string, callback func() error) {
+	rr.router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
+		if err := callback(); err != nil {
+			doError(r.Context(), w, err)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"status":"ok"}` + "\n")) // nolint: errcheck
+	})
+}
+
 func (rr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	var handler http.Handler = rr.router
 	for _, mw := range rr.middleware {
