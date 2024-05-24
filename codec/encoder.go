@@ -234,10 +234,10 @@ func (enc *encoder) encodeValue(field protoreflect.FieldDescriptor, value protor
 		return enc.addJSON(int64(value.Int()))
 
 	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		return enc.addJSON(uint32(value.Int()))
+		return enc.addJSON(uint32(value.Uint()))
 
 	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-		return enc.addJSON(uint64(value.Int()))
+		return enc.addJSON(uint64(value.Uint()))
 
 	case protoreflect.FloatKind:
 		return enc.addJSON(float32(value.Float()))
