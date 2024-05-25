@@ -16,7 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pentops/flowtest/prototest"
-	"github.com/pentops/jsonapi/gen/testpb"
+	"github.com/pentops/jsonapi/gen/test/foo/v1/foo_testpb"
 	"github.com/pentops/jsonapi/j5types/date_j5t"
 )
 
@@ -45,7 +45,7 @@ func TestUnmarshal(t *testing.T) {
 				"enum": "VALUE1",
 				"rEnum": ["VALUE1", "VALUE2"]
 			}`,
-			wantProto: &testpb.PostFooRequest{
+			wantProto: &foo_testpb.PostFooRequest{
 				SString: "nameVal",
 				OString: proto.String("otherNameVal"),
 				RString: []string{"r1", "r2"},
@@ -54,10 +54,10 @@ func TestUnmarshal(t *testing.T) {
 				OFloat: proto.Float32(2.2),
 				RFloat: []float32{3.3, 4.4},
 
-				Enum: testpb.Enum_ENUM_VALUE1,
-				REnum: []testpb.Enum{
-					testpb.Enum_ENUM_VALUE1,
-					testpb.Enum_ENUM_VALUE2,
+				Enum: foo_testpb.Enum_ENUM_VALUE1,
+				REnum: []foo_testpb.Enum{
+					foo_testpb.Enum_ENUM_VALUE1,
+					foo_testpb.Enum_ENUM_VALUE2,
 				},
 			},
 		}, {
@@ -69,11 +69,11 @@ func TestUnmarshal(t *testing.T) {
 				"enum": "ENUM_VALUE1",
 				"rEnum": ["ENUM_VALUE1", "ENUM_VALUE2"]
 			}`,
-			wantProto: &testpb.PostFooRequest{
-				Enum: testpb.Enum_ENUM_VALUE1,
-				REnum: []testpb.Enum{
-					testpb.Enum_ENUM_VALUE1,
-					testpb.Enum_ENUM_VALUE2,
+			wantProto: &foo_testpb.PostFooRequest{
+				Enum: foo_testpb.Enum_ENUM_VALUE1,
+				REnum: []foo_testpb.Enum{
+					foo_testpb.Enum_ENUM_VALUE1,
+					foo_testpb.Enum_ENUM_VALUE2,
 				},
 			},
 		}, {
@@ -88,7 +88,7 @@ func TestUnmarshal(t *testing.T) {
 				base64.URLEncoding.EncodeToString([]byte("rBytes2")) +
 				`"]
 			}`,
-			wantProto: &testpb.PostFooRequest{
+			wantProto: &foo_testpb.PostFooRequest{
 				SBytes: []byte("sBytes"),
 				RBytes: [][]byte{[]byte("rBytes1"), []byte("rBytes2")},
 			},
@@ -98,7 +98,7 @@ func TestUnmarshal(t *testing.T) {
 				"k1": "val1"
 			} }`,
 			// TODO: Can only test one key this way while maps are unordered
-			wantProto: &testpb.PostFooRequest{
+			wantProto: &foo_testpb.PostFooRequest{
 				MapStringString: map[string]string{
 					"k1": "val1",
 				},
@@ -109,7 +109,7 @@ func TestUnmarshal(t *testing.T) {
 				"ts": "2020-01-01T00:00:00Z",
 				"rTs": ["2020-01-01T00:00:00Z", "2020-01-01T00:00:00Z"]
 			}`,
-			wantProto: &testpb.PostFooRequest{
+			wantProto: &foo_testpb.PostFooRequest{
 				Ts: timestamppb.New(testTime),
 				RTs: []*timestamppb.Timestamp{
 					timestamppb.New(testTime),
@@ -130,13 +130,13 @@ func TestUnmarshal(t *testing.T) {
 					"id": "bar2"
 				}]
 			}`,
-			wantProto: &testpb.PostFooRequest{
-				SBar: &testpb.Bar{
+			wantProto: &foo_testpb.PostFooRequest{
+				SBar: &foo_testpb.Bar{
 					Id:    "barId",
 					Name:  "barName",
 					Field: "barField",
 				},
-				RBars: []*testpb.Bar{{
+				RBars: []*foo_testpb.Bar{{
 					Id: "bar1",
 				}, {
 					Id: "bar2",
@@ -148,8 +148,8 @@ func TestUnmarshal(t *testing.T) {
 			json: `{
 				"fieldFromFlattened": "fieldFromFlattenedVal"
 			}`,
-			wantProto: &testpb.PostFooRequest{
-				Flattened: &testpb.FlattenedMessage{
+			wantProto: &foo_testpb.PostFooRequest{
+				Flattened: &foo_testpb.FlattenedMessage{
 					FieldFromFlattened: "fieldFromFlattenedVal",
 				},
 			},
@@ -158,8 +158,8 @@ func TestUnmarshal(t *testing.T) {
 			json: `{
 				"oneofString": "oneofStringVal"
 			}`,
-			wantProto: &testpb.PostFooRequest{
-				NakedOneof: &testpb.PostFooRequest_OneofString{
+			wantProto: &foo_testpb.PostFooRequest{
+				NakedOneof: &foo_testpb.PostFooRequest_OneofString{
 					OneofString: "oneofStringVal",
 				},
 			},
@@ -173,8 +173,8 @@ func TestUnmarshal(t *testing.T) {
 			options: Options{
 				WrapOneof: true,
 			},
-			wantProto: &testpb.PostFooRequest{
-				NakedOneof: &testpb.PostFooRequest_OneofString{
+			wantProto: &foo_testpb.PostFooRequest{
+				NakedOneof: &foo_testpb.PostFooRequest_OneofString{
 					OneofString: "oneofStringVal",
 				},
 			},
@@ -188,9 +188,9 @@ func TestUnmarshal(t *testing.T) {
 			options: Options{
 				WrapOneof: true,
 			},
-			wantProto: &testpb.PostFooRequest{
-				WrappedOneof: &testpb.WrappedOneof{
-					Type: &testpb.WrappedOneof_OneofString{
+			wantProto: &foo_testpb.PostFooRequest{
+				WrappedOneof: &foo_testpb.WrappedOneof{
+					Type: &foo_testpb.WrappedOneof_OneofString{
 						OneofString: "oneofStringVal",
 					},
 				},
@@ -198,7 +198,7 @@ func TestUnmarshal(t *testing.T) {
 		}} {
 		t.Run(tc.name, func(t *testing.T) {
 
-			msg := &testpb.PostFooRequest{}
+			msg := &foo_testpb.PostFooRequest{}
 			if err := Decode(tc.options, []byte(tc.json), msg.ProtoReflect()); err != nil {
 				t.Fatal(err)
 			}
