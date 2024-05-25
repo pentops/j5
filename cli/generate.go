@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/pentops/jsonapi/gogen"
-	"github.com/pentops/jsonapi/source"
-	"github.com/pentops/jsonapi/structure"
+	"github.com/pentops/jsonapi/schema/source"
+	"github.com/pentops/jsonapi/schema/structure"
 	"github.com/pentops/runner/commander"
 )
 
-func GenerateSet() *commander.CommandSet {
+func generateSet() *commander.CommandSet {
 	genGroup := commander.NewCommandSet()
 	genGroup.Add("gocode", commander.NewCommand(runGocode))
 	return genGroup

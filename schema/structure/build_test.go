@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pentops/flowtest/prototest"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/o5-runtime-sidecar/testproto"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -29,7 +29,7 @@ func TestBuild(t *testing.T) {
 		Service: []*descriptorpb.ServiceDescriptorProto{{
 			Name: proto.String("TestService"),
 			Method: []*descriptorpb.MethodDescriptorProto{
-				testproto.BuildHTTPMethod("Test", &annotations.HttpRule{
+				prototest.BuildHTTPMethod("Test", &annotations.HttpRule{
 					Pattern: &annotations.HttpRule_Get{
 						Get: "/test/{test_field}",
 					},
