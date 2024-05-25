@@ -75,9 +75,14 @@ func TestReflection(t *testing.T) {
 
 }
 
-func TestFoo(t *testing.T) {
+func TestJ5AnnotationsPass(t *testing.T) {
 
-	msg := &foo_testpb.PostFooRequest{}
+	msg := &foo_testpb.PostFooRequest{
+		SString: "value",
+		Flattened: &foo_testpb.FlattenedMessage{
+			FieldFromFlattened: "flattened",
+		},
+	}
 
 	flatDesc, err := BuildAny(FlattenOptions{}, msg)
 	if err != nil {
@@ -97,4 +102,13 @@ func TestFoo(t *testing.T) {
 	}
 
 	t.Log(string(encoded))
+
+	decoded := map[string]interface{}{}
+	if err := json.Unmarshal(encoded, &decoded); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "flattened", decoded["fieldFromFlattened"])
+	assert.Equal(t, "value", decoded["sString"])
+
 }
