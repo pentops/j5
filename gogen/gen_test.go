@@ -9,7 +9,7 @@ import (
 
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/jsonapi/gen/testpb"
+	"github.com/pentops/jsonapi/gen/test/foo/v1/foo_testpb"
 	"github.com/pentops/jsonapi/structure"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -58,8 +58,8 @@ func TestTestProtoGen(t *testing.T) {
 				GrpcMethodName:  "PostFoo",
 				HttpMethod:      "get",
 				HttpPath:        "/test/v1/foo",
-				ResponseBody:    mustBuildSchema((&testpb.PostFooRequest{}).ProtoReflect().Descriptor()),
-				RequestBody:     mustBuildSchema((&testpb.PostFooRequest{}).ProtoReflect().Descriptor()),
+				ResponseBody:    mustBuildSchema((&foo_testpb.PostFooRequest{}).ProtoReflect().Descriptor()),
+				RequestBody:     mustBuildSchema((&foo_testpb.PostFooRequest{}).ProtoReflect().Descriptor()),
 			}},
 		}},
 		Schemas: ss.Schemas,

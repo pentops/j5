@@ -18,7 +18,8 @@ func GenerateSet() *commander.CommandSet {
 func runGocode(ctx context.Context, cfg struct {
 	Source            string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
 	OutputDir         string `flag:"output-dir" description:"Directory to write go source"`
-	TrimPackagePrefix string `flag:"trim-package-prefix" default:"" description:"Prefix to trim from go package names"`
+	PackagePrefix     string `flag:"package-prefix" default:"" description:"Only generate files matching this prefix"`
+	TrimPackagePrefix string `flag:"trim-package-prefix" default:"" description:"Proto package name to remove from go package names"`
 	AddGoPrefix       string `flag:"add-go-prefix" default:"" description:"Prefix to add to go package names"`
 }) error {
 	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
@@ -33,6 +34,7 @@ func runGocode(ctx context.Context, cfg struct {
 
 	options := gogen.Options{
 		TrimPackagePrefix: cfg.TrimPackagePrefix,
+		PackagePrefix:     cfg.PackagePrefix,
 		AddGoPrefix:       cfg.AddGoPrefix,
 	}
 

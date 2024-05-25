@@ -8,7 +8,7 @@ import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
 import "psm/list/v1/query.proto";
 
-option go_package = "github.com/pentops/jsonapi/gen/testpb";
+option go_package = "github.com/pentops/jsonapi/gen/test/foo/v1/foo_testpb";
 
 service FooService {
   rpc GetFoo(GetFooRequest) returns (GetFooResponse) {

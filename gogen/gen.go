@@ -13,12 +13,19 @@ import (
 
 type Options struct {
 	TrimPackagePrefix string
+	PackagePrefix     string
 	AddGoPrefix       string
 }
 
-func (o Options) ToGoPackage(pkg string) (string, error) {
+// ReferenceGoPackage returns the go package for the given proto package. It may
+// be within the generated code, or a reference to an external package.
+func (o Options) ReferenceGoPackage(pkg string) (string, error) {
 	if pkg == "" {
 		return "", fmt.Errorf("empty package")
+	}
+
+	if !strings.HasPrefix(pkg, o.PackagePrefix) {
+		return "", fmt.Errorf("package %s not in prefix %s", pkg, o.PackagePrefix)
 	}
 
 	if o.TrimPackagePrefix != "" {
@@ -48,6 +55,20 @@ type builder struct {
 	document *schema_j5pb.API
 	fileSet  *FileSet
 	options  Options
+}
+
+// fileForPackage returns the file for the given package name, creating if
+// required. Returns nil when the package should not be generated (i.e. outside
+// of the generate prefix, a reference to externally hosted code)
+func (bb *builder) fileForPackage(grpcPackageName string) (*GeneratedFile, error) {
+	if !strings.HasPrefix(grpcPackageName, bb.options.PackagePrefix) {
+		return nil, nil
+	}
+	objectPackage, err := bb.options.ReferenceGoPackage(grpcPackageName)
+	if err != nil {
+		return nil, fmt.Errorf("object package name '%s': %w", grpcPackageName, err)
+	}
+	return bb.fileSet.File(objectPackage, filepath.Base(objectPackage))
 }
 
 type FileWriter interface {
@@ -108,7 +129,7 @@ func (bb *builder) buildTypeName(schema *schema_j5pb.Schema) (*DataType, error) 
 				return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref, err)
 			}
 
-			objectPackage, err := bb.options.ToGoPackage(referredType.ObjectItem.GrpcPackageName)
+			objectPackage, err := bb.options.ReferenceGoPackage(referredType.ObjectItem.GrpcPackageName)
 			if err != nil {
 				return nil, fmt.Errorf("referredType in %s: %w", schemaType.Ref, err)
 			}
@@ -126,7 +147,7 @@ func (bb *builder) buildTypeName(schema *schema_j5pb.Schema) (*DataType, error) 
 				return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref, err)
 			}
 
-			objectPackage, err := bb.options.ToGoPackage(referredType.OneofWrapper.GrpcPackageName)
+			objectPackage, err := bb.options.ReferenceGoPackage(referredType.OneofWrapper.GrpcPackageName)
 			if err != nil {
 				return nil, fmt.Errorf("referredType in %s: %w", schemaType.Ref, err)
 			}
@@ -287,13 +308,12 @@ func (bb *builder) jsonField(property *schema_j5pb.ObjectProperty) (*Field, erro
 }
 
 func (bb *builder) addObject(object *schema_j5pb.ObjectItem) error {
-	objectPackage, err := bb.options.ToGoPackage(object.GrpcPackageName)
-	if err != nil {
-		return fmt.Errorf("object package name '%s': %w", object.GoTypeName, err)
-	}
-	gen, err := bb.fileSet.File(objectPackage, filepath.Base(objectPackage))
+	gen, err := bb.fileForPackage(object.GrpcPackageName)
 	if err != nil {
 		return err
+	}
+	if gen == nil {
+		return nil
 	}
 
 	_, ok := gen.types[object.GoTypeName]
@@ -319,16 +339,15 @@ func (bb *builder) addObject(object *schema_j5pb.ObjectItem) error {
 	}
 
 	return nil
-
 }
+
 func (bb *builder) addOneofWrapper(wrapper *schema_j5pb.OneofWrapperItem) error {
-	objectPackage, err := bb.options.ToGoPackage(wrapper.GrpcPackageName)
-	if err != nil {
-		return fmt.Errorf("object package name '%s': %w", wrapper.GoTypeName, err)
-	}
-	gen, err := bb.fileSet.File(objectPackage, filepath.Base(objectPackage))
+	gen, err := bb.fileForPackage(wrapper.GrpcPackageName)
 	if err != nil {
 		return err
+	}
+	if gen == nil {
+		return nil
 	}
 
 	_, ok := gen.types[wrapper.GoTypeName]
@@ -392,12 +411,12 @@ func (bb *builder) addOneofWrapper(wrapper *schema_j5pb.OneofWrapperItem) error 
 func (bb *builder) root() error {
 
 	for _, pkgsss := range bb.document.Packages {
-		fullGoPackage, err := bb.options.ToGoPackage(pkgsss.Name)
-		if err != nil {
-			return err
+		// Only generate packages within the prefix.
+		if !strings.HasPrefix(pkgsss.Name, bb.options.PackagePrefix) {
+			continue
 		}
 		for _, operation := range pkgsss.Methods {
-			if err := bb.addOperation(fullGoPackage, operation); err != nil {
+			if err := bb.addOperation(pkgsss.Name, operation); err != nil {
 				return err
 			}
 		}
@@ -405,12 +424,14 @@ func (bb *builder) root() error {
 	return nil
 }
 
-func (bb *builder) addOperation(fullGoPackage string, operation *schema_j5pb.Method) error {
+func (bb *builder) addOperation(grpcPackage string, operation *schema_j5pb.Method) error {
 
-	goPackageName := path.Base(fullGoPackage)
-	gen, err := bb.fileSet.File(fullGoPackage, goPackageName)
+	gen, err := bb.fileForPackage(grpcPackage)
 	if err != nil {
 		return err
+	}
+	if gen == nil {
+		return nil
 	}
 
 	gen.EnsureInterface(&Interface{

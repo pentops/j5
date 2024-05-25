@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package j5.anydesc.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/pentops/jsonapi/gen/j5/anydesc/v1/anydesc_j5pb";
+
+message Any {
+  string type_url = 1;
+  bytes value = 2;
+  google.protobuf.FileDescriptorProto file_descriptor = 3;
+}

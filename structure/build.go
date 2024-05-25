@@ -2,6 +2,7 @@ package structure
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 
@@ -324,6 +325,9 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 	}
 
 	if httpOpt.Body == "" {
+		if httpMethod != "get" {
+			fmt.Fprintf(os.Stderr, "WARN: no body annotation for %s.%s which is a %s\n", serviceName, method.Name(), httpMethod)
+		}
 		// TODO: This should probably be based on the annotation setting of body
 		for _, param := range requestObject.Properties {
 			builtMethod.QueryParameters = append(builtMethod.QueryParameters, &schema_j5pb.Parameter{
