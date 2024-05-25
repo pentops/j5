@@ -82,9 +82,7 @@ func FlattenDescriptor(opts FlattenOptions, msg protoreflect.MessageDescriptor) 
 		seen: make(map[protoreflect.FullName]string),
 	}
 
-	if _, err := ff.addMessage(msg, true); err != nil {
-		return nil, err
-	}
+	ff.addMessage(msg, true)
 
 	return ff.file, nil
 }
@@ -131,15 +129,15 @@ func (ff *flattener) newType(thing protoreflect.Descriptor) (string, *string) {
 	return importName, &newName
 }
 
-func (ff *flattener) addEnum(enum protoreflect.EnumDescriptor) (string, error) {
+func (ff *flattener) addEnum(enum protoreflect.EnumDescriptor) string {
 
 	if newName, ok := ff.seen[enum.FullName()]; ok {
-		return newName, nil
+		return newName
 	}
 
 	importAs, newName := ff.newType(enum)
 	if newName == nil {
-		return importAs, nil
+		return importAs
 	}
 
 	descriptor := protodesc.ToEnumDescriptorProto(enum)
@@ -147,15 +145,15 @@ func (ff *flattener) addEnum(enum protoreflect.EnumDescriptor) (string, error) {
 
 	ff.file.EnumType = append(ff.file.EnumType, descriptor)
 
-	return importAs, nil
+	return importAs
 }
 
-func (ff *flattener) addMessage(msg protoreflect.MessageDescriptor, root bool) (string, error) {
+func (ff *flattener) addMessage(msg protoreflect.MessageDescriptor, root bool) string {
 	var newName *string
 	var importAs string
 	if root {
 		if importSeen, ok := ff.seen[msg.FullName()]; ok {
-			return importSeen, nil
+			return importSeen
 		}
 		rootName := "ROOT"
 		newName = &rootName
@@ -165,21 +163,18 @@ func (ff *flattener) addMessage(msg protoreflect.MessageDescriptor, root bool) (
 	} else {
 		importAs, newName = ff.newType(msg)
 		if newName == nil {
-			return importAs, nil
+			return importAs
 		}
 	}
 
-	descriptor, err := ff.buildMessage(msg, *newName)
-	if err != nil {
-		return "", err
-	}
+	descriptor := ff.buildMessage(msg, *newName)
 
 	ff.file.MessageType = append(ff.file.MessageType, descriptor)
 
-	return importAs, nil
+	return importAs
 }
 
-func (ff *flattener) buildMessage(msg protoreflect.MessageDescriptor, newName string) (*descriptorpb.DescriptorProto, error) {
+func (ff *flattener) buildMessage(msg protoreflect.MessageDescriptor, newName string) *descriptorpb.DescriptorProto {
 
 	fields := msg.Fields()
 
@@ -202,10 +197,7 @@ func (ff *flattener) buildMessage(msg protoreflect.MessageDescriptor, newName st
 
 			if fieldRefl.IsMap() {
 				mapRefl := fieldRefl.Message()
-				mapMsg, err := ff.buildMessage(mapRefl, string(mapRefl.Name()))
-				if err != nil {
-					return nil, err
-				}
+				mapMsg := ff.buildMessage(mapRefl, string(mapRefl.Name()))
 
 				mapName := newName + "." + string(mapRefl.Name())
 				field.TypeName = proto.String(string(mapName))
@@ -213,18 +205,12 @@ func (ff *flattener) buildMessage(msg protoreflect.MessageDescriptor, newName st
 
 			} else {
 
-				newName, err := ff.addMessage(fieldRefl.Message(), false)
-				if err != nil {
-					return nil, err
-				}
+				newName := ff.addMessage(fieldRefl.Message(), false)
 				field.TypeName = &newName
 			}
 
 		case protoreflect.EnumKind:
-			newName, err := ff.addEnum(fieldRefl.Enum())
-			if err != nil {
-				return nil, err
-			}
+			newName := ff.addEnum(fieldRefl.Enum())
 			field.TypeName = &newName
 
 		}
@@ -234,6 +220,6 @@ func (ff *flattener) buildMessage(msg protoreflect.MessageDescriptor, newName st
 
 	}
 
-	return descriptor, nil
+	return descriptor
 
 }
