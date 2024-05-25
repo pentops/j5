@@ -90,6 +90,11 @@ func TestJ5AnnotationsPass(t *testing.T) {
 	}
 
 	t.Logf("Flat Descriptor: %v", prototext.Format(flatDesc))
+	descBytes, err := proto.Marshal(flatDesc)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("Flat Descriptor has %d bytes", len(descBytes))
 
 	aa, err := NewFromAny(flatDesc)
 	if err != nil {
