@@ -3,7 +3,6 @@ package source
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"os"
@@ -11,15 +10,9 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protoyaml-go"
-	"github.com/go-yaml/yaml"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
-
-	registry_spb "buf.build/gen/go/bufbuild/buf/grpc/go/buf/alpha/registry/v1alpha1/registryv1alpha1grpc"
-	registry_pb "buf.build/gen/go/bufbuild/buf/protocolbuffers/go/buf/alpha/registry/v1alpha1"
 )
 
 var ConfigPaths = []string{
@@ -29,18 +22,6 @@ var ConfigPaths = []string{
 	"jsonapi.yml",
 	"ext/j5/j5.yaml",
 	"ext/j5/j5.yml",
-}
-
-type bufLockFile struct {
-	Deps []*bufLockFileDependency `yaml:"deps"`
-}
-
-type bufLockFileDependency struct {
-	Remote     string `yaml:"remote"`
-	Owner      string `yaml:"owner"`
-	Repository string `yaml:"repository"`
-	Commit     string `yaml:"commit"`
-	Digest     string `yaml:"digest"`
 }
 
 func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.SourceImage, error) {
@@ -77,7 +58,7 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 		return nil, err
 	}
 
-	extFiles, err := getDeps(ctx, src)
+	extFiles, err := getBufDeps(ctx, src)
 	if err != nil {
 		return nil, err
 	}
@@ -145,48 +126,5 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 		Prose:    proseFiles,
 		Registry: config.Registry,
 	}, nil
-
-}
-
-func getDeps(ctx context.Context, src string) (map[string][]byte, error) {
-	// TODO: Use Buf Cache if available
-
-	lockFile, err := os.ReadFile(filepath.Join(src, "buf.lock"))
-	if err != nil {
-		return nil, err
-	}
-
-	bufLockFile := &bufLockFile{}
-	if err := yaml.Unmarshal(lockFile, bufLockFile); err != nil {
-		return nil, err
-	}
-
-	bufClient, err := grpc.Dial("buf.build:443", grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-	if err != nil {
-		return nil, err
-	}
-	registryClient := registry_spb.NewDownloadServiceClient(bufClient)
-
-	externalFiles := map[string][]byte{}
-	for _, dep := range bufLockFile.Deps {
-		downloadRes, err := registryClient.Download(ctx, &registry_pb.DownloadRequest{
-			Owner:      dep.Owner,
-			Repository: dep.Repository,
-			Reference:  dep.Commit,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		for _, file := range downloadRes.Module.Files {
-			if _, ok := externalFiles[file.Path]; ok {
-				return nil, fmt.Errorf("duplicate file %s", file.Path)
-			}
-
-			externalFiles[file.Path] = file.Content
-		}
-	}
-
-	return externalFiles, nil
 
 }

@@ -11,15 +11,15 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/pentops/jsonapi/source"
-	"github.com/pentops/jsonapi/structure"
-	"github.com/pentops/jsonapi/structure/jdef"
-	"github.com/pentops/jsonapi/swagger"
+	"github.com/pentops/jsonapi/schema/jdef"
+	"github.com/pentops/jsonapi/schema/source"
+	"github.com/pentops/jsonapi/schema/structure"
+	"github.com/pentops/jsonapi/schema/swagger"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func BuildSet() *commander.CommandSet {
+func schemaSet() *commander.CommandSet {
 	genGroup := commander.NewCommandSet()
 	genGroup.Add("image", commander.NewCommand(RunImage))
 	genGroup.Add("jdef", commander.NewCommand(RunJDef))

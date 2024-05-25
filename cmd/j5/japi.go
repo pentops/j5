@@ -6,5 +6,5 @@ var Version = "dev"
 
 func main() {
 	cmdGroup := cli.CommandSet()
-	cmdGroup.RunMain("japi", Version)
+	cmdGroup.RunMain("j5", Version)
 }
