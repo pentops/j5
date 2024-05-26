@@ -67,6 +67,10 @@ func runGenerate(ctx context.Context, cfg struct {
 	}
 
 	j5Config := src.J5Config()
+	commitInfo, err := src.CommitInfo(ctx)
+	if err != nil {
+		return err
+	}
 
 	for _, generator := range j5Config.Generate {
 
@@ -74,9 +78,8 @@ func runGenerate(ctx context.Context, cfg struct {
 		if err != nil {
 			return err
 		}
-		remote := builder.NewFSUploader(dest)
 
-		bb := builder.NewBuilder(dockerWrapper, remote)
+		bb := builder.NewBuilder(dockerWrapper)
 		resolvedPlugins := make([]*source_j5pb.BuildPlugin, 0, len(generator.Plugins))
 		for _, plugin := range generator.Plugins {
 			plugin, err = src.ResolvePlugin(plugin)
@@ -93,7 +96,14 @@ func runGenerate(ctx context.Context, cfg struct {
 			}
 
 			for _, plugin := range resolvedPlugins {
-				if err := bb.RunProtocPlugin(ctx, dest, plugin, protoBuildRequest, os.Stderr, commitInfo); err != nil {
+				if plugin.Docker == nil {
+					return fmt.Errorf("plugin %q has no docker spec", plugin.Name)
+				}
+				envVars, err := builder.MapEnvVars(plugin.Docker.Env, commitInfo)
+				if err != nil {
+					return err
+				}
+				if err := bb.RunProtocPlugin(ctx, dest, plugin, protoBuildRequest, os.Stderr, envVars); err != nil {
 					return err
 				}
 			}
@@ -122,14 +132,8 @@ func (cfg SourceConfig) GetSource(ctx context.Context) (builder.Source, error) {
 	}
 
 	var commitInfo *builder_j5pb.CommitInfo
-	if cfg.GitAuto {
-		commitInfo, err = git.ExtractGitMetadata(ctx, japiConfig.Git, cfg.Source)
-		if err != nil {
-			return nil, err
-		}
-	} else if cfg.CommitHash == "" || cfg.CommitTime == "" {
-		return nil, fmt.Errorf("commit hash and time are required, or set --git-auto")
-	} else {
+	if cfg.CommitHash != "" && cfg.CommitTime != "" {
+		commitInfo = &builder_j5pb.CommitInfo{}
 		commitInfo.Hash = cfg.CommitHash
 		commitTime, err := time.Parse(time.RFC3339, cfg.CommitTime)
 		if err != nil {
@@ -137,6 +141,11 @@ func (cfg SourceConfig) GetSource(ctx context.Context) (builder.Source, error) {
 		}
 		commitInfo.Time = timestamppb.New(commitTime)
 		commitInfo.Aliases = cfg.CommitAliases
+	} else {
+		commitInfo, err = git.ExtractGitMetadata(ctx, japiConfig.Git, cfg.Source)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return source.NewLocalDirSource(ctx, commitInfo, japiConfig, sourceDir)
@@ -168,6 +177,16 @@ func loadConfig(src string) (*source_j5pb.Config, error) {
 	return config, nil
 }
 
+type DiscardFS struct{}
+
+func NewDiscardFS() *DiscardFS {
+	return &DiscardFS{}
+}
+
+func (d *DiscardFS) Put(ctx context.Context, subPath string, body io.Reader) error {
+	return nil
+}
+
 type LocalFS struct {
 	root string
 }
@@ -178,7 +197,7 @@ func NewLocalFS(root string) (*LocalFS, error) {
 	}, nil
 }
 
-func (local *LocalFS) Put(ctx context.Context, subPath string, body io.Reader, metadata map[string]string) error {
+func (local *LocalFS) Put(ctx context.Context, subPath string, body io.Reader) error {
 	key := filepath.Join(local.root, subPath)
 	err := os.MkdirAll(filepath.Dir(key), 0755)
 	if err != nil {

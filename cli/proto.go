@@ -68,9 +68,11 @@ func runTestBuild(ctx context.Context, cfg struct {
 		return err
 	}
 
-	bb := builder.NewBuilder(dockerWrapper, remote)
+	bb := builder.NewBuilder(dockerWrapper)
 
-	err = bb.BuildAll(ctx, source, cfg.Builders...)
+	dst := NewDiscardFS()
+
+	err = bb.BuildAll(ctx, source, dst, cfg.Builders...)
 	if err != nil {
 		return err
 	}
@@ -90,7 +92,7 @@ func runProtoRequest(ctx context.Context, cfg struct {
 		return err
 	}
 
-	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx)
+	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, "./")
 	if err != nil {
 		return err
 	}
@@ -174,14 +176,13 @@ func runProtoBuild(ctx context.Context, cfg struct {
 	if err != nil {
 		return err
 	}
-	remote := builder.NewFSUploader(dest)
 
 	dockerWrapper, err := docker.NewDockerWrapper(docker.DefaultRegistryAuths)
 	if err != nil {
 		return err
 	}
 
-	bb := builder.NewBuilder(dockerWrapper, remote)
+	bb := builder.NewBuilder(dockerWrapper)
 
 	if !cfg.Pull {
 		for _, builder := range src.J5Config().ProtoBuilds {
@@ -193,5 +194,5 @@ func runProtoBuild(ctx context.Context, cfg struct {
 
 	fmt.Println("All plugins built successfully")
 
-	return bb.BuildAll(ctx, src)
+	return bb.BuildAll(ctx, src, dest)
 }

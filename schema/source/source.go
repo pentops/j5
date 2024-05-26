@@ -82,9 +82,9 @@ func (src *Source) resolvePlugin(visited map[string]struct{}, plugin *source_j5p
 		return nil, ErrPluginCycle
 	}
 	visited[*plugin.Base] = struct{}{}
-	for _, plugin := range src.config.Plugins {
-		if plugin.Name == *plugin.Base {
-			resolvedBase, err := src.resolvePlugin(visited, plugin)
+	for _, search := range src.config.Plugins {
+		if search.Name == *plugin.Base {
+			resolvedBase, err := src.resolvePlugin(visited, search)
 			if err != nil {
 				return nil, err
 			}

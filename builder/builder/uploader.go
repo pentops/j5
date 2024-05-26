@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/jsonapi/schema/jdef"
-	"github.com/pentops/log.go/log"
+	"github.com/pentops/jsonapi/schema/swagger"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/zip"
@@ -35,18 +35,10 @@ func NewRawUploader() *RawUploader {
 	}
 }
 
-func (uu *RawUploader) BuildGoModule(ctx context.Context, commitInfo *builder_j5pb.CommitInfo, label string, callback BuilderCallback) error {
-	output, ok := uu.ProtoGenOutputs[label]
-	if !ok {
-		tmpDir, err := os.MkdirTemp("", "j5-workdir")
-		if err != nil {
-			return err
-		}
-		defer os.RemoveAll(tmpDir)
-		output = tmpDir
-	}
-
-	return callback(ctx, output, commitInfo)
+type J5Upload struct {
+	Image   *source_j5pb.SourceImage
+	JDef    *schema_j5pb.API
+	Swagger *swagger.Document
 }
 
 func (uu *RawUploader) UploadJsonAPI(ctx context.Context, info FullInfo, data J5Upload) error {
@@ -109,21 +101,17 @@ type FullInfo struct {
 	Commit  *builder_j5pb.CommitInfo
 }
 
-type BuilderCallback func(ctx context.Context, workingDir string, commitInfo *builder_j5pb.CommitInfo) error
+func (uu *FSUploader) UploadGoModule(ctx context.Context, commitInfo *builder_j5pb.CommitInfo, goModData []byte, packageRoot string) error {
 
-func (uu *FSUploader) BuildGoModule(ctx context.Context, commitInfo *builder_j5pb.CommitInfo, label string, callback BuilderCallback) error {
+	/*
+		dest, err := os.MkdirTemp("", "j5-workdir")
+		if err != nil {
+			return err
+		}
+		packageRoot := filepath.Join(dest, "package")
 
-	dest, err := os.MkdirTemp("", "j5-workdir")
-	if err != nil {
-		return err
-	}
-	packageRoot := filepath.Join(dest, "package")
-
-	defer os.RemoveAll(dest)
-
-	if err := callback(ctx, packageRoot, commitInfo); err != nil {
-		return err
-	}
+		defer os.RemoveAll(dest)
+	*/
 
 	gomodBytes, err := os.ReadFile(filepath.Join(packageRoot, "go.mod"))
 	if err != nil {
@@ -148,21 +136,15 @@ func (uu *FSUploader) BuildGoModule(ctx context.Context, commitInfo *builder_j5p
 
 	canonicalVersion := module.PseudoVersion("", "", commitInfo.Time.AsTime(), commitHashPrefix)
 
-	info := FullInfo{
+	version := FullInfo{
 		Version: canonicalVersion,
 		Package: packageName,
 		Commit:  commitInfo,
 	}
 
-	return uu.UploadGoModule(ctx, info, gomodBytes, packageRoot)
-
-}
-
-func (uu *FSUploader) UploadGoModule(ctx context.Context, version FullInfo, goModData []byte, packageRoot string) error {
-
 	zipBuf := &bytes.Buffer{}
 
-	err := zip.CreateFromDir(zipBuf, module.Version{
+	err = zip.CreateFromDir(zipBuf, module.Version{
 		Path:    version.Package,
 		Version: version.Version,
 	}, packageRoot)
@@ -170,44 +152,8 @@ func (uu *FSUploader) UploadGoModule(ctx context.Context, version FullInfo, goMo
 		return err
 	}
 
-	log.WithFields(ctx, map[string]interface{}{
-		"package": version.Package,
-		"version": version.Version,
-	}).Info("uploading go module")
-
-	if err := uu.fs.Put(ctx,
-		path.Join(uu.GomodPrefix, version.Package, fmt.Sprintf("%s.mod", version.Version)),
-		strings.NewReader(string(goModData)),
-	); err != nil {
-		return err
-	}
-
-	if err := uu.fs.Put(ctx,
-		path.Join(uu.GomodPrefix, version.Package, fmt.Sprintf("%s.zip", version.Version)),
-		zipBuf,
-	); err != nil {
-		return err
-	}
-
-	aliasMetadata := map[string]string{}
-	aliasMetadata[S3MetadataAlias] = version.Version
-	for _, alias := range version.Commit.Aliases {
-		if err := uu.fs.Put(ctx,
-			path.Join(uu.GomodPrefix, version.Package, fmt.Sprintf("%s.zip", alias)),
-			bytes.NewReader([]byte(version.Version)),
-		); err != nil {
-			return err
-		}
-	}
-
-	if err := uu.fs.Put(ctx,
-		path.Join(uu.GomodPrefix, version.Package, fmt.Sprintf("%s.zip", version.Commit.Hash)),
-		bytes.NewReader([]byte(version.Version)),
-	); err != nil {
-		return err
-	}
-
-	return nil
+	// TODO: This is a stub
+	return fmt.Errorf("not implemented")
 }
 
 /*
