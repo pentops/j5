@@ -76,6 +76,9 @@ var ErrPluginCycle = errors.New("plugin cycle detected")
 
 func (src *Source) resolvePlugin(visited map[string]struct{}, plugin *source_j5pb.BuildPlugin) (*source_j5pb.BuildPlugin, error) {
 	if plugin.Base == nil {
+		if plugin.Opts == nil {
+			plugin.Opts = map[string]string{}
+		}
 		return plugin, nil
 	}
 	if _, ok := visited[*plugin.Base]; ok {
@@ -101,6 +104,9 @@ func (src *Source) resolvePlugin(visited map[string]struct{}, plugin *source_j5p
 
 func extendPlugin(base, ext *source_j5pb.BuildPlugin) *source_j5pb.BuildPlugin {
 	out := proto.Clone(base).(*source_j5pb.BuildPlugin)
+	if out.Opts == nil {
+		out.Opts = map[string]string{}
+	}
 	if ext.Name != "" {
 		out.Name = ext.Name
 	}
