@@ -25,9 +25,10 @@ import (
 type Source interface {
 	J5Config() *source_j5pb.Config
 	CommitInfo(ctx context.Context) (*builder_j5pb.CommitInfo, error)
-	ProtoCodeGeneratorRequest(context.Context) (*pluginpb.CodeGeneratorRequest, error)
+	ProtoCodeGeneratorRequest(ctx context.Context, root string) (*pluginpb.CodeGeneratorRequest, error)
 	SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error)
 	SourceFile(ctx context.Context, filename string) ([]byte, error)
+	ResolvePlugin(plugin *source_j5pb.BuildPlugin) (*source_j5pb.BuildPlugin, error)
 }
 
 type IUploader interface {
@@ -128,9 +129,9 @@ func (b *Builder) BuildAll(ctx context.Context, src Source, onlyMatching ...stri
 			if pluginName != "" {
 				found := false
 				for _, plugin := range foundProtoBuild.Plugins {
-					if plugin.Label == pluginName {
+					if plugin.Name == pluginName {
 						found = true
-						foundProtoBuild.Plugins = []*source_j5pb.ProtoBuildPlugin{plugin}
+						foundProtoBuild.Plugins = []*source_j5pb.BuildPlugin{plugin}
 						break
 					}
 				}
@@ -199,7 +200,7 @@ func (b *Builder) BuildProto(ctx context.Context, src Source, dockerBuild *sourc
 		return err
 	}
 
-	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx)
+	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, "./")
 	if err != nil {
 		return err
 	}
@@ -229,21 +230,18 @@ func (b *Builder) BuildProto(ctx context.Context, src Source, dockerBuild *sourc
 
 }
 
-func (b *Builder) RunProtocPlugin(ctx context.Context, dest string, plugin *source_j5pb.ProtoBuildPlugin, sourceProto *pluginpb.CodeGeneratorRequest, errOut io.Writer, commitInfo *builder_j5pb.CommitInfo) error {
+func (b *Builder) RunProtocPlugin(ctx context.Context, dest FS, plugin *source_j5pb.BuildPlugin, sourceProto *pluginpb.CodeGeneratorRequest, errOut io.Writer, commitInfo *builder_j5pb.CommitInfo) error {
 
 	start := time.Now()
-	if plugin.Label == "" {
-		// This is a pretty poor way to label it, prefer spetting label
-		// explicitly in config.
-		plugin.Label = strings.Join([]string{
-			plugin.Docker.Image, strings.Join(plugin.Docker.Entrypoint, ","), strings.Join(plugin.Docker.Command, ","),
-		}, "/")
-	}
 
-	ctx = log.WithField(ctx, "builder", plugin.Label)
+	ctx = log.WithField(ctx, "builder", plugin.GetName())
 	log.Debug(ctx, "Running Protoc Plugin")
 
-	parameter := strings.Join(plugin.Parameters, ",")
+	parameters := make([]string, 0, len(plugin.Opts))
+	for k, v := range plugin.Opts {
+		parameters = append(parameters, fmt.Sprintf("%s=%s", k, v))
+	}
+	parameter := strings.Join(parameters, ",")
 	sourceProto.Parameter = &parameter
 
 	reqBytes, err := proto.Marshal(sourceProto)
@@ -258,7 +256,7 @@ func (b *Builder) RunProtocPlugin(ctx context.Context, dest string, plugin *sour
 
 	err = b.Docker.Run(ctx, plugin.Docker, inBuffer, outBuffer, errOut, commitInfo)
 	if err != nil {
-		return fmt.Errorf("running docker %s: %w", plugin.Label, err)
+		return fmt.Errorf("running docker %s: %w", plugin.GetName(), err)
 	}
 
 	if err := proto.Unmarshal(outBuffer.Bytes(), &resp); err != nil {
@@ -271,11 +269,8 @@ func (b *Builder) RunProtocPlugin(ctx context.Context, dest string, plugin *sour
 
 	for _, f := range resp.File {
 		name := f.GetName()
-		fullPath := filepath.Join(dest, name)
-		if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
-			return err
-		}
-		if err := os.WriteFile(fullPath, []byte(f.GetContent()), 0644); err != nil {
+		reader := bytes.NewReader([]byte(f.GetContent()))
+		if err := dest.Put(ctx, name, reader); err != nil {
 			return err
 		}
 	}

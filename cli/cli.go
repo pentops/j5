@@ -12,6 +12,7 @@ import (
 
 	"github.com/bufbuild/protoyaml-go"
 	"github.com/pentops/jsonapi/builder/builder"
+	"github.com/pentops/jsonapi/builder/docker"
 	"github.com/pentops/jsonapi/builder/git"
 	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
@@ -32,20 +33,74 @@ var Commit = func() string {
 }()
 
 func CommandSet() *commander.CommandSet {
+
 	cmdGroup := commander.NewCommandSet()
 
 	cmdGroup.Add("registry", registrySet())
 	cmdGroup.Add("schema", schemaSet())
-	cmdGroup.Add("generate", generateSet())
+	cmdGroup.Add("codegen", generateSet())
 	cmdGroup.Add("proto", protoSet())
 
 	cmdGroup.Add("version", commander.NewCommand(runVersion))
+	cmdGroup.Add("generate", commander.NewCommand(runGenerate))
 
 	return cmdGroup
 }
 
 func runVersion(ctx context.Context, cfg struct{}) error {
 	fmt.Printf("jsonapi version %v\n", Commit)
+	return nil
+}
+
+func runGenerate(ctx context.Context, cfg struct {
+	SourceConfig
+}) error {
+
+	dockerWrapper, err := docker.NewDockerWrapper(docker.DefaultRegistryAuths)
+	if err != nil {
+		return err
+	}
+
+	src, err := cfg.GetSource(ctx)
+	if err != nil {
+		return err
+	}
+
+	j5Config := src.J5Config()
+
+	for _, generator := range j5Config.Generate {
+
+		dest, err := NewLocalFS(generator.Out)
+		if err != nil {
+			return err
+		}
+		remote := builder.NewFSUploader(dest)
+
+		bb := builder.NewBuilder(dockerWrapper, remote)
+		resolvedPlugins := make([]*source_j5pb.BuildPlugin, 0, len(generator.Plugins))
+		for _, plugin := range generator.Plugins {
+			plugin, err = src.ResolvePlugin(plugin)
+			if err != nil {
+				return err
+			}
+			resolvedPlugins = append(resolvedPlugins, plugin)
+		}
+
+		for _, sourceDir := range generator.Src {
+			protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, sourceDir)
+			if err != nil {
+				return err
+			}
+
+			for _, plugin := range resolvedPlugins {
+				if err := bb.RunProtocPlugin(ctx, dest, plugin, protoBuildRequest, os.Stderr, commitInfo); err != nil {
+					return err
+				}
+			}
+		}
+
+	}
+
 	return nil
 }
 

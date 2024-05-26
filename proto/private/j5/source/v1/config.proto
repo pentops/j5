@@ -13,7 +13,11 @@ message Config {
 
   repeated ProtoBuildConfig proto_builds = 4;
 
-  GitConfig git = 5;
+  repeated BuildPlugin plugins = 5;
+
+  repeated GenerateConfig generate = 6;
+
+  GitConfig git = 7;
 }
 
 message PackageConfig {
@@ -49,9 +53,18 @@ message GitConfig {
   string main = 1;
 }
 
+message GenerateConfig {
+  string name = 1;
+  repeated string src = 2;
+  string out = 3;
+  map<string, string> opts = 4;
+
+  repeated BuildPlugin plugins = 5;
+}
+
 message ProtoBuildConfig {
   string label = 1;
-  repeated ProtoBuildPlugin plugins = 2;
+  repeated BuildPlugin plugins = 2;
 
   oneof package_type {
     GoProxy go_proxy = 10;
@@ -70,16 +83,23 @@ message ProtoBuildConfig {
   }
 }
 
-message ProtoBuildPlugin {
-  // used only in logging and errors
-  string label = 1;
+message BuildPlugin {
+  // extend the base plugin.
+  optional string base = 1;
+
+  // the name of this plugin
+  string name = 2;
+
+  Plugin type = 3;
 
   // a docker container which will receive stdin and pipe stdout
   // input is google.protobuf.compiler.CodeGeneratorRequest
   // output is google.protobuf.compiler.CodeGeneratorResponse
-  DockerSpec docker = 2;
+  DockerSpec docker = 4;
 
-  repeated string parameters = 3;
+  CommandSpec command = 5;
+
+  map<string, string> opts = 7;
 }
 
 message DockerSpec {
@@ -88,6 +108,12 @@ message DockerSpec {
   repeated string entrypoint = 4;
   repeated string command = 5;
   bool pull = 6;
+}
+
+message CommandSpec {
+  string command = 1;
+  repeated string args = 2;
+  repeated string env = 3;
 }
 
 // TODO: This currently floats without a config, we need to decide if it belongs
@@ -119,4 +145,10 @@ message DockerRegistryAuth {
   message Github {
     string token_env_var = 1; // defaults to GITHUB_TOKEN
   }
+}
+
+enum Plugin {
+  PLUGIN_UNSPECIFIED = 0;
+  PLUGIN_PROTO = 1;
+  PLUGIN_J5_CLIENT = 2;
 }

@@ -26,7 +26,7 @@ func protoSet() *commander.CommandSet {
 
 func runTestBuild(ctx context.Context, cfg struct {
 	SourceConfig
-	NoPull   bool     `flag:"no-pull" default:"false" description:"Don't pull images from registry"`
+	Pull     bool     `flag:"pull" default:"false" description:"Pull images from registry, even if they already exist"`
 	Output   []string `flag:"output" default:"" description:"Not a dry run - actually output the built files (e.g. for go mod replace). "`
 	Builders []string `flag:",remaining" description:"Builders to run - 'j5', 'proto/$label' 'proto/$label/$plugin'"`
 }) error {
@@ -55,7 +55,7 @@ func runTestBuild(ctx context.Context, cfg struct {
 		return err
 	}
 
-	if cfg.NoPull {
+	if !cfg.Pull {
 		for _, builder := range source.J5Config().ProtoBuilds {
 			for _, plugin := range builder.Plugins {
 				plugin.Docker.Pull = false
@@ -70,7 +70,13 @@ func runTestBuild(ctx context.Context, cfg struct {
 
 	bb := builder.NewBuilder(dockerWrapper, remote)
 
-	return bb.BuildAll(ctx, source, cfg.Builders...)
+	err = bb.BuildAll(ctx, source, cfg.Builders...)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println("All plugins built successfully")
+	return nil
 }
 
 func runProtoRequest(ctx context.Context, cfg struct {
@@ -156,6 +162,7 @@ func runProtoBuild(ctx context.Context, cfg struct {
 	SourceConfig
 	Dest          string `flag:"dest" default:"" description:"Destination directory for generated files"`
 	PackagePrefix string `flag:"package-prefix" env:"PACKAGE_PREFIX" default:""`
+	Pull          bool   `flag:"pull" default:"false" description:"Pull images from registry, even if they already exist"`
 }) error {
 
 	src, err := cfg.GetSource(ctx)
@@ -175,6 +182,16 @@ func runProtoBuild(ctx context.Context, cfg struct {
 	}
 
 	bb := builder.NewBuilder(dockerWrapper, remote)
+
+	if !cfg.Pull {
+		for _, builder := range src.J5Config().ProtoBuilds {
+			for _, plugin := range builder.Plugins {
+				plugin.Docker.Pull = false
+			}
+		}
+	}
+
+	fmt.Println("All plugins built successfully")
 
 	return bb.BuildAll(ctx, src)
 }
