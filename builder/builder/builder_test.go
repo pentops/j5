@@ -1,4 +1,4 @@
-package docker
+package builder
 
 import (
 	"strings"
@@ -14,7 +14,7 @@ func TestMapEnvVars(t *testing.T) {
 		Hash: "abcdef",
 	}
 
-	r, err := mapEnvVars(sampleIn, &cInfo)
+	r, err := MapEnvVars(sampleIn, &cInfo)
 	if err != nil {
 		t.Errorf("Received error in mapenvvars: %v", err.Error())
 	}
