@@ -57,8 +57,10 @@ func ExtractGitMetadata(ctx context.Context, gitConfig *source_j5pb.GitConfig, d
 		commitAliases = append(commitAliases, headName.Short())
 		commitAliases = append(commitAliases, string(headName))
 
-		if globMatch(gitConfig.Main, string(headName)) {
-			commitAliases = append(commitAliases, "latest")
+		if gitConfig != nil {
+			if globMatch(gitConfig.Main, string(headName)) {
+				commitAliases = append(commitAliases, "latest")
+			}
 		}
 	}
 

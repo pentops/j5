@@ -6,14 +6,11 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/pentops/jsonapi/builder/git"
 	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
-	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/jsonapi/schema/structure"
 	"github.com/pentops/jsonapi/schema/swagger"
@@ -31,28 +28,21 @@ type Source interface {
 	ResolvePlugin(plugin *source_j5pb.BuildPlugin) (*source_j5pb.BuildPlugin, error)
 }
 
-type IUploader interface {
-	BuildGoModule(ctx context.Context, commitInfo *builder_j5pb.CommitInfo, label string, callback BuilderCallback) error
-	UploadJsonAPI(ctx context.Context, version FullInfo, jsonapiData J5Upload) error
-}
-
 type IDockerWrapper interface {
-	Run(ctx context.Context, spec *source_j5pb.DockerSpec, input io.Reader, output, errOutput io.Writer, commitInfo *builder_j5pb.CommitInfo) error
+	Run(ctx context.Context, spec *source_j5pb.DockerSpec, input io.Reader, output, errOutput io.Writer, envVars []string) error
 }
 
 type Builder struct {
-	Docker   IDockerWrapper
-	Uploader IUploader
+	Docker IDockerWrapper
 }
 
-func NewBuilder(docker IDockerWrapper, uploader IUploader) *Builder {
+func NewBuilder(docker IDockerWrapper) *Builder {
 	return &Builder{
-		Docker:   docker,
-		Uploader: uploader,
+		Docker: docker,
 	}
 }
 
-func (b *Builder) BuildAll(ctx context.Context, src Source, onlyMatching ...string) error {
+func (b *Builder) BuildAll(ctx context.Context, src Source, dst FS, onlyMatching ...string) error {
 
 	spec := src.J5Config()
 
@@ -71,12 +61,12 @@ func (b *Builder) BuildAll(ctx context.Context, src Source, onlyMatching ...stri
 	}
 
 	if len(onlyMatching) == 0 {
-		if err := b.BuildJsonAPI(ctx, img, spec.Registry, commitInfo); err != nil {
+		if _, err := b.BuildJsonAPI(ctx, img, spec.Registry, commitInfo); err != nil {
 			return err
 		}
 
 		for _, dockerBuild := range spec.ProtoBuilds {
-			if err := b.BuildProto(ctx, src, dockerBuild, os.Stderr); err != nil {
+			if err := b.BuildProto(ctx, src, dst, dockerBuild, os.Stderr); err != nil {
 				return err
 			}
 		}
@@ -89,7 +79,7 @@ func (b *Builder) BuildAll(ctx context.Context, src Source, onlyMatching ...stri
 	for _, builderName := range onlyMatching {
 
 		if builderName == "j5" {
-			if err := b.BuildJsonAPI(ctx, img, spec.Registry, commitInfo); err != nil {
+			if _, err := b.BuildJsonAPI(ctx, img, spec.Registry, commitInfo); err != nil {
 				return err
 			}
 			didAny = true
@@ -144,7 +134,7 @@ func (b *Builder) BuildAll(ctx context.Context, src Source, onlyMatching ...stri
 			subConfig.ProtoBuilds = []*source_j5pb.ProtoBuildConfig{foundProtoBuild}
 
 			didAny = true
-			if err := b.BuildProto(ctx, src, foundProtoBuild, os.Stderr); err != nil {
+			if err := b.BuildProto(ctx, src, dst, foundProtoBuild, os.Stderr); err != nil {
 				return err
 			}
 
@@ -158,42 +148,27 @@ func (b *Builder) BuildAll(ctx context.Context, src Source, onlyMatching ...stri
 	return nil
 }
 
-type J5Upload struct {
-	Image   *source_j5pb.SourceImage
-	JDef    *schema_j5pb.API
-	Swagger *swagger.Document
-}
-
-func (b *Builder) BuildJsonAPI(ctx context.Context, img *source_j5pb.SourceImage, registry *source_j5pb.RegistryConfig, commitInfo *builder_j5pb.CommitInfo) error {
+func (b *Builder) BuildJsonAPI(ctx context.Context, img *source_j5pb.SourceImage, registry *source_j5pb.RegistryConfig, commitInfo *builder_j5pb.CommitInfo) (*J5Upload, error) {
 	log.Info(ctx, "build json API")
 
 	jdefDoc, err := structure.BuildFromImage(img)
 	if err != nil {
-		return fmt.Errorf("build from image: %w", err)
+		return nil, fmt.Errorf("build from image: %w", err)
 	}
 
 	swaggerDoc, err := swagger.BuildSwagger(jdefDoc)
 	if err != nil {
-		return fmt.Errorf("build swagger: %w", err)
+		return nil, fmt.Errorf("build swagger: %w", err)
 	}
 
-	if err := b.Uploader.UploadJsonAPI(ctx, FullInfo{
-		Package: path.Join(registry.Organization, registry.Name),
-		Commit:  commitInfo,
-	},
-
-		J5Upload{
-			Image:   img,
-			JDef:    jdefDoc,
-			Swagger: swaggerDoc,
-		}); err != nil {
-		return fmt.Errorf("upload json api: %w", err)
-	}
-
-	return nil
+	return &J5Upload{
+		Image:   img,
+		JDef:    jdefDoc,
+		Swagger: swaggerDoc,
+	}, nil
 }
 
-func (b *Builder) BuildProto(ctx context.Context, src Source, dockerBuild *source_j5pb.ProtoBuildConfig, logWriter io.Writer) error {
+func (b *Builder) BuildProto(ctx context.Context, src Source, dst FS, dockerBuild *source_j5pb.ProtoBuildConfig, logWriter io.Writer) error {
 
 	commitInfo, err := src.CommitInfo(ctx)
 	if err != nil {
@@ -207,30 +182,57 @@ func (b *Builder) BuildProto(ctx context.Context, src Source, dockerBuild *sourc
 
 	switch pkg := dockerBuild.PackageType.(type) {
 	case *source_j5pb.ProtoBuildConfig_GoProxy_:
-		return b.Uploader.BuildGoModule(ctx, commitInfo, dockerBuild.Label, func(ctx context.Context, packageRoot string, commitInfo *builder_j5pb.CommitInfo) error {
-			for _, plugin := range dockerBuild.Plugins {
-				if err := b.RunProtocPlugin(ctx, packageRoot, plugin, protoBuildRequest, logWriter, commitInfo); err != nil {
-					return err
-				}
-			}
 
-			gomodFile, err := src.SourceFile(ctx, pkg.GoProxy.GoModFile)
+		for _, plugin := range dockerBuild.Plugins {
+
+			envVars, err := MapEnvVars(plugin.Docker.Env, commitInfo)
 			if err != nil {
 				return err
 			}
-			err = os.WriteFile(filepath.Join(packageRoot, "go.mod"), gomodFile, 0644)
-			if err != nil {
+			if err := b.RunProtocPlugin(ctx, dst, plugin, protoBuildRequest, logWriter, envVars); err != nil {
 				return err
 			}
-			return nil
-		})
+		}
+
+		gomodFile, err := src.SourceFile(ctx, pkg.GoProxy.GoModFile)
+		if err != nil {
+			return err
+		}
+
+		err = dst.Put(ctx, "go.mod", bytes.NewReader(gomodFile))
+		if err != nil {
+			return err
+		}
+		return nil
+
 	default:
 		return fmt.Errorf("unsupported package type: %T", pkg)
 	}
-
 }
 
-func (b *Builder) RunProtocPlugin(ctx context.Context, dest FS, plugin *source_j5pb.BuildPlugin, sourceProto *pluginpb.CodeGeneratorRequest, errOut io.Writer, commitInfo *builder_j5pb.CommitInfo) error {
+func MapEnvVars(spec []string, commitInfo *builder_j5pb.CommitInfo) ([]string, error) {
+	env := make([]string, len(spec))
+	for idx, src := range spec {
+		if strings.Contains(src, "PROTOC_GEN_GO_MESSAGING_EXTRA_HEADERS") && strings.Contains(src, "$GIT_HASH") {
+			env[idx] = fmt.Sprintf("PROTOC_GEN_GO_MESSAGING_EXTRA_HEADERS=api-version:%v", commitInfo.Hash)
+			continue
+		}
+		parts := strings.Split(src, "=")
+		if len(parts) == 1 {
+			env[idx] = fmt.Sprintf("%s=%s", src, os.Getenv(src))
+			continue
+		}
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid env var: %s", src)
+		}
+		val := os.ExpandEnv(src)
+
+		env[idx] = fmt.Sprintf("%s=%s", parts[0], val)
+	}
+	return env, nil
+}
+
+func (b *Builder) RunProtocPlugin(ctx context.Context, dest FS, plugin *source_j5pb.BuildPlugin, sourceProto *pluginpb.CodeGeneratorRequest, errOut io.Writer, env []string) error {
 
 	start := time.Now()
 
@@ -254,7 +256,7 @@ func (b *Builder) RunProtocPlugin(ctx context.Context, dest FS, plugin *source_j
 	outBuffer := &bytes.Buffer{}
 	inBuffer := bytes.NewReader(reqBytes)
 
-	err = b.Docker.Run(ctx, plugin.Docker, inBuffer, outBuffer, errOut, commitInfo)
+	err = b.Docker.Run(ctx, plugin.Docker, inBuffer, outBuffer, errOut, env)
 	if err != nil {
 		return fmt.Errorf("running docker %s: %w", plugin.GetName(), err)
 	}

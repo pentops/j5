@@ -11,10 +11,10 @@ generate:
       paths: import
       module: github.com/pentops/jsonapi
     plugins:
-      - name: ./go
-      - name: ./go-sugar
-      - name: ./go-grpc
-      - name: ./go-messaging
+      - base: go
+      - base: go-sugar
+      - base: go-grpc
+      - base: go-messaging
 
 plugins:
   - name: go
