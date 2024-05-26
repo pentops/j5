@@ -18,6 +18,7 @@ import (
 	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/log.go/log"
+	"go.opentelemetry.io/otel/trace/noop"
 
 	glob "github.com/ryanuber/go-glob"
 )
@@ -42,7 +43,11 @@ type DockerWrapper struct {
 
 func NewDockerWrapper(registryAuth []*source_j5pb.DockerRegistryAuth) (*DockerWrapper, error) {
 
-	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	cli, err := client.NewClientWithOpts(
+		client.FromEnv,
+		client.WithAPIVersionNegotiation(),
+		client.WithTraceProvider(noop.NewTracerProvider()),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +102,6 @@ func (dw *DockerWrapper) Run(ctx context.Context, spec *source_j5pb.DockerSpec, 
 		return err
 	}
 	defer func() {
-		log.Info(ctx, "removing container")
 		if err := dw.client.ContainerRemove(ctx, resp.ID, container.RemoveOptions{}); err != nil {
 			log.WithError(ctx, err).Error("failed to remove container")
 		}
@@ -116,11 +120,11 @@ func (dw *DockerWrapper) Run(ctx context.Context, spec *source_j5pb.DockerSpec, 
 
 	defer hj.Close()
 
+	log.Debug(ctx, "ContainerStart")
+
 	if err := dw.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return err
 	}
-
-	log.Info(ctx, "run pipe callback")
 
 	chOut := make(chan error)
 	go func() {
@@ -139,7 +143,7 @@ func (dw *DockerWrapper) Run(ctx context.Context, spec *source_j5pb.DockerSpec, 
 		return fmt.Errorf("output copy error: %w", err)
 	}
 
-	log.Info(ctx, "waiting for container")
+	log.Debug(ctx, "ContainerWait")
 
 	statusCh, errCh := dw.client.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 
@@ -156,7 +160,7 @@ func (dw *DockerWrapper) Run(ctx context.Context, spec *source_j5pb.DockerSpec, 
 
 	}
 
-	log.Info(ctx, "docker build done")
+	log.Debug(ctx, "Builder Done")
 
 	return nil
 }

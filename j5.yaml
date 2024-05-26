@@ -1,0 +1,40 @@
+---
+
+generate:
+  - name: go
+    src:
+      - ./proto/j5
+      - ./proto/private
+      - ./proto/test
+    out: .
+    opts:
+      paths: import
+      module: github.com/pentops/jsonapi
+    plugins:
+      - name: ./go
+      - name: ./go-sugar
+      - name: ./go-grpc
+      - name: ./go-messaging
+
+plugins:
+  - name: go
+    type: PLUGIN_PROTO
+    docker:
+      image: ghcr.io/pentops/protoc-gen-go:v1.32.0
+
+  - name: go-grpc
+    type: PLUGIN_PROTO
+    docker:
+      image: ghcr.io/pentops/protoc-gen-go-grpc:v1.3.0
+
+  - name: go-sugar
+    type: PLUGIN_PROTO
+    docker:
+      image: ghcr.io/pentops/protoc-gen-go-sugar:19495b5f5ac3fd3964a03031396d83f1bc1341ca
+
+  - name: go-messaging
+    type: PLUGIN_PROTO
+    docker:
+      image: ghcr.io/pentops/protoc-gen-go-messaging:9f9694311c7c2ad1d88dd6d0d3d5ece61f3c3e2c
+      env:
+        - PROTOC_GEN_GO_MESSAGING_EXTRA_HEADERS=api-version:$GIT_HASH

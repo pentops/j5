@@ -10,7 +10,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
 	"github.com/pentops/jsonapi/schema/jdef"
@@ -21,15 +20,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-const (
-	// TODO: from gomodproxy, for S3 uploads so should be removed
-	S3MetadataAlias      = "x-gomod-alias"
-	S3MetadataCommitHash = "x-gomod-commit-hash"
-	S3MetadataCommitTime = "x-gomod-commit-time"
-)
-
 type FS interface {
-	Put(ctx context.Context, path string, body io.Reader, metadata map[string]string) error
+	Put(ctx context.Context, path string, body io.Reader) error
 }
 
 type RawUploader struct {
@@ -183,15 +175,9 @@ func (uu *FSUploader) UploadGoModule(ctx context.Context, version FullInfo, goMo
 		"version": version.Version,
 	}).Info("uploading go module")
 
-	metadata := map[string]string{
-		S3MetadataCommitTime: version.Commit.Time.AsTime().Format(time.RFC3339),
-		S3MetadataCommitHash: version.Commit.Hash,
-	}
-
 	if err := uu.fs.Put(ctx,
 		path.Join(uu.GomodPrefix, version.Package, fmt.Sprintf("%s.mod", version.Version)),
 		strings.NewReader(string(goModData)),
-		metadata,
 	); err != nil {
 		return err
 	}
@@ -199,21 +185,16 @@ func (uu *FSUploader) UploadGoModule(ctx context.Context, version FullInfo, goMo
 	if err := uu.fs.Put(ctx,
 		path.Join(uu.GomodPrefix, version.Package, fmt.Sprintf("%s.zip", version.Version)),
 		zipBuf,
-		metadata,
 	); err != nil {
 		return err
 	}
 
 	aliasMetadata := map[string]string{}
-	for k, v := range metadata {
-		aliasMetadata[k] = v
-	}
 	aliasMetadata[S3MetadataAlias] = version.Version
 	for _, alias := range version.Commit.Aliases {
 		if err := uu.fs.Put(ctx,
 			path.Join(uu.GomodPrefix, version.Package, fmt.Sprintf("%s.zip", alias)),
 			bytes.NewReader([]byte(version.Version)),
-			aliasMetadata,
 		); err != nil {
 			return err
 		}
@@ -222,7 +203,6 @@ func (uu *FSUploader) UploadGoModule(ctx context.Context, version FullInfo, goMo
 	if err := uu.fs.Put(ctx,
 		path.Join(uu.GomodPrefix, version.Package, fmt.Sprintf("%s.zip", version.Commit.Hash)),
 		bytes.NewReader([]byte(version.Version)),
-		aliasMetadata,
 	); err != nil {
 		return err
 	}
@@ -230,6 +210,7 @@ func (uu *FSUploader) UploadGoModule(ctx context.Context, version FullInfo, goMo
 	return nil
 }
 
+/*
 func (uu *FSUploader) UploadJsonAPI(ctx context.Context, info FullInfo, data J5Upload) error {
 
 	log.WithFields(ctx, map[string]interface{}{
@@ -278,4 +259,4 @@ func (uu *FSUploader) UploadJsonAPI(ctx context.Context, info FullInfo, data J5U
 	}
 
 	return nil
-}
+}*/
