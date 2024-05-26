@@ -270,6 +270,7 @@ func (b *Builder) RunProtocPlugin(ctx context.Context, dest FS, plugin *source_j
 	}
 
 	for _, f := range resp.File {
+		fmt.Printf("PUT FILE %s\n", f.GetName())
 		name := f.GetName()
 		reader := bytes.NewReader([]byte(f.GetContent()))
 		if err := dest.Put(ctx, name, reader); err != nil {

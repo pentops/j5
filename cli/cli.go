@@ -86,6 +86,9 @@ func runGenerate(ctx context.Context, cfg struct {
 			if err != nil {
 				return err
 			}
+			for k, v := range generator.Opts {
+				plugin.Opts[k] = v
+			}
 			resolvedPlugins = append(resolvedPlugins, plugin)
 		}
 
