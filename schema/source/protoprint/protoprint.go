@@ -8,30 +8,64 @@ import (
 	"strings"
 
 	"github.com/pentops/jsonapi/builder/builder"
-	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-// This package surely exists elsewhere, but I can't find it. Hopefully it's a
-// quick one.
-// Confirmed as copilot basically wrote this itself...
-
 type Options struct {
 	PackagePrefixes []string
+	OnlyFilenames   []string
 }
 
-func PrintProtoFiles(ctx context.Context, out builder.FS, source builder.Source, opts Options) error {
+func PrintProtoFiles(ctx context.Context, out builder.FS, src builder.Source, opts Options) error {
 
-	req, err := source.ProtoCodeGeneratorRequest(ctx, "./")
+	sourceImg, err := src.SourceImage(ctx)
+	if err != nil {
+		return err
+	}
+	if len(opts.OnlyFilenames) == 0 {
+		opts.OnlyFilenames = sourceImg.SourceFilenames
+	}
+
+	return printProtoFiles(ctx, out, sourceImg.File, opts)
+}
+
+func printProtoFiles(ctx context.Context, out builder.FS, files []*descriptorpb.FileDescriptorProto, opts Options) error {
+	descriptors, err := protodesc.NewFiles(&descriptorpb.FileDescriptorSet{
+		File: files,
+	})
 	if err != nil {
 		return err
 	}
 
-	for _, ff := range req.GetProtoFile() {
+	var walkErr error
+
+	foundExtensions := make([]protoreflect.ExtensionDescriptor, 0)
+
+	descriptors.RangeFiles(func(file protoreflect.FileDescriptor) bool {
+		for i := 0; i < file.Extensions().Len(); i++ {
+			foundExtensions = append(foundExtensions, file.Extensions().Get(i))
+		}
+		return true
+	})
+
+	descriptors.RangeFiles(func(file protoreflect.FileDescriptor) bool {
+		if len(opts.OnlyFilenames) > 0 {
+			match := false
+			for _, filename := range opts.OnlyFilenames {
+				if file.Path() == filename {
+					match = true
+					break
+				}
+			}
+			if !match {
+				return true
+			}
+		}
 		if len(opts.PackagePrefixes) > 0 {
 			match := false
-			pkg := ff.GetPackage()
+			pkg := string(file.Package())
 			for _, prefix := range opts.PackagePrefixes {
 				if strings.HasPrefix(pkg, prefix) {
 					match = true
@@ -39,289 +73,268 @@ func PrintProtoFiles(ctx context.Context, out builder.FS, source builder.Source,
 				}
 			}
 			if !match {
-				continue
+				return true
 			}
 		}
 
-		fileData, err := printFile(ff)
+		fileData, err := printFile(file, foundExtensions)
 		if err != nil {
-			return err
+			walkErr = fmt.Errorf("in file %s: %w", file.Path(), err)
+			return false
 		}
 
-		if err := out.Put(ctx, ff.GetName(), bytes.NewReader(fileData)); err != nil {
-			return err
+		if err := out.Put(ctx, file.Path(), bytes.NewReader(fileData)); err != nil {
+			walkErr = err
+			return false
 		}
 
+		return true
+
+	})
+	if walkErr != nil {
+		return walkErr
 	}
 
 	return nil
 
 }
 
+type fileBuffer struct {
+	out    *bytes.Buffer
+	addGap bool
+	exts   map[protoreflect.FullName]map[protoreflect.FieldNumber]protoreflect.ExtensionDescriptor
+}
+
+func (fb *fileBuffer) findExtension(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionDescriptor, error) {
+	if xt, ok := fb.exts[message][field]; ok {
+		return xt, nil
+	}
+	return nil, fmt.Errorf("extension not found")
+}
+
+func (fb *fileBuffer) p(indent int, args ...interface{}) {
+	if fb.addGap {
+		fb.addGap = false
+		fb.out.WriteString("\n")
+	}
+	fmt.Fprint(fb.out, strings.Repeat(" ", indent*2))
+	for _, arg := range args {
+		switch arg := arg.(type) {
+		case string:
+			fmt.Fprint(fb.out, arg)
+		case []string:
+			for _, subArg := range arg {
+				fmt.Fprint(fb.out, subArg)
+			}
+		default:
+			fmt.Fprintf(fb.out, "%v", arg)
+		}
+	}
+	fb.out.WriteString("\n")
+}
+
 type fileBuilder struct {
-	out *bytes.Buffer
+	out *fileBuffer
 	ind int
 }
 
-func printFile(ff *descriptorpb.FileDescriptorProto) ([]byte, error) {
-	p := &fileBuilder{out: &bytes.Buffer{}}
+func printFile(ff protoreflect.FileDescriptor, exts []protoreflect.ExtensionDescriptor) ([]byte, error) {
+
+	extMap := map[protoreflect.FullName]map[protoreflect.FieldNumber]protoreflect.ExtensionDescriptor{}
+
+	for _, ext := range exts {
+		msgName := ext.ContainingMessage().FullName()
+		if _, ok := extMap[msgName]; !ok {
+			extMap[msgName] = make(map[protoreflect.FieldNumber]protoreflect.ExtensionDescriptor)
+		}
+		fieldNum := ext.Number()
+		extMap[msgName][fieldNum] = ext
+	}
+
+	p := &fileBuilder{
+		out: &fileBuffer{
+			exts: extMap,
+			out:  &bytes.Buffer{},
+		},
+	}
 	return p.printFile(ff)
 }
 
 func (fb *fileBuilder) p(args ...interface{}) {
-	fmt.Fprint(fb.out, strings.Repeat(" ", fb.ind*2))
-	for _, arg := range args {
-		fmt.Fprintf(fb.out, "%v", arg)
+	fb.out.p(fb.ind, args...)
+}
+
+func commentLines(comment string) []string {
+	if comment == "" {
+		return nil
 	}
-	fb.out.WriteString("\n")
+	lines := strings.Split(comment, "\n")
+	lines = lines[:len(lines)-1] // comment strings end with a newline
+	for i, line := range lines {
+		lines[i] = fmt.Sprintf("//%s", line)
+	}
+	return lines
+}
+
+func trailingComment(loc protoreflect.SourceLocation) []string {
+	lines := strings.Split(loc.TrailingComments, "\n")
+	lines = lines[:len(lines)-1] // comment strings end with a newline
+	for i, line := range lines {
+		lines[i] = fmt.Sprintf(" //%s", line)
+	}
+	return lines
+}
+
+func (fb *fileBuilder) leadingComments(loc protoreflect.SourceLocation) {
+	for _, comment := range loc.LeadingDetachedComments {
+		parts := commentLines(comment)
+		for _, part := range parts {
+			fb.p(part)
+		}
+		fb.addGap()
+	}
+
+	if loc.LeadingComments != "" {
+		parts := commentLines(loc.LeadingComments)
+		for _, part := range parts {
+			fb.p(part)
+		}
+	}
+}
+
+func (fb *fileBuilder) addGap() {
+	fb.out.addGap = true
+}
+
+func (fb *fileBuilder) endElem(end string) {
+	// gaps should only occur between elements, not after the last one
+	fb.out.addGap = false
+	fb.p(end)
 }
 
 func (fb fileBuilder) indent() fileBuilder {
 	return fileBuilder{out: fb.out, ind: fb.ind + 1}
 }
 
-func (fb *fileBuilder) printFile(ff *descriptorpb.FileDescriptorProto) ([]byte, error) {
+func (fb *fileBuilder) printFile(ff protoreflect.FileDescriptor) ([]byte, error) {
 
-	if ff.GetSyntax() != "proto3" {
+	if ff.Syntax() != protoreflect.Proto3 {
+
 		return nil, errors.New("only proto3 syntax is supported")
 	}
 
 	fb.p("syntax = \"proto3\";")
 	fb.p()
-	fb.p("package ", ff.GetPackage(), ";")
+	fb.p("package ", ff.Package(), ";")
 	fb.p()
-	for _, dep := range ff.GetDependency() {
-		fb.p("import \"", dep, "\";")
+	imports := ff.Imports()
+	for idx := 0; idx < imports.Len(); idx++ {
+		dep := imports.Get(idx)
+		// TODO: Sort
+		fb.p("import \"", dep.Path(), "\";")
 	}
 	fb.p()
-	if ff.Options != nil {
-		// This could be manual iteration, but seemed more future-proof and
-		// quicker to write.
-		refl := ff.Options.ProtoReflect()
-		fields := refl.Descriptor().Fields()
-		for i := 0; i < fields.Len(); i++ {
-			field := fields.Get(i)
-			if !refl.Has(field) {
-				continue
-			}
-			switch field.Kind() {
-			case protoreflect.BoolKind:
-				fb.p("option ", field.Name(), " = ", refl.Get(field).Interface(), ";")
-			case protoreflect.StringKind:
-				fb.p("option ", field.Name(), " = \"", refl.Get(field).Interface(), "\";")
-			}
+	// This could be manual iteration, but seemed more future-proof and
+	// quicker to write.
+	refl := ff.Options().ProtoReflect()
+	fields := refl.Descriptor().Fields()
+	for i := 0; i < fields.Len(); i++ {
+		field := fields.Get(i)
+		if !refl.Has(field) {
+			continue
 		}
-		fb.p()
-	}
-
-	for _, svc := range ff.GetService() {
-		if err := fb.printService(ff.GetPackage(), svc); err != nil {
-			return nil, err
-		}
-		fb.p()
-	}
-
-	for _, msg := range ff.GetMessageType() {
-		if err := fb.printMessage(ff.GetPackage(), msg); err != nil {
-			return nil, err
+		switch field.Kind() {
+		case protoreflect.BoolKind:
+			fb.p("option ", field.Name(), " = ", refl.Get(field).Interface(), ";")
+		case protoreflect.StringKind:
+			fb.p("option ", field.Name(), " = \"", refl.Get(field).Interface(), "\";")
 		}
 	}
+	fb.addGap()
 
-	return fb.out.Bytes(), nil
+	var elements = make(sourceElements, 0)
+
+	messages := ff.Messages()
+	for idx := 0; idx < messages.Len(); idx++ {
+		elements.add(messages.Get(idx))
+	}
+
+	services := ff.Services()
+	for idx := 0; idx < services.Len(); idx++ {
+		elements.add(services.Get(idx))
+	}
+
+	enums := ff.Enums()
+	for idx := 0; idx < enums.Len(); idx++ {
+		elements.add(enums.Get(idx))
+	}
+
+	exts := ff.Extensions()
+	for idx := 0; idx < exts.Len(); idx++ {
+		elements.add(exts.Get(idx))
+	}
+
+	if err := fb.printElements(elements); err != nil {
+		return nil, err
+	}
+
+	return fb.out.out.Bytes(), nil
 }
 
-func (fb *fileBuilder) printService(currentPackage string, svc *descriptorpb.ServiceDescriptorProto) error {
+func fieldTypeName(field protoreflect.FieldDescriptor) (string, error) {
+	fieldType := field.Kind()
 
-	fb.p("service ", svc.GetName(), " {")
-	ind := fb.indent()
-	for idx, meth := range svc.GetMethod() {
-		inputType, err := contextRefName(currentPackage, meth.GetInputType())
-		if err != nil {
-			return err
-		}
-		outputType, err := contextRefName(currentPackage, meth.GetOutputType())
-		if err != nil {
-			return err
-		}
+	var refElement protoreflect.Descriptor
 
-		type extensionDef struct {
-			desc protoreflect.FieldDescriptor
-			val  protoreflect.Value
-		}
-
-		extensions := make([]extensionDef, 0)
-
-		meth.Options.ProtoReflect().Range(func(desc protoreflect.FieldDescriptor, val protoreflect.Value) bool {
-			if !desc.IsExtension() {
-				return true
-			}
-			extensions = append(extensions, extensionDef{
-				desc: desc,
-				val:  val,
-			})
-
-			return true
-		})
-
-		end := " {}"
-		if len(extensions) > 0 {
-			end = " {"
-		}
-
-		ind.p("rpc ", meth.GetName(), "(", inputType, ") returns (", outputType, ")", end)
-		extInd := ind.indent()
-		if len(extensions) > 0 {
-			for _, ext := range extensions {
-				valMsg := ext.val.Message()
-				pm := valMsg.Interface()
-				marshalled, err := prototext.MarshalOptions{
-					Multiline: true,
-					Indent:    "  ",
-				}.Marshal(pm)
-				if err != nil {
-					return err
-				}
-				lines := strings.Split(strings.TrimSuffix(string(marshalled), "\n"), "\n")
-				for i, line := range lines {
-					parts := strings.SplitN(line, ":", 2)
-					if len(parts) != 2 {
-						return fmt.Errorf("invalid extension line %q", line)
-					}
-					lines[i] = fmt.Sprintf("%s: %s", parts[0], strings.TrimSpace(parts[1]))
-				}
-
-				if len(lines) == 1 {
-					extInd.p("option (", ext.desc.FullName(), ") = {", lines[0], "};")
-				} else {
-					extInd.p("option (", ext.desc.FullName(), ") = {")
-					for _, line := range lines {
-						extInd.p("  ", line)
-					}
-					extInd.p("};")
-				}
-
-			}
-			ind.p("}")
-		}
-
-		if idx < len(svc.GetMethod())-1 {
-			fb.p()
-		}
+	switch fieldType {
+	case protoreflect.EnumKind:
+		refElement = field.Enum()
+	case protoreflect.MessageKind:
+		refElement = field.Message()
+	default:
+		return fieldType.String(), nil
 	}
-	fb.p("}")
 
-	return nil
+	fieldMsg := field.Parent()
+
+	return contextRefName(fieldMsg, refElement)
 }
 
-var typeNames = map[descriptorpb.FieldDescriptorProto_Type]string{
-	descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:   "double",
-	descriptorpb.FieldDescriptorProto_TYPE_FLOAT:    "float",
-	descriptorpb.FieldDescriptorProto_TYPE_INT64:    "int64",
-	descriptorpb.FieldDescriptorProto_TYPE_UINT64:   "uint64",
-	descriptorpb.FieldDescriptorProto_TYPE_INT32:    "int32",
-	descriptorpb.FieldDescriptorProto_TYPE_FIXED64:  "fixed64",
-	descriptorpb.FieldDescriptorProto_TYPE_FIXED32:  "fixed32",
-	descriptorpb.FieldDescriptorProto_TYPE_BOOL:     "bool",
-	descriptorpb.FieldDescriptorProto_TYPE_STRING:   "string",
-	descriptorpb.FieldDescriptorProto_TYPE_GROUP:    "group",
-	descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:  "message",
-	descriptorpb.FieldDescriptorProto_TYPE_BYTES:    "bytes",
-	descriptorpb.FieldDescriptorProto_TYPE_UINT32:   "uint32",
-	descriptorpb.FieldDescriptorProto_TYPE_ENUM:     "enum",
-	descriptorpb.FieldDescriptorProto_TYPE_SFIXED32: "sfixed32",
-	descriptorpb.FieldDescriptorProto_TYPE_SFIXED64: "sfixed64",
-	descriptorpb.FieldDescriptorProto_TYPE_SINT32:   "sint32",
-	descriptorpb.FieldDescriptorProto_TYPE_SINT64:   "sint64",
+func contextRefName(contextOfCall protoreflect.Descriptor, refElement protoreflect.Descriptor) (string, error) {
+
+	if contextOfCall.ParentFile().Package() != refElement.ParentFile().Package() {
+		// if the thing the field references is in a different package, then the
+		// full reference is used
+		return string(refElement.FullName()), nil
+	}
+
+	refPath := pathToPackage(refElement)
+	contextPath := pathToPackage(contextOfCall)
+
+	for i := 0; i < len(contextPath); i++ {
+		if len(refPath) == 0 || refPath[0] != contextPath[i] {
+			break
+		}
+		refPath = refPath[1:]
+	}
+
+	return strings.Join(refPath, "."), nil
 }
 
-func (fb *fileBuilder) printMessage(currentPackage string, msg *descriptorpb.DescriptorProto) error {
-	var err error
-	fullName := fmt.Sprintf("%s.%s", currentPackage, msg.GetName())
-	fb.p("message ", msg.GetName(), " {")
-	ind := fb.indent()
+func pathToPackage(refElement protoreflect.Descriptor) []string {
 
-	remainingNested := make([]*descriptorpb.DescriptorProto, 0, len(msg.GetNestedType()))
-	mapNested := make(map[string]*descriptorpb.DescriptorProto, len(msg.GetNestedType()))
-
-	for _, nested := range msg.GetNestedType() {
-		if nested.GetOptions().GetMapEntry() {
-			nextPrefix := fmt.Sprintf(".%s.%s", fullName, nested.GetName())
-			mapNested[nextPrefix] = nested
-		} else {
-			remainingNested = append(remainingNested, nested)
-		}
+	refPath := make([]string, 0)
+	parentFileName := refElement.ParentFile().FullName()
+	parent := refElement
+	for parent.FullName() != parentFileName {
+		refPath = append(refPath, string(parent.Name()))
+		parent = parent.Parent()
 	}
 
-	for _, field := range msg.GetField() {
-
-		var typeName string
-		var label string
-		mapMessage, ok := mapNested[field.GetTypeName()]
-		if ok {
-			delete(mapNested, field.GetTypeName())
-			keyTypeName, err := fieldTypeName(currentPackage, mapMessage.GetField()[0])
-			if err != nil {
-				return err
-			}
-			valueTypeName, err := fieldTypeName(currentPackage, mapMessage.GetField()[1])
-			if err != nil {
-				return err
-			}
-			typeName = fmt.Sprintf("map<%s, %s>", keyTypeName, valueTypeName)
-
-		} else {
-			typeName, err = fieldTypeName(currentPackage, field)
-			if err != nil {
-				return err
-			}
-
-			if field.Label != nil && *field.Label == descriptorpb.FieldDescriptorProto_LABEL_REPEATED {
-				label = "repeated "
-			} else if field.Proto3Optional != nil && *field.Proto3Optional {
-				label = "optional "
-			}
-		}
-		ind.p(label, typeName, " ", field.GetName(), " = ", field.GetNumber(), ";")
-
-	}
-	for _, nested := range remainingNested {
-		nextPrefix := fmt.Sprintf("%s.%s.", fullName, nested.GetName())
-		if err := ind.printMessage(nextPrefix, nested); err != nil {
-
-			return err
-		}
-	}
-	// Return the first entry
-	for prefix := range mapNested {
-		return fmt.Errorf("map entry '%s' not used", prefix)
+	stringsOut := make([]string, len(refPath))
+	for i, part := range refPath {
+		stringsOut[len(refPath)-i-1] = part
 	}
 
-	fb.p("}")
-	return nil
-}
-
-func contextRefName(currentPackage string, ref string) (string, error) {
-	contextPrefix := fmt.Sprintf(".%s.", currentPackage)
-	if strings.HasPrefix(ref, contextPrefix) {
-		return strings.TrimPrefix(ref, contextPrefix), nil
-	}
-	return strings.TrimPrefix(ref, "."), nil
-}
-
-func fieldTypeName(currentPackage string, field *descriptorpb.FieldDescriptorProto) (string, error) {
-	fieldType := field.GetType()
-
-	if fieldType == descriptorpb.FieldDescriptorProto_TYPE_MESSAGE {
-		if strings.HasPrefix(field.GetTypeName(), "."+currentPackage) {
-			return strings.TrimPrefix(field.GetTypeName(), "."+currentPackage), nil
-		}
-		return strings.TrimPrefix(field.GetTypeName(), "."), nil
-	}
-
-	typeName, ok := typeNames[fieldType]
-	if !ok {
-		return "", fmt.Errorf("unknown field type %v", field.GetType())
-	}
-	return typeName, nil
-
+	return stringsOut
 }

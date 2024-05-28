@@ -16,6 +16,7 @@ import (
 	"github.com/pentops/jsonapi/schema/swagger"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
@@ -24,6 +25,7 @@ type Source interface {
 	CommitInfo(ctx context.Context) (*builder_j5pb.CommitInfo, error)
 	ProtoCodeGeneratorRequest(ctx context.Context, root string) (*pluginpb.CodeGeneratorRequest, error)
 	SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error)
+	SourceDescriptors(ctx context.Context) ([]*descriptorpb.FileDescriptorProto, error)
 	SourceFile(ctx context.Context, filename string) ([]byte, error)
 	ResolvePlugin(plugin *source_j5pb.BuildPlugin) (*source_j5pb.BuildPlugin, error)
 }
