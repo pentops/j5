@@ -11,15 +11,23 @@ message API {
   map<string, Schema> schemas = 2;
 }
 
+// A namespace with multiple Services and a Prose document.
 message Package {
   string label = 1;
   string name = 2;
   bool hidden = 3;
 
-  string introduction = 4;
-  repeated Method methods = 5;
-  repeated Entity entities = 6;
-  repeated EventSpec events = 7;
+  optional string introduction = 4;
+  repeated Service services = 5;
+}
+
+// A collection of Methods, Entities, and Events implemented by a single application.
+message Service {
+  string label = 1;
+  string introduction = 2;
+  repeated Method methods = 3;
+  repeated Entity entities = 4;
+  repeated EventSpec events = 5;
 }
 
 message Method {
