@@ -2,8 +2,30 @@
 
 package builder_j5pb
 
+import (
+	messaging_pb "github.com/pentops/o5-go/messaging/v1/messaging_pb"
+	proto "google.golang.org/protobuf/proto"
+)
+
 // Service: BuilderTopic
 // Method: BuildProto
+
+func (msg *BuildProtoMessage) O5Message() (*messaging_pb.Message, error) {
+	body, err := proto.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+	return &messaging_pb.Message{
+		DestinationTopic: "j5-builder-input",
+		GrpcService:      "j5.builder.v1.BuilderTopic",
+		GrpcMethod:       "BuildProto",
+		Body: &messaging_pb.Any{
+			TypeUrl: "type.googleapis.com/j5.builder.v1.BuildProtoMessage",
+			Value:   body,
+		},
+		Headers: map[string]string{},
+	}, nil
+}
 
 func (msg *BuildProtoMessage) MessagingTopic() string {
 	return "j5-builder-input"
@@ -17,6 +39,23 @@ func (msg *BuildProtoMessage) MessagingHeaders() map[string]string {
 }
 
 // Method: BuildAPI
+
+func (msg *BuildAPIMessage) O5Message() (*messaging_pb.Message, error) {
+	body, err := proto.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+	return &messaging_pb.Message{
+		DestinationTopic: "j5-builder-input",
+		GrpcService:      "j5.builder.v1.BuilderTopic",
+		GrpcMethod:       "BuildAPI",
+		Body: &messaging_pb.Any{
+			TypeUrl: "type.googleapis.com/j5.builder.v1.BuildAPIMessage",
+			Value:   body,
+		},
+		Headers: map[string]string{},
+	}, nil
+}
 
 func (msg *BuildAPIMessage) MessagingTopic() string {
 	return "j5-builder-input"
