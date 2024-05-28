@@ -38,7 +38,7 @@ var maxExtDepth = map[protoreflect.FullName]int{
 	//"buf.validate.field": 1,
 }
 
-func parseOption(ext extensionDef) (*parsedOption, error) {
+func parseOption(ext extensionDef) *parsedOption {
 	singleLine := false
 	srcLoc := ext.locs
 	var startLine int32
@@ -131,7 +131,7 @@ func parseOption(ext extensionDef) (*parsedOption, error) {
 			oneLine:          true,
 			lineInSrc:        startLine,
 			inlineWithParent: inlineWithPareht,
-		}, nil
+		}
 	}
 
 	if len(fields) == 1 {
@@ -148,7 +148,7 @@ func parseOption(ext extensionDef) (*parsedOption, error) {
 					oneLine:          true,
 					lineInSrc:        startLine,
 					inlineWithParent: inlineWithPareht,
-				}, nil
+				}
 
 			}
 
@@ -160,7 +160,7 @@ func parseOption(ext extensionDef) (*parsedOption, error) {
 					oneLine:          true,
 					lineInSrc:        startLine,
 					inlineWithParent: inlineWithPareht,
-				}, nil
+				}
 			}
 		}
 	}
@@ -172,7 +172,7 @@ func parseOption(ext extensionDef) (*parsedOption, error) {
 		subField:   namePrefix,
 		valueLines: linesOut,
 		lineInSrc:  startLine,
-	}, nil
+	}
 }
 
 type extFieldPair struct {
@@ -207,11 +207,7 @@ func extensionJsonToText(msgVal protoreflect.Message) []string {
 
 	linesOut := make([]string, 0, len(fields))
 
-	for idx, pair := range fields {
-		comma := ","
-		if idx == len(fields)-1 {
-			comma = ""
-		}
+	for _, pair := range fields {
 
 		if pair.field.IsList() {
 			list := pair.val.List()
@@ -219,7 +215,7 @@ func extensionJsonToText(msgVal protoreflect.Message) []string {
 			if listLen == 1 {
 				scalar, ok := marshalSingular(pair.field, list.Get(0))
 				if ok {
-					nLine := fmt.Sprintf("%s: [%s]%s", pair.key, scalar, comma)
+					nLine := fmt.Sprintf("%s: [%s]", pair.key, scalar)
 					linesOut = append(linesOut, nLine)
 					continue
 				}
@@ -242,7 +238,7 @@ func extensionJsonToText(msgVal protoreflect.Message) []string {
 				}
 			}
 
-			linesOut = append(linesOut, "]", comma)
+			linesOut = append(linesOut, "]")
 			continue
 		}
 
@@ -250,9 +246,6 @@ func extensionJsonToText(msgVal protoreflect.Message) []string {
 		for idx, line := range extField {
 			if idx == 0 {
 				line = fmt.Sprintf("%s: %s", pair.key, line)
-			}
-			if idx == len(extField)-1 {
-				line = fmt.Sprintf("%s%s", line, comma)
 			}
 			linesOut = append(linesOut, line)
 		}
@@ -379,15 +372,12 @@ func (fb *fileBuilder) collectExtensions(parent protoreflect.Descriptor) ([]*par
 		num := desc.Number()
 		optionLocs := subLocations(optionsLocs, []int32{int32(num)})
 
-		parsed, err := parseOption(extensionDef{
+		parsed := parseOption(extensionDef{
 			desc:   desc,
 			val:    val,
 			locs:   optionLocs,
 			parent: parent,
 		})
-		if err != nil {
-			rangeErr = err
-		}
 		options = append(options, parsed)
 
 		return true
@@ -423,15 +413,12 @@ func (fb *fileBuilder) collectExtensions(parent protoreflect.Descriptor) ([]*par
 				return nil, fmt.Errorf("failed to unmarshal extension: %w", err)
 			}
 
-			parsed, err := parseOption(extensionDef{
+			parsed := parseOption(extensionDef{
 				desc:   serviceExt,
 				val:    protoreflect.ValueOfMessage(dynamicExt),
 				locs:   optionLocs,
 				parent: parent,
 			})
-			if err != nil {
-				return nil, err
-			}
 
 			options = append(options, parsed)
 
