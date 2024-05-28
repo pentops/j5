@@ -3,7 +3,6 @@ package source
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"fmt"
 	"io"
 	"os"
@@ -12,14 +11,8 @@ import (
 
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
-	"gopkg.in/yaml.v2"
-
-	registry_spb "buf.build/gen/go/bufbuild/buf/grpc/go/buf/alpha/registry/v1alpha1/registryv1alpha1grpc"
-	registry_pb "buf.build/gen/go/bufbuild/buf/protocolbuffers/go/buf/alpha/registry/v1alpha1"
 )
 
 func CodeGeneratorRequestFromSource(ctx context.Context, src string) (*pluginpb.CodeGeneratorRequest, error) {
@@ -142,61 +135,6 @@ func CodeGeneratorRequestFromSource(ctx context.Context, src string) (*pluginpb.
 
 func ptr(i int32) *int32 {
 	return &i
-}
-
-type BufLockFile struct {
-	Deps []*BufLockFileDependency `yaml:"deps"`
-}
-
-type BufLockFileDependency struct {
-	Remote     string `yaml:"remote"`
-	Owner      string `yaml:"owner"`
-	Repository string `yaml:"repository"`
-	Commit     string `yaml:"commit"`
-	Digest     string `yaml:"digest"`
-}
-
-func getBufDeps(ctx context.Context, src string) (map[string][]byte, error) {
-	// TODO: Use Buf Cache if available
-
-	lockFile, err := os.ReadFile(filepath.Join(src, "buf.lock"))
-	if err != nil {
-		return nil, err
-	}
-
-	bufLockFile := &BufLockFile{}
-	if err := yaml.Unmarshal(lockFile, bufLockFile); err != nil {
-		return nil, err
-	}
-
-	bufClient, err := grpc.NewClient("buf.build:443", grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{})))
-	if err != nil {
-		return nil, err
-	}
-	registryClient := registry_spb.NewDownloadServiceClient(bufClient)
-
-	externalFiles := map[string][]byte{}
-	for _, dep := range bufLockFile.Deps {
-		downloadRes, err := registryClient.Download(ctx, &registry_pb.DownloadRequest{
-			Owner:      dep.Owner,
-			Repository: dep.Repository,
-			Reference:  dep.Commit,
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		for _, file := range downloadRes.Module.Files {
-			if _, ok := externalFiles[file.Path]; ok {
-				return nil, fmt.Errorf("duplicate file %s", file.Path)
-			}
-
-			externalFiles[file.Path] = file.Content
-		}
-	}
-
-	return externalFiles, nil
-
 }
 
 /*

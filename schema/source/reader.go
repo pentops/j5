@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protoyaml-go"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
@@ -103,8 +104,12 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 	parser := protoparse.Parser{
 		ImportPaths:           []string{""},
 		IncludeSourceCodeInfo: true,
+		WarningReporter: func(err reporter.ErrorWithPos) {
+			fmt.Printf("WRAN: %s", err)
+		},
 
 		Accessor: func(filename string) (io.ReadCloser, error) {
+
 			if content, ok := extFiles[filename]; ok {
 				return io.NopCloser(bytes.NewReader(content)), nil
 			}
@@ -114,17 +119,18 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 
 	customDesc, err := parser.ParseFiles(filenames...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("protoparse: %w", err)
 	}
 
 	realDesc := desc.ToFileDescriptorSet(customDesc...)
 
 	return &source_j5pb.SourceImage{
-		File:     realDesc.File,
-		Packages: config.Packages,
-		Codec:    config.Options,
-		Prose:    proseFiles,
-		Registry: config.Registry,
+		File:            realDesc.File,
+		Packages:        config.Packages,
+		Codec:           config.Options,
+		Prose:           proseFiles,
+		Registry:        config.Registry,
+		SourceFilenames: filenames,
 	}, nil
 
 }

@@ -11,6 +11,7 @@ import (
 
 	"github.com/pentops/jsonapi/builder/builder"
 	"github.com/pentops/jsonapi/builder/docker"
+	"github.com/pentops/jsonapi/schema/source/protoprint"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -21,6 +22,7 @@ func protoSet() *commander.CommandSet {
 	protoGroup.Add("build", commander.NewCommand(runProtoBuild))
 	protoGroup.Add("request", commander.NewCommand(runProtoRequest))
 	protoGroup.Add("test", commander.NewCommand(runTestBuild))
+	protoGroup.Add("fmt", commander.NewCommand(runProtoFmt))
 	return protoGroup
 }
 
@@ -195,4 +197,27 @@ func runProtoBuild(ctx context.Context, cfg struct {
 	fmt.Println("All plugins built successfully")
 
 	return bb.BuildAll(ctx, src, dest)
+}
+
+func runProtoFmt(ctx context.Context, cfg struct {
+	SourceConfig
+}) error {
+
+	src, err := cfg.GetSource(ctx)
+	if err != nil {
+		return err
+	}
+
+	dest, err := NewLocalFS(cfg.SourceConfig.Source)
+	if err != nil {
+		return err
+	}
+
+	err = protoprint.PrintProtoFiles(ctx, dest, src, protoprint.Options{})
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -1,15 +1,17 @@
 package protoprint
 
 import (
+	"context"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/pentops/jsonapi/gen/test/foo/v1/foo_testpb"
+	"github.com/pentops/jsonapi/schema/source"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -21,7 +23,6 @@ func TestSimplePrint(t *testing.T) {
 		Package: proto.String("test.v1"),
 		Dependency: []string{
 			"google/protobuf/empty.proto",
-			"google/protobuf/timestamp.proto",
 		},
 		Options: &descriptorpb.FileOptions{
 			GoPackage: proto.String("go_package_value"),
@@ -56,6 +57,12 @@ func TestSimplePrint(t *testing.T) {
 				Label:    descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
 				Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
 				TypeName: proto.String(".test.v1.Test.F5Entry"),
+			}, {
+				Name:     proto.String("f6"),
+				Number:   proto.Int32(6),
+				Label:    descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL.Enum(),
+				Type:     descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
+				TypeName: proto.String(".test.v1.Foo"),
 			}},
 
 			NestedType: []*descriptorpb.DescriptorProto{{
@@ -86,6 +93,17 @@ func TestSimplePrint(t *testing.T) {
 				Options:    &descriptorpb.MethodOptions{},
 			}},
 		}},
+
+		EnumType: []*descriptorpb.EnumDescriptorProto{{
+			Name: proto.String("Foo"),
+			Value: []*descriptorpb.EnumValueDescriptorProto{{
+				Name:   proto.String("VAL_0"),
+				Number: proto.Int32(0),
+			}, {
+				Name:   proto.String("VAL_1"),
+				Number: proto.Int32(1),
+			}},
+		}},
 	}
 
 	proto.SetExtension(input.Service[0].Method[0].Options, annotations.E_Http, &annotations.HttpRule{
@@ -95,7 +113,12 @@ func TestSimplePrint(t *testing.T) {
 		Body: "*",
 	})
 
-	output, err := printFile(input)
+	testFile, err := protodesc.NewFile(input, protoregistry.GlobalFiles)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	output, err := printFile(testFile, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -108,7 +131,6 @@ func TestSimplePrint(t *testing.T) {
 		`package test.v1;`,
 		"",
 		`import "google/protobuf/empty.proto";`,
-		`import "google/protobuf/timestamp.proto";`,
 		``,
 		`option go_package = "go_package_value";`,
 		"",
@@ -127,6 +149,12 @@ func TestSimplePrint(t *testing.T) {
 		`  repeated string f3 = 3;`,
 		`  google.protobuf.Empty f4 = 4;`,
 		`  map<string, string> f5 = 5;`,
+		`  Foo f6 = 6;`,
+		`}`,
+		"",
+		`enum Foo {`,
+		`  VAL_0 = 0;`,
+		`  VAL_1 = 1;`,
 		`}`,
 		"",
 	}
@@ -147,16 +175,35 @@ func assertEqualLines(t *testing.T, wantLines, gotLines []string) {
 			t.Errorf("   want: '%s'", wantLines[idx])
 		}
 	}
+
+	for idx := len(gotLines); idx < len(wantLines); idx++ {
+		t.Errorf("mis %03d: '%s'", idx, wantLines[idx])
+	}
 }
 
 func TestExampleReal(t *testing.T) {
-	inputDesc := (&foo_testpb.GetFooRequest{}).ProtoReflect().Descriptor().ParentFile()
+	img, err := source.ReadImageFromSourceDir(context.Background(), "../../../proto/test")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	inputMsg := protodesc.ToFileDescriptorProto(inputDesc)
+	filesDesc, err := protodesc.NewFiles(&descriptorpb.FileDescriptorSet{
+		File: img.File,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fileDesc, err := filesDesc.FindFileByPath("test/foo/v1/test.proto")
 
-	t.Logf(prototext.Format(inputMsg))
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	output, err := printFile(inputMsg)
+	fd := protodesc.ToFileDescriptorProto(fileDesc)
+	fd.SourceCodeInfo = nil
+	t.Logf(prototext.Format(fd))
+
+	output, err := printFile(fileDesc, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

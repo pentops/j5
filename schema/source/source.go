@@ -10,6 +10,7 @@ import (
 	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
@@ -62,6 +63,27 @@ func (src *Source) SourceImage(ctx context.Context) (*source_j5pb.SourceImage, e
 	}
 
 	return src.sourceImg, nil
+}
+
+func (src *Source) SourceDescriptors(ctx context.Context) ([]*descriptorpb.FileDescriptorProto, error) {
+	img, err := src.SourceImage(ctx)
+	if err != nil {
+		return nil, err
+	}
+	includeMap := map[string]struct{}{}
+	for _, include := range img.SourceFilenames {
+		includeMap[include] = struct{}{}
+	}
+
+	out := []*descriptorpb.FileDescriptorProto{}
+	for _, file := range img.File {
+		if _, ok := includeMap[*file.Name]; !ok {
+			continue
+		}
+		out = append(out, file)
+	}
+
+	return out, nil
 }
 
 func (src *Source) SourceFile(ctx context.Context, filename string) ([]byte, error) {

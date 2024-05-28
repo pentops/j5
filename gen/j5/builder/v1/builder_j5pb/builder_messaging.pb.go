@@ -12,7 +12,6 @@ func (msg *BuildProtoMessage) MessagingHeaders() map[string]string {
 	headers := map[string]string{
 		"grpc-service": "/j5.builder.v1.BuilderTopic/BuildProto",
 		"grpc-message": "j5.builder.v1.BuildProtoMessage",
-		"api-version":  "9ced96f272c9411019144324060b3be973b321b4",
 	}
 	return headers
 }
@@ -26,7 +25,6 @@ func (msg *BuildAPIMessage) MessagingHeaders() map[string]string {
 	headers := map[string]string{
 		"grpc-service": "/j5.builder.v1.BuilderTopic/BuildAPI",
 		"grpc-message": "j5.builder.v1.BuildAPIMessage",
-		"api-version":  "9ced96f272c9411019144324060b3be973b321b4",
 	}
 	return headers
 }
