@@ -44,7 +44,7 @@ func NewBuilder(docker IDockerWrapper) *Builder {
 	}
 }
 
-func (b *Builder) BuildAll(ctx context.Context, src Source, dst FS, onlyMatching ...string) error {
+func (b *Builder) BuildAll(ctx context.Context, src Source, dst FS) error {
 
 	spec := src.J5Config()
 
@@ -62,95 +62,20 @@ func (b *Builder) BuildAll(ctx context.Context, src Source, dst FS, onlyMatching
 		git.ExpandGitAliases(spec.Git, commitInfo)
 	}
 
-	if len(onlyMatching) == 0 {
-		if _, err := b.BuildJsonAPI(ctx, img, spec.Registry, commitInfo); err != nil {
+	if _, err := b.BuildJsonAPI(ctx, img); err != nil {
+		return err
+	}
+
+	for _, dockerBuild := range spec.ProtoBuilds {
+		if err := b.BuildProto(ctx, src, dst, dockerBuild, os.Stderr); err != nil {
 			return err
 		}
-
-		for _, dockerBuild := range spec.ProtoBuilds {
-			if err := b.BuildProto(ctx, src, dst, dockerBuild, os.Stderr); err != nil {
-				return err
-			}
-		}
-
-		return nil
-	}
-
-	didAny := false
-
-	for _, builderName := range onlyMatching {
-
-		if builderName == "j5" {
-			if _, err := b.BuildJsonAPI(ctx, img, spec.Registry, commitInfo); err != nil {
-				return err
-			}
-			didAny = true
-			continue
-		}
-
-		subConfig := &source_j5pb.Config{
-			Packages: spec.Packages,
-			Options:  spec.Options,
-			Registry: spec.Registry,
-			Git:      spec.Git,
-		}
-		// format is proto/name, proto/name/plugin, j5
-		if strings.HasPrefix(builderName, "proto/") {
-			builderName = strings.TrimPrefix(builderName, "proto/")
-			pluginName := ""
-			if strings.Contains(builderName, "/") {
-				parts := strings.SplitN(builderName, "/", 2)
-				builderName = parts[0]
-				pluginName = parts[1]
-			}
-
-			fmt.Printf("builderName: %s, pluginName: %s\n", builderName, pluginName)
-
-			var foundProtoBuild *source_j5pb.ProtoBuildConfig
-			for _, protoBuild := range spec.ProtoBuilds {
-				if protoBuild.Label == builderName {
-					foundProtoBuild = protoBuild
-					break
-				}
-			}
-
-			if foundProtoBuild == nil {
-				return fmt.Errorf("proto build not found: %s", builderName)
-			}
-
-			if pluginName != "" {
-				found := false
-				for _, plugin := range foundProtoBuild.Plugins {
-					if plugin.Name == pluginName {
-						found = true
-						foundProtoBuild.Plugins = []*source_j5pb.BuildPlugin{plugin}
-						break
-					}
-				}
-
-				if !found {
-					return fmt.Errorf("plugin %s not found in proto builder %s", pluginName, builderName)
-				}
-			}
-
-			subConfig.ProtoBuilds = []*source_j5pb.ProtoBuildConfig{foundProtoBuild}
-
-			didAny = true
-			if err := b.BuildProto(ctx, src, dst, foundProtoBuild, os.Stderr); err != nil {
-				return err
-			}
-
-		}
-	}
-
-	if !didAny {
-		return fmt.Errorf("no builders matched")
 	}
 
 	return nil
 }
 
-func (b *Builder) BuildJsonAPI(ctx context.Context, img *source_j5pb.SourceImage, registry *source_j5pb.RegistryConfig, commitInfo *builder_j5pb.CommitInfo) (*J5Upload, error) {
+func (b *Builder) BuildJsonAPI(ctx context.Context, img *source_j5pb.SourceImage) (*J5Upload, error) {
 	log.Info(ctx, "build json API")
 
 	jdefDoc, err := structure.BuildFromImage(img)

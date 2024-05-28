@@ -63,7 +63,7 @@ message GenerateConfig {
 }
 
 message ProtoBuildConfig {
-  string label = 1;
+  string name = 1;
   repeated BuildPlugin plugins = 2;
 
   oneof package_type {
