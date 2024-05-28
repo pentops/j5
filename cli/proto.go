@@ -28,9 +28,8 @@ func protoSet() *commander.CommandSet {
 
 func runTestBuild(ctx context.Context, cfg struct {
 	SourceConfig
-	Pull     bool     `flag:"pull" default:"false" description:"Pull images from registry, even if they already exist"`
-	Output   []string `flag:"output" default:"" description:"Not a dry run - actually output the built files (e.g. for go mod replace). "`
-	Builders []string `flag:",remaining" description:"Builders to run - 'j5', 'proto/$label' 'proto/$label/$plugin'"`
+	Pull   bool     `flag:"pull" default:"false" description:"Pull images from registry, even if they already exist"`
+	Output []string `flag:"output" default:"" description:"Not a dry run - actually output the built files (e.g. for go mod replace). "`
 }) error {
 
 	remote := builder.NewRawUploader()
@@ -74,7 +73,7 @@ func runTestBuild(ctx context.Context, cfg struct {
 
 	dst := NewDiscardFS()
 
-	err = bb.BuildAll(ctx, source, dst, cfg.Builders...)
+	err = bb.BuildAll(ctx, source, dst)
 	if err != nil {
 		return err
 	}

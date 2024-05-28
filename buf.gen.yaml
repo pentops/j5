@@ -4,10 +4,6 @@ plugins:
     out: .
     opt: paths=import,module=github.com/pentops/jsonapi
 
-  - name: go-messaging # github.com/pentops/protoc-gen-go-messaging
-    out: .
-    opt: paths=import,module=github.com/pentops/jsonapi
-
   - name: go-grpc # 'Official' version
     out: .
     opt: paths=import,module=github.com/pentops/jsonapi
