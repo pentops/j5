@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package j5.source.v1;
+package j5.config.v1;
 
-option go_package = "github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb";
+option go_package = "github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb";
 
 // Config represents the config file (j5.yaml) for a repo.
 message Config {

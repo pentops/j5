@@ -10,11 +10,10 @@ import (
 
 	"runtime/debug"
 
-	"github.com/bufbuild/protoyaml-go"
 	"github.com/pentops/jsonapi/builder/builder"
 	"github.com/pentops/jsonapi/builder/docker"
 	"github.com/pentops/jsonapi/builder/git"
-	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/jsonapi/schema/source"
 	"github.com/pentops/runner/commander"
@@ -80,7 +79,7 @@ func runGenerate(ctx context.Context, cfg struct {
 		}
 
 		bb := builder.NewBuilder(dockerWrapper)
-		resolvedPlugins := make([]*source_j5pb.BuildPlugin, 0, len(generator.Plugins))
+		resolvedPlugins := make([]*config_j5pb.BuildPlugin, 0, len(generator.Plugins))
 		for _, plugin := range generator.Plugins {
 			plugin, err = src.ResolvePlugin(plugin)
 			if err != nil {
@@ -129,14 +128,14 @@ type SourceConfig struct {
 func (cfg SourceConfig) GetSource(ctx context.Context) (builder.Source, error) {
 
 	sourceDir := cfg.Source
-	japiConfig, err := loadConfig(sourceDir)
+	japiConfig, err := source.ReadDirConfigs(cfg.Source)
 	if err != nil {
 		return nil, err
 	}
 
-	var commitInfo *builder_j5pb.CommitInfo
+	var commitInfo *source_j5pb.CommitInfo
 	if cfg.CommitHash != "" && cfg.CommitTime != "" {
-		commitInfo = &builder_j5pb.CommitInfo{}
+		commitInfo = &source_j5pb.CommitInfo{}
 		commitInfo.Hash = cfg.CommitHash
 		commitTime, err := time.Parse(time.RFC3339, cfg.CommitTime)
 		if err != nil {
@@ -152,32 +151,6 @@ func (cfg SourceConfig) GetSource(ctx context.Context) (builder.Source, error) {
 	}
 
 	return source.NewLocalDirSource(ctx, commitInfo, japiConfig, sourceDir)
-}
-
-func loadConfig(src string) (*source_j5pb.Config, error) {
-	var configData []byte
-	var err error
-	for _, filename := range source.ConfigPaths {
-		configData, err = os.ReadFile(filepath.Join(src, filename))
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-			return nil, err
-		}
-		break
-	}
-
-	if configData == nil {
-		return nil, fmt.Errorf("no config found")
-	}
-
-	config := &source_j5pb.Config{}
-	if err := protoyaml.Unmarshal(configData, config); err != nil {
-		return nil, err
-	}
-
-	return config, nil
 }
 
 type DiscardFS struct{}

@@ -7,12 +7,13 @@
 package baz_testpb
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	bar_testpb "github.com/pentops/jsonapi/gen/test/bar/v1/bar_testpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

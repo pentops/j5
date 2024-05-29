@@ -15,6 +15,7 @@ service FooService {
     option (google.api.http) = {get: "/test/v1/foo/{id}"};
   }
 
+  // PostFoo Comment
   rpc PostFoo(PostFooRequest) returns (PostFooResponse) {
     option (google.api.http) = {
       post: "/test/v1/foo"

@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/jsonapi/schema/jdef"
@@ -98,10 +97,10 @@ func NewFSUploader(fs FS) *FSUploader {
 type FullInfo struct {
 	Version string
 	Package string
-	Commit  *builder_j5pb.CommitInfo
+	Commit  *source_j5pb.CommitInfo
 }
 
-func (uu *FSUploader) UploadGoModule(ctx context.Context, commitInfo *builder_j5pb.CommitInfo, goModData []byte, packageRoot string) error {
+func (uu *FSUploader) UploadGoModule(ctx context.Context, commitInfo *source_j5pb.CommitInfo, goModData []byte, packageRoot string) error {
 
 	/*
 		dest, err := os.MkdirTemp("", "j5-workdir")

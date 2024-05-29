@@ -1,7 +1,7 @@
 package codec
 
 import (
-	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -9,7 +9,7 @@ type Codec struct {
 	Options
 }
 
-func NewCodec(optsSrc *source_j5pb.CodecOptions) *Codec {
+func NewCodec(optsSrc *config_j5pb.CodecOptions) *Codec {
 	opts := Options{}
 
 	if optsSrc.WrapOneof {

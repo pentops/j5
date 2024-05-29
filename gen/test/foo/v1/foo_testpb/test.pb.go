@@ -7,6 +7,9 @@
 package foo_testpb
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
 	psml_pb "github.com/pentops/protostate/gen/list/v1/psml_pb"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
@@ -14,8 +17,6 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

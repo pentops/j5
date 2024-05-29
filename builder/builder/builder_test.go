@@ -4,13 +4,13 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 )
 
 func TestMapEnvVars(t *testing.T) {
 	sampleIn := []string{"PROTOC_GEN_GO_MESSAGING_EXTRA_HEADERS=api-version:$GIT_HASH"}
 
-	cInfo := builder_j5pb.CommitInfo{
+	cInfo := source_j5pb.CommitInfo{
 		Hash: "abcdef",
 	}
 

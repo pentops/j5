@@ -2,15 +2,16 @@
 // versions:
 // 	protoc-gen-go v1.31.0
 // 	protoc        (unknown)
-// source: j5/source/v1/config.proto
+// source: j5/config/v1/config.proto
 
-package source_j5pb
+package config_j5pb
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
 	sync "sync"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 )
 
 const (
@@ -53,11 +54,11 @@ func (x Plugin) String() string {
 }
 
 func (Plugin) Descriptor() protoreflect.EnumDescriptor {
-	return file_j5_source_v1_config_proto_enumTypes[0].Descriptor()
+	return file_j5_config_v1_config_proto_enumTypes[0].Descriptor()
 }
 
 func (Plugin) Type() protoreflect.EnumType {
-	return &file_j5_source_v1_config_proto_enumTypes[0]
+	return &file_j5_config_v1_config_proto_enumTypes[0]
 }
 
 func (x Plugin) Number() protoreflect.EnumNumber {
@@ -66,7 +67,7 @@ func (x Plugin) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use Plugin.Descriptor instead.
 func (Plugin) EnumDescriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{0}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{0}
 }
 
 // Config represents the config file (j5.yaml) for a repo.
@@ -87,7 +88,7 @@ type Config struct {
 func (x *Config) Reset() {
 	*x = Config{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[0]
+		mi := &file_j5_config_v1_config_proto_msgTypes[0]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -100,7 +101,7 @@ func (x *Config) String() string {
 func (*Config) ProtoMessage() {}
 
 func (x *Config) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[0]
+	mi := &file_j5_config_v1_config_proto_msgTypes[0]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -113,7 +114,7 @@ func (x *Config) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Config.ProtoReflect.Descriptor instead.
 func (*Config) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{0}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *Config) GetPackages() []*PackageConfig {
@@ -178,7 +179,7 @@ type PackageConfig struct {
 func (x *PackageConfig) Reset() {
 	*x = PackageConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[1]
+		mi := &file_j5_config_v1_config_proto_msgTypes[1]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -191,7 +192,7 @@ func (x *PackageConfig) String() string {
 func (*PackageConfig) ProtoMessage() {}
 
 func (x *PackageConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[1]
+	mi := &file_j5_config_v1_config_proto_msgTypes[1]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -204,7 +205,7 @@ func (x *PackageConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PackageConfig.ProtoReflect.Descriptor instead.
 func (*PackageConfig) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{1}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *PackageConfig) GetLabel() string {
@@ -240,7 +241,7 @@ type RegistryConfig struct {
 func (x *RegistryConfig) Reset() {
 	*x = RegistryConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[2]
+		mi := &file_j5_config_v1_config_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -253,7 +254,7 @@ func (x *RegistryConfig) String() string {
 func (*RegistryConfig) ProtoMessage() {}
 
 func (x *RegistryConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[2]
+	mi := &file_j5_config_v1_config_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -266,7 +267,7 @@ func (x *RegistryConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RegistryConfig.ProtoReflect.Descriptor instead.
 func (*RegistryConfig) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{2}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RegistryConfig) GetOrganization() string {
@@ -296,7 +297,7 @@ type CodecOptions struct {
 func (x *CodecOptions) Reset() {
 	*x = CodecOptions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[3]
+		mi := &file_j5_config_v1_config_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -309,7 +310,7 @@ func (x *CodecOptions) String() string {
 func (*CodecOptions) ProtoMessage() {}
 
 func (x *CodecOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[3]
+	mi := &file_j5_config_v1_config_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -322,7 +323,7 @@ func (x *CodecOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CodecOptions.ProtoReflect.Descriptor instead.
 func (*CodecOptions) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{3}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *CodecOptions) GetTrimSubPackages() []string {
@@ -358,7 +359,7 @@ type ShortEnumOptions struct {
 func (x *ShortEnumOptions) Reset() {
 	*x = ShortEnumOptions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[4]
+		mi := &file_j5_config_v1_config_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -371,7 +372,7 @@ func (x *ShortEnumOptions) String() string {
 func (*ShortEnumOptions) ProtoMessage() {}
 
 func (x *ShortEnumOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[4]
+	mi := &file_j5_config_v1_config_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -384,7 +385,7 @@ func (x *ShortEnumOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ShortEnumOptions.ProtoReflect.Descriptor instead.
 func (*ShortEnumOptions) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{4}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ShortEnumOptions) GetUnspecifiedSuffix() string {
@@ -419,7 +420,7 @@ type GitConfig struct {
 func (x *GitConfig) Reset() {
 	*x = GitConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[5]
+		mi := &file_j5_config_v1_config_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -432,7 +433,7 @@ func (x *GitConfig) String() string {
 func (*GitConfig) ProtoMessage() {}
 
 func (x *GitConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[5]
+	mi := &file_j5_config_v1_config_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -445,7 +446,7 @@ func (x *GitConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GitConfig.ProtoReflect.Descriptor instead.
 func (*GitConfig) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{5}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *GitConfig) GetMain() string {
@@ -470,7 +471,7 @@ type GenerateConfig struct {
 func (x *GenerateConfig) Reset() {
 	*x = GenerateConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[6]
+		mi := &file_j5_config_v1_config_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -483,7 +484,7 @@ func (x *GenerateConfig) String() string {
 func (*GenerateConfig) ProtoMessage() {}
 
 func (x *GenerateConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[6]
+	mi := &file_j5_config_v1_config_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -496,7 +497,7 @@ func (x *GenerateConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateConfig.ProtoReflect.Descriptor instead.
 func (*GenerateConfig) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{6}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GenerateConfig) GetName() string {
@@ -550,7 +551,7 @@ type ProtoBuildConfig struct {
 func (x *ProtoBuildConfig) Reset() {
 	*x = ProtoBuildConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[7]
+		mi := &file_j5_config_v1_config_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -563,7 +564,7 @@ func (x *ProtoBuildConfig) String() string {
 func (*ProtoBuildConfig) ProtoMessage() {}
 
 func (x *ProtoBuildConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[7]
+	mi := &file_j5_config_v1_config_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -576,7 +577,7 @@ func (x *ProtoBuildConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProtoBuildConfig.ProtoReflect.Descriptor instead.
 func (*ProtoBuildConfig) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{7}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ProtoBuildConfig) GetName() string {
@@ -626,7 +627,7 @@ type BuildPlugin struct {
 	Base *string `protobuf:"bytes,1,opt,name=base,proto3,oneof" json:"base,omitempty"`
 	// the name of this plugin
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Type Plugin `protobuf:"varint,3,opt,name=type,proto3,enum=j5.source.v1.Plugin" json:"type,omitempty"`
+	Type Plugin `protobuf:"varint,3,opt,name=type,proto3,enum=j5.config.v1.Plugin" json:"type,omitempty"`
 	// a docker container which will receive stdin and pipe stdout
 	// input is google.protobuf.compiler.CodeGeneratorRequest
 	// output is google.protobuf.compiler.CodeGeneratorResponse
@@ -638,7 +639,7 @@ type BuildPlugin struct {
 func (x *BuildPlugin) Reset() {
 	*x = BuildPlugin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[8]
+		mi := &file_j5_config_v1_config_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -651,7 +652,7 @@ func (x *BuildPlugin) String() string {
 func (*BuildPlugin) ProtoMessage() {}
 
 func (x *BuildPlugin) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[8]
+	mi := &file_j5_config_v1_config_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -664,7 +665,7 @@ func (x *BuildPlugin) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BuildPlugin.ProtoReflect.Descriptor instead.
 func (*BuildPlugin) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{8}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *BuildPlugin) GetBase() string {
@@ -724,7 +725,7 @@ type DockerSpec struct {
 func (x *DockerSpec) Reset() {
 	*x = DockerSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[9]
+		mi := &file_j5_config_v1_config_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -737,7 +738,7 @@ func (x *DockerSpec) String() string {
 func (*DockerSpec) ProtoMessage() {}
 
 func (x *DockerSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[9]
+	mi := &file_j5_config_v1_config_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -750,7 +751,7 @@ func (x *DockerSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DockerSpec.ProtoReflect.Descriptor instead.
 func (*DockerSpec) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{9}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *DockerSpec) GetImage() string {
@@ -801,7 +802,7 @@ type CommandSpec struct {
 func (x *CommandSpec) Reset() {
 	*x = CommandSpec{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[10]
+		mi := &file_j5_config_v1_config_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -814,7 +815,7 @@ func (x *CommandSpec) String() string {
 func (*CommandSpec) ProtoMessage() {}
 
 func (x *CommandSpec) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[10]
+	mi := &file_j5_config_v1_config_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -827,7 +828,7 @@ func (x *CommandSpec) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CommandSpec.ProtoReflect.Descriptor instead.
 func (*CommandSpec) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{10}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *CommandSpec) GetCommand() string {
@@ -877,7 +878,7 @@ type DockerRegistryAuth struct {
 func (x *DockerRegistryAuth) Reset() {
 	*x = DockerRegistryAuth{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[11]
+		mi := &file_j5_config_v1_config_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -890,7 +891,7 @@ func (x *DockerRegistryAuth) String() string {
 func (*DockerRegistryAuth) ProtoMessage() {}
 
 func (x *DockerRegistryAuth) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[11]
+	mi := &file_j5_config_v1_config_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -903,7 +904,7 @@ func (x *DockerRegistryAuth) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DockerRegistryAuth.ProtoReflect.Descriptor instead.
 func (*DockerRegistryAuth) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{11}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *DockerRegistryAuth) GetRegistry() string {
@@ -982,7 +983,7 @@ type ProtoBuildConfig_GoProxy struct {
 func (x *ProtoBuildConfig_GoProxy) Reset() {
 	*x = ProtoBuildConfig_GoProxy{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[13]
+		mi := &file_j5_config_v1_config_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -995,7 +996,7 @@ func (x *ProtoBuildConfig_GoProxy) String() string {
 func (*ProtoBuildConfig_GoProxy) ProtoMessage() {}
 
 func (x *ProtoBuildConfig_GoProxy) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[13]
+	mi := &file_j5_config_v1_config_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1008,7 +1009,7 @@ func (x *ProtoBuildConfig_GoProxy) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProtoBuildConfig_GoProxy.ProtoReflect.Descriptor instead.
 func (*ProtoBuildConfig_GoProxy) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{7, 0}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{7, 0}
 }
 
 func (x *ProtoBuildConfig_GoProxy) GetPath() string {
@@ -1037,7 +1038,7 @@ type DockerRegistryAuth_Basic struct {
 func (x *DockerRegistryAuth_Basic) Reset() {
 	*x = DockerRegistryAuth_Basic{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[15]
+		mi := &file_j5_config_v1_config_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1050,7 +1051,7 @@ func (x *DockerRegistryAuth_Basic) String() string {
 func (*DockerRegistryAuth_Basic) ProtoMessage() {}
 
 func (x *DockerRegistryAuth_Basic) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[15]
+	mi := &file_j5_config_v1_config_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1063,7 +1064,7 @@ func (x *DockerRegistryAuth_Basic) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DockerRegistryAuth_Basic.ProtoReflect.Descriptor instead.
 func (*DockerRegistryAuth_Basic) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{11, 0}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{11, 0}
 }
 
 func (x *DockerRegistryAuth_Basic) GetUsername() string {
@@ -1089,7 +1090,7 @@ type DockerRegistryAuth_AWSECS struct {
 func (x *DockerRegistryAuth_AWSECS) Reset() {
 	*x = DockerRegistryAuth_AWSECS{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[16]
+		mi := &file_j5_config_v1_config_proto_msgTypes[16]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1102,7 +1103,7 @@ func (x *DockerRegistryAuth_AWSECS) String() string {
 func (*DockerRegistryAuth_AWSECS) ProtoMessage() {}
 
 func (x *DockerRegistryAuth_AWSECS) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[16]
+	mi := &file_j5_config_v1_config_proto_msgTypes[16]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1115,7 +1116,7 @@ func (x *DockerRegistryAuth_AWSECS) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DockerRegistryAuth_AWSECS.ProtoReflect.Descriptor instead.
 func (*DockerRegistryAuth_AWSECS) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{11, 1}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{11, 1}
 }
 
 type DockerRegistryAuth_Github struct {
@@ -1129,7 +1130,7 @@ type DockerRegistryAuth_Github struct {
 func (x *DockerRegistryAuth_Github) Reset() {
 	*x = DockerRegistryAuth_Github{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_source_v1_config_proto_msgTypes[17]
+		mi := &file_j5_config_v1_config_proto_msgTypes[17]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1142,7 +1143,7 @@ func (x *DockerRegistryAuth_Github) String() string {
 func (*DockerRegistryAuth_Github) ProtoMessage() {}
 
 func (x *DockerRegistryAuth_Github) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_source_v1_config_proto_msgTypes[17]
+	mi := &file_j5_config_v1_config_proto_msgTypes[17]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1155,7 +1156,7 @@ func (x *DockerRegistryAuth_Github) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DockerRegistryAuth_Github.ProtoReflect.Descriptor instead.
 func (*DockerRegistryAuth_Github) Descriptor() ([]byte, []int) {
-	return file_j5_source_v1_config_proto_rawDescGZIP(), []int{11, 2}
+	return file_j5_config_v1_config_proto_rawDescGZIP(), []int{11, 2}
 }
 
 func (x *DockerRegistryAuth_Github) GetTokenEnvVar() string {
@@ -1165,36 +1166,36 @@ func (x *DockerRegistryAuth_Github) GetTokenEnvVar() string {
 	return ""
 }
 
-var File_j5_source_v1_config_proto protoreflect.FileDescriptor
+var File_j5_config_v1_config_proto protoreflect.FileDescriptor
 
-var file_j5_source_v1_config_proto_rawDesc = []byte{
-	0x0a, 0x19, 0x6a, 0x35, 0x2f, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2f, 0x76, 0x31, 0x2f, 0x63,
+var file_j5_config_v1_config_proto_rawDesc = []byte{
+	0x0a, 0x19, 0x6a, 0x35, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2f, 0x76, 0x31, 0x2f, 0x63,
 	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x0c, 0x6a, 0x35, 0x2e,
-	0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x22, 0x8e, 0x03, 0x0a, 0x06, 0x43, 0x6f,
+	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x22, 0x8e, 0x03, 0x0a, 0x06, 0x43, 0x6f,
 	0x6e, 0x66, 0x69, 0x67, 0x12, 0x37, 0x0a, 0x08, 0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x73,
-	0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72,
-	0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x43, 0x6f, 0x6e,
+	0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66,
+	0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x43, 0x6f, 0x6e,
 	0x66, 0x69, 0x67, 0x52, 0x08, 0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x73, 0x12, 0x34, 0x0a,
 	0x07, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a,
-	0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f,
+	0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x43, 0x6f,
 	0x64, 0x65, 0x63, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x07, 0x6f, 0x70, 0x74, 0x69,
 	0x6f, 0x6e, 0x73, 0x12, 0x38, 0x0a, 0x08, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x18,
-	0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63,
-	0x65, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x43, 0x6f, 0x6e,
+	0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x2e, 0x76, 0x31, 0x2e, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x43, 0x6f, 0x6e,
 	0x66, 0x69, 0x67, 0x52, 0x08, 0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x12, 0x41, 0x0a,
 	0x0c, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x5f, 0x62, 0x75, 0x69, 0x6c, 0x64, 0x73, 0x18, 0x04, 0x20,
-	0x03, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e,
+	0x03, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e,
 	0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x43, 0x6f, 0x6e,
 	0x66, 0x69, 0x67, 0x52, 0x0b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x73,
 	0x12, 0x33, 0x0a, 0x07, 0x70, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73, 0x18, 0x05, 0x20, 0x03, 0x28,
-	0x0b, 0x32, 0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76, 0x31,
+	0x0b, 0x32, 0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76, 0x31,
 	0x2e, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x52, 0x07, 0x70, 0x6c,
 	0x75, 0x67, 0x69, 0x6e, 0x73, 0x12, 0x38, 0x0a, 0x08, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74,
-	0x65, 0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75,
-	0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x43,
+	0x65, 0x18, 0x06, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x43,
 	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x08, 0x67, 0x65, 0x6e, 0x65, 0x72, 0x61, 0x74, 0x65, 0x12,
 	0x29, 0x0a, 0x03, 0x67, 0x69, 0x74, 0x18, 0x07, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x6a,
-	0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x69, 0x74, 0x43,
+	0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x69, 0x74, 0x43,
 	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x52, 0x03, 0x67, 0x69, 0x74, 0x22, 0x4f, 0x0a, 0x0d, 0x50, 0x61,
 	0x63, 0x6b, 0x61, 0x67, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x14, 0x0a, 0x05, 0x6c,
 	0x61, 0x62, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x6c, 0x61, 0x62, 0x65,
@@ -1212,8 +1213,8 @@ var file_j5_source_v1_config_proto_rawDesc = []byte{
 	0x65, 0x73, 0x12, 0x1d, 0x0a, 0x0a, 0x77, 0x72, 0x61, 0x70, 0x5f, 0x6f, 0x6e, 0x65, 0x6f, 0x66,
 	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x77, 0x72, 0x61, 0x70, 0x4f, 0x6e, 0x65, 0x6f,
 	0x66, 0x12, 0x3f, 0x0a, 0x0b, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x5f, 0x65, 0x6e, 0x75, 0x6d, 0x73,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72,
-	0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x45, 0x6e, 0x75, 0x6d, 0x4f,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66,
+	0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x45, 0x6e, 0x75, 0x6d, 0x4f,
 	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x0a, 0x73, 0x68, 0x6f, 0x72, 0x74, 0x45, 0x6e, 0x75,
 	0x6d, 0x73, 0x22, 0x6c, 0x0a, 0x10, 0x53, 0x68, 0x6f, 0x72, 0x74, 0x45, 0x6e, 0x75, 0x6d, 0x4f,
 	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x2d, 0x0a, 0x12, 0x75, 0x6e, 0x73, 0x70, 0x65, 0x63,
@@ -1230,11 +1231,11 @@ var file_j5_source_v1_config_proto_rawDesc = []byte{
 	0x02, 0x20, 0x03, 0x28, 0x09, 0x52, 0x03, 0x73, 0x72, 0x63, 0x12, 0x10, 0x0a, 0x03, 0x6f, 0x75,
 	0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6f, 0x75, 0x74, 0x12, 0x3a, 0x0a, 0x04,
 	0x6f, 0x70, 0x74, 0x73, 0x18, 0x04, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x6a, 0x35, 0x2e,
-	0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61,
+	0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x47, 0x65, 0x6e, 0x65, 0x72, 0x61,
 	0x74, 0x65, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x4f, 0x70, 0x74, 0x73, 0x45, 0x6e, 0x74,
 	0x72, 0x79, 0x52, 0x04, 0x6f, 0x70, 0x74, 0x73, 0x12, 0x33, 0x0a, 0x07, 0x70, 0x6c, 0x75, 0x67,
-	0x69, 0x6e, 0x73, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x73,
-	0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x50, 0x6c,
+	0x69, 0x6e, 0x73, 0x18, 0x05, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x63,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x50, 0x6c,
 	0x75, 0x67, 0x69, 0x6e, 0x52, 0x07, 0x70, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73, 0x1a, 0x37, 0x0a,
 	0x09, 0x4f, 0x70, 0x74, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03, 0x6b, 0x65,
 	0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x6b, 0x65, 0x79, 0x12, 0x14, 0x0a, 0x05,
@@ -1243,11 +1244,11 @@ var file_j5_source_v1_config_proto_rawDesc = []byte{
 	0x42, 0x75, 0x69, 0x6c, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x12, 0x0a, 0x04, 0x6e,
 	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12,
 	0x33, 0x0a, 0x07, 0x70, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b,
-	0x32, 0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e,
+	0x32, 0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e,
 	0x42, 0x75, 0x69, 0x6c, 0x64, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x52, 0x07, 0x70, 0x6c, 0x75,
 	0x67, 0x69, 0x6e, 0x73, 0x12, 0x43, 0x0a, 0x08, 0x67, 0x6f, 0x5f, 0x70, 0x72, 0x6f, 0x78, 0x79,
-	0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72,
-	0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x42, 0x75, 0x69, 0x6c, 0x64,
+	0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66,
+	0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x50, 0x72, 0x6f, 0x74, 0x6f, 0x42, 0x75, 0x69, 0x6c, 0x64,
 	0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x47, 0x6f, 0x50, 0x72, 0x6f, 0x78, 0x79, 0x48, 0x00,
 	0x52, 0x07, 0x67, 0x6f, 0x50, 0x72, 0x6f, 0x78, 0x79, 0x1a, 0x3d, 0x0a, 0x07, 0x47, 0x6f, 0x50,
 	0x72, 0x6f, 0x78, 0x79, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01,
@@ -1259,16 +1260,16 @@ var file_j5_source_v1_config_proto_rawDesc = []byte{
 	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x04, 0x62, 0x61, 0x73, 0x65, 0x88, 0x01,
 	0x01, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
 	0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x28, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20,
-	0x01, 0x28, 0x0e, 0x32, 0x14, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e,
+	0x01, 0x28, 0x0e, 0x32, 0x14, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e,
 	0x76, 0x31, 0x2e, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12,
 	0x30, 0x0a, 0x06, 0x64, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x18, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44,
+	0x18, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x44,
 	0x6f, 0x63, 0x6b, 0x65, 0x72, 0x53, 0x70, 0x65, 0x63, 0x52, 0x06, 0x64, 0x6f, 0x63, 0x6b, 0x65,
 	0x72, 0x12, 0x33, 0x0a, 0x07, 0x63, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x18, 0x05, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76,
+	0x28, 0x0b, 0x32, 0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76,
 	0x31, 0x2e, 0x43, 0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x53, 0x70, 0x65, 0x63, 0x52, 0x07, 0x63,
 	0x6f, 0x6d, 0x6d, 0x61, 0x6e, 0x64, 0x12, 0x37, 0x0a, 0x04, 0x6f, 0x70, 0x74, 0x73, 0x18, 0x07,
-	0x20, 0x03, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65,
+	0x20, 0x03, 0x28, 0x0b, 0x32, 0x23, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67,
 	0x2e, 0x76, 0x31, 0x2e, 0x42, 0x75, 0x69, 0x6c, 0x64, 0x50, 0x6c, 0x75, 0x67, 0x69, 0x6e, 0x2e,
 	0x4f, 0x70, 0x74, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x52, 0x04, 0x6f, 0x70, 0x74, 0x73, 0x1a,
 	0x37, 0x0a, 0x09, 0x4f, 0x70, 0x74, 0x73, 0x45, 0x6e, 0x74, 0x72, 0x79, 0x12, 0x10, 0x0a, 0x03,
@@ -1292,16 +1293,16 @@ var file_j5_source_v1_config_proto_rawDesc = []byte{
 	0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x41, 0x75, 0x74, 0x68, 0x12, 0x1a, 0x0a, 0x08,
 	0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08,
 	0x72, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x12, 0x3e, 0x0a, 0x05, 0x62, 0x61, 0x73, 0x69,
-	0x63, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x6f, 0x75,
-	0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x52, 0x65, 0x67,
+	0x63, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x26, 0x2e, 0x6a, 0x35, 0x2e, 0x63, 0x6f, 0x6e,
+	0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x52, 0x65, 0x67,
 	0x69, 0x73, 0x74, 0x72, 0x79, 0x41, 0x75, 0x74, 0x68, 0x2e, 0x42, 0x61, 0x73, 0x69, 0x63, 0x48,
 	0x00, 0x52, 0x05, 0x62, 0x61, 0x73, 0x69, 0x63, 0x12, 0x42, 0x0a, 0x07, 0x61, 0x77, 0x73, 0x5f,
-	0x65, 0x63, 0x73, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x6a, 0x35, 0x2e, 0x73,
-	0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x52,
+	0x65, 0x63, 0x73, 0x18, 0x0b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x6a, 0x35, 0x2e, 0x63,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x6f, 0x63, 0x6b, 0x65, 0x72, 0x52,
 	0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x41, 0x75, 0x74, 0x68, 0x2e, 0x41, 0x57, 0x53, 0x45,
 	0x43, 0x53, 0x48, 0x00, 0x52, 0x06, 0x61, 0x77, 0x73, 0x45, 0x63, 0x73, 0x12, 0x41, 0x0a, 0x06,
 	0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x18, 0x0c, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x27, 0x2e, 0x6a,
-	0x35, 0x2e, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x6f, 0x63, 0x6b,
+	0x35, 0x2e, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x6f, 0x63, 0x6b,
 	0x65, 0x72, 0x52, 0x65, 0x67, 0x69, 0x73, 0x74, 0x72, 0x79, 0x41, 0x75, 0x74, 0x68, 0x2e, 0x47,
 	0x69, 0x74, 0x68, 0x75, 0x62, 0x48, 0x00, 0x52, 0x06, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x1a,
 	0x4d, 0x0a, 0x05, 0x42, 0x61, 0x73, 0x69, 0x63, 0x12, 0x1a, 0x0a, 0x08, 0x75, 0x73, 0x65, 0x72,
@@ -1319,66 +1320,66 @@ var file_j5_source_v1_config_proto_rawDesc = []byte{
 	0x10, 0x01, 0x12, 0x14, 0x0a, 0x10, 0x50, 0x4c, 0x55, 0x47, 0x49, 0x4e, 0x5f, 0x4a, 0x35, 0x5f,
 	0x43, 0x4c, 0x49, 0x45, 0x4e, 0x54, 0x10, 0x02, 0x42, 0x39, 0x5a, 0x37, 0x67, 0x69, 0x74, 0x68,
 	0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x74, 0x6f, 0x70, 0x73, 0x2f, 0x6a,
-	0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x6a, 0x35, 0x2f, 0x73, 0x6f,
-	0x75, 0x72, 0x63, 0x65, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x5f, 0x6a,
+	0x73, 0x6f, 0x6e, 0x61, 0x70, 0x69, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x6a, 0x35, 0x2f, 0x63, 0x6f,
+	0x6e, 0x66, 0x69, 0x67, 0x2f, 0x76, 0x31, 0x2f, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x6a,
 	0x35, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
-	file_j5_source_v1_config_proto_rawDescOnce sync.Once
-	file_j5_source_v1_config_proto_rawDescData = file_j5_source_v1_config_proto_rawDesc
+	file_j5_config_v1_config_proto_rawDescOnce sync.Once
+	file_j5_config_v1_config_proto_rawDescData = file_j5_config_v1_config_proto_rawDesc
 )
 
-func file_j5_source_v1_config_proto_rawDescGZIP() []byte {
-	file_j5_source_v1_config_proto_rawDescOnce.Do(func() {
-		file_j5_source_v1_config_proto_rawDescData = protoimpl.X.CompressGZIP(file_j5_source_v1_config_proto_rawDescData)
+func file_j5_config_v1_config_proto_rawDescGZIP() []byte {
+	file_j5_config_v1_config_proto_rawDescOnce.Do(func() {
+		file_j5_config_v1_config_proto_rawDescData = protoimpl.X.CompressGZIP(file_j5_config_v1_config_proto_rawDescData)
 	})
-	return file_j5_source_v1_config_proto_rawDescData
+	return file_j5_config_v1_config_proto_rawDescData
 }
 
-var file_j5_source_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_j5_source_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
-var file_j5_source_v1_config_proto_goTypes = []interface{}{
-	(Plugin)(0),                       // 0: j5.source.v1.Plugin
-	(*Config)(nil),                    // 1: j5.source.v1.Config
-	(*PackageConfig)(nil),             // 2: j5.source.v1.PackageConfig
-	(*RegistryConfig)(nil),            // 3: j5.source.v1.RegistryConfig
-	(*CodecOptions)(nil),              // 4: j5.source.v1.CodecOptions
-	(*ShortEnumOptions)(nil),          // 5: j5.source.v1.ShortEnumOptions
-	(*GitConfig)(nil),                 // 6: j5.source.v1.GitConfig
-	(*GenerateConfig)(nil),            // 7: j5.source.v1.GenerateConfig
-	(*ProtoBuildConfig)(nil),          // 8: j5.source.v1.ProtoBuildConfig
-	(*BuildPlugin)(nil),               // 9: j5.source.v1.BuildPlugin
-	(*DockerSpec)(nil),                // 10: j5.source.v1.DockerSpec
-	(*CommandSpec)(nil),               // 11: j5.source.v1.CommandSpec
-	(*DockerRegistryAuth)(nil),        // 12: j5.source.v1.DockerRegistryAuth
-	nil,                               // 13: j5.source.v1.GenerateConfig.OptsEntry
-	(*ProtoBuildConfig_GoProxy)(nil),  // 14: j5.source.v1.ProtoBuildConfig.GoProxy
-	nil,                               // 15: j5.source.v1.BuildPlugin.OptsEntry
-	(*DockerRegistryAuth_Basic)(nil),  // 16: j5.source.v1.DockerRegistryAuth.Basic
-	(*DockerRegistryAuth_AWSECS)(nil), // 17: j5.source.v1.DockerRegistryAuth.AWSECS
-	(*DockerRegistryAuth_Github)(nil), // 18: j5.source.v1.DockerRegistryAuth.Github
+var file_j5_config_v1_config_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_j5_config_v1_config_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
+var file_j5_config_v1_config_proto_goTypes = []interface{}{
+	(Plugin)(0),                       // 0: j5.config.v1.Plugin
+	(*Config)(nil),                    // 1: j5.config.v1.Config
+	(*PackageConfig)(nil),             // 2: j5.config.v1.PackageConfig
+	(*RegistryConfig)(nil),            // 3: j5.config.v1.RegistryConfig
+	(*CodecOptions)(nil),              // 4: j5.config.v1.CodecOptions
+	(*ShortEnumOptions)(nil),          // 5: j5.config.v1.ShortEnumOptions
+	(*GitConfig)(nil),                 // 6: j5.config.v1.GitConfig
+	(*GenerateConfig)(nil),            // 7: j5.config.v1.GenerateConfig
+	(*ProtoBuildConfig)(nil),          // 8: j5.config.v1.ProtoBuildConfig
+	(*BuildPlugin)(nil),               // 9: j5.config.v1.BuildPlugin
+	(*DockerSpec)(nil),                // 10: j5.config.v1.DockerSpec
+	(*CommandSpec)(nil),               // 11: j5.config.v1.CommandSpec
+	(*DockerRegistryAuth)(nil),        // 12: j5.config.v1.DockerRegistryAuth
+	nil,                               // 13: j5.config.v1.GenerateConfig.OptsEntry
+	(*ProtoBuildConfig_GoProxy)(nil),  // 14: j5.config.v1.ProtoBuildConfig.GoProxy
+	nil,                               // 15: j5.config.v1.BuildPlugin.OptsEntry
+	(*DockerRegistryAuth_Basic)(nil),  // 16: j5.config.v1.DockerRegistryAuth.Basic
+	(*DockerRegistryAuth_AWSECS)(nil), // 17: j5.config.v1.DockerRegistryAuth.AWSECS
+	(*DockerRegistryAuth_Github)(nil), // 18: j5.config.v1.DockerRegistryAuth.Github
 }
-var file_j5_source_v1_config_proto_depIdxs = []int32{
-	2,  // 0: j5.source.v1.Config.packages:type_name -> j5.source.v1.PackageConfig
-	4,  // 1: j5.source.v1.Config.options:type_name -> j5.source.v1.CodecOptions
-	3,  // 2: j5.source.v1.Config.registry:type_name -> j5.source.v1.RegistryConfig
-	8,  // 3: j5.source.v1.Config.proto_builds:type_name -> j5.source.v1.ProtoBuildConfig
-	9,  // 4: j5.source.v1.Config.plugins:type_name -> j5.source.v1.BuildPlugin
-	7,  // 5: j5.source.v1.Config.generate:type_name -> j5.source.v1.GenerateConfig
-	6,  // 6: j5.source.v1.Config.git:type_name -> j5.source.v1.GitConfig
-	5,  // 7: j5.source.v1.CodecOptions.short_enums:type_name -> j5.source.v1.ShortEnumOptions
-	13, // 8: j5.source.v1.GenerateConfig.opts:type_name -> j5.source.v1.GenerateConfig.OptsEntry
-	9,  // 9: j5.source.v1.GenerateConfig.plugins:type_name -> j5.source.v1.BuildPlugin
-	9,  // 10: j5.source.v1.ProtoBuildConfig.plugins:type_name -> j5.source.v1.BuildPlugin
-	14, // 11: j5.source.v1.ProtoBuildConfig.go_proxy:type_name -> j5.source.v1.ProtoBuildConfig.GoProxy
-	0,  // 12: j5.source.v1.BuildPlugin.type:type_name -> j5.source.v1.Plugin
-	10, // 13: j5.source.v1.BuildPlugin.docker:type_name -> j5.source.v1.DockerSpec
-	11, // 14: j5.source.v1.BuildPlugin.command:type_name -> j5.source.v1.CommandSpec
-	15, // 15: j5.source.v1.BuildPlugin.opts:type_name -> j5.source.v1.BuildPlugin.OptsEntry
-	16, // 16: j5.source.v1.DockerRegistryAuth.basic:type_name -> j5.source.v1.DockerRegistryAuth.Basic
-	17, // 17: j5.source.v1.DockerRegistryAuth.aws_ecs:type_name -> j5.source.v1.DockerRegistryAuth.AWSECS
-	18, // 18: j5.source.v1.DockerRegistryAuth.github:type_name -> j5.source.v1.DockerRegistryAuth.Github
+var file_j5_config_v1_config_proto_depIdxs = []int32{
+	2,  // 0: j5.config.v1.Config.packages:type_name -> j5.config.v1.PackageConfig
+	4,  // 1: j5.config.v1.Config.options:type_name -> j5.config.v1.CodecOptions
+	3,  // 2: j5.config.v1.Config.registry:type_name -> j5.config.v1.RegistryConfig
+	8,  // 3: j5.config.v1.Config.proto_builds:type_name -> j5.config.v1.ProtoBuildConfig
+	9,  // 4: j5.config.v1.Config.plugins:type_name -> j5.config.v1.BuildPlugin
+	7,  // 5: j5.config.v1.Config.generate:type_name -> j5.config.v1.GenerateConfig
+	6,  // 6: j5.config.v1.Config.git:type_name -> j5.config.v1.GitConfig
+	5,  // 7: j5.config.v1.CodecOptions.short_enums:type_name -> j5.config.v1.ShortEnumOptions
+	13, // 8: j5.config.v1.GenerateConfig.opts:type_name -> j5.config.v1.GenerateConfig.OptsEntry
+	9,  // 9: j5.config.v1.GenerateConfig.plugins:type_name -> j5.config.v1.BuildPlugin
+	9,  // 10: j5.config.v1.ProtoBuildConfig.plugins:type_name -> j5.config.v1.BuildPlugin
+	14, // 11: j5.config.v1.ProtoBuildConfig.go_proxy:type_name -> j5.config.v1.ProtoBuildConfig.GoProxy
+	0,  // 12: j5.config.v1.BuildPlugin.type:type_name -> j5.config.v1.Plugin
+	10, // 13: j5.config.v1.BuildPlugin.docker:type_name -> j5.config.v1.DockerSpec
+	11, // 14: j5.config.v1.BuildPlugin.command:type_name -> j5.config.v1.CommandSpec
+	15, // 15: j5.config.v1.BuildPlugin.opts:type_name -> j5.config.v1.BuildPlugin.OptsEntry
+	16, // 16: j5.config.v1.DockerRegistryAuth.basic:type_name -> j5.config.v1.DockerRegistryAuth.Basic
+	17, // 17: j5.config.v1.DockerRegistryAuth.aws_ecs:type_name -> j5.config.v1.DockerRegistryAuth.AWSECS
+	18, // 18: j5.config.v1.DockerRegistryAuth.github:type_name -> j5.config.v1.DockerRegistryAuth.Github
 	19, // [19:19] is the sub-list for method output_type
 	19, // [19:19] is the sub-list for method input_type
 	19, // [19:19] is the sub-list for extension type_name
@@ -1386,13 +1387,13 @@ var file_j5_source_v1_config_proto_depIdxs = []int32{
 	0,  // [0:19] is the sub-list for field type_name
 }
 
-func init() { file_j5_source_v1_config_proto_init() }
-func file_j5_source_v1_config_proto_init() {
-	if File_j5_source_v1_config_proto != nil {
+func init() { file_j5_config_v1_config_proto_init() }
+func file_j5_config_v1_config_proto_init() {
+	if File_j5_config_v1_config_proto != nil {
 		return
 	}
 	if !protoimpl.UnsafeEnabled {
-		file_j5_source_v1_config_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Config); i {
 			case 0:
 				return &v.state
@@ -1404,7 +1405,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*PackageConfig); i {
 			case 0:
 				return &v.state
@@ -1416,7 +1417,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*RegistryConfig); i {
 			case 0:
 				return &v.state
@@ -1428,7 +1429,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*CodecOptions); i {
 			case 0:
 				return &v.state
@@ -1440,7 +1441,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ShortEnumOptions); i {
 			case 0:
 				return &v.state
@@ -1452,7 +1453,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GitConfig); i {
 			case 0:
 				return &v.state
@@ -1464,7 +1465,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*GenerateConfig); i {
 			case 0:
 				return &v.state
@@ -1476,7 +1477,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProtoBuildConfig); i {
 			case 0:
 				return &v.state
@@ -1488,7 +1489,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*BuildPlugin); i {
 			case 0:
 				return &v.state
@@ -1500,7 +1501,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DockerSpec); i {
 			case 0:
 				return &v.state
@@ -1512,7 +1513,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*CommandSpec); i {
 			case 0:
 				return &v.state
@@ -1524,7 +1525,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DockerRegistryAuth); i {
 			case 0:
 				return &v.state
@@ -1536,7 +1537,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*ProtoBuildConfig_GoProxy); i {
 			case 0:
 				return &v.state
@@ -1548,7 +1549,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DockerRegistryAuth_Basic); i {
 			case 0:
 				return &v.state
@@ -1560,7 +1561,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[16].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DockerRegistryAuth_AWSECS); i {
 			case 0:
 				return &v.state
@@ -1572,7 +1573,7 @@ func file_j5_source_v1_config_proto_init() {
 				return nil
 			}
 		}
-		file_j5_source_v1_config_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
+		file_j5_config_v1_config_proto_msgTypes[17].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*DockerRegistryAuth_Github); i {
 			case 0:
 				return &v.state
@@ -1585,11 +1586,11 @@ func file_j5_source_v1_config_proto_init() {
 			}
 		}
 	}
-	file_j5_source_v1_config_proto_msgTypes[7].OneofWrappers = []interface{}{
+	file_j5_config_v1_config_proto_msgTypes[7].OneofWrappers = []interface{}{
 		(*ProtoBuildConfig_GoProxy_)(nil),
 	}
-	file_j5_source_v1_config_proto_msgTypes[8].OneofWrappers = []interface{}{}
-	file_j5_source_v1_config_proto_msgTypes[11].OneofWrappers = []interface{}{
+	file_j5_config_v1_config_proto_msgTypes[8].OneofWrappers = []interface{}{}
+	file_j5_config_v1_config_proto_msgTypes[11].OneofWrappers = []interface{}{
 		(*DockerRegistryAuth_Basic_)(nil),
 		(*DockerRegistryAuth_AwsEcs)(nil),
 		(*DockerRegistryAuth_Github_)(nil),
@@ -1598,19 +1599,19 @@ func file_j5_source_v1_config_proto_init() {
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: file_j5_source_v1_config_proto_rawDesc,
+			RawDescriptor: file_j5_config_v1_config_proto_rawDesc,
 			NumEnums:      1,
 			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_j5_source_v1_config_proto_goTypes,
-		DependencyIndexes: file_j5_source_v1_config_proto_depIdxs,
-		EnumInfos:         file_j5_source_v1_config_proto_enumTypes,
-		MessageInfos:      file_j5_source_v1_config_proto_msgTypes,
+		GoTypes:           file_j5_config_v1_config_proto_goTypes,
+		DependencyIndexes: file_j5_config_v1_config_proto_depIdxs,
+		EnumInfos:         file_j5_config_v1_config_proto_enumTypes,
+		MessageInfos:      file_j5_config_v1_config_proto_msgTypes,
 	}.Build()
-	File_j5_source_v1_config_proto = out.File
-	file_j5_source_v1_config_proto_rawDesc = nil
-	file_j5_source_v1_config_proto_goTypes = nil
-	file_j5_source_v1_config_proto_depIdxs = nil
+	File_j5_config_v1_config_proto = out.File
+	file_j5_config_v1_config_proto_rawDesc = nil
+	file_j5_config_v1_config_proto_goTypes = nil
+	file_j5_config_v1_config_proto_depIdxs = nil
 }

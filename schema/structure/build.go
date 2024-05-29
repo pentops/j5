@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/genproto/googleapis/api/annotations"
@@ -33,7 +34,7 @@ func BuildFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 		panic("Expected at least one descriptor file, found none")
 	}
 
-	config := &source_j5pb.Config{
+	config := &config_j5pb.Config{
 		Packages: image.Packages,
 		Options:  image.Codec,
 	}
@@ -45,7 +46,7 @@ func BuildFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 	return BuildFromDescriptors(config, descriptors, proseResolver)
 }
 
-func BuildFromDescriptors(config *source_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*schema_j5pb.API, error) {
+func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*schema_j5pb.API, error) {
 	services := make([]protoreflect.ServiceDescriptor, 0)
 	descFiles, err := protodesc.NewFiles(descriptors)
 	if err != nil {

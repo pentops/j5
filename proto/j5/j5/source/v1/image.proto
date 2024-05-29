@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package j5.source.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/descriptor.proto";
+import "google/protobuf/timestamp.proto";
+import "j5/config/v1/config.proto";
+
+option go_package = "github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb";
+
+// Image is a parsed source image, similar to google.protobuf.Descriptor but
+// with the J5 config, and some non-proto files
+message SourceImage {
+  repeated google.protobuf.FileDescriptorProto file = 1;
+  repeated j5.config.v1.PackageConfig packages = 2;
+  repeated ProseFile prose = 3;
+  j5.config.v1.CodecOptions codec = 4;
+  j5.config.v1.RegistryConfig registry = 5;
+
+  repeated string source_filenames = 6;
+}
+
+message ProseFile {
+  string path = 1;
+  bytes content = 2;
+}
+
+message CommitInfo {
+  string owner = 1 [(buf.validate.field).required = true];
+  string repo = 2 [(buf.validate.field).required = true];
+  string hash = 3 [(buf.validate.field).required = true];
+
+  google.protobuf.Timestamp time = 4 [(buf.validate.field).required = true];
+  repeated string aliases = 5;
+}

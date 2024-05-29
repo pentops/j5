@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	git "github.com/go-git/go-git/v5"
-	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func ExpandGitAliases(gitConfig *source_j5pb.GitConfig, commitInfo *builder_j5pb.CommitInfo) {
+func ExpandGitAliases(gitConfig *config_j5pb.GitConfig, commitInfo *source_j5pb.CommitInfo) {
 	aliases := make([]string, 0, len(commitInfo.Aliases))
 	for _, alias := range commitInfo.Aliases {
 		if strings.HasPrefix(alias, "refs/tags/") {
@@ -29,7 +29,7 @@ func ExpandGitAliases(gitConfig *source_j5pb.GitConfig, commitInfo *builder_j5pb
 	commitInfo.Aliases = aliases
 }
 
-func ExtractGitMetadata(ctx context.Context, gitConfig *source_j5pb.GitConfig, dir string) (*builder_j5pb.CommitInfo, error) {
+func ExtractGitMetadata(ctx context.Context, gitConfig *config_j5pb.GitConfig, dir string) (*source_j5pb.CommitInfo, error) {
 
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
@@ -73,7 +73,7 @@ func ExtractGitMetadata(ctx context.Context, gitConfig *source_j5pb.GitConfig, d
 		"commitAliases": commitAliases,
 	}).Info("Resolved Git Commit Info")
 
-	info := &builder_j5pb.CommitInfo{
+	info := &source_j5pb.CommitInfo{
 		Hash:    commitHash,
 		Time:    timestamppb.New(commitTime),
 		Aliases: commitAliases,

@@ -15,32 +15,32 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
-	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/log.go/log"
 	"go.opentelemetry.io/otel/trace/noop"
 
 	glob "github.com/ryanuber/go-glob"
 )
 
-var DefaultRegistryAuths = []*source_j5pb.DockerRegistryAuth{{
+var DefaultRegistryAuths = []*config_j5pb.DockerRegistryAuth{{
 	Registry: "ghcr.io/*",
-	Auth: &source_j5pb.DockerRegistryAuth_Github_{
-		Github: &source_j5pb.DockerRegistryAuth_Github{},
+	Auth: &config_j5pb.DockerRegistryAuth_Github_{
+		Github: &config_j5pb.DockerRegistryAuth_Github{},
 	},
 }, {
 	Registry: "*.dkr.ecr.*.amazonaws.com/*",
-	Auth: &source_j5pb.DockerRegistryAuth_AwsEcs{
-		AwsEcs: &source_j5pb.DockerRegistryAuth_AWSECS{},
+	Auth: &config_j5pb.DockerRegistryAuth_AwsEcs{
+		AwsEcs: &config_j5pb.DockerRegistryAuth_AWSECS{},
 	},
 }}
 
 type DockerWrapper struct {
 	pulledImages map[string]bool
 	client       *client.Client
-	auth         []*source_j5pb.DockerRegistryAuth
+	auth         []*config_j5pb.DockerRegistryAuth
 }
 
-func NewDockerWrapper(registryAuth []*source_j5pb.DockerRegistryAuth) (*DockerWrapper, error) {
+func NewDockerWrapper(registryAuth []*config_j5pb.DockerRegistryAuth) (*DockerWrapper, error) {
 
 	cli, err := client.NewClientWithOpts(
 		client.FromEnv,
@@ -62,7 +62,7 @@ func (dw *DockerWrapper) Close() error {
 	return dw.client.Close()
 }
 
-func (dw *DockerWrapper) Run(ctx context.Context, spec *source_j5pb.DockerSpec, input io.Reader, output io.Writer, errOutput io.Writer, envVars []string) error {
+func (dw *DockerWrapper) Run(ctx context.Context, spec *config_j5pb.DockerSpec, input io.Reader, output io.Writer, errOutput io.Writer, envVars []string) error {
 	if spec.Pull {
 		// skip if pulled...
 		if !dw.pulledImages[spec.Image] {
@@ -159,7 +159,7 @@ func (dw *DockerWrapper) Run(ctx context.Context, spec *source_j5pb.DockerSpec, 
 	return nil
 }
 
-func (dw *DockerWrapper) Pull(ctx context.Context, spec *source_j5pb.DockerSpec) error {
+func (dw *DockerWrapper) Pull(ctx context.Context, spec *config_j5pb.DockerSpec) error {
 
 	type basicAuth struct {
 		Username string `json:"username"`
@@ -168,7 +168,7 @@ func (dw *DockerWrapper) Pull(ctx context.Context, spec *source_j5pb.DockerSpec)
 
 	pullOptions := image.PullOptions{}
 
-	var registryAuth *source_j5pb.DockerRegistryAuth
+	var registryAuth *config_j5pb.DockerRegistryAuth
 	for _, auth := range dw.auth {
 		// If auth's registry pattern with * wildcards matches the spec's image, use it.
 		if glob.Glob(auth.Registry, spec.Image) {
@@ -186,7 +186,7 @@ func (dw *DockerWrapper) Pull(ctx context.Context, spec *source_j5pb.DockerSpec)
 			var authConfig *basicAuth
 
 			switch authType := registryAuth.Auth.(type) {
-			case *source_j5pb.DockerRegistryAuth_Basic_:
+			case *config_j5pb.DockerRegistryAuth_Basic_:
 				val := os.Getenv(authType.Basic.PasswordEnvVar)
 				if val == "" {
 					return "", fmt.Errorf("basic auth password (%s) not set", authType.Basic.PasswordEnvVar)
@@ -197,7 +197,7 @@ func (dw *DockerWrapper) Pull(ctx context.Context, spec *source_j5pb.DockerSpec)
 					Password: val,
 				}
 
-			case *source_j5pb.DockerRegistryAuth_Github_:
+			case *config_j5pb.DockerRegistryAuth_Github_:
 				envVar := authType.Github.TokenEnvVar
 				if envVar == "" {
 					envVar = "GITHUB_TOKEN"
@@ -212,7 +212,7 @@ func (dw *DockerWrapper) Pull(ctx context.Context, spec *source_j5pb.DockerSpec)
 					Password: val,
 				}
 
-			case *source_j5pb.DockerRegistryAuth_AwsEcs:
+			case *config_j5pb.DockerRegistryAuth_AwsEcs:
 
 				// TODO: This is a little too magic.
 				awsConfig, err := config.LoadDefaultConfig(ctx)

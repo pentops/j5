@@ -7,9 +7,9 @@ import (
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"github.com/google/uuid"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"google.golang.org/protobuf/proto"
@@ -18,13 +18,13 @@ import (
 )
 
 type SchemaSet struct {
-	Options *source_j5pb.CodecOptions
+	Options *config_j5pb.CodecOptions
 	Schemas map[string]*schema_j5pb.Schema
 
 	seen map[string]bool
 }
 
-func NewSchemaSet(options *source_j5pb.CodecOptions) *SchemaSet {
+func NewSchemaSet(options *config_j5pb.CodecOptions) *SchemaSet {
 	return &SchemaSet{
 		Options: options,
 		Schemas: make(map[string]*schema_j5pb.Schema),
@@ -697,7 +697,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 	return prop, nil
 }
 
-func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules, se *source_j5pb.ShortEnumOptions) ([]*schema_j5pb.EnumItem_Value, error) {
+func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules, se *config_j5pb.ShortEnumOptions) ([]*schema_j5pb.EnumItem_Value, error) {
 	specMap := map[int32]struct{}{}
 	var notIn bool
 	var isIn bool

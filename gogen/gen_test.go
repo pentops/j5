@@ -7,8 +7,8 @@ import (
 	"go/token"
 	"testing"
 
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/jsonapi/gen/test/foo/v1/foo_testpb"
 	"github.com/pentops/jsonapi/schema/structure"
 	"github.com/stretchr/testify/assert"
@@ -30,8 +30,8 @@ func (o TestOutput) WriteFile(name string, data []byte) error {
 
 func TestTestProtoGen(t *testing.T) {
 
-	ss := structure.NewSchemaSet(&source_j5pb.CodecOptions{
-		ShortEnums: &source_j5pb.ShortEnumOptions{
+	ss := structure.NewSchemaSet(&config_j5pb.CodecOptions{
+		ShortEnums: &config_j5pb.ShortEnumOptions{
 			StrictUnmarshal: true,
 		},
 		WrapOneof: true,

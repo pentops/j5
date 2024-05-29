@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -16,8 +16,8 @@ import (
 
 type Source struct {
 	// input
-	commitInfo *builder_j5pb.CommitInfo
-	config     *source_j5pb.Config
+	commitInfo *source_j5pb.CommitInfo
+	config     *config_j5pb.Config
 	sourceDir  string
 
 	// cache
@@ -25,7 +25,7 @@ type Source struct {
 	sourceImg   *source_j5pb.SourceImage
 }
 
-func NewLocalDirSource(ctx context.Context, commitInfo *builder_j5pb.CommitInfo, config *source_j5pb.Config, sourceDir string) (*Source, error) {
+func NewLocalDirSource(ctx context.Context, commitInfo *source_j5pb.CommitInfo, config *config_j5pb.Config, sourceDir string) (*Source, error) {
 	return &Source{
 		config:      config,
 		commitInfo:  commitInfo,
@@ -34,11 +34,20 @@ func NewLocalDirSource(ctx context.Context, commitInfo *builder_j5pb.CommitInfo,
 	}, nil
 }
 
-func (src Source) J5Config() *source_j5pb.Config {
+func ReadLocalSource(ctx context.Context, commitInfo *source_j5pb.CommitInfo, dir string) (*Source, error) {
+	config, err := ReadDirConfigs(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewLocalDirSource(ctx, commitInfo, config, dir)
+}
+
+func (src Source) J5Config() *config_j5pb.Config {
 	return src.config
 }
 
-func (src Source) CommitInfo(context.Context) (*builder_j5pb.CommitInfo, error) {
+func (src Source) CommitInfo(context.Context) (*source_j5pb.CommitInfo, error) {
 	return src.commitInfo, nil
 }
 
@@ -90,13 +99,22 @@ func (src *Source) SourceFile(ctx context.Context, filename string) ([]byte, err
 	return os.ReadFile(filepath.Join(src.sourceDir, filename))
 }
 
-func (src *Source) ResolvePlugin(plugin *source_j5pb.BuildPlugin) (*source_j5pb.BuildPlugin, error) {
+func (src *Source) PackageBuildConfig(name string) (*config_j5pb.ProtoBuildConfig, error) {
+	for _, plugin := range src.config.ProtoBuilds {
+		if plugin.Name == name {
+			return plugin, nil
+		}
+	}
+	return nil, fmt.Errorf("package build %q not found", name)
+}
+
+func (src *Source) ResolvePlugin(plugin *config_j5pb.BuildPlugin) (*config_j5pb.BuildPlugin, error) {
 	return src.resolvePlugin(map[string]struct{}{}, plugin)
 }
 
 var ErrPluginCycle = errors.New("plugin cycle detected")
 
-func (src *Source) resolvePlugin(visited map[string]struct{}, plugin *source_j5pb.BuildPlugin) (*source_j5pb.BuildPlugin, error) {
+func (src *Source) resolvePlugin(visited map[string]struct{}, plugin *config_j5pb.BuildPlugin) (*config_j5pb.BuildPlugin, error) {
 	if plugin.Base == nil {
 		if plugin.Opts == nil {
 			plugin.Opts = map[string]string{}
@@ -113,7 +131,7 @@ func (src *Source) resolvePlugin(visited map[string]struct{}, plugin *source_j5p
 			if err != nil {
 				return nil, err
 			}
-			if plugin.Type != source_j5pb.Plugin_PLUGIN_UNSPECIFIED {
+			if plugin.Type != config_j5pb.Plugin_PLUGIN_UNSPECIFIED {
 				if plugin.Type != resolvedBase.Type {
 					return nil, fmt.Errorf("base plugin %q has type %v, but extension has type %v", *plugin.Base, resolvedBase.Type, plugin.Type)
 				}
@@ -124,8 +142,8 @@ func (src *Source) resolvePlugin(visited map[string]struct{}, plugin *source_j5p
 	return nil, fmt.Errorf("base plugin %q not found", *plugin.Base)
 }
 
-func extendPlugin(base, ext *source_j5pb.BuildPlugin) *source_j5pb.BuildPlugin {
-	out := proto.Clone(base).(*source_j5pb.BuildPlugin)
+func extendPlugin(base, ext *config_j5pb.BuildPlugin) *config_j5pb.BuildPlugin {
+	out := proto.Clone(base).(*config_j5pb.BuildPlugin)
 	if out.Opts == nil {
 		out.Opts = map[string]string{}
 	}
