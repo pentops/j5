@@ -176,13 +176,29 @@ func commentLines(comment string) []string {
 	return lines
 }
 
-func trailingComment(loc protoreflect.SourceLocation) []string {
+func inlineComment(loc protoreflect.SourceLocation) []string {
 	lines := strings.Split(loc.TrailingComments, "\n")
 	lines = lines[:len(lines)-1] // comment strings end with a newline
+	if len(lines) > 1 {
+		return nil // to be picked up by trailing comments.
+	}
 	for i, line := range lines {
 		lines[i] = fmt.Sprintf(" //%s", line)
 	}
 	return lines
+}
+
+func (fb *fileBuilder) trailingComments(loc protoreflect.SourceLocation) {
+	lines := strings.Split(loc.TrailingComments, "\n")
+	lines = lines[:len(lines)-1] // comment strings end with a newline
+	if len(lines) <= 1 {
+		return // picked up by inlineComment
+	}
+
+	for _, line := range lines {
+		fb.p("//", line)
+	}
+	fb.addGap()
 }
 
 func (fb *fileBuilder) leadingComments(loc protoreflect.SourceLocation) {
@@ -206,10 +222,10 @@ func (fb *fileBuilder) addGap() {
 	fb.out.addGap = true
 }
 
-func (fb *fileBuilder) endElem(end string) {
+func (fb *fileBuilder) endElem(end ...interface{}) {
 	// gaps should only occur between elements, not after the last one
 	fb.out.addGap = false
-	fb.p(end)
+	fb.p(end...)
 }
 
 func (fb fileBuilder) indent() fileBuilder {
@@ -252,6 +268,35 @@ func (fb *fileBuilder) printFile(ff protoreflect.FileDescriptor) ([]byte, error)
 	}
 	fb.addGap()
 
+	extBlocks := make([]extBlock, 0)
+
+	exts := ff.Extensions()
+	for idx := 0; idx < exts.Len(); idx++ {
+		ext := exts.Get(idx)
+		fullName := ext.ContainingMessage().FullName()
+		found := false
+		for i := range extBlocks {
+			if extBlocks[i].extends == fullName {
+				extBlocks[i].fields = append(extBlocks[i].fields, ext)
+				found = true
+				break
+			}
+		}
+		if !found {
+			extBlocks = append(extBlocks, extBlock{
+				extends: fullName,
+				fields:  []protoreflect.FieldDescriptor{ext},
+			})
+		}
+	}
+
+	for _, block := range extBlocks {
+		if err := fb.printExtension(block); err != nil {
+			return nil, err
+		}
+		fb.addGap()
+	}
+
 	var elements = make(sourceElements, 0)
 
 	messages := ff.Messages()
@@ -267,11 +312,6 @@ func (fb *fileBuilder) printFile(ff protoreflect.FileDescriptor) ([]byte, error)
 	enums := ff.Enums()
 	for idx := 0; idx < enums.Len(); idx++ {
 		elements.add(enums.Get(idx))
-	}
-
-	exts := ff.Extensions()
-	for idx := 0; idx < exts.Len(); idx++ {
-		elements.add(exts.Get(idx))
 	}
 
 	if err := fb.printElements(elements); err != nil {

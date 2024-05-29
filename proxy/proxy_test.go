@@ -13,15 +13,15 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pentops/jsonapi/codec"
-	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/test/foo/v1/foo_testpb"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
 
-var testCodecOptions = &source_j5pb.CodecOptions{
-	ShortEnums: &source_j5pb.ShortEnumOptions{
+var testCodecOptions = &config_j5pb.CodecOptions{
+	ShortEnums: &config_j5pb.ShortEnumOptions{
 		UnspecifiedSuffix: "UNSPECIFIED",
 		StrictUnmarshal:   true,
 	},

@@ -21,12 +21,14 @@ func (fb *fileBuilder) printSection(typeName string, wrapper protoreflect.Descri
 	fb.leadingComments(sourceLocation)
 
 	if len(elements) == 0 && len(extensions) == 0 {
-		fb.p(typeName, " ", wrapper.Name(), " {}", trailingComment(sourceLocation))
+		fb.p(typeName, " ", wrapper.Name(), " {}", inlineComment(sourceLocation))
+		fb.trailingComments(sourceLocation)
 		return nil
 	}
 
-	fb.p(typeName, " ", wrapper.Name(), " {", trailingComment(sourceLocation))
+	fb.p(typeName, " ", wrapper.Name(), " {", inlineComment(sourceLocation))
 	ind := fb.indent()
+	ind.trailingComments(sourceLocation)
 
 	if len(extensions) > 0 {
 		for _, ext := range extensions {
@@ -86,16 +88,8 @@ func (fb *fileBuilder) printElements(elements sourceElements) error {
 			fb.addGap()
 
 		case protoreflect.FieldDescriptor:
-			if et.IsExtension() {
-				if err := fb.printExtension(et); err != nil {
-					return err
-				}
-
-			} else {
-
-				if err := fb.printField(et); err != nil {
-					return err
-				}
+			if err := fb.printField(et); err != nil {
+				return err
 			}
 
 		case protoreflect.EnumValueDescriptor:
@@ -209,7 +203,8 @@ func (ind *fileBuilder) printMethod(method protoreflect.MethodDescriptor) error 
 
 	srcLoc := method.ParentFile().SourceLocations().ByDescriptor(method)
 	ind.leadingComments(srcLoc)
-	ind.p("rpc ", method.Name(), "(", inputType, ") returns (", outputType, ")", end, trailingComment(srcLoc))
+	ind.p("rpc ", method.Name(), "(", inputType, ") returns (", outputType, ")", end, inlineComment(srcLoc))
+	ind.trailingComments(srcLoc)
 	extInd := ind.indent()
 	if len(extensions) > 0 {
 		for _, ext := range extensions {
@@ -234,30 +229,36 @@ func (fb *fileBuilder) printEnumValue(field protoreflect.EnumValueDescriptor) er
 
 	fb.leadingComments(srcLoc)
 	if len(extensions) == 0 {
-		fb.p(field.Name(), " = ", field.Number(), ";", trailingComment(srcLoc))
+		fb.p(field.Name(), " = ", field.Number(), ";", inlineComment(srcLoc))
 	} else if len(extensions) == 1 && extensions[0].oneLine {
 		ext := extensions[0]
-		fb.p(field.Name(), " = ", field.Number(), " [", ext.fullType(), " = ", ext.valueLines[0], "];")
+		fb.p(field.Name(), " = ", field.Number(), " [", ext.fullType(), " = ", ext.valueLines[0], "];", inlineComment(srcLoc))
 	} else {
 		fb.p(field.Name(), " = ", field.Number(), " [")
 		ind2 := fb.indent()
 		ind2.printFieldOptions(extensions)
-		fb.endElem("];")
+		fb.endElem("];", inlineComment(srcLoc))
 	}
+	fb.trailingComments(srcLoc)
 
 	return nil
 }
 
-func (ind *fileBuilder) printExtension(extField protoreflect.FieldDescriptor) error {
-	cMsg := extField.ContainingMessage()
-	srcLoc := extField.ParentFile().SourceLocations().ByDescriptor(extField)
-	ind.leadingComments(srcLoc)
-	ind.p("extend ", cMsg.FullName(), " {", trailingComment(srcLoc))
+type extBlock struct {
+	extends protoreflect.FullName
+	fields  []protoreflect.FieldDescriptor
+}
+
+func (ind *fileBuilder) printExtension(block extBlock) error {
+	ind.p("extend ", block.extends, " {")
 	ind2 := ind.indent()
-	if err := ind2.printField(extField); err != nil {
-		return err
+	for _, extField := range block.fields {
+		if err := ind2.printField(extField); err != nil {
+			return err
+		}
 	}
 	ind.endElem("}")
+
 	return nil
 }
 
@@ -298,15 +299,16 @@ func (ind *fileBuilder) printField(field protoreflect.FieldDescriptor) error {
 	sourceLoc := field.ParentFile().SourceLocations().ByDescriptor(field)
 	ind.leadingComments(sourceLoc)
 	if len(extensions) == 0 {
-		ind.p(label, typeName, " ", field.Name(), " = ", field.Number(), ";", trailingComment(sourceLoc))
+		ind.p(label, typeName, " ", field.Name(), " = ", field.Number(), ";", inlineComment(sourceLoc))
 	} else if len(extensions) == 1 && extensions[0].inlineWithParent {
 		ext := extensions[0]
-		ind.p(label, typeName, " ", field.Name(), " = ", field.Number(), " [", ext.fullType(), " = ", ext.valueLines[0], "];")
+		ind.p(label, typeName, " ", field.Name(), " = ", field.Number(), " [", ext.fullType(), " = ", ext.valueLines[0], "];", inlineComment(sourceLoc))
 	} else {
 		ind.p(label, typeName, " ", field.Name(), " = ", field.Number(), " [")
 		ind2 := ind.indent()
 		ind2.printFieldOptions(extensions)
-		ind.endElem("];")
+		ind.endElem("];", inlineComment(sourceLoc))
 	}
+	ind.trailingComments(sourceLoc)
 	return nil
 }

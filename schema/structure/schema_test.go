@@ -7,9 +7,9 @@ import (
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"github.com/pentops/flowtest/jsontest"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/jsonapi/gen/test/foo/v1/foo_testpb"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -19,8 +19,8 @@ import (
 )
 
 func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldConstraints) *jsontest.Asserter {
-	ss := NewSchemaSet(&source_j5pb.CodecOptions{
-		ShortEnums: &source_j5pb.ShortEnumOptions{
+	ss := NewSchemaSet(&config_j5pb.CodecOptions{
+		ShortEnums: &config_j5pb.ShortEnumOptions{
 			StrictUnmarshal: true,
 		},
 		WrapOneof: true,
@@ -202,8 +202,8 @@ func TestSchemaTypesSimple(t *testing.T) {
 }
 
 func TestTestProtoSchemaTypes(t *testing.T) {
-	ss := NewSchemaSet(&source_j5pb.CodecOptions{
-		ShortEnums: &source_j5pb.ShortEnumOptions{
+	ss := NewSchemaSet(&config_j5pb.CodecOptions{
+		ShortEnums: &config_j5pb.ShortEnumOptions{
 			StrictUnmarshal: true,
 		},
 		WrapOneof: true,
@@ -261,8 +261,8 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 }
 
 func TestSchemaTypesComplex(t *testing.T) {
-	ss := NewSchemaSet(&source_j5pb.CodecOptions{
-		ShortEnums: &source_j5pb.ShortEnumOptions{
+	ss := NewSchemaSet(&config_j5pb.CodecOptions{
+		ShortEnums: &config_j5pb.ShortEnumOptions{
 			StrictUnmarshal: true,
 		},
 		WrapOneof: true,

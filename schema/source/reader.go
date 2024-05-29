@@ -13,6 +13,7 @@ import (
 	"github.com/bufbuild/protoyaml-go"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 )
 
@@ -25,6 +26,32 @@ var ConfigPaths = []string{
 	"ext/j5/j5.yml",
 }
 
+func ReadDirConfigs(src string) (*config_j5pb.Config, error) {
+	var configData []byte
+	var err error
+	for _, filename := range ConfigPaths {
+		configData, err = os.ReadFile(filepath.Join(src, filename))
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return nil, err
+		}
+		break
+	}
+
+	if configData == nil {
+		return nil, fmt.Errorf("no config found")
+	}
+
+	config := &config_j5pb.Config{}
+	if err := protoyaml.Unmarshal(configData, config); err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
 func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.SourceImage, error) {
 	fileStat, err := os.Lstat(src)
 	if err != nil {
@@ -34,28 +61,8 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 		return nil, fmt.Errorf("src must be a directory")
 	}
 
-	var configData []byte
-	found := false
-	for _, filename := range ConfigPaths {
-		configData, err = os.ReadFile(filepath.Join(src, filename))
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-
-			return nil, err
-		}
-
-		found = true
-		break
-	}
-
-	if !found {
-		return nil, fmt.Errorf("no config file found")
-	}
-
-	config := &source_j5pb.Config{}
-	if err := protoyaml.Unmarshal(configData, config); err != nil {
+	config, err := ReadDirConfigs(src)
+	if err != nil {
 		return nil, err
 	}
 

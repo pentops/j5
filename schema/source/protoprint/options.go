@@ -211,6 +211,11 @@ func extensionJsonToText(msgVal protoreflect.Message) []string {
 
 		if pair.field.IsList() {
 			list := pair.val.List()
+
+			// Special case: Single array items (repeated) in prototext can be
+			// written as if they aren't an array.
+			// This could also work for objects but currently only scalar.
+
 			listLen := list.Len()
 			if listLen == 1 {
 				scalar, ok := marshalSingular(pair.field, list.Get(0))
@@ -220,25 +225,44 @@ func extensionJsonToText(msgVal protoreflect.Message) []string {
 					continue
 				}
 			}
-			nLine := fmt.Sprintf("%s: [", pair.key)
-			linesOut = append(linesOut, nLine)
-			for i := 0; i < listLen; i++ {
-				val := list.Get(i)
-				subComma := ","
-				if i == listLen-1 {
-					subComma = ""
-				}
 
-				extField := extensionField(pair.field, val)
-				for idx, line := range extField {
-					if idx == len(extField)-1 {
-						line = fmt.Sprintf("%s%s", line, subComma)
+			// Special case: Arrays of objects present as [{ \n...\n}, { \n...\n}]
+			if pair.field.Kind() == protoreflect.MessageKind {
+				linesOut = append(linesOut, fmt.Sprintf("%s: [{", pair.key))
+				for i := 0; i < listLen; i++ {
+					if i > 0 {
+						linesOut = append(linesOut, "}, {")
 					}
-					linesOut = append(linesOut, fmt.Sprintf("  %s", line))
-				}
-			}
+					val := list.Get(i)
 
-			linesOut = append(linesOut, "]")
+					msgLines := extensionJsonToText(val.Message())
+					for _, line := range msgLines {
+						linesOut = append(linesOut, fmt.Sprintf("  %s", line))
+					}
+				}
+
+				linesOut = append(linesOut, "}]")
+			} else {
+
+				linesOut = append(linesOut, fmt.Sprintf("%s: [", pair.key))
+				for i := 0; i < listLen; i++ {
+					val := list.Get(i)
+					subComma := ","
+					if i == listLen-1 {
+						subComma = ""
+					}
+
+					extField := extensionField(pair.field, val)
+					for idx, line := range extField {
+						if idx == len(extField)-1 {
+							line = fmt.Sprintf("%s%s", line, subComma)
+						}
+						linesOut = append(linesOut, fmt.Sprintf("  %s", line))
+					}
+				}
+
+				linesOut = append(linesOut, "]")
+			}
 			continue
 		}
 
@@ -268,8 +292,7 @@ func extensionField(field protoreflect.FieldDescriptor, val protoreflect.Value) 
 	switch field.Kind() {
 	case protoreflect.MessageKind:
 
-		nLine := "{"
-		linesOut = append(linesOut, nLine)
+		linesOut = append(linesOut, "{")
 		msgLines := extensionJsonToText(val.Message())
 		for _, line := range msgLines {
 			linesOut = append(linesOut, fmt.Sprintf("  %s", line))
@@ -429,6 +452,7 @@ func (fb *fileBuilder) collectExtensions(parent protoreflect.Descriptor) ([]*par
 }
 
 func (extInd *fileBuilder) printOption(parsed *parsedOption) {
+
 	if parsed.oneLine {
 		extInd.p("option ", parsed.fullType(), " = ", parsed.valueLines[0], ";")
 		return

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/pentops/flowtest/prototest"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -155,13 +155,13 @@ func TestBuild(t *testing.T) {
 		}},
 	}
 
-	built, err := BuildFromDescriptors(&source_j5pb.Config{
-		Packages: []*source_j5pb.PackageConfig{{
+	built, err := BuildFromDescriptors(&config_j5pb.Config{
+		Packages: []*config_j5pb.PackageConfig{{
 			Label: "Test",
 			Name:  "test.v1",
 		}},
-		Options: &source_j5pb.CodecOptions{
-			ShortEnums: &source_j5pb.ShortEnumOptions{},
+		Options: &config_j5pb.CodecOptions{
+			ShortEnums: &config_j5pb.ShortEnumOptions{},
 		},
 	}, &descriptorpb.FileDescriptorSet{
 		File: []*descriptorpb.FileDescriptorProto{descriptors},

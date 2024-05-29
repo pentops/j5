@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/pentops/jsonapi/builder/git"
-	"github.com/pentops/jsonapi/gen/j5/builder/v1/builder_j5pb"
+	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/jsonapi/schema/structure"
 	"github.com/pentops/jsonapi/schema/swagger"
@@ -21,17 +21,18 @@ import (
 )
 
 type Source interface {
-	J5Config() *source_j5pb.Config
-	CommitInfo(ctx context.Context) (*builder_j5pb.CommitInfo, error)
+	J5Config() *config_j5pb.Config
+	CommitInfo(ctx context.Context) (*source_j5pb.CommitInfo, error)
 	ProtoCodeGeneratorRequest(ctx context.Context, root string) (*pluginpb.CodeGeneratorRequest, error)
 	SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error)
 	SourceDescriptors(ctx context.Context) ([]*descriptorpb.FileDescriptorProto, error)
 	SourceFile(ctx context.Context, filename string) ([]byte, error)
-	ResolvePlugin(plugin *source_j5pb.BuildPlugin) (*source_j5pb.BuildPlugin, error)
+	ResolvePlugin(plugin *config_j5pb.BuildPlugin) (*config_j5pb.BuildPlugin, error)
+	PackageBuildConfig(name string) (*config_j5pb.ProtoBuildConfig, error)
 }
 
 type IDockerWrapper interface {
-	Run(ctx context.Context, spec *source_j5pb.DockerSpec, input io.Reader, output, errOutput io.Writer, envVars []string) error
+	Run(ctx context.Context, spec *config_j5pb.DockerSpec, input io.Reader, output, errOutput io.Writer, envVars []string) error
 }
 
 type Builder struct {
@@ -67,7 +68,7 @@ func (b *Builder) BuildAll(ctx context.Context, src Source, dst FS) error {
 	}
 
 	for _, dockerBuild := range spec.ProtoBuilds {
-		if err := b.BuildProto(ctx, src, dst, dockerBuild, os.Stderr); err != nil {
+		if err := b.BuildProto(ctx, src, dst, dockerBuild.Name, os.Stderr); err != nil {
 			return err
 		}
 	}
@@ -95,7 +96,19 @@ func (b *Builder) BuildJsonAPI(ctx context.Context, img *source_j5pb.SourceImage
 	}, nil
 }
 
-func (b *Builder) BuildProto(ctx context.Context, src Source, dst FS, dockerBuild *source_j5pb.ProtoBuildConfig, logWriter io.Writer) error {
+func (b *Builder) BuildProto(ctx context.Context, src Source, dst FS, buildName string, logWriter io.Writer) error {
+
+	var dockerBuild *config_j5pb.ProtoBuildConfig
+	for _, b := range src.J5Config().ProtoBuilds {
+		if b.Name == buildName {
+			dockerBuild = b
+			break
+		}
+	}
+
+	if dockerBuild == nil {
+		return fmt.Errorf("build not found: %s", buildName)
+	}
 
 	commitInfo, err := src.CommitInfo(ctx)
 	if err != nil {
@@ -108,7 +121,7 @@ func (b *Builder) BuildProto(ctx context.Context, src Source, dst FS, dockerBuil
 	}
 
 	switch pkg := dockerBuild.PackageType.(type) {
-	case *source_j5pb.ProtoBuildConfig_GoProxy_:
+	case *config_j5pb.ProtoBuildConfig_GoProxy_:
 
 		for _, plugin := range dockerBuild.Plugins {
 
@@ -137,7 +150,7 @@ func (b *Builder) BuildProto(ctx context.Context, src Source, dst FS, dockerBuil
 	}
 }
 
-func MapEnvVars(spec []string, commitInfo *builder_j5pb.CommitInfo) ([]string, error) {
+func MapEnvVars(spec []string, commitInfo *source_j5pb.CommitInfo) ([]string, error) {
 	env := make([]string, len(spec))
 	for idx, src := range spec {
 		if strings.Contains(src, "PROTOC_GEN_GO_MESSAGING_EXTRA_HEADERS") && strings.Contains(src, "$GIT_HASH") {
@@ -159,7 +172,7 @@ func MapEnvVars(spec []string, commitInfo *builder_j5pb.CommitInfo) ([]string, e
 	return env, nil
 }
 
-func (b *Builder) RunProtocPlugin(ctx context.Context, dest FS, plugin *source_j5pb.BuildPlugin, sourceProto *pluginpb.CodeGeneratorRequest, errOut io.Writer, env []string) error {
+func (b *Builder) RunProtocPlugin(ctx context.Context, dest FS, plugin *config_j5pb.BuildPlugin, sourceProto *pluginpb.CodeGeneratorRequest, errOut io.Writer, env []string) error {
 
 	start := time.Now()
 
