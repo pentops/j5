@@ -87,7 +87,12 @@ func TestSimplePrint(t *testing.T) {
 		Service: []*descriptorpb.ServiceDescriptorProto{{
 			Name: proto.String("TestService"),
 			Method: []*descriptorpb.MethodDescriptorProto{{
-				Name:       proto.String("TestMethod"),
+				Name:       proto.String("GetMethod"),
+				InputType:  proto.String(".test.v1.Test"),
+				OutputType: proto.String("google.protobuf.Empty"),
+				Options:    &descriptorpb.MethodOptions{},
+			}, {
+				Name:       proto.String("PostMethod"),
 				InputType:  proto.String(".test.v1.Test"),
 				OutputType: proto.String("google.protobuf.Empty"),
 				Options:    &descriptorpb.MethodOptions{},
@@ -107,10 +112,24 @@ func TestSimplePrint(t *testing.T) {
 	}
 
 	proto.SetExtension(input.Service[0].Method[0].Options, annotations.E_Http, &annotations.HttpRule{
+		Pattern: &annotations.HttpRule_Get{
+			Get: "/test/v1/foo",
+		},
+	})
+	proto.SetExtension(input.Service[0].Method[1].Options, annotations.E_Http, &annotations.HttpRule{
 		Pattern: &annotations.HttpRule_Post{
 			Post: "/test/v1/foo",
 		},
 		Body: "*",
+		AdditionalBindings: []*annotations.HttpRule{{
+			Pattern: &annotations.HttpRule_Post{
+				Post: "/test/v1/foo/2",
+			},
+		}, {
+			Pattern: &annotations.HttpRule_Post{
+				Post: "/test/v1/foo/3",
+			},
+		}},
 	})
 
 	testFile, err := protodesc.NewFile(input, protoregistry.GlobalFiles)
@@ -135,10 +154,19 @@ func TestSimplePrint(t *testing.T) {
 		`option go_package = "go_package_value";`,
 		"",
 		`service TestService {`,
-		`  rpc TestMethod(Test) returns (google.protobuf.Empty) {`,
+		`  rpc GetMethod(Test) returns (google.protobuf.Empty) {`,
+		`    option (google.api.http) = {get: "/test/v1/foo"};`,
+		`  }`,
+		``,
+		`  rpc PostMethod(Test) returns (google.protobuf.Empty) {`,
 		`    option (google.api.http) = {`,
 		`      post: "/test/v1/foo"`,
 		`      body: "*"`,
+		`      additional_bindings: [{`,
+		`        post: "/test/v1/foo/2"`,
+		`      }, {`,
+		`        post: "/test/v1/foo/3"`,
+		`      }]`,
 		`    };`,
 		`  }`,
 		`}`,

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/pentops/jsonapi/builder/builder"
+	"github.com/pentops/jsonapi/schema/source/protoprint/optionreflect"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -50,6 +51,8 @@ func printProtoFiles(ctx context.Context, out builder.FS, files []*descriptorpb.
 		return true
 	})
 
+	extBuilder := optionreflect.NewBuilder(foundExtensions)
+
 	descriptors.RangeFiles(func(file protoreflect.FileDescriptor) bool {
 		if len(opts.OnlyFilenames) > 0 {
 			match := false
@@ -77,7 +80,7 @@ func printProtoFiles(ctx context.Context, out builder.FS, files []*descriptorpb.
 			}
 		}
 
-		fileData, err := printFile(file, foundExtensions)
+		fileData, err := printFile(file, extBuilder)
 		if err != nil {
 			walkErr = fmt.Errorf("in file %s: %w", file.Path(), err)
 			return false
@@ -100,16 +103,9 @@ func printProtoFiles(ctx context.Context, out builder.FS, files []*descriptorpb.
 }
 
 type fileBuffer struct {
-	out    *bytes.Buffer
-	addGap bool
-	exts   map[protoreflect.FullName]map[protoreflect.FieldNumber]protoreflect.ExtensionDescriptor
-}
-
-func (fb *fileBuffer) findExtension(message protoreflect.FullName, field protoreflect.FieldNumber) (protoreflect.ExtensionDescriptor, error) {
-	if xt, ok := fb.exts[message][field]; ok {
-		return xt, nil
-	}
-	return nil, fmt.Errorf("extension not found")
+	out        *bytes.Buffer
+	addGap     bool
+	extensions *optionreflect.Builder
 }
 
 func (fb *fileBuffer) p(indent int, args ...interface{}) {
@@ -138,23 +134,11 @@ type fileBuilder struct {
 	ind int
 }
 
-func printFile(ff protoreflect.FileDescriptor, exts []protoreflect.ExtensionDescriptor) ([]byte, error) {
-
-	extMap := map[protoreflect.FullName]map[protoreflect.FieldNumber]protoreflect.ExtensionDescriptor{}
-
-	for _, ext := range exts {
-		msgName := ext.ContainingMessage().FullName()
-		if _, ok := extMap[msgName]; !ok {
-			extMap[msgName] = make(map[protoreflect.FieldNumber]protoreflect.ExtensionDescriptor)
-		}
-		fieldNum := ext.Number()
-		extMap[msgName][fieldNum] = ext
-	}
-
+func printFile(ff protoreflect.FileDescriptor, exts *optionreflect.Builder) ([]byte, error) {
 	p := &fileBuilder{
 		out: &fileBuffer{
-			exts: extMap,
-			out:  &bytes.Buffer{},
+			extensions: exts,
+			out:        &bytes.Buffer{},
 		},
 	}
 	return p.printFile(ff)
@@ -294,7 +278,6 @@ func (fb *fileBuilder) printFile(ff protoreflect.FileDescriptor) ([]byte, error)
 		if err := fb.printExtension(block); err != nil {
 			return nil, err
 		}
-		fb.addGap()
 	}
 
 	var elements = make(sourceElements, 0)
