@@ -1,12 +1,8 @@
 module github.com/pentops/jsonapi
 
-go 1.22
-
-toolchain go1.22.3
+go 1.22.3
 
 require (
-	buf.build/gen/go/bufbuild/buf/grpc/go v1.3.0-20240517182809-0b7e724f50eb.3
-	buf.build/gen/go/bufbuild/buf/protocolbuffers/go v1.34.1-20240517182809-0b7e724f50eb.1
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.1-20240508200655-46a4cf4ba109.1
 	github.com/aws/aws-sdk-go-v2/config v1.27.16
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.28.3
@@ -20,8 +16,8 @@ require (
 	github.com/jhump/protoreflect v1.16.0
 	github.com/pentops/flowtest v0.0.0-20240525161451-19748de5798c
 	github.com/pentops/log.go v0.0.0-20240523172444-85c9292a83db
-	github.com/pentops/o5-go v0.0.0-20240524011757-4ac7caa3ad01
 	github.com/pentops/protostate v0.0.0-20240523172014-39dbd9085078
+	github.com/pentops/prototools v0.0.0-20240531010906-d324770770f0
 	github.com/pentops/runner v0.0.0-20240525192419-d655233635e9
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/shopspring/decimal v1.4.0
@@ -30,13 +26,14 @@ require (
 	go.opentelemetry.io/otel/trace v1.27.0
 	golang.org/x/mod v0.17.0
 	golang.org/x/text v0.15.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20240521202816-d264139d666e
+	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.1
-	gopkg.in/yaml.v2 v2.4.0
 )
 
 require (
+	buf.build/gen/go/bufbuild/buf/grpc/go v1.3.0-20240517182809-0b7e724f50eb.3 // indirect
+	buf.build/gen/go/bufbuild/buf/protocolbuffers/go v1.34.1-20240517182809-0b7e724f50eb.1 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.0.0 // indirect
@@ -104,6 +101,7 @@ require (
 	golang.org/x/sys v0.20.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240521202816-d264139d666e // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 )

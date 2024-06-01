@@ -15,6 +15,7 @@ import (
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/prototools/protosrc"
 )
 
 var ConfigPaths = []string{
@@ -66,7 +67,8 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 		return nil, err
 	}
 
-	extFiles, err := getBufDeps(ctx, src)
+	bufCache := protosrc.NewBufCache()
+	extFiles, err := bufCache.GetDeps(ctx, src)
 	if err != nil {
 		return nil, err
 	}
