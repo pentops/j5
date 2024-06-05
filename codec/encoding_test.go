@@ -16,8 +16,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pentops/flowtest/prototest"
-	"github.com/pentops/jsonapi/gen/test/foo/v1/foo_testpb"
-	"github.com/pentops/jsonapi/j5types/date_j5t"
+	"github.com/pentops/j5/gen/test/foo/v1/foo_testpb"
+	"github.com/pentops/j5/j5types/date_j5t"
 )
 
 func TestUnmarshal(t *testing.T) {

@@ -1,6 +1,6 @@
 package main
 
-import "github.com/pentops/jsonapi/cli"
+import "github.com/pentops/j5/cli"
 
 var Version = "dev"
 

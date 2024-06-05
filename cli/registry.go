@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/pentops/jsonapi/schema/source"
+	"github.com/pentops/j5/schema/source"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/proto"
 )

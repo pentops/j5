@@ -4,7 +4,7 @@ package j5.types.date.v1;
 
 import "buf/validate/validate.proto";
 
-option go_package = "github.com/pentops/jsonapi/j5types/date_j5t";
+option go_package = "github.com/pentops/j5/j5types/date_j5t";
 
 message Date {
   int32 year = 1;

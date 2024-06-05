@@ -1,8 +1,8 @@
 package jdef
 
 import (
-	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/jsonapi/schema/swagger"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/schema/swagger"
 )
 
 func FromProto(protoSchema *schema_j5pb.API) (*API, error) {

@@ -11,7 +11,7 @@ import (
 	sync "sync"
 
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	config_j5pb "github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
+	config_j5pb "github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	descriptorpb "google.golang.org/protobuf/types/descriptorpb"

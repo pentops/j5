@@ -10,7 +10,7 @@ import (
 	reflect "reflect"
 	sync "sync"
 
-	_ "github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
+	_ "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	psml_pb "github.com/pentops/protostate/gen/list/v1/psml_pb"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"

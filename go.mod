@@ -1,4 +1,4 @@
-module github.com/pentops/jsonapi
+module github.com/pentops/j5
 
 go 1.22.3
 
