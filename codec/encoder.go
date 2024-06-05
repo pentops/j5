@@ -111,6 +111,38 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 			}
 		}
 
+		fieldOptions := proto.GetExtension(field.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
+		if fieldOptions != nil {
+			switch option := fieldOptions.Type.(type) {
+			case *ext_j5pb.FieldOptions_Message:
+				if field.Kind() != protoreflect.MessageKind {
+					return fmt.Errorf("field %s is not a message but has a message annotation", field.FullName())
+				}
+
+				msgVal := value.Message()
+
+				if option.Message.Flatten {
+
+					subFields := field.Message().Fields()
+
+					for idx := 0; idx < subFields.Len(); idx++ {
+						subField := subFields.Get(idx)
+
+						if !msgVal.Has(subField) {
+							continue
+						}
+						if err := enc.encodeField(subField, msgVal.Get(subField)); err != nil {
+							return fmt.Errorf("field %s: %w", subField.Name(), err)
+						}
+					}
+					continue
+				}
+
+			default:
+				return fmt.Errorf("unsupported field option type %T", option)
+			}
+		}
+
 		if err := enc.encodeField(field, value); err != nil {
 			return err
 		}
@@ -122,34 +154,6 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 }
 
 func (enc *encoder) encodeField(field protoreflect.FieldDescriptor, value protoreflect.Value) error {
-	fieldOptions := proto.GetExtension(field.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
-	if fieldOptions != nil {
-		switch option := fieldOptions.Type.(type) {
-		case *ext_j5pb.FieldOptions_Message:
-			if field.Kind() != protoreflect.MessageKind {
-				return fmt.Errorf("field %s is not a message but has a message annotation", field.FullName())
-			}
-
-			msgVal := value.Message()
-
-			if option.Message.Flatten {
-
-				subFields := field.Message().Fields()
-
-				for idx := 0; idx < subFields.Len(); idx++ {
-					subField := subFields.Get(idx)
-
-					if !msgVal.Has(subField) {
-						continue
-					}
-					if err := enc.encodeField(subField, msgVal.Get(subField)); err != nil {
-						return fmt.Errorf("field %s: %w", subField.Name(), err)
-					}
-				}
-				return nil
-			}
-		}
-	}
 
 	enc.fieldLabel(field.JSONName())
 
