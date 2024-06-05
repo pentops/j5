@@ -5,7 +5,7 @@ package test.baz.v1;
 import "google/protobuf/timestamp.proto";
 import "test/bar/v1/bar.proto";
 
-option go_package = "github.com/pentops/jsonapi/gen/test/baz/v1/baz_testpb";
+option go_package = "github.com/pentops/j5/gen/test/baz/v1/baz_testpb";
 
 message Baz {
   string field = 1;

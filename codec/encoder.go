@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb"
+	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )

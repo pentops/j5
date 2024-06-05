@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/pentops/flowtest/jsontest"
-	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 )
 
 func TestConvertSchema(t *testing.T) {

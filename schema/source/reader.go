@@ -13,8 +13,8 @@ import (
 	"github.com/bufbuild/protoyaml-go"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
-	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/prototools/protosrc"
 )
 

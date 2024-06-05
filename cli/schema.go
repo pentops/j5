@@ -11,10 +11,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/pentops/jsonapi/schema/jdef"
-	"github.com/pentops/jsonapi/schema/source"
-	"github.com/pentops/jsonapi/schema/structure"
-	"github.com/pentops/jsonapi/schema/swagger"
+	"github.com/pentops/j5/schema/jdef"
+	"github.com/pentops/j5/schema/source"
+	"github.com/pentops/j5/schema/structure"
+	"github.com/pentops/j5/schema/swagger"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/encoding/protojson"
 )

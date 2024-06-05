@@ -3,9 +3,9 @@ package cli
 import (
 	"context"
 
-	"github.com/pentops/jsonapi/gogen"
-	"github.com/pentops/jsonapi/schema/source"
-	"github.com/pentops/jsonapi/schema/structure"
+	"github.com/pentops/j5/gogen"
+	"github.com/pentops/j5/schema/source"
+	"github.com/pentops/j5/schema/structure"
 	"github.com/pentops/runner/commander"
 )
 

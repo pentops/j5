@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	"github.com/pentops/flowtest/prototest"
-	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
-	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
@@ -22,7 +22,7 @@ func TestBuild(t *testing.T) {
 
 	descriptors := &descriptorpb.FileDescriptorProto{
 		Options: &descriptorpb.FileOptions{
-			GoPackage: proto.String("github.com/pentops/jsonapi/test_pb"),
+			GoPackage: proto.String("github.com/pentops/j5/test_pb"),
 		},
 		Name:    proto.String("test.proto"),
 		Package: proto.String("test.v1"),
@@ -108,7 +108,7 @@ func TestBuild(t *testing.T) {
 							ProtoFullName:    "test.v1.TestResponse",
 							ProtoMessageName: "TestResponse",
 							//Rules:            &schema_j5pb.ObjectRules{},
-							GoPackageName:   "github.com/pentops/jsonapi/test_pb",
+							GoPackageName:   "github.com/pentops/j5/test_pb",
 							GoTypeName:      "TestResponse",
 							GrpcPackageName: "test.v1",
 							Properties: []*schema_j5pb.ObjectProperty{{

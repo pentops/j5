@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 )
 
 type ProseResolver interface {

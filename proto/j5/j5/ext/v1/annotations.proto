@@ -4,7 +4,7 @@ package j5.ext.v1;
 
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/pentops/jsonapi/gen/j5/ext/v1/ext_j5pb";
+option go_package = "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb";
 
 extend google.protobuf.MessageOptions {
   MessageOptions message = 90443353;

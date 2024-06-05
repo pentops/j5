@@ -7,10 +7,10 @@ import (
 	"go/token"
 	"testing"
 
-	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
-	"github.com/pentops/jsonapi/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/jsonapi/gen/test/foo/v1/foo_testpb"
-	"github.com/pentops/jsonapi/schema/structure"
+	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/gen/test/foo/v1/foo_testpb"
+	"github.com/pentops/j5/schema/structure"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -71,7 +71,7 @@ func TestTestProtoGen(t *testing.T) {
 
 	options := Options{
 		TrimPackagePrefix: "",
-		AddGoPrefix:       "github.com/pentops/jsonapi/testproto/clientgen",
+		AddGoPrefix:       "github.com/pentops/j5/testproto/clientgen",
 	}
 
 	if err := WriteGoCode(jdef, output, options); err != nil {

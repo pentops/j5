@@ -7,7 +7,7 @@ import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/config/v1/config.proto";
 
-option go_package = "github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb";
+option go_package = "github.com/pentops/j5/gen/j5/source/v1/source_j5pb";
 
 // Image is a parsed source image, similar to google.protobuf.Descriptor but
 // with the J5 config, and some non-proto files

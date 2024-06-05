@@ -9,8 +9,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/pentops/jsonapi/builder/builder"
-	"github.com/pentops/jsonapi/builder/docker"
+	"github.com/pentops/j5/builder/builder"
+	"github.com/pentops/j5/builder/docker"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"

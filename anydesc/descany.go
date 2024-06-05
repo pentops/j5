@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pentops/jsonapi/codec"
-	"github.com/pentops/jsonapi/gen/j5/anydesc/v1/anydesc_j5pb"
+	"github.com/pentops/j5/codec"
+	"github.com/pentops/j5/gen/j5/anydesc/v1/anydesc_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"

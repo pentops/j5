@@ -10,12 +10,12 @@ import (
 
 	"runtime/debug"
 
-	"github.com/pentops/jsonapi/builder/builder"
-	"github.com/pentops/jsonapi/builder/docker"
-	"github.com/pentops/jsonapi/builder/git"
-	"github.com/pentops/jsonapi/gen/j5/config/v1/config_j5pb"
-	"github.com/pentops/jsonapi/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/jsonapi/schema/source"
+	"github.com/pentops/j5/builder/builder"
+	"github.com/pentops/j5/builder/docker"
+	"github.com/pentops/j5/builder/git"
+	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/schema/source"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
