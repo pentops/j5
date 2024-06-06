@@ -2,8 +2,8 @@ version: v1
 plugins:
   - plugin: buf.build/protocolbuffers/go:v1.31.0
     out: .
-    opt: paths=import,module=github.com/pentops/jsonapi
+    opt: paths=import,module=github.com/pentops/j5
 
   - name: go-grpc # 'Official' version
     out: .
-    opt: paths=import,module=github.com/pentops/jsonapi
+    opt: paths=import,module=github.com/pentops/j5

@@ -8,7 +8,6 @@ package foo_testpb
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -25,6 +24,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FooServiceClient interface {
 	GetFoo(ctx context.Context, in *GetFooRequest, opts ...grpc.CallOption) (*GetFooResponse, error)
+	// PostFoo Comment
 	PostFoo(ctx context.Context, in *PostFooRequest, opts ...grpc.CallOption) (*PostFooResponse, error)
 }
 
@@ -59,6 +59,7 @@ func (c *fooServiceClient) PostFoo(ctx context.Context, in *PostFooRequest, opts
 // for forward compatibility
 type FooServiceServer interface {
 	GetFoo(context.Context, *GetFooRequest) (*GetFooResponse, error)
+	// PostFoo Comment
 	PostFoo(context.Context, *PostFooRequest) (*PostFooResponse, error)
 	mustEmbedUnimplementedFooServiceServer()
 }

@@ -146,11 +146,13 @@ func TestUnmarshal(t *testing.T) {
 
 			name: "flattened messages",
 			json: `{
-				"fieldFromFlattened": "fieldFromFlattenedVal"
+				"fieldFromFlattened": "fieldFromFlattenedVal",
+				"field2FromFlattened": "field2FromFlattenedVal"
 			}`,
 			wantProto: &foo_testpb.PostFooRequest{
 				Flattened: &foo_testpb.FlattenedMessage{
-					FieldFromFlattened: "fieldFromFlattenedVal",
+					FieldFromFlattened:   "fieldFromFlattenedVal",
+					Field_2FromFlattened: "field2FromFlattenedVal",
 				},
 			},
 		}, {
@@ -321,7 +323,7 @@ func CompareJSON(t testing.TB, wantSRC, gotSRC []byte) {
 
 	gotBuff := &bytes.Buffer{}
 	if err := json.Indent(gotBuff, gotSRC, "", "  "); err != nil {
-		t.Log(string(gotSRC))
+		t.Logf("Raw Got String: %s", string(gotSRC))
 		t.Fatalf("got json was invalid: %v", err)
 	}
 

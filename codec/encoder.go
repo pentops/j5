@@ -80,33 +80,33 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 		isOneofWrapper = ext.IsOneofWrapper
 	}
 
-	enc.openObject()
-
-	first := true
-
 	fields := msg.Descriptor().Fields()
+
+	type fieldSpec struct {
+		field protoreflect.FieldDescriptor
+		value protoreflect.Value
+
+		inOneof *string
+	}
+
+	writeFields := make([]fieldSpec, 0, fields.Len())
 	for idx := 0; idx < fields.Len(); idx++ {
 		field := fields.Get(idx)
 		if !msg.Has(field) {
 			continue
 		}
 
-		if !first {
-			enc.fieldSep()
-		}
-		first = false
-
 		value := msg.Get(field)
 
 		if !isOneofWrapper && enc.WrapOneof {
 			if oneof := field.ContainingOneof(); oneof != nil && !oneof.IsSynthetic() {
-				enc.fieldLabel(protoNameToJSON(string(oneof.Name())))
-				enc.openObject()
-				enc.fieldLabel(field.JSONName())
-				if err := enc.encodeValue(field, value); err != nil {
-					return err
-				}
-				enc.closeObject()
+
+				writeFields = append(writeFields, fieldSpec{
+					field:   field,
+					value:   value,
+					inOneof: proto.String(protoNameToJSON(oneof.Name())),
+				})
+
 				continue
 			}
 		}
@@ -131,9 +131,12 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 						if !msgVal.Has(subField) {
 							continue
 						}
-						if err := enc.encodeField(subField, msgVal.Get(subField)); err != nil {
-							return fmt.Errorf("field %s: %w", subField.Name(), err)
-						}
+
+						writeFields = append(writeFields, fieldSpec{
+							field: subField,
+							value: msgVal.Get(subField),
+						})
+
 					}
 					continue
 				}
@@ -143,10 +146,32 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 			}
 		}
 
-		if err := enc.encodeField(field, value); err != nil {
-			return err
+		writeFields = append(writeFields, fieldSpec{
+			field: field,
+			value: value,
+		})
+	}
+
+	enc.openObject()
+	for idx, spec := range writeFields {
+		if idx > 0 {
+			enc.fieldSep()
 		}
 
+		if spec.inOneof != nil {
+
+			enc.fieldLabel(*spec.inOneof)
+			enc.openObject()
+			if err := enc.encodeField(spec.field, spec.value); err != nil {
+				return err
+			}
+			enc.closeObject()
+			continue
+		}
+
+		if err := enc.encodeField(spec.field, spec.value); err != nil {
+			return err
+		}
 	}
 
 	enc.closeObject()
@@ -200,7 +225,6 @@ func (enc *encoder) encodeMapField(field protoreflect.FieldDescriptor, value pro
 func (enc *encoder) encodeListField(field protoreflect.FieldDescriptor, value protoreflect.Value) error {
 	enc.openArray()
 	first := true
-	var outerError error
 	list := value.List()
 	for i := 0; i < list.Len(); i++ {
 		if !first {
@@ -212,9 +236,6 @@ func (enc *encoder) encodeListField(field protoreflect.FieldDescriptor, value pr
 		}
 	}
 
-	if outerError != nil {
-		return outerError
-	}
 	enc.closeArray()
 	return nil
 }
