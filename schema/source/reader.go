@@ -114,7 +114,7 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 		ImportPaths:           []string{""},
 		IncludeSourceCodeInfo: true,
 		WarningReporter: func(err reporter.ErrorWithPos) {
-			fmt.Printf("WRAN: %s", err)
+			fmt.Printf("WARN: %s", err)
 		},
 
 		Accessor: func(filename string) (io.ReadCloser, error) {
