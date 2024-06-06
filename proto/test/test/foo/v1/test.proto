@@ -157,4 +157,5 @@ message FooMessage {
 
 message FlattenedMessage {
   string field_from_flattened = 1;
+  string field_2_from_flattened = 2;
 }

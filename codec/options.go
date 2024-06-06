@@ -124,7 +124,7 @@ func isASCIIDigit(c byte) bool {
 // protoNameToJSON returns the CamelCased name.
 // Copied from protoc-gen-go/generator/generator.go which is now deprecated
 // but changed the first letter to lower case.
-func protoNameToJSON(s string) string {
+func protoNameToJSON(s protoreflect.Name) string {
 	if s == "" {
 		return ""
 	}
