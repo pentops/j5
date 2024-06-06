@@ -125,14 +125,6 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 		return fmt.Errorf("mapping fields: %w", err)
 	}
 
-	for key, fields := range fieldAliases {
-		fieldKeys := make([]string, 0, len(fields))
-		for _, field := range fields {
-			fieldKeys = append(fieldKeys, string(field.Name()))
-		}
-		fmt.Printf("key: %s, fields: %v\n", key, fieldKeys)
-	}
-
 	for {
 		if !dec.More() {
 			break
