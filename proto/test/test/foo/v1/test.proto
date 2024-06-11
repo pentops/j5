@@ -6,7 +6,6 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
-import "psm/list/v1/query.proto";
 
 option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testpb";
 
@@ -35,7 +34,34 @@ message GetFooRequest { // Comment on message line
   ABMessage ab = 4; // Commend on ab
   string multiple_word = 5;
 
-  psm.list.v1.QueryRequest query = 100;
+  QueryRequest query = 100;
+}
+
+// Minimal copy from protostate to avoid import
+message QueryRequest {
+  repeated Filter filters = 3;
+  message Filter {
+    oneof type {
+      Field field = 1;
+      And and = 2;
+      Or or = 3;
+    }
+  }
+
+  message And {
+    repeated Filter filters = 1;
+  }
+
+  message Or {
+    repeated Filter filters = 1;
+  }
+
+  message Field {
+    string name = 1;
+    oneof type {
+      string value = 2;
+    }
+  }
 }
 
 // Multi
