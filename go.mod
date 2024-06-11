@@ -7,28 +7,27 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.27.16
 	github.com/aws/aws-sdk-go-v2/service/ecr v1.28.3
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.54.3
-	github.com/bufbuild/protocompile v0.13.0
+	github.com/bufbuild/protocompile v0.14.0
 	github.com/bufbuild/protoyaml-go v0.1.9
 	github.com/docker/docker v26.1.3+incompatible
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jhump/protoreflect v1.16.0
-	github.com/pentops/flowtest v0.0.0-20240525161451-19748de5798c
+	github.com/pentops/flowtest v0.0.0-20240607020132-7dda31076e79
 	github.com/pentops/log.go v0.0.0-20240523172444-85c9292a83db
-	github.com/pentops/protostate v0.0.0-20240523172014-39dbd9085078
 	github.com/pentops/prototools v0.0.0-20240531010906-d324770770f0
 	github.com/pentops/runner v0.0.0-20240525192419-d655233635e9
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.9.0
-	github.com/tidwall/gjson v1.17.0
+	github.com/tidwall/gjson v1.17.1
 	go.opentelemetry.io/otel/trace v1.27.0
-	golang.org/x/mod v0.17.0
-	golang.org/x/text v0.15.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157
+	golang.org/x/mod v0.18.0
+	golang.org/x/text v0.16.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20240604185151-ef581f913117
 	google.golang.org/grpc v1.64.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2-0.20240529085009-ca837e5c658b
 )
 
 require (
@@ -87,19 +86,19 @@ require (
 	github.com/skeema/knownhosts v1.2.2 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.52.0 // indirect
 	go.opentelemetry.io/otel v1.27.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.27.0 // indirect
 	go.opentelemetry.io/otel/metric v1.27.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.27.0 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
-	golang.org/x/exp v0.0.0-20240525044651-4c93da0ed11d // indirect
-	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/crypto v0.24.0 // indirect
+	golang.org/x/exp v0.0.0-20240604190554-fc45aab8b7f8 // indirect
+	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240521202816-d264139d666e // indirect
+	golang.org/x/sys v0.21.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240604185151-ef581f913117 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
