@@ -1,9 +1,14 @@
-version: v1
+version: v2
 plugins:
-  - plugin: buf.build/protocolbuffers/go:v1.31.0
+  - remote: buf.build/protocolbuffers/go:v1.31.0
     out: .
     opt: paths=import,module=github.com/pentops/j5
 
-  - name: go-grpc # 'Official' version
+  - local: protoc-gen-go-grpc # 'Official' version
     out: .
     opt: paths=import,module=github.com/pentops/j5
+
+inputs:
+  - directory: proto/j5
+  - directory: proto/private
+  - directory: proto/test
