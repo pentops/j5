@@ -25,16 +25,14 @@ func TestUnmarshal(t *testing.T) {
 	testTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
 	for _, tc := range []struct {
-		name      string
-		wantProto proto.Message
-		json      string
-		options   Options
+		name         string
+		wantProto    proto.Message
+		json         string
+		altInputJSON []string // when set, the output can be different to the input, but all outputs should be the same
 	}{
 		{
 			name: "scalars",
-			options: Options{
-				ShortEnums: &ShortEnumsOption{},
-			},
+
 			json: `{
 				"sString": "nameVal",
 				"oString": "otherNameVal",
@@ -62,13 +60,16 @@ func TestUnmarshal(t *testing.T) {
 			},
 		}, {
 			name: "long enums",
-			options: Options{
-				ShortEnums: nil,
-			},
+
 			json: `{
-				"enum": "ENUM_VALUE1",
-				"rEnum": ["ENUM_VALUE1", "ENUM_VALUE2"]
+				"enum": "VALUE1",
+				"rEnum": ["VALUE1", "VALUE2"]
 			}`,
+			altInputJSON: []string{` {
+					"enum": "VALUE1",
+					"rEnum": ["ENUM_VALUE1", "ENUM_VALUE2"]
+				}`},
+
 			wantProto: &foo_testpb.PostFooRequest{
 				Enum: foo_testpb.Enum_ENUM_VALUE1,
 				REnum: []foo_testpb.Enum{
@@ -156,28 +157,25 @@ func TestUnmarshal(t *testing.T) {
 				},
 			},
 		}, {
-			name: "naked oneof",
+			name: "anon oneof",
 			json: `{
 				"oneofString": "oneofStringVal"
 			}`,
 			wantProto: &foo_testpb.PostFooRequest{
-				NakedOneof: &foo_testpb.PostFooRequest_OneofString{
+				AnonOneof: &foo_testpb.PostFooRequest_OneofString{
 					OneofString: "oneofStringVal",
 				},
 			},
 		}, {
-			name: "wrap naked oneof",
+			name: "exposed oneof",
 			json: `{
-				"nakedOneof": {
-					"oneofString": "oneofStringVal"
+				"exposedOneof": {
+					"exposedString": "oneofStringVal"
 				}
 			}`,
-			options: Options{
-				WrapOneof: true,
-			},
 			wantProto: &foo_testpb.PostFooRequest{
-				NakedOneof: &foo_testpb.PostFooRequest_OneofString{
-					OneofString: "oneofStringVal",
+				ExposedOneof: &foo_testpb.PostFooRequest_ExposedString{
+					ExposedString: "oneofStringVal",
 				},
 			},
 		}, {
@@ -187,9 +185,6 @@ func TestUnmarshal(t *testing.T) {
 					"oneofString": "oneofStringVal"
 				}
 			}`,
-			options: Options{
-				WrapOneof: true,
-			},
 			wantProto: &foo_testpb.PostFooRequest{
 				WrappedOneof: &foo_testpb.WrappedOneof{
 					Type: &foo_testpb.WrappedOneof_OneofString{
@@ -200,25 +195,30 @@ func TestUnmarshal(t *testing.T) {
 		}} {
 		t.Run(tc.name, func(t *testing.T) {
 
-			msg := &foo_testpb.PostFooRequest{}
-			if err := Decode(tc.options, []byte(tc.json), msg.ProtoReflect()); err != nil {
-				t.Fatal(err)
+			allInputs := append(tc.altInputJSON, tc.json)
+
+			for _, input := range allInputs {
+
+				msg := &foo_testpb.PostFooRequest{}
+				if err := Decode([]byte(input), msg.ProtoReflect()); err != nil {
+					t.Fatal(err)
+				}
+
+				t.Logf("protojson format: \n%v\n", protojson.Format(msg))
+
+				if !proto.Equal(tc.wantProto, msg) {
+					a := protojson.Format(tc.wantProto)
+					b := protojson.Format(msg)
+					t.Fatalf("expected \n%v but got\n%v", string(a), string(b))
+				}
+
+				encoded, err := Encode(msg.ProtoReflect())
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				CompareJSON(t, []byte(tc.json), encoded)
 			}
-
-			t.Logf("protojson format: \n%v\n", protojson.Format(msg))
-
-			if !proto.Equal(tc.wantProto, msg) {
-				a := protojson.Format(tc.wantProto)
-				b := protojson.Format(msg)
-				t.Fatalf("expected \n%v but got\n%v", string(a), string(b))
-			}
-
-			encoded, err := Encode(tc.options, msg.ProtoReflect())
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			CompareJSON(t, []byte(tc.json), encoded)
 
 		})
 	}
@@ -246,7 +246,7 @@ func TestScalars(t *testing.T) {
 			msgIn.Set(field, val)
 		}
 
-		asJSON, err := Encode(Options{}, msgIn.ProtoReflect())
+		asJSON, err := Encode(msgIn.ProtoReflect())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -254,7 +254,7 @@ func TestScalars(t *testing.T) {
 		CompareJSON(t, []byte(tc.asJSON), asJSON)
 
 		msgOut := dynamicpb.NewMessage(tc.desc)
-		if err := Decode(Options{}, []byte(tc.asJSON), msgOut.ProtoReflect()); err != nil {
+		if err := Decode([]byte(tc.asJSON), msgOut.ProtoReflect()); err != nil {
 			t.Fatal(err)
 		}
 

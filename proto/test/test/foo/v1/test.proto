@@ -31,7 +31,7 @@ message GetFooRequest { // Comment on message line
   // Commant before numbers
   repeated float numbers = 3; // Comment on field line
 
-  ABMessage ab = 4; // Commend on ab
+  ABMessage ab = 4; // Comment on ab
   string multiple_word = 5;
 
   QueryRequest query = 100;
@@ -40,8 +40,12 @@ message GetFooRequest { // Comment on message line
 // Minimal copy from protostate to avoid import
 message QueryRequest {
   repeated Filter filters = 3;
+
   message Filter {
     oneof type {
+      option (j5.ext.v1.oneof).expose = true;
+
+      //option (j5.ext.v1.message).is_oneof_wrapper = true;
       Field field = 1;
       And and = 2;
       Or or = 3;
@@ -59,6 +63,7 @@ message QueryRequest {
   message Field {
     string name = 1;
     oneof type {
+      option (j5.ext.v1.oneof).expose = true;
       string value = 2;
     }
   }
@@ -107,11 +112,17 @@ message PostFooRequest {
 
   map<string, string> map_string_string = 15;
 
-  oneof naked_oneof {
+  oneof anon_oneof {
     string oneof_string = 100;
     Bar one_bar = 101;
     float oneof_float = 102;
     Enum oneof_enum = 103;
+  }
+
+  oneof exposed_oneof {
+    option (j5.ext.v1.oneof).expose = true;
+
+    string exposed_string = 200;
   }
 
   WrappedOneof wrapped_oneof = 16;

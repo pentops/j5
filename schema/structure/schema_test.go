@@ -1,6 +1,7 @@
 package structure
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -19,12 +20,8 @@ import (
 )
 
 func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldConstraints) *jsontest.Asserter {
-	ss := NewSchemaSet(&config_j5pb.CodecOptions{
-		ShortEnums: &config_j5pb.ShortEnumOptions{
-			StrictUnmarshal: true,
-		},
-		WrapOneof: true,
-	})
+	ctx := context.Background()
+	ss := NewSchemaSet(&config_j5pb.CodecOptions{})
 	proto := &descriptorpb.FileDescriptorProto{
 		Name:    proto.String("test.proto"),
 		Package: proto.String("test"),
@@ -35,7 +32,7 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 			},
 		}},
 	}
-	schemaItem, err := ss.BuildSchemaObject(msgDesscriptorToReflection(t, proto))
+	schemaItem, err := ss.BuildSchemaObject(ctx, msgDesscriptorToReflection(t, proto))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -202,18 +199,15 @@ func TestSchemaTypesSimple(t *testing.T) {
 }
 
 func TestTestProtoSchemaTypes(t *testing.T) {
-	ss := NewSchemaSet(&config_j5pb.CodecOptions{
-		ShortEnums: &config_j5pb.ShortEnumOptions{
-			StrictUnmarshal: true,
-		},
-		WrapOneof: true,
-	})
+
+	ctx := context.Background()
+	ss := NewSchemaSet(&config_j5pb.CodecOptions{})
 
 	fooDesc := (&foo_testpb.PostFooRequest{}).ProtoReflect().Descriptor()
 
 	t.Log(protojson.Format(protodesc.ToDescriptorProto(fooDesc)))
 
-	schemaItem, err := ss.BuildSchemaObject(fooDesc)
+	schemaItem, err := ss.BuildSchemaObject(ctx, fooDesc)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -261,12 +255,7 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 }
 
 func TestSchemaTypesComplex(t *testing.T) {
-	ss := NewSchemaSet(&config_j5pb.CodecOptions{
-		ShortEnums: &config_j5pb.ShortEnumOptions{
-			StrictUnmarshal: true,
-		},
-		WrapOneof: true,
-	})
+	ss := NewSchemaSet(&config_j5pb.CodecOptions{})
 
 	for _, tt := range []struct {
 		name         string
@@ -428,7 +417,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			schemaItem, err := ss.BuildSchemaObject(msgDesscriptorToReflection(t, tt.proto))
+			schemaItem, err := ss.BuildSchemaObject(context.Background(), msgDesscriptorToReflection(t, tt.proto))
 			if err != nil {
 				t.Fatal(err.Error())
 			}

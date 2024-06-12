@@ -5,16 +5,16 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func Encode(opts Options, msg protoreflect.Message) ([]byte, error) {
+func Encode(msg protoreflect.Message) ([]byte, error) {
 	enc := &encoder{
-		b:       &bytes.Buffer{},
-		Options: opts,
+		b: &bytes.Buffer{},
 	}
 	if err := enc.encodeMessage(msg); err != nil {
 		return nil, err
@@ -25,7 +25,6 @@ func Encode(opts Options, msg protoreflect.Message) ([]byte, error) {
 
 type encoder struct {
 	b *bytes.Buffer
-	Options
 }
 
 func (enc *encoder) add(b []byte) {
@@ -66,6 +65,19 @@ func (enc *encoder) fieldLabel(label string) {
 	enc.add([]byte(fmt.Sprintf(`"%s":`, label)))
 }
 
+func (enc *encoder) encodeEnum(enum protoreflect.EnumDescriptor, enumVal protoreflect.EnumNumber) (string, error) {
+
+	prefix := enumPrefix(enum)
+
+	val := enum.Values().ByNumber(enumVal)
+	if val == nil {
+		return "", fmt.Errorf("enum value %d not found in enum %s", enumVal, enum.FullName())
+	}
+	fullStringValue := string(val.Name())
+
+	return strings.TrimPrefix(fullStringValue, prefix), nil
+}
+
 func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 
 	wktEncoder := wellKnownTypeMarshaler(msg.Descriptor().FullName())
@@ -98,16 +110,19 @@ func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
 
 		value := msg.Get(field)
 
-		if !isOneofWrapper && enc.WrapOneof {
+		if !isOneofWrapper {
 			if oneof := field.ContainingOneof(); oneof != nil && !oneof.IsSynthetic() {
 
-				writeFields = append(writeFields, fieldSpec{
-					field:   field,
-					value:   value,
-					inOneof: proto.String(protoNameToJSON(oneof.Name())),
-				})
+				ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
+				if ext != nil && ext.Expose {
+					writeFields = append(writeFields, fieldSpec{
+						field:   field,
+						value:   value,
+						inOneof: proto.String(protoNameToJSON(oneof.Name())),
+					})
 
-				continue
+					continue
+				}
 			}
 		}
 
@@ -271,7 +286,7 @@ func (enc *encoder) encodeValue(field protoreflect.FieldDescriptor, value protor
 		return enc.addJSON(float64(value.Float()))
 
 	case protoreflect.EnumKind:
-		stringVal, err := enc.ShortEnums.Encode(field.Enum(), value.Enum())
+		stringVal, err := enc.encodeEnum(field.Enum(), value.Enum())
 		if err != nil {
 			return err
 		}

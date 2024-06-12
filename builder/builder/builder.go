@@ -68,18 +68,50 @@ func (b *Builder) BuildAll(ctx context.Context, src Source, dst FS) error {
 	}
 
 	for _, dockerBuild := range spec.ProtoBuilds {
-		if err := b.BuildProto(ctx, src, dst, dockerBuild.Name, os.Stderr); err != nil {
+		ctx = log.WithField(ctx, "dockerBuild", dockerBuild.Name)
+		lineWriter := &lineWriter{
+			writeLine: func(line string) {
+				log.WithField(ctx, "line", line).Info("docker build")
+			},
+		}
+		if err := b.BuildProto(ctx, src, dst, dockerBuild.Name, lineWriter); err != nil {
+			lineWriter.flush()
 			return err
 		}
+		lineWriter.flush()
 	}
 
 	return nil
 }
 
+type lineWriter struct {
+	buf       []byte
+	writeLine func(string)
+}
+
+func (w *lineWriter) Write(p []byte) (n int, err error) {
+	for _, b := range p {
+		if b == '\n' {
+			w.writeLine(string(w.buf))
+			w.buf = w.buf[:0]
+		} else {
+			w.buf = append(w.buf, b)
+		}
+	}
+	return len(p), nil
+}
+
+func (w *lineWriter) flush() {
+	if len(w.buf) > 0 {
+		w.writeLine(string(w.buf))
+	}
+	w.buf = []byte{}
+}
+
 func (b *Builder) BuildJsonAPI(ctx context.Context, img *source_j5pb.SourceImage) (*J5Upload, error) {
 	log.Info(ctx, "build json API")
 
-	jdefDoc, err := structure.BuildFromImage(img)
+	jdefDoc, err := structure.BuildFromImage(ctx, img)
 	if err != nil {
 		return nil, fmt.Errorf("build from image: %w", err)
 	}
@@ -96,7 +128,7 @@ func (b *Builder) BuildJsonAPI(ctx context.Context, img *source_j5pb.SourceImage
 	}, nil
 }
 
-func (b *Builder) BuildProto(ctx context.Context, src Source, dst FS, buildName string, logWriter io.Writer) error {
+func (b *Builder) BuildProto(ctx context.Context, src Source, dst FS, buildName string, errOut io.Writer) error {
 
 	var dockerBuild *config_j5pb.ProtoBuildConfig
 	for _, b := range src.J5Config().ProtoBuilds {
@@ -129,7 +161,7 @@ func (b *Builder) BuildProto(ctx context.Context, src Source, dst FS, buildName 
 			if err != nil {
 				return err
 			}
-			if err := b.RunProtocPlugin(ctx, dst, plugin, protoBuildRequest, logWriter, envVars); err != nil {
+			if err := b.RunProtocPlugin(ctx, dst, plugin, protoBuildRequest, errOut, envVars); err != nil {
 				return err
 			}
 		}
@@ -210,7 +242,6 @@ func (b *Builder) RunProtocPlugin(ctx context.Context, dest FS, plugin *config_j
 	}
 
 	for _, f := range resp.File {
-		fmt.Printf("PUT FILE %s\n", f.GetName())
 		name := f.GetName()
 		reader := bytes.NewReader([]byte(f.GetContent()))
 		if err := dest.Put(ctx, name, reader); err != nil {

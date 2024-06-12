@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
 	"strings"
@@ -15,6 +14,7 @@ import (
 	"github.com/pentops/j5/schema/source"
 	"github.com/pentops/j5/schema/structure"
 	"github.com/pentops/j5/schema/swagger"
+	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -52,7 +52,7 @@ func RunSwagger(ctx context.Context, cfg BuildConfig) error {
 		return err
 	}
 
-	jdefDoc, err := structure.BuildFromImage(image)
+	jdefDoc, err := structure.BuildFromImage(ctx, image)
 	if err != nil {
 		return err
 	}
@@ -76,7 +76,7 @@ func RunJDef(ctx context.Context, cfg BuildConfig) error {
 		return err
 	}
 
-	document, err := structure.BuildFromImage(image)
+	document, err := structure.BuildFromImage(ctx, image)
 	if err != nil {
 		return err
 	}
@@ -124,7 +124,7 @@ func pushS3(ctx context.Context, bb []byte, destinations ...string) error {
 			return fmt.Errorf("invalid s3 url: %s", dest)
 		}
 
-		log.Printf("Uploading to %s", dest)
+		log.WithField(ctx, "dest", dest).Debug("Uploading to S3")
 
 		// url.Parse will take s3://foobucket/keyname and turn keyname into "/keyname" which we want to be "keyname"
 		k := strings.Replace(s3URL.Path, "/", "", 1)
@@ -136,7 +136,7 @@ func pushS3(ctx context.Context, bb []byte, destinations ...string) error {
 		})
 
 		if err != nil {
-			return fmt.Errorf("failed to upload object: %w", err)
+			return fmt.Errorf("failed to upload to s3://%s/%s: %w", s3URL.Host, k, err)
 		}
 	}
 

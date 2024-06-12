@@ -27,7 +27,7 @@ func runGocode(ctx context.Context, cfg struct {
 		return err
 	}
 
-	jdefDoc, err := structure.BuildFromImage(image)
+	jdefDoc, err := structure.BuildFromImage(ctx, image)
 	if err != nil {
 		return err
 	}
