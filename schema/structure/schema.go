@@ -1,8 +1,8 @@
 package structure
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"strings"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
@@ -10,6 +10,7 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/log.go/log"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 	"google.golang.org/protobuf/proto"
@@ -18,15 +19,16 @@ import (
 )
 
 type SchemaSet struct {
-	Options *config_j5pb.CodecOptions
-	Schemas map[string]*schema_j5pb.Schema
+	trimSubPackages []string
+	Schemas         map[string]*schema_j5pb.Schema
 
 	seen map[string]bool
 }
 
 func NewSchemaSet(options *config_j5pb.CodecOptions) *SchemaSet {
 	return &SchemaSet{
-		Options: options,
+		trimSubPackages: options.TrimSubPackages,
+
 		Schemas: make(map[string]*schema_j5pb.Schema),
 		seen:    make(map[string]bool),
 	}
@@ -44,65 +46,77 @@ func walkName(src protoreflect.MessageDescriptor) string {
 	return fmt.Sprintf("%s_%s", walkName(msg), goTypeName)
 
 }
-func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, error) {
+func (ss *SchemaSet) BuildSchemaObject(ctx context.Context, src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, error) {
 	goTypeName := walkName(src)
 
 	properties := make([]*schema_j5pb.ObjectProperty, 0, src.Fields().Len())
 
-	isOneof := false
+	// Has no effect on the generated output, but validates that the oneof rules
+	// are met:
+	// Exactly one oneof which all fields belong to and is named 'type'
+
+	isOneofWrapper := false
 	options := proto.GetExtension(src.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
 	if options != nil {
 		if options.IsOneofWrapper {
-			isOneof = true
+			isOneofWrapper = true
 		}
 	}
 
-	oneofs := make(map[string]*schema_j5pb.OneofWrapperItem)
+	exposeOneofs := make(map[string]*schema_j5pb.OneofWrapperItem)
 	pendingOneofProps := make(map[string]*schema_j5pb.ObjectProperty)
 
-	if !isOneof {
-		for idx := 0; idx < src.Oneofs().Len(); idx++ {
-			oneof := src.Oneofs().Get(idx)
-			if oneof.IsSynthetic() {
-				continue
-			}
-			ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
-
-			if ext == nil || !ext.Expose {
-				fmt.Fprintf(os.Stderr, "WARN: no def for oneof %s.%s\n", src.FullName(), oneof.Name())
-				//continue
-			}
-
-			oneofName := string(oneof.Name())
-			syntheticTypeName := fmt.Sprintf("%s_%s", src.Name(), oneofName)
-			oneofObject := &schema_j5pb.OneofWrapperItem{
-				ProtoFullName:    string(oneof.FullName()),
-				ProtoMessageName: oneofName,
-				GoTypeName:       syntheticTypeName,
-				GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
-				GrpcPackageName:  string(src.ParentFile().Package()),
-			}
-			prop := &schema_j5pb.ObjectProperty{
-				ProtoFieldName: string(oneof.Name()),
-				Name:           camelCase(oneofName),
-				Description:    commentDescription(src),
-				Schema: &schema_j5pb.Schema{
-					Type: &schema_j5pb.Schema_OneofWrapper{
-						OneofWrapper: oneofObject,
-					},
-				},
-			}
-			pendingOneofProps[oneofName] = prop
-			oneofs[oneofName] = oneofObject
-
+	for idx := 0; idx < src.Oneofs().Len(); idx++ {
+		oneof := src.Oneofs().Get(idx)
+		if oneof.IsSynthetic() {
+			continue
 		}
+
+		ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
+		if ext == nil {
+			if !isOneofWrapper {
+				log.WithFields(ctx, map[string]interface{}{
+					"message": src.FullName(),
+					"oneof":   oneof.Name(),
+				}).Warn("Unexposed Oneof")
+			}
+			continue
+		} else if !ext.Expose {
+			// By default, do not expose oneofs
+			continue
+		} else if isOneofWrapper {
+			return nil, fmt.Errorf("oneof wrapper cannot contain exposed oneofs")
+		}
+
+		oneofName := string(oneof.Name())
+		syntheticTypeName := fmt.Sprintf("%s_%s", src.Name(), oneofName)
+		oneofObject := &schema_j5pb.OneofWrapperItem{
+			ProtoFullName:    string(oneof.FullName()),
+			ProtoMessageName: oneofName,
+			GoTypeName:       syntheticTypeName,
+			GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
+			GrpcPackageName:  string(src.ParentFile().Package()),
+		}
+		prop := &schema_j5pb.ObjectProperty{
+			ProtoFieldName: string(oneof.Name()),
+			Name:           camelCase(oneofName),
+			Description:    commentDescription(src),
+			Schema: &schema_j5pb.Schema{
+				Type: &schema_j5pb.Schema_OneofWrapper{
+					OneofWrapper: oneofObject,
+				},
+			},
+		}
+		pendingOneofProps[oneofName] = prop
+		exposeOneofs[oneofName] = oneofObject
+
 	}
 
 	for ii := 0; ii < src.Fields().Len(); ii++ {
 		field := src.Fields().Get(ii)
 
 		if field.IsList() {
-			prop, err := ss.buildSchemaProperty(field)
+			prop, err := ss.buildSchemaProperty(ctx, field)
 			if err != nil {
 				return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 			}
@@ -120,7 +134,7 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*sch
 		if field.IsMap() {
 			// TODO: Check that the map key is a string
 
-			valueProp, err := ss.buildSchemaProperty(field.MapValue())
+			valueProp, err := ss.buildSchemaProperty(ctx, field.MapValue())
 			if err != nil {
 				return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 			}
@@ -151,7 +165,7 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*sch
 				}
 
 				if msgOptions.Flatten {
-					subMessage, err := ss.BuildSchemaObject(field.Message())
+					subMessage, err := ss.BuildSchemaObject(ctx, field.Message())
 					if err != nil {
 						return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 					}
@@ -163,20 +177,20 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*sch
 			}
 		}
 
-		prop, err := ss.buildSchemaProperty(field)
+		prop, err := ss.buildSchemaProperty(ctx, field)
 		if err != nil {
 			return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 		}
 
 		inOneof := field.ContainingOneof()
-		if isOneof || inOneof == nil || inOneof.IsSynthetic() {
+		if inOneof == nil || inOneof.IsSynthetic() {
 			properties = append(properties, prop)
 			continue
 		}
 
 		name := string(inOneof.Name())
 
-		oneof, ok := oneofs[name]
+		oneof, ok := exposeOneofs[name]
 		if !ok {
 			properties = append(properties, prop)
 			continue
@@ -198,7 +212,7 @@ func (ss *SchemaSet) BuildSchemaObject(src protoreflect.MessageDescriptor) (*sch
 	}
 	description := commentDescription(src)
 
-	if isOneof {
+	if isOneofWrapper {
 		return &schema_j5pb.Schema{
 			Description: description,
 			Type: &schema_j5pb.Schema_OneofWrapper{
@@ -294,7 +308,7 @@ func quickUUID() string {
 	return lastUUID.String()
 }
 
-func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*schema_j5pb.ObjectProperty, error) {
+func (ss *SchemaSet) buildSchemaProperty(ctx context.Context, src protoreflect.FieldDescriptor) (*schema_j5pb.ObjectProperty, error) {
 	prop := &schema_j5pb.ObjectProperty{
 		ProtoFieldName:   string(src.Name()),
 		ProtoFieldNumber: int32(src.Number()),
@@ -347,7 +361,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 
 	case protoreflect.EnumKind:
 		enumConstraint := constraint.GetEnum()
-		values, err := EnumValues(src.Enum().Values(), enumConstraint, ss.Options.ShortEnums)
+		values, err := EnumValues(src.Enum().Values(), enumConstraint)
 		if err != nil {
 			return nil, err
 		}
@@ -678,7 +692,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 			prop.Schema.Type = &schema_j5pb.Schema_Ref{
 				Ref: string(src.Message().FullName()),
 			}
-			if err := ss.addSchemaObject(src.Message()); err != nil {
+			if err := ss.addSchemaObject(ctx, src.Message()); err != nil {
 				return nil, err
 			}
 		}
@@ -697,7 +711,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*sch
 	return prop, nil
 }
 
-func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules, se *config_j5pb.ShortEnumOptions) ([]*schema_j5pb.EnumItem_Value, error) {
+func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules) ([]*schema_j5pb.EnumItem_Value, error) {
 	specMap := map[int32]struct{}{}
 	var notIn bool
 	var isIn bool
@@ -745,14 +759,7 @@ func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.Enum
 		})
 	}
 
-	if se == nil {
-		return values, nil
-	}
-
-	suffix := se.UnspecifiedSuffix
-	if suffix == "" {
-		suffix = "UNSPECIFIED"
-	}
+	suffix := "UNSPECIFIED"
 
 	unspecifiedVal := string(src.Get(0).Name())
 	if !strings.HasSuffix(unspecifiedVal, suffix) {
@@ -814,7 +821,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, bool) {
 	return nil, false
 }
 
-func (ss *SchemaSet) addSchemaObject(src protoreflect.MessageDescriptor) error {
+func (ss *SchemaSet) addSchemaObject(ctx context.Context, src protoreflect.MessageDescriptor) error {
 	if _, ok := ss.Schemas[string(src.FullName())]; ok {
 		return nil
 	}
@@ -826,7 +833,7 @@ func (ss *SchemaSet) addSchemaObject(src protoreflect.MessageDescriptor) error {
 	// Prevents recursion errors
 	ss.Schemas[string(src.FullName())] = &schema_j5pb.Schema{}
 
-	schema, err := ss.BuildSchemaObject(src)
+	schema, err := ss.BuildSchemaObject(ctx, src)
 	if err != nil {
 		return err
 	}

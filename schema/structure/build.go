@@ -1,14 +1,15 @@
 package structure
 
 import (
+	"context"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/log.go/log"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -16,14 +17,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-type builder struct {
-	schemas  *SchemaSet
-	packages []*schema_j5pb.Package
-
-	trimPackages []string
-}
-
-func BuildFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
+func BuildFromImage(ctx context.Context, image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 	proseResolver := imageResolver(image.Prose)
 
 	descriptors := &descriptorpb.FileDescriptorSet{
@@ -43,10 +37,20 @@ func BuildFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 		panic("Expected Packages or Configs from image, found none")
 	}
 
-	return BuildFromDescriptors(config, descriptors, proseResolver)
+	return BuildFromDescriptors(ctx, config, descriptors, proseResolver)
 }
 
-func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*schema_j5pb.API, error) {
+type builder struct {
+	schemas      *SchemaSet
+	packages     []*schema_j5pb.Package
+	trimPackages []string
+}
+
+func (bb *builder) warn(ctx context.Context, format string, args ...interface{}) {
+	log.WithField(ctx, "warn", fmt.Sprintf(format, args...)).Error("J5 Parser Warning")
+}
+
+func BuildFromDescriptors(ctx context.Context, config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*schema_j5pb.API, error) {
 	services := make([]protoreflect.ServiceDescriptor, 0)
 	descFiles, err := protodesc.NewFiles(descriptors)
 	if err != nil {
@@ -61,6 +65,10 @@ func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.
 		}
 		return true
 	})
+
+	if config.Options == nil {
+		config.Options = &config_j5pb.CodecOptions{}
+	}
 
 	trimSuffixes := make([]string, len(config.Options.TrimSubPackages))
 	for idx, suffix := range config.Options.TrimSubPackages {
@@ -106,15 +114,15 @@ func BuildFromDescriptors(config *config_j5pb.Config, descriptors *descriptorpb.
 		}
 
 		if strings.HasSuffix(name, "Service") {
-			if err := b.addService(service); err != nil {
+			if err := b.addService(ctx, service); err != nil {
 				return nil, fmt.Errorf("add service: %w", err)
 			}
 		} else if strings.HasSuffix(name, "Sandbox") {
-			if err := b.addService(service); err != nil {
+			if err := b.addService(ctx, service); err != nil {
 				return nil, fmt.Errorf("add sandbox: %w", err)
 			}
 		} else if strings.HasSuffix(name, "Events") {
-			if err := b.addEvents(service); err != nil {
+			if err := b.addEvents(ctx, service); err != nil {
 				return nil, fmt.Errorf("add events: %w", err)
 			}
 		} else if strings.HasSuffix(name, "Topic") {
@@ -162,7 +170,7 @@ func (bb *builder) getPackage(file protoreflect.FileDescriptor) *schema_j5pb.Pac
 	return pkg
 }
 
-func (bb *builder) addEvents(src protoreflect.ServiceDescriptor) error {
+func (bb *builder) addEvents(ctx context.Context, src protoreflect.ServiceDescriptor) error {
 	methods := src.Methods()
 	for ii := 0; ii < methods.Len(); ii++ {
 		method := methods.Get(ii)
@@ -174,7 +182,7 @@ func (bb *builder) addEvents(src protoreflect.ServiceDescriptor) error {
 			return fmt.Errorf("missing event field in %s", method.Input().FullName())
 		}
 
-		eventSchema, err := bb.schemas.BuildSchemaObject(eventMsg.Message())
+		eventSchema, err := bb.schemas.BuildSchemaObject(ctx, eventMsg.Message())
 		if err != nil {
 			return err
 		}
@@ -187,7 +195,7 @@ func (bb *builder) addEvents(src protoreflect.ServiceDescriptor) error {
 		stateMsg := msgFields.ByJSONName("state")
 		if stateMsg != nil {
 
-			stateSchema, err := bb.schemas.BuildSchemaObject(stateMsg.Message())
+			stateSchema, err := bb.schemas.BuildSchemaObject(ctx, stateMsg.Message())
 			if err != nil {
 				return err
 			}
@@ -203,12 +211,12 @@ func (bb *builder) addEvents(src protoreflect.ServiceDescriptor) error {
 
 }
 
-func (bb *builder) addService(src protoreflect.ServiceDescriptor) error {
+func (bb *builder) addService(ctx context.Context, src protoreflect.ServiceDescriptor) error {
 	methods := src.Methods()
 	name := string(src.FullName())
 	for ii := 0; ii < methods.Len(); ii++ {
 		method := methods.Get(ii)
-		builtMethod, err := bb.buildMethod(name, method)
+		builtMethod, err := bb.buildMethod(ctx, name, method)
 		if err != nil {
 			return err
 		}
@@ -247,7 +255,7 @@ func convertPath(path string, requestObject protoreflect.MessageDescriptor) (str
 	return strings.Join(parts, "/"), nil
 }
 
-func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDescriptor) (*schema_j5pb.Method, error) {
+func (bb *builder) buildMethod(ctx context.Context, serviceName string, method protoreflect.MethodDescriptor) (*schema_j5pb.Method, error) {
 
 	methodOptions := method.Options().(*descriptorpb.MethodOptions)
 	httpOpt := proto.GetExtension(methodOptions, annotations.E_Http).(*annotations.HttpRule)
@@ -292,14 +300,14 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 		FullGrpcName:    fmt.Sprintf("/%s/%s", serviceName, method.Name()),
 	}
 
-	okResponse, err := bb.schemas.BuildSchemaObject(method.Output())
+	okResponse, err := bb.schemas.BuildSchemaObject(ctx, method.Output())
 	if err != nil {
 		return nil, err
 	}
 
 	builtMethod.ResponseBody = okResponse
 
-	request, err := bb.schemas.BuildSchemaObject(method.Input())
+	request, err := bb.schemas.BuildSchemaObject(ctx, method.Input())
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +335,7 @@ func (bb *builder) buildMethod(serviceName string, method protoreflect.MethodDes
 
 	if httpOpt.Body == "" {
 		if httpMethod != "get" {
-			fmt.Fprintf(os.Stderr, "WARN: no body annotation for %s.%s which is a %s\n", serviceName, method.Name(), httpMethod)
+			bb.warn(ctx, "no body annotation for %s.%s which is a %s", serviceName, method.Name(), httpMethod)
 		}
 		// TODO: This should probably be based on the annotation setting of body
 		for _, param := range requestObject.Properties {

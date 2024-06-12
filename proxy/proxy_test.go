@@ -13,26 +13,17 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pentops/j5/codec"
-	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/test/foo/v1/foo_testpb"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
 
-var testCodecOptions = &config_j5pb.CodecOptions{
-	ShortEnums: &config_j5pb.ShortEnumOptions{
-		UnspecifiedSuffix: "UNSPECIFIED",
-		StrictUnmarshal:   true,
-	},
-	WrapOneof: true,
-}
-
 func TestGetHandlerMapping(t *testing.T) {
 
 	fd := foo_testpb.File_test_foo_v1_test_proto.Services().Get(0).Methods().Get(0)
 
-	rr := NewRouter(codec.NewCodec(testCodecOptions))
+	rr := NewRouter(codec.NewCodec())
 
 	method, err := rr.buildMethod(GRPCMethodConfig{
 		Method:  fd,
@@ -149,7 +140,7 @@ func TestBodyHandlerMapping(t *testing.T) {
 
 	fd := foo_testpb.File_test_foo_v1_test_proto.Services().Get(0).Methods().Get(1)
 
-	rr := NewRouter(codec.NewCodec(testCodecOptions))
+	rr := NewRouter(codec.NewCodec())
 	method, err := rr.buildMethod(GRPCMethodConfig{
 		Method:  fd,
 		Invoker: nil,

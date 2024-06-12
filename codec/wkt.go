@@ -10,10 +10,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func unexpectedTokenError(got, expected interface{}) error {
-	return fmt.Errorf("unexpected token %v, expected %v", got, expected)
-}
-
 const (
 	WKTProtoNamespace = "google.protobuf"
 	WKTAny            = "Any"

@@ -15,6 +15,7 @@ import (
 	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/log.go/log"
 	"github.com/pentops/prototools/protosrc"
 )
 
@@ -114,7 +115,7 @@ func ReadImageFromSourceDir(ctx context.Context, src string) (*source_j5pb.Sourc
 		ImportPaths:           []string{""},
 		IncludeSourceCodeInfo: true,
 		WarningReporter: func(err reporter.ErrorWithPos) {
-			fmt.Printf("WARN: %s", err)
+			log.WithField(ctx, "error", err).Error("protoparse warning")
 		},
 
 		Accessor: func(filename string) (io.ReadCloser, error) {

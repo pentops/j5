@@ -1,6 +1,7 @@
 package gogen
 
 import (
+	"context"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -30,15 +31,11 @@ func (o TestOutput) WriteFile(name string, data []byte) error {
 
 func TestTestProtoGen(t *testing.T) {
 
-	ss := structure.NewSchemaSet(&config_j5pb.CodecOptions{
-		ShortEnums: &config_j5pb.ShortEnumOptions{
-			StrictUnmarshal: true,
-		},
-		WrapOneof: true,
-	})
+	ctx := context.Background()
+	ss := structure.NewSchemaSet(&config_j5pb.CodecOptions{})
 
 	mustBuildSchema := func(desc protoreflect.MessageDescriptor) *schema_j5pb.Schema {
-		schemaItem, err := ss.BuildSchemaObject(desc)
+		schemaItem, err := ss.BuildSchemaObject(ctx, desc)
 		if err != nil {
 			t.Fatal(err.Error())
 		}

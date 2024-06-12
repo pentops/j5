@@ -52,7 +52,7 @@ func TestReflection(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	encoded, err := codec.Encode(codec.Options{}, dyn)
+	encoded, err := codec.Encode(dyn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -67,7 +67,7 @@ func TestReflection(t *testing.T) {
 
 	assert.Equal(t, "value", decoded["field"])
 	assert.Equal(t, "bar", decoded["bar"].(map[string]interface{})["field"])
-	assert.Equal(t, "BAR_ENUM_FOO", decoded["barEnum"])
+	assert.Equal(t, "FOO", decoded["barEnum"])
 	assert.Equal(t, tt.In(time.UTC).Format(time.RFC3339Nano), decoded["timestamp"])
 	if decoded["field"] != "value" {
 		t.Fatalf("expected field to be 'value', got %v", decoded["field"])
@@ -101,7 +101,7 @@ func TestJ5AnnotationsPass(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	encoded, err := codec.Encode(codec.Options{}, aa)
+	encoded, err := codec.Encode(aa)
 	if err != nil {
 		t.Fatal(err)
 	}

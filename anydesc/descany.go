@@ -51,7 +51,7 @@ func NewFromAny(flatDesc *anydesc_j5pb.Any) (*dynamicpb.Message, error) {
 	return dyn, proto.Unmarshal(flatDesc.Value, dyn)
 }
 
-func MarshalAnyToJSON(flatDesc *anydesc_j5pb.Any, opts codec.Options) ([]byte, error) {
+func MarshalAnyToJSON(flatDesc *anydesc_j5pb.Any) ([]byte, error) {
 
 	dyn, err := NewFromAny(flatDesc)
 	if err != nil {
@@ -62,7 +62,7 @@ func MarshalAnyToJSON(flatDesc *anydesc_j5pb.Any, opts codec.Options) ([]byte, e
 		return nil, err
 	}
 
-	return codec.Encode(opts, dyn)
+	return codec.Encode(dyn)
 }
 
 func FlattenDescriptor(opts FlattenOptions, msg protoreflect.MessageDescriptor) (*descriptorpb.FileDescriptorProto, error) {

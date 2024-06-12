@@ -33,13 +33,6 @@ message RegistryConfig {
 
 message CodecOptions {
   repeated string trim_sub_packages = 1;
-  bool wrap_oneof = 2;
-  ShortEnumOptions short_enums = 3;
-}
-
-message ShortEnumOptions {
-  string unspecified_suffix = 1;
-  bool strict_unmarshal = 2;
 }
 
 // When code is managed through git, configures mapping between git branches,

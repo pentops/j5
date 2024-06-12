@@ -107,7 +107,7 @@ func (dec *decoder) decodeScalarField(field protoreflect.FieldDescriptor) (proto
 		if !ok {
 			return protoreflect.Value{}, unexpectedTokenError(tok, "string")
 		}
-		enumValue, err := dec.Options.ShortEnums.Decode(field.Enum(), stringVal)
+		enumValue, err := dec.decodeEnum(field.Enum(), stringVal)
 		if err != nil {
 			return protoreflect.Value{}, err
 		}

@@ -69,7 +69,7 @@ func (dw *DockerWrapper) Run(ctx context.Context, spec *config_j5pb.DockerSpec, 
 			// only pull once for all plugins
 			dw.pulledImages[spec.Image] = true
 
-			log.Info(ctx, "pulling image")
+			log.Debug(ctx, "pulling image")
 			if err := dw.Pull(ctx, spec); err != nil {
 				log.WithError(ctx, err).Error("failed to pull image")
 				return err
@@ -147,7 +147,7 @@ func (dw *DockerWrapper) Run(ctx context.Context, spec *config_j5pb.DockerSpec, 
 			return err
 		}
 	case st := <-statusCh:
-		log.WithField(ctx, "exitStatus", st).Info("container exited")
+		log.WithField(ctx, "exitStatus", st).Debug("container exited")
 		if st.StatusCode != 0 {
 			return fmt.Errorf("non-zero exit code: %d", st.StatusCode)
 		}

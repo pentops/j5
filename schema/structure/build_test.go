@@ -1,6 +1,7 @@
 package structure
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -19,6 +20,8 @@ const (
 )
 
 func TestBuild(t *testing.T) {
+
+	ctx := context.Background()
 
 	descriptors := &descriptorpb.FileDescriptorProto{
 		Options: &descriptorpb.FileOptions{
@@ -155,14 +158,11 @@ func TestBuild(t *testing.T) {
 		}},
 	}
 
-	built, err := BuildFromDescriptors(&config_j5pb.Config{
+	built, err := BuildFromDescriptors(ctx, &config_j5pb.Config{
 		Packages: []*config_j5pb.PackageConfig{{
 			Label: "Test",
 			Name:  "test.v1",
 		}},
-		Options: &config_j5pb.CodecOptions{
-			ShortEnums: &config_j5pb.ShortEnumOptions{},
-		},
 	}, &descriptorpb.FileDescriptorSet{
 		File: []*descriptorpb.FileDescriptorProto{descriptors},
 	}, nil)
