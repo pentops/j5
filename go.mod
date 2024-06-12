@@ -15,7 +15,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/jhump/protoreflect v1.16.0
 	github.com/pentops/flowtest v0.0.0-20240607020132-7dda31076e79
-	github.com/pentops/log.go v0.0.0-20240523172444-85c9292a83db
+	github.com/pentops/log.go v0.0.0-20240612184720-79634792a21e
 	github.com/pentops/prototools v0.0.0-20240531010906-d324770770f0
 	github.com/pentops/runner v0.0.0-20240525192419-d655233635e9
 	github.com/ryanuber/go-glob v1.0.0
@@ -107,5 +107,3 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.1 // indirect
 )
-
-replace github.com/pentops/log.go => /Users/daemonl/pentops/log.go

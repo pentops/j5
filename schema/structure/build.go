@@ -47,7 +47,7 @@ type builder struct {
 }
 
 func (bb *builder) warn(ctx context.Context, format string, args ...interface{}) {
-	log.WithField(ctx, "warn", fmt.Sprintf(format, args...)).Error("J5 Parser Warning")
+	log.WithField(ctx, "message", fmt.Sprintf(format, args...)).Warn("J5 Parser Warning")
 }
 
 func BuildFromDescriptors(ctx context.Context, config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*schema_j5pb.API, error) {
