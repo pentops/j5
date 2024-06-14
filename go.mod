@@ -16,7 +16,7 @@ require (
 	github.com/jhump/protoreflect v1.16.0
 	github.com/pentops/flowtest v0.0.0-20240607020132-7dda31076e79
 	github.com/pentops/log.go v0.0.0-20240612184720-79634792a21e
-	github.com/pentops/prototools v0.0.0-20240612193820-e58a0d1d3980
+	github.com/pentops/prototools v0.0.0-20240614222903-e9c266e2e96b
 	github.com/pentops/runner v0.0.0-20240525192419-d655233635e9
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/shopspring/decimal v1.4.0

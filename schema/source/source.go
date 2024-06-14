@@ -4,8 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
+	"io/fs"
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -18,29 +17,31 @@ type Source struct {
 	// input
 	commitInfo *source_j5pb.CommitInfo
 	config     *config_j5pb.Config
-	sourceDir  string
+	repoRoot   fs.FS
+	dir        string // the directory of the source within the root
 
 	// cache
 	codegenReqs map[string]*pluginpb.CodeGeneratorRequest
 	sourceImg   *source_j5pb.SourceImage
 }
 
-func NewLocalDirSource(ctx context.Context, commitInfo *source_j5pb.CommitInfo, config *config_j5pb.Config, sourceDir string) (*Source, error) {
+func NewLocalDirSource(ctx context.Context, commitInfo *source_j5pb.CommitInfo, config *config_j5pb.Config, repoRoot fs.FS, dir string) (*Source, error) {
 	return &Source{
 		config:      config,
 		commitInfo:  commitInfo,
-		sourceDir:   sourceDir,
+		repoRoot:    repoRoot,
+		dir:         dir,
 		codegenReqs: map[string]*pluginpb.CodeGeneratorRequest{},
 	}, nil
 }
 
-func ReadLocalSource(ctx context.Context, commitInfo *source_j5pb.CommitInfo, dir string) (*Source, error) {
-	config, err := ReadDirConfigs(dir)
+func ReadLocalSource(ctx context.Context, commitInfo *source_j5pb.CommitInfo, root fs.FS, dir string) (*Source, error) {
+	config, err := readDirConfigs(root)
 	if err != nil {
 		return nil, err
 	}
 
-	return NewLocalDirSource(ctx, commitInfo, config, dir)
+	return NewLocalDirSource(ctx, commitInfo, config, root, dir)
 }
 
 func (src Source) J5Config() *config_j5pb.Config {
@@ -53,7 +54,7 @@ func (src Source) CommitInfo(context.Context) (*source_j5pb.CommitInfo, error) {
 
 func (src *Source) ProtoCodeGeneratorRequest(ctx context.Context, root string) (*pluginpb.CodeGeneratorRequest, error) {
 	if src.codegenReqs[root] == nil {
-		rr, err := CodeGeneratorRequestFromSource(ctx, filepath.Join(src.sourceDir, root))
+		rr, err := codeGeneratorRequestFromSource(ctx, src.repoRoot, root)
 		if err != nil {
 			return nil, err
 		}
@@ -64,9 +65,9 @@ func (src *Source) ProtoCodeGeneratorRequest(ctx context.Context, root string) (
 
 func (src *Source) SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error) {
 	if src.sourceImg == nil {
-		img, err := ReadImageFromSourceDir(ctx, src.sourceDir)
+		img, err := readImageFromDir(ctx, src.repoRoot, src.dir)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("reading source image: %w", err)
 		}
 		src.sourceImg = img
 	}
@@ -96,7 +97,7 @@ func (src *Source) SourceDescriptors(ctx context.Context) ([]*descriptorpb.FileD
 }
 
 func (src *Source) SourceFile(ctx context.Context, filename string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(src.sourceDir, filename))
+	return fs.ReadFile(src.repoRoot, filename)
 }
 
 func (src *Source) PackageBuildConfig(name string) (*config_j5pb.ProtoBuildConfig, error) {

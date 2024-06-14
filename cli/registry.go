@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/pentops/j5/schema/source"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/proto"
 )
@@ -17,7 +16,7 @@ func registrySet() *commander.CommandSet {
 }
 
 func runPush(ctx context.Context, cfg struct {
-	Source  string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
+	SourceConfig
 	Version string `flag:"version" default:"" description:"Version to push"`
 	Latest  bool   `flag:"latest" description:"Push as latest"`
 	Bucket  string `flag:"bucket" description:"S3 bucket to push to"`
@@ -28,7 +27,12 @@ func runPush(ctx context.Context, cfg struct {
 		return fmt.Errorf("version, latest or both are required")
 	}
 
-	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
+	source, err := cfg.GetSource(ctx)
+	if err != nil {
+		return err
+	}
+
+	image, err := source.SourceImage(ctx)
 	if err != nil {
 		return err
 	}

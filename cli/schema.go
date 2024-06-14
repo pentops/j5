@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/pentops/j5/schema/jdef"
-	"github.com/pentops/j5/schema/source"
 	"github.com/pentops/j5/schema/structure"
 	"github.com/pentops/j5/schema/swagger"
 	"github.com/pentops/log.go/log"
@@ -28,12 +27,18 @@ func schemaSet() *commander.CommandSet {
 }
 
 type BuildConfig struct {
-	Source string `flag:"src" default:"." description:"Source directory containing jsonapi.yaml and buf.lock.yaml"`
+	SourceConfig
 	Output string `flag:"output" default:"-" description:"Destination to push image to. - for stdout, s3://bucket/prefix, otherwise a file"`
 }
 
 func RunImage(ctx context.Context, cfg BuildConfig) error {
-	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
+
+	source, err := cfg.GetSource(ctx)
+	if err != nil {
+		return fmt.Errorf("getSource: %w", err)
+	}
+
+	image, err := source.SourceImage(ctx)
 	if err != nil {
 		return err
 	}
@@ -47,7 +52,11 @@ func RunImage(ctx context.Context, cfg BuildConfig) error {
 }
 
 func RunSwagger(ctx context.Context, cfg BuildConfig) error {
-	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
+	source, err := cfg.GetSource(ctx)
+	if err != nil {
+		return err
+	}
+	image, err := source.SourceImage(ctx)
 	if err != nil {
 		return err
 	}
@@ -71,7 +80,12 @@ func RunSwagger(ctx context.Context, cfg BuildConfig) error {
 }
 
 func RunJDef(ctx context.Context, cfg BuildConfig) error {
-	image, err := source.ReadImageFromSourceDir(ctx, cfg.Source)
+	source, err := cfg.GetSource(ctx)
+	if err != nil {
+		return err
+	}
+
+	image, err := source.SourceImage(ctx)
 	if err != nil {
 		return err
 	}

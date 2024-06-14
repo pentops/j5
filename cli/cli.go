@@ -91,8 +91,8 @@ func runGenerate(ctx context.Context, cfg struct {
 			resolvedPlugins = append(resolvedPlugins, plugin)
 		}
 
-		for _, sourceDir := range generator.Src {
-			protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, sourceDir)
+		for _, genSrc := range generator.Src {
+			protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, genSrc)
 			if err != nil {
 				return err
 			}
@@ -117,7 +117,9 @@ func runGenerate(ctx context.Context, cfg struct {
 }
 
 type SourceConfig struct {
-	Source        string   `flag:"src" default:"." description:"Source directory containing j5.yaml and buf.lock.yaml"`
+	Source string `flag:"src" default:"." description:"Source directory containing j5.yaml and buf.lock.yaml"`
+	Bundle string `flag:"bundle" default:"" description:"When the bundle j5.yaml is in a subdirectory"`
+
 	CommitHash    string   `flag:"commit-hash" env:"COMMIT_HASH" default:""`
 	CommitTime    string   `flag:"commit-time" env:"COMMIT_TIME" default:""`
 	CommitAliases []string `flag:"commit-alias" env:"COMMIT_ALIAS" default:""`
@@ -128,12 +130,10 @@ type SourceConfig struct {
 func (cfg SourceConfig) GetSource(ctx context.Context) (builder.Source, error) {
 
 	sourceDir := cfg.Source
-	japiConfig, err := source.ReadDirConfigs(cfg.Source)
-	if err != nil {
-		return nil, err
-	}
 
 	var commitInfo *source_j5pb.CommitInfo
+	var err error
+
 	if cfg.CommitHash != "" && cfg.CommitTime != "" {
 		commitInfo = &source_j5pb.CommitInfo{}
 		commitInfo.Hash = cfg.CommitHash
@@ -144,13 +144,13 @@ func (cfg SourceConfig) GetSource(ctx context.Context) (builder.Source, error) {
 		commitInfo.Time = timestamppb.New(commitTime)
 		commitInfo.Aliases = cfg.CommitAliases
 	} else {
-		commitInfo, err = git.ExtractGitMetadata(ctx, japiConfig.Git, cfg.Source)
+		commitInfo, err = git.ExtractGitMetadata(ctx, cfg.Source)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("extracting git metadata from dir: %w", err)
 		}
 	}
 
-	return source.NewLocalDirSource(ctx, commitInfo, japiConfig, sourceDir)
+	return source.ReadLocalSource(ctx, commitInfo, os.DirFS(sourceDir), cfg.Bundle)
 }
 
 type DiscardFS struct{}

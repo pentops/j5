@@ -17,7 +17,14 @@ message Config {
 
   repeated GenerateConfig generate = 6;
 
+  repeated BundleConfig bundles = 8;
+
   GitConfig git = 7;
+}
+
+message BundleConfig {
+  string name = 1;
+  string dir = 2;
 }
 
 message PackageConfig {

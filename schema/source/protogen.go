@@ -5,7 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"strings"
 
@@ -16,7 +16,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-func CodeGeneratorRequestFromSource(ctx context.Context, src string) (*pluginpb.CodeGeneratorRequest, error) {
+func codeGeneratorRequestFromSource(ctx context.Context, repoRoot fs.FS, dir string) (*pluginpb.CodeGeneratorRequest, error) {
 
 	out := &pluginpb.CodeGeneratorRequest{
 		CompilerVersion: &pluginpb.Version{
@@ -28,21 +28,22 @@ func CodeGeneratorRequestFromSource(ctx context.Context, src string) (*pluginpb.
 
 	includeFiles := map[string]bool{}
 
-	err := filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+	walkRoot, err := fs.Sub(repoRoot, dir)
+	if err != nil {
+		return nil, err
+	}
+
+	err = fs.WalkDir(walkRoot, ".", func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
 		ext := strings.ToLower(filepath.Ext(path))
-		rel, err := filepath.Rel(src, path)
-		if err != nil {
-			return err
-		}
 
 		switch ext {
 		case ".proto":
-			out.FileToGenerate = append(out.FileToGenerate, rel)
-			includeFiles[rel] = true
+			out.FileToGenerate = append(out.FileToGenerate, path)
+			includeFiles[path] = true
 			return nil
 		}
 
@@ -53,7 +54,7 @@ func CodeGeneratorRequestFromSource(ctx context.Context, src string) (*pluginpb.
 	}
 
 	bufCache := protosrc.NewBufCache()
-	extFiles, err := bufCache.GetDeps(ctx, src)
+	extFiles, err := bufCache.GetDeps(ctx, repoRoot, dir)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +67,7 @@ func CodeGeneratorRequestFromSource(ctx context.Context, src string) (*pluginpb.
 			if content, ok := extFiles[filename]; ok {
 				return io.NopCloser(bytes.NewReader(content)), nil
 			}
-			return os.Open(filepath.Join(src, filename))
+			return walkRoot.Open(filename)
 		},
 	}
 
