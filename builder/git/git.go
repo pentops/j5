@@ -2,6 +2,7 @@ package git
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	git "github.com/go-git/go-git/v5"
@@ -29,10 +30,13 @@ func ExpandGitAliases(gitConfig *config_j5pb.GitConfig, commitInfo *source_j5pb.
 	commitInfo.Aliases = aliases
 }
 
-func ExtractGitMetadata(ctx context.Context, gitConfig *config_j5pb.GitConfig, dir string) (*source_j5pb.CommitInfo, error) {
+func ExtractGitMetadata(ctx context.Context, dir string) (*source_j5pb.CommitInfo, error) {
 
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
+		if errors.Is(err, git.ErrRepositoryNotExists) {
+			return nil, nil
+		}
 		return nil, err
 	}
 
@@ -56,12 +60,6 @@ func ExtractGitMetadata(ctx context.Context, gitConfig *config_j5pb.GitConfig, d
 	if headName.IsBranch() {
 		commitAliases = append(commitAliases, headName.Short())
 		commitAliases = append(commitAliases, string(headName))
-
-		if gitConfig != nil {
-			if globMatch(gitConfig.Main, string(headName)) {
-				commitAliases = append(commitAliases, "latest")
-			}
-		}
 	}
 
 	// TODO: Tags, including latest match on /refs/tags/v* or whatever is
