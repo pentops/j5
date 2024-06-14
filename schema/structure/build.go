@@ -46,10 +46,6 @@ type builder struct {
 	trimPackages []string
 }
 
-func (bb *builder) warn(ctx context.Context, format string, args ...interface{}) {
-	log.WithField(ctx, "message", fmt.Sprintf(format, args...)).Warn("J5 Parser Warning")
-}
-
 func BuildFromDescriptors(ctx context.Context, config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*schema_j5pb.API, error) {
 	services := make([]protoreflect.ServiceDescriptor, 0)
 	descFiles, err := protodesc.NewFiles(descriptors)
@@ -334,8 +330,11 @@ func (bb *builder) buildMethod(ctx context.Context, serviceName string, method p
 	}
 
 	if httpOpt.Body == "" {
-		if httpMethod != "get" {
-			bb.warn(ctx, "no body annotation for %s.%s which is a %s", serviceName, method.Name(), httpMethod)
+		if httpMethod != "get" && httpMethod != "delete" {
+			log.WithFields(ctx, map[string]interface{}{
+				"httpMethod": httpMethod,
+				"gRPCMethod": method.FullName(),
+			}).Warn("No Body defined")
 		}
 		// TODO: This should probably be based on the annotation setting of body
 		for _, param := range requestObject.Properties {
