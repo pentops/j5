@@ -1526,8 +1526,8 @@ github.com/pentops/flowtest v0.0.0-20240607020132-7dda31076e79 h1:KDFU89YeGtsFew
 github.com/pentops/flowtest v0.0.0-20240607020132-7dda31076e79/go.mod h1:5vX1QXxvMqOZb/KiJd4V2STThM6Q9OnHZIxAbv1Pprw=
 github.com/pentops/log.go v0.0.0-20240612184720-79634792a21e h1:YqtP83u5EzkIEm2Lg/6RiM2EsAI38Mh/Ph4lcfN1rKs=
 github.com/pentops/log.go v0.0.0-20240612184720-79634792a21e/go.mod h1:UXhrs+VZ6cWZ7b/v8AtuvBZc5nwS5WFHP94JoFrZQA8=
-github.com/pentops/prototools v0.0.0-20240531010906-d324770770f0 h1:07hqceNhsLYhqYPfRsLuWMm84m2CKQpqLZJjdIzmzQw=
-github.com/pentops/prototools v0.0.0-20240531010906-d324770770f0/go.mod h1:tgw8+dH7Ha9Y1/6aBiBu4p6wAu7gPblAs445OkMbTMI=
+github.com/pentops/prototools v0.0.0-20240612193820-e58a0d1d3980 h1:4SSxcs/lGpKYDNNYhXmHLVP9Woi42a0ox2fJSNBoIq0=
+github.com/pentops/prototools v0.0.0-20240612193820-e58a0d1d3980/go.mod h1:MkahMmZ6jpOZ7i2mTeSLP3ZeF4TYnmS35o6udFX0ybM=
 github.com/pentops/runner v0.0.0-20240525192419-d655233635e9 h1:wQ4+oVfsgXH8Rlh7p3qs44JmZ+SgFCRNtY+aDuNH5OQ=
 github.com/pentops/runner v0.0.0-20240525192419-d655233635e9/go.mod h1:h7jrFRlRvcomei3LdBp1YaJB3nk9s2Vj0fW2ftDYCbY=
 github.com/phpdave11/gofpdf v1.4.2/go.mod h1:zpO6xFn9yxo3YLyMvW8HcKWVdbNqgIfOOp2dXMnm1mY=
