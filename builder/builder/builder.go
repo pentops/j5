@@ -64,7 +64,7 @@ func (b *Builder) BuildAll(ctx context.Context, src Source, dst FS) error {
 	}
 
 	if _, err := b.BuildJsonAPI(ctx, img); err != nil {
-		return err
+		return fmt.Errorf("building JSON API: %w", err)
 	}
 
 	for _, dockerBuild := range spec.ProtoBuilds {
@@ -76,7 +76,7 @@ func (b *Builder) BuildAll(ctx context.Context, src Source, dst FS) error {
 		}
 		if err := b.BuildProto(ctx, src, dst, dockerBuild.Name, lineWriter); err != nil {
 			lineWriter.flush()
-			return err
+			return fmt.Errorf("running proto build %s: %w", dockerBuild.Name, err)
 		}
 		lineWriter.flush()
 	}
@@ -147,9 +147,9 @@ func (b *Builder) BuildProto(ctx context.Context, src Source, dst FS, buildName 
 		return err
 	}
 
-	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, "./")
+	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, ".")
 	if err != nil {
-		return err
+		return fmt.Errorf("ProtoCodeGeneratorRequest: %w", err)
 	}
 
 	switch pkg := dockerBuild.PackageType.(type) {
