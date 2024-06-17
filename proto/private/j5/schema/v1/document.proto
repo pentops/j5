@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package j5.schema.v1;
 
+import "google/protobuf/timestamp.proto";
 import "j5/schema/v1/schema.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
@@ -9,6 +10,11 @@ option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
 message API {
   repeated Package packages = 1;
   map<string, Schema> schemas = 2;
+  Meta meta = 3;
+}
+
+message Meta {
+  google.protobuf.Timestamp built_at = 1;
 }
 
 message Package {
