@@ -91,7 +91,7 @@ func runProtoRequest(ctx context.Context, cfg struct {
 		return err
 	}
 
-	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, "./")
+	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, ".")
 	if err != nil {
 		return err
 	}

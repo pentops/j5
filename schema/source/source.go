@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"strings"
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -97,6 +98,7 @@ func (src *Source) SourceDescriptors(ctx context.Context) ([]*descriptorpb.FileD
 }
 
 func (src *Source) SourceFile(ctx context.Context, filename string) ([]byte, error) {
+	filename = strings.TrimPrefix(filename, "./")
 	return fs.ReadFile(src.repoRoot, filename)
 }
 
