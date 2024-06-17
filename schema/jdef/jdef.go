@@ -9,6 +9,7 @@ func FromProto(protoSchema *schema_j5pb.API) (*API, error) {
 	out := &API{
 		Packages: make([]*Package, len(protoSchema.Packages)),
 		Schemas:  make(map[string]*swagger.Schema),
+		Metadata: protoSchema.Metadata,
 	}
 	for idx, protoPackage := range protoSchema.Packages {
 		pkg, err := fromProtoPackage(protoPackage)
@@ -141,6 +142,7 @@ func fromProtoSchema(protoSchema *schema_j5pb.Schema) (*swagger.Schema, error) {
 type API struct {
 	Packages []*Package                 `json:"packages"`
 	Schemas  map[string]*swagger.Schema `json:"schemas"`
+	Metadata *schema_j5pb.Metadata      `json:"metadata"`
 }
 
 type Package struct {

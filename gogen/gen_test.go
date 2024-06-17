@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"testing"
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
@@ -44,6 +45,9 @@ func TestTestProtoGen(t *testing.T) {
 	}
 
 	jdef := &schema_j5pb.API{
+		Metadata: &schema_j5pb.Metadata{
+			BuiltAt: timestamppb.Now(),
+		},
 		Packages: []*schema_j5pb.Package{{
 			Label:        "package label",
 			Name:         "test.v1",

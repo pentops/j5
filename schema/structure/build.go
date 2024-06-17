@@ -3,6 +3,7 @@ package structure
 import (
 	"context"
 	"fmt"
+	"google.golang.org/protobuf/types/known/timestamppb"
 	"regexp"
 	"strings"
 
@@ -135,6 +136,9 @@ func BuildFromDescriptors(ctx context.Context, config *config_j5pb.Config, descr
 	bb := &schema_j5pb.API{
 		Packages: b.packages,
 		Schemas:  schemas,
+		Metadata: &schema_j5pb.Metadata{
+			BuiltAt: timestamppb.Now(),
+		},
 	}
 
 	return bb, nil
