@@ -10,10 +10,10 @@ option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
 message API {
   repeated Package packages = 1;
   map<string, Schema> schemas = 2;
-  Meta meta = 3;
+  Metadata metadata = 3;
 }
 
-message Meta {
+message Metadata {
   google.protobuf.Timestamp built_at = 1;
 }
 
