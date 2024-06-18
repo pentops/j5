@@ -16,6 +16,7 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/schema/source"
+	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -175,6 +176,7 @@ func NewLocalFS(root string) (*LocalFS, error) {
 
 func (local *LocalFS) Put(ctx context.Context, subPath string, body io.Reader) error {
 	key := filepath.Join(local.root, subPath)
+	log.WithField(ctx, "filename", key).Debug("writing file")
 	err := os.MkdirAll(filepath.Dir(key), 0755)
 	if err != nil {
 		return err
