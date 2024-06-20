@@ -101,9 +101,6 @@ func TestConvertSchema(t *testing.T) {
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_ObjectItem{
 				ObjectItem: &schema_j5pb.ObjectItem{
-					GoPackageName:   "Go Package",
-					GoTypeName:      "Go Type",
-					GrpcPackageName: "Grpc Package",
 
 					ProtoFullName:    "long",
 					ProtoMessageName: "short",
@@ -113,20 +110,16 @@ func TestConvertSchema(t *testing.T) {
 						MaxProperties: Ptr(uint64(2)),
 					},
 					Properties: []*schema_j5pb.ObjectProperty{{
-						Name:             "foo",
-						Required:         true,
-						ProtoFieldName:   "foo",
-						ProtoFieldNumber: 1,
+						Name:     "foo",
+						Required: true,
 						Schema: &schema_j5pb.Schema{
 							Type: &schema_j5pb.Schema_StringItem{
 								StringItem: &schema_j5pb.StringItem{},
 							},
 						},
 					}, {
-						Name:             "bar",
-						Required:         false,
-						ProtoFieldName:   "bar",
-						ProtoFieldNumber: 2,
+						Name:     "bar",
+						Required: false,
 						Schema: &schema_j5pb.Schema{
 							Type: &schema_j5pb.Schema_StringItem{
 								StringItem: &schema_j5pb.StringItem{},
@@ -137,40 +130,31 @@ func TestConvertSchema(t *testing.T) {
 			},
 		},
 		want: map[string]interface{}{
-			"type":                          "object",
-			"x-proto-name":                  "short",
-			"x-proto-full-name":             "long",
-			"required.0":                    "foo",
-			"properties.foo.type":           "string",
-			"properties.foo.x-proto-name":   "foo",
-			"properties.foo.x-proto-number": 1,
-			"properties.bar.type":           "string",
+			"type":                "object",
+			"x-proto-name":        "short",
+			"x-proto-full-name":   "long",
+			"required.0":          "foo",
+			"properties.foo.type": "string",
+			"properties.bar.type": "string",
 		},
 	}, {
 		name: "oneof",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_OneofWrapper{
 				OneofWrapper: &schema_j5pb.OneofWrapperItem{
-					GoPackageName:   "Go Package",
-					GoTypeName:      "Go Type",
-					GrpcPackageName: "Grpc Package",
 
 					ProtoFullName:    "long",
 					ProtoMessageName: "short",
 
 					Properties: []*schema_j5pb.ObjectProperty{{
-						Name:             "foo",
-						ProtoFieldName:   "foo",
-						ProtoFieldNumber: 1,
+						Name: "foo",
 						Schema: &schema_j5pb.Schema{
 							Type: &schema_j5pb.Schema_StringItem{
 								StringItem: &schema_j5pb.StringItem{},
 							},
 						},
 					}, {
-						Name:             "bar",
-						ProtoFieldName:   "bar",
-						ProtoFieldNumber: 2,
+						Name: "bar",
 						Schema: &schema_j5pb.Schema{
 							Type: &schema_j5pb.Schema_StringItem{
 								StringItem: &schema_j5pb.StringItem{},
@@ -181,13 +165,11 @@ func TestConvertSchema(t *testing.T) {
 			},
 		},
 		want: map[string]interface{}{
-			"type":                        "object",
-			"x-proto-name":                "short",
-			"x-proto-full-name":           "long",
-			"properties.foo.type":         "string",
-			"properties.foo.x-proto-name": "foo",
-			"properties.bar.type":         "string",
-			"properties.bar.x-proto-name": "bar",
+			"type":                "object",
+			"x-proto-name":        "short",
+			"x-proto-full-name":   "long",
+			"properties.foo.type": "string",
+			"properties.bar.type": "string",
 		},
 	}, {
 		name: "array",
@@ -236,7 +218,7 @@ func TestConvertSchema(t *testing.T) {
 		name: "any",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Any{
-				Any: &schema_j5pb.AnySchemmaItem{},
+				Any: &schema_j5pb.AnySchemaItem{},
 			},
 		},
 		want: map[string]interface{}{

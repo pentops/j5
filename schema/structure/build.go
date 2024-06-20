@@ -3,19 +3,16 @@ package structure
 import (
 	"context"
 	"fmt"
-	"google.golang.org/protobuf/types/known/timestamppb"
-	"regexp"
-	"strings"
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/log.go/log"
-	"google.golang.org/genproto/googleapis/api/annotations"
-	"google.golang.org/protobuf/proto"
+	"github.com/pentops/j5/schema/j5reflect"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func BuildFromImage(ctx context.Context, image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
@@ -34,337 +31,224 @@ func BuildFromImage(ctx context.Context, image *source_j5pb.SourceImage) (*schem
 		Options:  image.Codec,
 	}
 
-	if config.Packages == nil || config.Options == nil {
-		panic("Expected Packages or Configs from image, found none")
+	if config.Packages == nil || len(config.Packages) < 1 {
+		return nil, fmt.Errorf("no packages to generate")
+	}
+
+	if config.Options == nil {
+		config.Options = &config_j5pb.CodecOptions{}
 	}
 
 	return BuildFromDescriptors(ctx, config, descriptors, proseResolver)
 }
 
 type builder struct {
-	schemas      *SchemaSet
 	packages     []*schema_j5pb.Package
 	trimPackages []string
+
+	usedSchemas map[protoreflect.FullName]int
 }
 
 func BuildFromDescriptors(ctx context.Context, config *config_j5pb.Config, descriptors *descriptorpb.FileDescriptorSet, proseResolver ProseResolver) (*schema_j5pb.API, error) {
-	services := make([]protoreflect.ServiceDescriptor, 0)
+
 	descFiles, err := protodesc.NewFiles(descriptors)
 	if err != nil {
 		return nil, fmt.Errorf("descriptor files: %w", err)
 	}
 
-	descFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {
-		fileServices := file.Services()
-		for ii := 0; ii < fileServices.Len(); ii++ {
-			service := fileServices.Get(ii)
-			services = append(services, service)
-		}
-		return true
-	})
-
-	if config.Options == nil {
-		config.Options = &config_j5pb.CodecOptions{}
+	packages, err := BuildPackages(config, descFiles, proseResolver)
+	if err != nil {
+		return nil, fmt.Errorf("packages from descriptors: %w", err)
 	}
 
-	trimSuffixes := make([]string, len(config.Options.TrimSubPackages))
-	for idx, suffix := range config.Options.TrimSubPackages {
-		trimSuffixes[idx] = "." + suffix
-	}
+	return linkPackages(descFiles, packages)
+}
 
-	b := builder{
-		schemas:      NewSchemaSet(config.Options),
-		trimPackages: trimSuffixes,
-	}
+func linkPackages(descFiles *protoregistry.Files, packages []*schema_j5pb.Package) (*schema_j5pb.API, error) {
 
-	wantPackages := make(map[string]bool)
-	for _, pkg := range config.Packages {
-		wantPackages[pkg.Name] = true
+	schemaSet := j5reflect.NewSchemaResolver(descFiles)
 
-		var prose string
+	schemas := make(map[string]*schema_j5pb.Schema)
 
-		if pkg.Prose != "" && proseResolver != nil {
-			prose, err = proseResolver.ResolveProse(pkg.Prose)
+	var walkRefs func(*j5reflect.Schema) error
+	walkRefs = func(schema *j5reflect.Schema) error {
+
+		switch st := schema.Type().(type) {
+		case *j5reflect.ObjectSchema:
+			for _, prop := range st.Properties {
+				if err := walkRefs(prop.Schema); err != nil {
+					return fmt.Errorf("walk %s: %w", st.ProtoMessage.FullName(), err)
+				}
+			}
+
+		case *j5reflect.ArraySchema:
+			if err := walkRefs(st.Schema); err != nil {
+				return fmt.Errorf("walk array: %w", err)
+			}
+
+		case *j5reflect.OneofSchema:
+			for _, prop := range st.Properties {
+				if err := walkRefs(prop.Schema); err != nil {
+					return fmt.Errorf("walk oneof: %w", err)
+				}
+			}
+
+		case *j5reflect.MapSchema:
+			if err := walkRefs(st.Schema); err != nil {
+				return fmt.Errorf("walk map: %w", err)
+			}
+
+		case *j5reflect.RefSchema:
+			stringName := string(st.Name)
+			if _, ok := schemas[stringName]; ok {
+				return nil
+			}
+			if st.To == nil {
+				return fmt.Errorf("ref schema %q has no target", st.Name)
+			}
+			asProto, err := st.To.ToJ5Proto()
 			if err != nil {
-				return nil, fmt.Errorf("prose resolver: package %s: %w", pkg.Name, err)
+				return fmt.Errorf("ref schema %q: %w", st.Name, err)
 			}
-			prose = removeMarkdownHeader(prose)
+			schemas[stringName] = asProto
+			if err := walkRefs(st.To); err != nil {
+				return fmt.Errorf("walk ref %s: %w", st.Name, err)
+			}
 		}
 
-		b.packages = append(b.packages, &schema_j5pb.Package{
-			Name:         pkg.Name,
-			Label:        pkg.Label,
-			Introduction: prose,
-		})
+		return nil
 	}
 
-	for _, service := range services {
-		name := string(service.FullName())
-		packageName := string(service.ParentFile().Package())
+	usedSchemas := map[protoreflect.FullName]struct{}{}
+	rootResolve := func(refItem *schema_j5pb.Schema) (*j5reflect.ObjectSchema, error) {
+		name := protoreflect.FullName(refItem.GetRef())
+		if _, ok := usedSchemas[name]; ok {
+			return nil, fmt.Errorf("root schema %q not unique", name)
+		}
+		usedSchemas[name] = struct{}{}
 
-		for _, suffix := range b.trimPackages {
-			packageName = strings.TrimSuffix(packageName, suffix)
+		schema, err := schemaSet.SchemaByName(name)
+		if err != nil {
+			return nil, err
 		}
 
-		if !wantPackages[packageName] {
-			continue
+		if err := walkRefs(schema); err != nil {
+			return nil, fmt.Errorf("root schema %q: %w", name, err)
 		}
 
-		if strings.HasSuffix(name, "Service") {
-			if err := b.addService(ctx, service); err != nil {
-				return nil, fmt.Errorf("add service: %w", err)
-			}
-		} else if strings.HasSuffix(name, "Sandbox") {
-			if err := b.addService(ctx, service); err != nil {
-				return nil, fmt.Errorf("add sandbox: %w", err)
-			}
-		} else if strings.HasSuffix(name, "Events") {
-			if err := b.addEvents(ctx, service); err != nil {
-				return nil, fmt.Errorf("add events: %w", err)
-			}
-		} else if strings.HasSuffix(name, "Topic") {
-		} else {
-			return nil, fmt.Errorf("unsupported service name %q", name)
+		object, ok := schema.Type().(*j5reflect.ObjectSchema)
+		if !ok {
+			return nil, fmt.Errorf("root schema %q is not an object", name)
 		}
 
+		return object, nil
 	}
 
-	schemas := map[string]*schema_j5pb.Schema{}
-	for name, schema := range b.schemas.Schemas {
-		schemas[name] = schema
+	for _, pkg := range packages {
+		for _, method := range pkg.Methods {
+			requestObject, err := rootResolve(method.RequestBody)
+			if err != nil {
+				return nil, fmt.Errorf("request schema %q: %w", method.RequestBody.GetRef(), err)
+			}
+
+			responseObject, err := rootResolve(method.ResponseBody)
+			if err != nil {
+				return nil, fmt.Errorf("response schema %q: %w", method.ResponseBody.GetRef(), err)
+			}
+
+			method.ResponseBody, err = responseObject.ToJ5Proto()
+			if err != nil {
+				return nil, fmt.Errorf("response schema %q: %w", method.FullGrpcName, err)
+			}
+
+			if err := linkRequestMethod(method, requestObject); err != nil {
+				return nil, err
+			}
+
+		}
+		for _, event := range pkg.Events {
+			eventObject, err := rootResolve(event.Schema)
+			if err != nil {
+				return nil, fmt.Errorf("event schema %q: %w", event.Schema.GetRef(), err)
+			}
+			event.Schema, err = eventObject.ToJ5Proto()
+			if err != nil {
+				return nil, fmt.Errorf("event schema %q: %w", event.Name, err)
+			}
+
+		}
+		for _, entity := range pkg.Entities {
+			eventObject, err := rootResolve(entity.Schema)
+			if err != nil {
+				return nil, fmt.Errorf("event schema %q: %w", entity.Schema.GetRef(), err)
+			}
+			entity.Schema, err = eventObject.ToJ5Proto()
+			if err != nil {
+				return nil, err
+			}
+		}
 	}
-	bb := &schema_j5pb.API{
-		Packages: b.packages,
+
+	return &schema_j5pb.API{
+		Packages: packages,
 		Schemas:  schemas,
 		Metadata: &schema_j5pb.Metadata{
 			BuiltAt: timestamppb.Now(),
 		},
-	}
-
-	return bb, nil
+	}, nil
 }
 
-func (bb *builder) getPackage(file protoreflect.FileDescriptor) *schema_j5pb.Package {
+func linkRequestMethod(method *schema_j5pb.Method, requestObject *j5reflect.ObjectSchema) error {
+	var err error
 
-	name := string(file.Package())
+	for _, parameter := range method.PathParameters {
 
-	for _, trimSuffix := range bb.trimPackages {
-		name = strings.TrimSuffix(name, trimSuffix)
-	}
-
-	var pkg *schema_j5pb.Package
-	for _, search := range bb.packages {
-		if search.Name == name {
-			pkg = search
-			break
-		}
-	}
-
-	if pkg == nil {
-		pkg = &schema_j5pb.Package{
-			Name: name,
-		}
-		bb.packages = append(bb.packages, pkg)
-	}
-
-	return pkg
-}
-
-func (bb *builder) addEvents(ctx context.Context, src protoreflect.ServiceDescriptor) error {
-	methods := src.Methods()
-	for ii := 0; ii < methods.Len(); ii++ {
-		method := methods.Get(ii)
-
-		msgFields := method.Input().Fields()
-
-		eventMsg := msgFields.ByJSONName("event")
-		if eventMsg == nil {
-			return fmt.Errorf("missing event field in %s", method.Input().FullName())
+		prop, ok := popProperty(requestObject, protoreflect.Name(parameter.Name))
+		if !ok {
+			return fmt.Errorf("path parameter %q not found in request object", parameter.Name)
 		}
 
-		eventSchema, err := bb.schemas.BuildSchemaObject(ctx, eventMsg.Message())
+		propSchema, err := prop.Schema.ToJ5Proto()
 		if err != nil {
 			return err
 		}
 
-		eventSpec := &schema_j5pb.EventSpec{
-			Name:        string(method.Name()),
-			EventSchema: eventSchema,
-		}
+		parameter.Schema = propSchema
+		parameter.Name = prop.JSONName
+	}
 
-		stateMsg := msgFields.ByJSONName("state")
-		if stateMsg != nil {
-
-			stateSchema, err := bb.schemas.BuildSchemaObject(ctx, stateMsg.Message())
+	if method.HttpMethod == "get" {
+		method.RequestBody = nil
+		for _, prop := range requestObject.Properties {
+			propSchema, err := prop.Schema.ToJ5Proto()
 			if err != nil {
 				return err
 			}
-			eventSpec.StateSchema = stateSchema
-		}
-
-		pkg := bb.getPackage(method.ParentFile())
-
-		pkg.Events = append(pkg.Events, eventSpec)
-
-	}
-	return nil
-
-}
-
-func (bb *builder) addService(ctx context.Context, src protoreflect.ServiceDescriptor) error {
-	methods := src.Methods()
-	name := string(src.FullName())
-	for ii := 0; ii < methods.Len(); ii++ {
-		method := methods.Get(ii)
-		builtMethod, err := bb.buildMethod(ctx, name, method)
-		if err != nil {
-			return err
-		}
-
-		pkg := bb.getPackage(method.ParentFile())
-
-		pkg.Methods = append(pkg.Methods, builtMethod)
-
-	}
-	return nil
-}
-
-var rePathParameter = regexp.MustCompile(`\{([^\}]+)\}`)
-
-func convertPath(path string, requestObject protoreflect.MessageDescriptor) (string, error) {
-	parts := strings.Split(path, "/")
-	requestFields := requestObject.Fields()
-	for idx, part := range parts {
-		if part == "" {
-			continue
-		}
-
-		if part[0] == '{' && part[len(part)-1] == '}' {
-			fieldName := part[1 : len(part)-1]
-			field := requestFields.ByName(protoreflect.Name(fieldName))
-			if field == nil {
-				return "", fmt.Errorf("path parameter %q not found in request object", fieldName)
-			}
-
-			parts[idx] = ":" + field.JSONName()
-		} else if strings.ContainsAny(part, "{}*:") {
-			return "", fmt.Errorf("invalid path part %q", part)
-		}
-
-	}
-	return strings.Join(parts, "/"), nil
-}
-
-func (bb *builder) buildMethod(ctx context.Context, serviceName string, method protoreflect.MethodDescriptor) (*schema_j5pb.Method, error) {
-
-	methodOptions := method.Options().(*descriptorpb.MethodOptions)
-	httpOpt := proto.GetExtension(methodOptions, annotations.E_Http).(*annotations.HttpRule)
-
-	var httpMethod string
-	var httpPath string
-
-	if httpOpt == nil {
-		return nil, fmt.Errorf("missing http rule for method /%s/%s", serviceName, method.Name())
-	}
-	switch pt := httpOpt.Pattern.(type) {
-	case *annotations.HttpRule_Get:
-		httpMethod = "get"
-		httpPath = pt.Get
-	case *annotations.HttpRule_Post:
-		httpMethod = "post"
-		httpPath = pt.Post
-	case *annotations.HttpRule_Put:
-		httpMethod = "put"
-		httpPath = pt.Put
-	case *annotations.HttpRule_Delete:
-		httpMethod = "delete"
-		httpPath = pt.Delete
-	case *annotations.HttpRule_Patch:
-		httpMethod = "patch"
-		httpPath = pt.Patch
-
-	default:
-		return nil, fmt.Errorf("unsupported http method %T", pt)
-	}
-
-	converted, err := convertPath(httpPath, method.Input())
-	if err != nil {
-		return nil, err
-	}
-
-	builtMethod := &schema_j5pb.Method{
-		GrpcServiceName: string(method.Parent().Name()),
-		GrpcMethodName:  string(method.Name()),
-		HttpMethod:      httpMethod,
-		HttpPath:        converted,
-		FullGrpcName:    fmt.Sprintf("/%s/%s", serviceName, method.Name()),
-	}
-
-	okResponse, err := bb.schemas.BuildSchemaObject(ctx, method.Output())
-	if err != nil {
-		return nil, err
-	}
-
-	builtMethod.ResponseBody = okResponse
-
-	request, err := bb.schemas.BuildSchemaObject(ctx, method.Input())
-	if err != nil {
-		return nil, err
-	}
-
-	requestObject := request.GetObjectItem()
-
-	for _, paramStr := range rePathParameter.FindAllString(httpPath, -1) {
-		name := paramStr[1 : len(paramStr)-1]
-		parts := strings.SplitN(name, ".", 2)
-		if len(parts) > 1 {
-			return nil, fmt.Errorf("path parameter %q is not a top level field", name)
-		}
-
-		prop, ok := popProperty(requestObject, parts[0])
-		if !ok {
-			return nil, fmt.Errorf("path parameter %q not found in request object", name)
-		}
-
-		builtMethod.PathParameters = append(builtMethod.PathParameters, &schema_j5pb.Parameter{
-			Name:     prop.Name,
-			Required: true,
-			Schema:   prop.Schema,
-		})
-	}
-
-	if httpOpt.Body == "" {
-		if httpMethod != "get" && httpMethod != "delete" {
-			log.WithFields(ctx, map[string]interface{}{
-				"httpMethod": httpMethod,
-				"gRPCMethod": method.FullName(),
-			}).Warn("No Body defined")
-		}
-		// TODO: This should probably be based on the annotation setting of body
-		for _, param := range requestObject.Properties {
-			builtMethod.QueryParameters = append(builtMethod.QueryParameters, &schema_j5pb.Parameter{
-				Name:     param.Name,
+			method.QueryParameters = append(method.QueryParameters, &schema_j5pb.Parameter{
+				Name:     prop.JSONName,
 				Required: false,
-				Schema:   param.Schema,
+				Schema:   propSchema,
 			})
 		}
-	} else if httpOpt.Body == "*" {
-		request.Type = &schema_j5pb.Schema_ObjectItem{
-			ObjectItem: requestObject,
-		}
-		builtMethod.RequestBody = request
 	} else {
-		return nil, fmt.Errorf("unsupported body type %q", httpOpt.Body)
+		method.RequestBody, err = requestObject.ToJ5Proto()
+		if err != nil {
+			return fmt.Errorf("request schema %q: %w", method.FullGrpcName, err)
+		}
 	}
-
-	return builtMethod, nil
+	return nil
 }
 
-func popProperty(obj *schema_j5pb.ObjectItem, name string) (*schema_j5pb.ObjectProperty, bool) {
-	newProps := make([]*schema_j5pb.ObjectProperty, 0, len(obj.Properties)-1)
-	var found *schema_j5pb.ObjectProperty
+func popProperty(obj *j5reflect.ObjectSchema, name protoreflect.Name) (*j5reflect.ObjectProperty, bool) {
+	newProps := make([]*j5reflect.ObjectProperty, 0, len(obj.Properties)-1)
+	var found *j5reflect.ObjectProperty
 	for _, prop := range obj.Properties {
-		if prop.ProtoFieldName == name {
+		if len(prop.ProtoField) != 1 {
+			continue // TODO: Can't walk nested fields yet
+		}
+		fieldName := prop.ProtoField[0].Name()
+
+		if fieldName == name {
 			found = prop
 			continue
 		}

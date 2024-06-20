@@ -11,7 +11,7 @@ message Schema {
     // Special Cases
     string ref = 10;
 
-    AnySchemmaItem any = 11;
+    AnySchemaItem any = 11;
     OneofWrapperItem oneof_wrapper = 12;
     // OneOf
     // AnyOf
@@ -104,8 +104,12 @@ message ObjectProperty {
   bool read_only = 6;
   bool write_only = 7;
   string description = 8;
-  string proto_field_name = 9;
-  int32 proto_field_number = 10;
+
+  // For flattened objects,
+  // Defines the path from the root proto message to the field. All but the last
+  // node will be message fields holding a message kind, and the last node is
+  // the field containing the property type.
+  repeated int32 proto_field = 11;
 }
 
 message ObjectItem {
@@ -115,11 +119,6 @@ message ObjectItem {
 
   string proto_message_name = 4;
   string proto_full_name = 5;
-
-  // TODO: These may not be appropriate
-  string go_package_name = 6;
-  string go_type_name = 7;
-  string grpc_package_name = 8;
 }
 
 message ObjectRules {
@@ -134,11 +133,6 @@ message OneofWrapperItem {
   repeated ObjectProperty properties = 2;
   string proto_message_name = 4;
   string proto_full_name = 5;
-
-  // TODO: These may not be appropriate
-  string go_package_name = 6;
-  string go_type_name = 7;
-  string grpc_package_name = 8;
 }
 
 message OneofRules {}
@@ -151,4 +145,4 @@ message MapItem {
 message MapRules {}
 
 // Allows anything
-message AnySchemmaItem {}
+message AnySchemaItem {}

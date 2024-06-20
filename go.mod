@@ -11,10 +11,12 @@ require (
 	github.com/bufbuild/protoyaml-go v0.1.9
 	github.com/docker/docker v26.1.4+incompatible
 	github.com/go-git/go-git/v5 v5.12.0
+	github.com/golang/protobuf v1.5.4
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
+	github.com/iancoleman/strcase v0.2.0
 	github.com/jhump/protoreflect v1.16.0
-	github.com/pentops/flowtest v0.0.0-20240607020132-7dda31076e79
+	github.com/pentops/flowtest v0.0.0-20240623020118-02bf89f30b87
 	github.com/pentops/log.go v0.0.0-20240612184720-79634792a21e
 	github.com/pentops/prototools v0.0.0-20240614222903-e9c266e2e96b
 	github.com/pentops/runner v0.0.0-20240525192419-d655233635e9
@@ -24,7 +26,6 @@ require (
 	github.com/tidwall/gjson v1.17.1
 	go.opentelemetry.io/otel/trace v1.27.0
 	golang.org/x/mod v0.18.0
-	golang.org/x/text v0.16.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20240610135401-a8a62080eff3
 	google.golang.org/grpc v1.64.0
 	google.golang.org/protobuf v1.34.2
@@ -70,7 +71,6 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/cel-go v0.20.1 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -101,6 +101,7 @@ require (
 	golang.org/x/net v0.26.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/sys v0.21.0 // indirect
+	golang.org/x/text v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240610135401-a8a62080eff3 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

@@ -3,40 +3,41 @@ package codec
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
-	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
-	"google.golang.org/protobuf/proto"
+	"github.com/pentops/j5/schema/j5reflect"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func Decode(jsonData []byte, msg protoreflect.Message) error {
+func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 	dec := json.NewDecoder(bytes.NewReader(jsonData))
 	dec.UseNumber()
 	d2 := &decoder{
-		Decoder: dec,
+		jd: dec,
 	}
-	return d2.decodeMessage(msg)
+
+	descriptor := msg.Descriptor()
+
+	schema, err := c.schemaSet.SchemaReflect(descriptor)
+	if err != nil {
+		return fmt.Errorf("schema object: %w", err)
+	}
+
+	switch schema := schema.Type().(type) {
+	case *j5reflect.ObjectSchema:
+		return d2.decodeObject(schema, msg)
+	case *j5reflect.OneofSchema:
+		return d2.decodeOneof(schema, msg)
+	default:
+		return fmt.Errorf("unsupported schema type %T", schema)
+	}
 }
 
 type decoder struct {
-	*json.Decoder
+	jd   *json.Decoder
 	next json.Token
-}
-
-func (d *decoder) Peek() (json.Token, error) {
-	if d.next != nil {
-		return nil, fmt.Errorf("unexpected call to Peek after Peek")
-	}
-
-	tok, err := d.Token()
-	if err != nil {
-		return nil, err
-	}
-
-	d.next = tok
-	return tok, nil
 }
 
 func (d *decoder) Token() (json.Token, error) {
@@ -46,63 +47,86 @@ func (d *decoder) Token() (json.Token, error) {
 		return tok, nil
 	}
 
-	return d.Decoder.Token()
+	return d.jd.Token()
 }
 
-type mappedMessage struct {
-	protoFields map[string][]protoreflect.FieldDescriptor
-}
-
-// Returns a map of json field names to a list of field descriptors that
-// represent the path from the root message to the field. For most fields this
-// will be one field descriptor, but for some the alias may be a path to a
-// nested message field
-func mapMessageFields(msg protoreflect.MessageDescriptor) (*mappedMessage, error) {
-
-	// TODO: Cache the result of this function
-	// TODO: Include oneof maps here
-
-	fields := msg.Fields()
-
-	flatFields := make(map[string][]protoreflect.FieldDescriptor)
-
-	for idx := 0; idx < fields.Len(); idx++ {
-		field := fields.Get(idx)
-		fieldOptions := proto.GetExtension(field.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
-		if fieldOptions != nil {
-			switch option := fieldOptions.Type.(type) {
-			case *ext_j5pb.FieldOptions_Message:
-				if field.Kind() != protoreflect.MessageKind {
-					return nil, fmt.Errorf("field %s is not a message but has a message annotation", field.FullName())
-				}
-
-				if option.Message.Flatten {
-					subFields := field.Message().Fields()
-					for idx := 0; idx < subFields.Len(); idx++ {
-						subField := subFields.Get(idx)
-						flatFields[subField.JSONName()] = []protoreflect.FieldDescriptor{field, subField}
-
-						if subField.Kind() == protoreflect.MessageKind {
-							subFieldFlatFields, err := mapMessageFields(subField.Message())
-							if err != nil {
-								return nil, fmt.Errorf("mapping subfield %s: %w", subField.FullName(), err)
-							}
-							for subFieldName, subFieldFlatField := range subFieldFlatFields.protoFields {
-								flatFields[subFieldName] = append([]protoreflect.FieldDescriptor{field}, subFieldFlatField...)
-							}
-						}
-					}
-					continue
-				}
-
-			}
-		}
-		flatFields[field.JSONName()] = []protoreflect.FieldDescriptor{field}
+func (dec *decoder) expectDelim(delim rune) error {
+	tok, err := dec.Token()
+	if err != nil {
+		return err
 	}
 
-	return &mappedMessage{
-		protoFields: flatFields,
-	}, nil
+	if tok != json.Delim(delim) {
+		return unexpectedTokenError(tok, string(delim))
+	}
+	return nil
+}
+
+func (dec *decoder) jsonArray(callback func() error) error {
+	if err := dec.expectDelim('['); err != nil {
+		return err
+	}
+
+	for dec.jd.More() {
+		if err := callback(); err != nil {
+			return err
+		}
+	}
+
+	return dec.expectDelim(']')
+}
+
+func (dec *decoder) jsonObject(callback func(key string) error) error {
+	if err := dec.expectDelim('{'); err != nil {
+		return err
+	}
+
+	for dec.jd.More() {
+		keyToken, err := dec.Token()
+		if err != nil {
+			return err
+		}
+
+		keyTokenStr, ok := keyToken.(string)
+		if !ok {
+			return unexpectedTokenError(keyToken, "string (object key)")
+		}
+
+		if err := callback(keyTokenStr); err != nil {
+			return passUpError(keyTokenStr, err)
+		}
+	}
+	return dec.expectDelim('}')
+}
+func (d *decoder) unmarshalEmptyObject() error {
+	tok, err := d.Token()
+	if err != nil {
+		return err
+	}
+	if tok != json.Delim('{') {
+		return unexpectedTokenError(tok, "{")
+	}
+	tok, err = d.Token()
+	if err != nil {
+		return err
+	}
+	if tok != json.Delim('}') {
+		return unexpectedTokenError(tok, "}")
+	}
+	return nil
+}
+
+func (d *decoder) stringToken() (string, error) {
+	tok, err := d.Token()
+	if err != nil {
+		return "", err
+	}
+
+	stringVal, ok := tok.(string)
+	if !ok {
+		return "", fmt.Errorf("expected string but got %v", tok)
+	}
+	return stringVal, nil
 }
 
 type fieldError struct {
@@ -110,10 +134,10 @@ type fieldError struct {
 	err         error
 }
 
-func newFieldError(field, message string, args ...interface{}) error {
+func newFieldError(field, message string) error {
 	return fieldError{
 		pathToField: []string{field},
-		err:         fmt.Errorf(message, args...),
+		err:         fmt.Errorf(message),
 	}
 }
 
@@ -148,97 +172,40 @@ func passUpError(field string, err error) error {
 	}
 }
 
-func (dec *decoder) decodeEnum(enum protoreflect.EnumDescriptor, stringVal string) (protoreflect.EnumNumber, error) {
+func (dec *decoder) decodeObject(object *j5reflect.ObjectSchema, msg protoreflect.Message) error {
 
-	vals := enum.Values()
-
-	enumVal := vals.ByName(protoreflect.Name(stringVal))
-	if enumVal != nil {
-		return enumVal.Number(), nil
+	fieldMap := map[string]*j5reflect.ObjectProperty{}
+	for _, prop := range object.Properties {
+		fieldMap[prop.JSONName] = prop
 	}
 
-	prefix := enumPrefix(enum)
-	if prefix == "" {
-		return 0, fmt.Errorf("unknown enum value %s", stringVal)
-	}
-	fullName := fmt.Sprintf("%s%s", prefix, stringVal)
-
-	enumVal = vals.ByName(protoreflect.Name(fullName))
-	if enumVal == nil {
-		return 0, fmt.Errorf("unknown enum value %s (%s)", stringVal, fullName)
-	}
-	return enumVal.Number(), nil
-}
-
-func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
-	wktDecoder := wellKnownTypeUnmarshaler(msg.Descriptor().FullName())
-	if wktDecoder != nil {
-		return wktDecoder(dec, msg)
-	}
-
-	if err := dec.startObject(); err != nil {
-		return err
-	}
-
-	descriptor := msg.Descriptor()
-	oneofs := descriptor.Oneofs()
-
-	isOneofWrapper := false
-
-	msgOptions := msg.Descriptor().Options()
-	ext := proto.GetExtension(msgOptions, ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
-	if ext != nil {
-		isOneofWrapper = ext.IsOneofWrapper
-	}
-
-	fieldAliases, err := mapMessageFields(msg.Descriptor())
-	if err != nil {
-		return fmt.Errorf("mapping fields: %w", err)
-	}
-
-	for {
-		if !dec.More() {
-			break
-		}
-
-		keyToken, err := dec.Token()
-		if err != nil {
-			return err
-		}
-
-		// Otherwise should be a key
-		keyTokenStr, ok := keyToken.(string)
+	return dec.jsonObject(func(keyTokenStr string) error {
+		field, ok := fieldMap[keyTokenStr]
 		if !ok {
-			return unexpectedTokenError(keyToken, "string (object key)")
+			return newFieldError(keyTokenStr, "no such field")
 		}
 
-		protoFieldPath, ok := fieldAliases.protoFields[keyTokenStr]
-		if !ok {
-			keyTokenStr = jsonNameToProto(keyTokenStr)
-			oneof := oneofs.ByName(protoreflect.Name(keyTokenStr))
-			if oneof == nil {
-				return newFieldError(keyTokenStr, "no such field")
+		protoFieldPath := field.ProtoField[:]
+		oneofWrapper, ok := field.Schema.Type().(*j5reflect.OneofSchema)
+		if ok {
+			if err := dec.decodeOneof(oneofWrapper, msg); err != nil {
+				return err
 			}
+			return nil
+		}
 
-			ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
-			if ext == nil || !ext.Expose {
-				return newFieldError(keyTokenStr, "no such field")
-			}
-
-			if err := dec.decodeOneofField(msg, oneof); err != nil {
-				return passUpError(keyTokenStr, err)
-			}
-			continue
+		if len(protoFieldPath) == 0 {
+			return newFieldError(keyTokenStr, "field has no proto field")
 		}
 
 		var protoField protoreflect.FieldDescriptor
 		settingMessage := msg
 		for {
-			protoField = protoFieldPath[0]
-			if len(protoFieldPath) == 1 {
+			protoField, protoFieldPath = protoFieldPath[0], protoFieldPath[1:]
+
+			if len(protoFieldPath) == 0 {
 				break
 			}
-			protoFieldPath = protoFieldPath[1:]
 
 			// The field should me a message, there are remaining fields in the
 			// path
@@ -253,211 +220,286 @@ func (dec *decoder) decodeMessage(msg protoreflect.Message) error {
 			} else {
 				settingMessage = settingMessage.Get(protoField).Message()
 			}
-
 		}
 
-		// We may find a field which is supposed to be in an exposed oneof
-		if !isOneofWrapper && protoField.ContainingOneof() != nil {
-			containingOneof := protoField.ContainingOneof()
-			if !containingOneof.IsSynthetic() {
-				ext := proto.GetExtension(containingOneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
-				if ext != nil && ext.Expose {
-					jsonName := protoNameToJSON(containingOneof.Name())
-					return newFieldError(keyTokenStr, "no such field (but %s.%s is)", jsonName, keyTokenStr)
-				}
-			}
+		if err := dec.decodeField(field.Schema, settingMessage, protoField); err != nil {
+			return err
 		}
 
-		if protoField.IsMap() {
-			if err := dec.decodeMapField(settingMessage, protoField); err != nil {
-				return passUpError(keyTokenStr, err)
-			}
-		} else if protoField.IsList() {
-			if err := dec.decodeListField(settingMessage, protoField); err != nil {
-				return passUpError(keyTokenStr, err)
-			}
-		} else {
-			if err := dec.decodeField(settingMessage, protoField); err != nil {
-				return passUpError(keyTokenStr, err)
-			}
+		return nil
+	})
+}
+
+func (dec *decoder) decodeField(schema *j5reflect.Schema, msg protoreflect.Message, protoField protoreflect.FieldDescriptor) error {
+	switch subSchema := schema.ResolvedType().(type) {
+
+	case *j5reflect.MapSchema:
+		if !protoField.IsMap() {
+			return errors.New("expected map")
 		}
-	}
 
-	return dec.endObject()
-}
+		list := msg.Mutable(protoField).Map()
+		if err := dec.decodeMapField(subSchema, list); err != nil {
+			return err
+		}
+		msg.Set(protoField, protoreflect.ValueOf(list))
+		return nil
 
-func (dec *decoder) decodeOneofField(msg protoreflect.Message, oneof protoreflect.OneofDescriptor) error {
+	case *j5reflect.ArraySchema:
+		if !protoField.IsList() {
+			return errors.New("expected list")
+		}
 
-	if err := dec.startObject(); err != nil {
-		return err
-	}
+		list := msg.Mutable(protoField).List()
+		if err := dec.decodeListField(subSchema, list); err != nil {
+			return err
+		}
+		msg.Set(protoField, protoreflect.ValueOf(list))
+		return nil
 
-	oneofKeyToken, err := dec.Token()
-	if err != nil {
-		return err
-	}
+	case *j5reflect.ObjectSchema:
+		if protoField.Kind() != protoreflect.MessageKind {
+			return errors.New("expected message")
+		}
 
-	oneofKeyTokenStr, ok := oneofKeyToken.(string)
-	if !ok {
-		return unexpectedTokenError(oneofKeyToken, "string (oneof key)")
-	}
+		subMsg := msg.Mutable(protoField).Message()
+		return dec.decodeObject(subSchema, subMsg)
 
-	oneofField := oneof.Fields().ByJSONName(oneofKeyTokenStr)
-	if oneofField == nil {
-		return newFieldError(oneofKeyTokenStr, "no such key")
-	}
+	case *j5reflect.OneofSchema:
+		if protoField.Kind() != protoreflect.MessageKind {
+			return errors.New("expected message for oneof")
+		}
+		subMsg := msg.Mutable(protoField).Message()
+		return dec.decodeOneof(subSchema, subMsg)
 
-	if err := dec.decodeField(msg, oneofField); err != nil {
-		return passUpError(oneofKeyTokenStr, err)
-	}
+	case *j5reflect.EnumSchema:
+		if protoField.Kind() != protoreflect.EnumKind {
+			return errors.New("expected enum")
+		}
 
-	if err := dec.endObject(); err != nil {
-		return err
-	}
+		val, err := dec.decodeEnum(subSchema)
+		if err != nil {
+			return err
+		}
 
-	return nil
-}
+		msg.Set(protoField, val)
+		return nil
 
-func (dec *decoder) startObject() error {
-	return dec.expectDelim('{')
-}
-func (dec *decoder) endObject() error {
-	return dec.expectDelim('}')
-}
+	case *j5reflect.ScalarSchema:
+		if protoField.IsList() || protoField.IsMap() {
+			return errors.New("expected scalar")
+		}
 
-func (dec *decoder) expectDelim(delim rune) error {
-	tok, err := dec.Token()
-	if err != nil {
-		return err
-	}
-
-	if tok != json.Delim(delim) {
-		return unexpectedTokenError(tok, string(delim))
-	}
-	return nil
-}
-
-func (dec *decoder) decodeField(msg protoreflect.Message, field protoreflect.FieldDescriptor) error {
-	switch field.Kind() {
-	case protoreflect.MessageKind:
-		return dec.decodeMessageField(msg, field)
+		scalarVal, err := dec.decodeScalarField(subSchema)
+		if err != nil {
+			return err
+		}
+		msg.Set(protoField, scalarVal)
+		return nil
 
 	default:
-		scalarVal, err := dec.decodeScalarField(field)
-		if err != nil {
-			return err
-		}
-		msg.Set(field, scalarVal)
+		return fmt.Errorf("unsupported field schema type %T", subSchema)
 	}
-	return nil
 }
 
-func (dec *decoder) decodeMapField(msg protoreflect.Message, field protoreflect.FieldDescriptor) error {
+func (dec *decoder) decodeEnum(schema *j5reflect.EnumSchema) (protoreflect.Value, error) {
 	token, err := dec.Token()
 	if err != nil {
-		return err
+		return protoreflect.Value{}, err
+	}
+	stringVal, ok := token.(string)
+	if !ok {
+		return protoreflect.Value{}, unexpectedTokenError(token, "string")
 	}
 
-	if token != json.Delim('{') {
-		return unexpectedTokenError(token, "{")
+	stringVal = strings.TrimPrefix(stringVal, schema.NamePrefix)
+	for _, val := range schema.Options {
+		if val.Name == stringVal {
+			return protoreflect.ValueOfEnum(protoreflect.EnumNumber(val.Number)), nil
+		}
 	}
+	return protoreflect.Value{}, fmt.Errorf("enum value %s not found", stringVal)
+}
 
-	mapValue := field.MapValue()
-	mapValueKind := mapValue.Kind()
+func (dec *decoder) decodeOneof(oneof *j5reflect.OneofSchema, msg protoreflect.Message) error {
 
-	list := msg.Mutable(field).Map()
+	foundKeys := []string{}
+	var constrainType *string
 
-	for {
-		if !dec.More() {
-			_, err := dec.Token()
+	if err := dec.jsonObject(func(keyTokenStr string) error {
+
+		// !type is an optional parameter, when the consumer sets it we validate
+		// it matches the type they actually sent.
+		if keyTokenStr == "!type" {
+			tok, err := dec.Token()
 			if err != nil {
 				return err
 			}
-			break
+			str, ok := tok.(string)
+			if !ok {
+				return unexpectedTokenError(tok, "string")
+			}
+			constrainType = &str
+			return nil
 		}
 
-		keyValue, err := dec.decodeScalarField(field.MapKey())
-		if err != nil {
+		matchedProperty := oneof.Properties.ByJSONName(keyTokenStr)
+		if matchedProperty == nil {
+			return errors.New("no such key")
+		}
+		foundKeys = append(foundKeys, keyTokenStr)
+
+		if len(matchedProperty.ProtoField) != 1 {
+			path := make([]string, 0, len(matchedProperty.ProtoField))
+			for _, f := range matchedProperty.ProtoField {
+				path = append(path, f.JSONName())
+			}
+			return fmt.Errorf("oneof property has proto path of %q", strings.Join(path, "."))
+		}
+
+		if err := dec.decodeField(matchedProperty.Schema, msg, matchedProperty.ProtoField[0]); err != nil {
 			return err
 		}
 
-		switch mapValueKind {
-		case protoreflect.MessageKind:
-			subMsg := list.NewValue()
-			if err := dec.decodeMessage(subMsg.Message()); err != nil {
-				return err
-			}
-			list.Set(keyValue.MapKey(), subMsg)
+		return nil
 
-		default:
-			value, err := dec.decodeScalarField(mapValue)
-			if err != nil {
-				return err
-			}
-			list.Set(keyValue.MapKey(), value)
-		}
-
-	}
-
-	msg.Set(field, protoreflect.ValueOf(list))
-	return nil
-
-}
-
-func (dec *decoder) decodeListField(msg protoreflect.Message, field protoreflect.FieldDescriptor) error {
-
-	tok, err := dec.Token()
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
-	if tok != json.Delim('[') {
-		return fmt.Errorf("expected '[' but got %v", tok)
+	if len(foundKeys) == 0 {
+		if constrainType == nil {
+			return nil // if it's required, validation picks that up later
+		}
+		keyTokenStr := *constrainType
+
+		// Special case, allows the consumer to set a nil value on a oneof
+		// just by using the type parameter
+		matchedProperty := oneof.Properties.ByJSONName(keyTokenStr)
+		if matchedProperty == nil {
+			return newFieldError(keyTokenStr, "no such key")
+		}
+		if len(matchedProperty.ProtoField) != 1 {
+			return newFieldError(keyTokenStr, "oneof has nested path")
+		}
+		protoField := matchedProperty.ProtoField[0]
+		if protoField.Kind() == protoreflect.MessageKind {
+			msg.Mutable(matchedProperty.ProtoField[0])
+		} else {
+			msg.Set(protoField, protoField.Default())
+		}
+		return nil
 	}
 
-	kind := field.Kind()
-	list := msg.Mutable(field).List()
+	if len(foundKeys) > 1 {
+		return newFieldError(strings.Join(foundKeys, ", "), "multiple keys found in oneof")
+	}
 
-	idx := 0
-	for {
-		if !dec.More() {
-			_, err := dec.Token()
+	if constrainType != nil && foundKeys[0] != *constrainType {
+		return newFieldError(foundKeys[0], "key does not match type")
+	}
+
+	return nil
+}
+
+func (dec *decoder) decodeMapField(schema *j5reflect.MapSchema, list protoreflect.Map) error {
+	switch subSchema := schema.Schema.ResolvedType().(type) {
+	case *j5reflect.ObjectSchema:
+		return dec.jsonObject(func(keyTokenStr string) error {
+			subMsg := list.NewValue()
+			if err := dec.decodeObject(subSchema, subMsg.Message()); err != nil {
+				return err
+			}
+
+			list.Set(protoreflect.ValueOfString(keyTokenStr).MapKey(), subMsg)
+			return nil
+		})
+
+	case *j5reflect.OneofSchema:
+		return dec.jsonObject(func(keyTokenStr string) error {
+			subMsg := list.NewValue()
+			if err := dec.decodeOneof(subSchema, subMsg.Message()); err != nil {
+				return err
+			}
+
+			list.Set(protoreflect.ValueOfString(keyTokenStr).MapKey(), subMsg)
+			return nil
+		})
+
+	case *j5reflect.EnumSchema:
+		return dec.jsonObject(func(keyTokenStr string) error {
+			value, err := dec.decodeEnum(subSchema)
 			if err != nil {
 				return err
 			}
-			break
-		}
 
-		switch kind {
-		case protoreflect.MessageKind:
-			subMsg := list.NewElement()
-			if err := dec.decodeMessage(subMsg.Message()); err != nil {
-				return passUpError(fmt.Sprint(idx), err)
+			list.Set(protoreflect.ValueOfString(keyTokenStr).MapKey(), value)
+			return nil
+		})
+
+	case *j5reflect.ScalarSchema:
+		return dec.jsonObject(func(keyTokenStr string) error {
+			value, err := dec.decodeScalarField(subSchema)
+			if err != nil {
+				return err
 			}
+			list.Set(protoreflect.ValueOfString(keyTokenStr).MapKey(), value)
+			return nil
+		})
+	default:
+		return fmt.Errorf("unsupported map schema type %T", subSchema)
+
+	}
+}
+
+func (dec *decoder) decodeListField(schema *j5reflect.ArraySchema, list protoreflect.List) error {
+
+	switch subSchema := schema.Schema.ResolvedType().(type) {
+	case *j5reflect.ObjectSchema:
+		return dec.jsonArray(func() error {
+			subMsg := list.NewElement()
+			if err := dec.decodeObject(subSchema, subMsg.Message()); err != nil {
+				return err
+			}
+
 			list.Append(subMsg)
+			return nil
+		})
 
-		default:
+	case *j5reflect.OneofSchema:
+		return dec.jsonArray(func() error {
+			subMsg := list.NewElement()
+			if err := dec.decodeOneof(subSchema, subMsg.Message()); err != nil {
+				return err
+			}
 
-			value, err := dec.decodeScalarField(field)
+			list.Append(subMsg)
+			return nil
+		})
+
+	case *j5reflect.EnumSchema:
+
+		return dec.jsonArray(func() error {
+			value, err := dec.decodeEnum(subSchema)
+			if err != nil {
+				return err
+			}
+
+			list.Append(value)
+			return nil
+		})
+
+	case *j5reflect.ScalarSchema:
+		return dec.jsonArray(func() error {
+			value, err := dec.decodeScalarField(subSchema)
 			if err != nil {
 				return err
 			}
 			list.Append(value)
-		}
-		idx++
+			return nil
+		})
+	default:
+		return fmt.Errorf("unsupported array schema type %T", subSchema)
 
 	}
-
-	msg.Set(field, protoreflect.ValueOf(list))
-	return nil
-}
-
-func (dec *decoder) decodeMessageField(msg protoreflect.Message, field protoreflect.FieldDescriptor) error {
-
-	subMsg := msg.Mutable(field).Message()
-	if err := dec.decodeMessage(subMsg); err != nil {
-		return err
-	}
-
-	return nil
 }

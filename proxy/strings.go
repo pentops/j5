@@ -101,7 +101,7 @@ var mappersFromString = map[protoreflect.Kind]mapperFromString{
 func setFieldFromString(codec Codec, inputMessage protoreflect.Message, fd protoreflect.FieldDescriptor, provided string) error {
 	if fd.Kind() == protoreflect.MessageKind {
 		msg := inputMessage.NewField(fd).Message()
-		if err := codec.ToProto([]byte(provided), msg); err != nil {
+		if err := codec.JSONToProto([]byte(provided), msg); err != nil {
 			return err
 		}
 		inputMessage.Set(fd, protoreflect.ValueOfMessage(msg))

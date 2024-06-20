@@ -1,14 +1,12 @@
-package structure
+package j5reflect
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"github.com/pentops/flowtest/jsontest"
-	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/test/foo/v1/foo_testpb"
@@ -20,8 +18,7 @@ import (
 )
 
 func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldConstraints) *jsontest.Asserter {
-	ctx := context.Background()
-	ss := NewSchemaSet(&config_j5pb.CodecOptions{})
+	ss := NewSchemaSet()
 	proto := &descriptorpb.FileDescriptorProto{
 		Name:    proto.String("test.proto"),
 		Package: proto.String("test"),
@@ -32,7 +29,7 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 			},
 		}},
 	}
-	schemaItem, err := ss.BuildSchemaObject(ctx, msgDesscriptorToReflection(t, proto))
+	schemaItem, err := ss.SchemaObject(msgDesscriptorToReflection(t, proto))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -200,14 +197,13 @@ func TestSchemaTypesSimple(t *testing.T) {
 
 func TestTestProtoSchemaTypes(t *testing.T) {
 
-	ctx := context.Background()
-	ss := NewSchemaSet(&config_j5pb.CodecOptions{})
+	ss := NewSchemaSet()
 
 	fooDesc := (&foo_testpb.PostFooRequest{}).ProtoReflect().Descriptor()
 
 	t.Log(protojson.Format(protodesc.ToDescriptorProto(fooDesc)))
 
-	schemaItem, err := ss.BuildSchemaObject(ctx, fooDesc)
+	schemaItem, err := ss.SchemaObject(fooDesc)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -231,31 +227,26 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 	}
 
 	assertProperty("sString", map[string]interface{}{
-		"protoFieldName":   "s_string",
-		"protoFieldNumber": 1,
+		"protoField": jsontest.Array[float64]{1},
 	})
 
 	assertProperty("oString", map[string]interface{}{
-		"protoFieldName":     "o_string",
-		"protoFieldNumber":   2,
+		"protoField":         jsontest.Array[float64]{2},
 		"explicitlyOptional": true,
 	})
 
 	assertProperty("rString", map[string]interface{}{
-		"protoFieldName":                    "r_string",
-		"protoFieldNumber":                  3,
+		"protoField":                        jsontest.Array[float64]{3},
 		"schema.arrayItem.items.stringItem": map[string]interface{}{},
 	})
 
 	assertProperty("mapStringString", map[string]interface{}{
-		"protoFieldName":                       "map_string_string",
-		"protoFieldNumber":                     15,
+		"protoField":                           jsontest.Array[float64]{15},
 		"schema.mapItem.itemSchema.stringItem": map[string]interface{}{},
 	})
 }
 
 func TestSchemaTypesComplex(t *testing.T) {
-	ss := NewSchemaSet(&config_j5pb.CodecOptions{})
 
 	for _, tt := range []struct {
 		name         string
@@ -326,7 +317,36 @@ func TestSchemaTypesComplex(t *testing.T) {
 		expected: map[string]interface{}{
 			"objectItem.protoMessageName":               "TestMessage",
 			"objectItem.properties.0.name":              "childField",
+			"objectItem.properties.0.protoField":        jsontest.Array[float64]{1, 1},
 			"objectItem.properties.0.schema.stringItem": map[string]interface{}{},
+		},
+	}, {
+		name: "exposedOneof",
+		proto: &descriptorpb.FileDescriptorProto{
+			Name:    proto.String("test.proto"),
+			Package: proto.String("test"),
+			MessageType: []*descriptorpb.DescriptorProto{{
+				Name: proto.String("TestMessage"),
+				OneofDecl: []*descriptorpb.OneofDescriptorProto{{
+					Name: proto.String("expose_me"),
+					Options: extend(&descriptorpb.OneofOptions{}, ext_j5pb.E_Oneof, &ext_j5pb.OneofOptions{
+						Expose: true,
+					}),
+				}},
+				Field: []*descriptorpb.FieldDescriptorProto{{
+					Name:       proto.String("test_field"),
+					Type:       descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+					Number:     proto.Int32(1),
+					OneofIndex: proto.Int32(0),
+				}},
+			}},
+		},
+		expected: map[string]interface{}{
+			"objectItem.protoMessageName":                                         "TestMessage",
+			"objectItem.properties.0.name":                                        "exposeMe",
+			"objectItem.properties.0.schema.oneofWrapper.properties.0.name":       "testField",
+			"objectItem.properties.0.schema.oneofWrapper.properties.0.protoField": jsontest.Array[float64]{1},
+			"objectItem.properties.0.protoField":                                  jsontest.NotSet{},
 		},
 	}, {
 		name: "map<string>string",
@@ -417,7 +437,8 @@ func TestSchemaTypesComplex(t *testing.T) {
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			schemaItem, err := ss.BuildSchemaObject(context.Background(), msgDesscriptorToReflection(t, tt.proto))
+			ss := NewSchemaSet()
+			schemaItem, err := ss.SchemaObject(msgDesscriptorToReflection(t, tt.proto))
 			if err != nil {
 				t.Fatal(err.Error())
 			}
@@ -434,11 +455,16 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}
 
 			for path, expectSet := range tt.expectedRefs {
-				schema, ok := ss.Schemas[path]
+				schema, ok := ss.schemas[protoreflect.FullName(path)]
 				if !ok {
 					t.Fatalf("schema %q not found", path)
 				}
-				ddRef, err := jsontest.NewAsserter(schema)
+				schemaJ5, err := schema.ToJ5Proto()
+				if err != nil {
+					t.Fatal(err.Error())
+				}
+
+				ddRef, err := jsontest.NewAsserter(schemaJ5)
 				if err != nil {
 					t.Fatal(err.Error())
 				}
@@ -463,6 +489,11 @@ func fieldWithExtension(field *descriptorpb.FieldDescriptorProto, extensionType 
 
 	proto.SetExtension(field.Options, extensionType, extensionValue)
 	return field
+}
+
+func extend[T proto.Message](v T, extensionType protoreflect.ExtensionType, extensionValue interface{}) T {
+	proto.SetExtension(v, extensionType, extensionValue)
+	return v
 }
 
 func msgDesscriptorToReflection(t testing.TB, fileDescriptor *descriptorpb.FileDescriptorProto) protoreflect.MessageDescriptor {

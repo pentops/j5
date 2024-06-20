@@ -1,70 +1,166 @@
-package structure
+package j5reflect
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	"github.com/iancoleman/strcase"
+
 	"github.com/google/uuid"
-	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/log.go/log"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-type SchemaSet struct {
-	trimSubPackages []string
-	Schemas         map[string]*schema_j5pb.Schema
-
-	seen map[string]bool
+type DescriptorResolver interface {
+	FindDescriptorByName(protoreflect.FullName) (protoreflect.Descriptor, error)
 }
 
-func NewSchemaSet(options *config_j5pb.CodecOptions) *SchemaSet {
-	return &SchemaSet{
-		trimSubPackages: options.TrimSubPackages,
+type SchemaResolver struct {
+	*SchemaSet
+	resolver DescriptorResolver
+}
 
-		Schemas: make(map[string]*schema_j5pb.Schema),
-		seen:    make(map[string]bool),
+func NewSchemaResolver(resolver DescriptorResolver) *SchemaResolver {
+	return &SchemaResolver{
+		SchemaSet: &SchemaSet{
+			schemas: make(map[protoreflect.FullName]*Schema),
+		},
+		resolver: resolver,
 	}
 }
 
-func walkName(src protoreflect.MessageDescriptor) string {
-	goTypeName := string(src.Name())
-	parent := src.Parent()
-	// if parent is a message
-	msg, ok := parent.(protoreflect.MessageDescriptor)
+func (ss *SchemaResolver) SchemaByName(name protoreflect.FullName) (*Schema, error) {
+	obj, ok := ss.schemas[name]
+	if ok {
+		return obj, nil
+	}
+	descriptor, err := ss.resolver.FindDescriptorByName(name)
+	if err != nil {
+		return nil, err
+	}
+	msg, ok := descriptor.(protoreflect.MessageDescriptor)
 	if !ok {
-		return goTypeName
+		return nil, fmt.Errorf("descriptor %s is not a message", name)
+	}
+	return ss.SchemaReflect(msg)
+}
+
+type SchemaSet struct {
+	schemas map[protoreflect.FullName]*Schema
+}
+
+func NewSchemaSet() *SchemaSet {
+	return &SchemaSet{
+		schemas: make(map[protoreflect.FullName]*Schema),
+	}
+}
+
+func (ss *SchemaSet) SchemaObject(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, error) {
+	val, err := ss.SchemaReflect(src)
+	if err != nil {
+		return nil, err
 	}
 
-	return fmt.Sprintf("%s_%s", walkName(msg), goTypeName)
-
+	return val.ToJ5Proto()
 }
-func (ss *SchemaSet) BuildSchemaObject(ctx context.Context, src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, error) {
-	goTypeName := walkName(src)
 
-	properties := make([]*schema_j5pb.ObjectProperty, 0, src.Fields().Len())
+func (ss *SchemaSet) SchemaReflect(src protoreflect.MessageDescriptor) (*Schema, error) {
+	name := src.FullName()
+	if built, ok := ss.schemas[name]; ok {
+		return built, nil
+	}
 
-	// Has no effect on the generated output, but validates that the oneof rules
-	// are met:
-	// Exactly one oneof which all fields belong to and is named 'type'
+	resultSchema := &Schema{}
+	ss.schemas[name] = resultSchema
+	err := ss.buildMessageSchema(src, resultSchema)
+	if err != nil {
+		return nil, err
+	}
 
-	isOneofWrapper := false
+	return resultSchema, nil
+}
+
+func isOneofWrapper(src protoreflect.MessageDescriptor) bool {
 	options := proto.GetExtension(src.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
 	if options != nil {
 		if options.IsOneofWrapper {
-			isOneofWrapper = true
+			return true
+		}
+		// TODO: Allow explicit false, allowing overriding the auto function
+	}
+
+	oneofs := src.Oneofs()
+
+	if oneofs.Len() != 1 {
+		return false
+	}
+
+	oneof := oneofs.Get(0)
+	if oneof.IsSynthetic() {
+		return false
+	}
+
+	if oneof.Name() != "type" {
+		return false
+	}
+
+	ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
+	if ext != nil {
+		// even if it is mared to expose, still don't automatically make it a
+		// oneof.
+		return false
+	}
+
+	for ii := 0; ii < src.Fields().Len(); ii++ {
+		field := src.Fields().Get(ii)
+		if field.ContainingOneof() != oneof {
+			return false
+		}
+		if field.Kind() != protoreflect.MessageKind {
+			return false
 		}
 	}
 
-	exposeOneofs := make(map[string]*schema_j5pb.OneofWrapperItem)
-	pendingOneofProps := make(map[string]*schema_j5pb.ObjectProperty)
+	return true
+
+}
+func (ss *SchemaSet) buildMessageSchema(srcMsg protoreflect.MessageDescriptor, into *Schema) error {
+	properties, err := ss.messageProperties(srcMsg)
+	if err != nil {
+		return err
+	}
+	isOneofWrapper := isOneofWrapper(srcMsg)
+	description := commentDescription(srcMsg)
+
+	if isOneofWrapper {
+		into.oneofItem = &OneofSchema{
+			Description:     description,
+			Properties:      properties,
+			ProtoMessage:    srcMsg,
+			OneofDescriptor: srcMsg.Oneofs().Get(0),
+			// TODO: Rules
+		}
+	} else {
+		into.objectItem = &ObjectSchema{
+			Description: description,
+			Properties:  properties,
+			// TODO: Rules
+			ProtoMessage: srcMsg,
+		}
+	}
+
+	return nil
+}
+
+func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*ObjectProperty, error) {
+
+	properties := make([]*ObjectProperty, 0, src.Fields().Len())
+
+	exposeOneofs := make(map[string]*OneofSchema)
+	pendingOneofProps := make(map[string]*ObjectProperty)
 
 	for idx := 0; idx < src.Oneofs().Len(); idx++ {
 		oneof := src.Oneofs().Get(idx)
@@ -74,37 +170,21 @@ func (ss *SchemaSet) BuildSchemaObject(ctx context.Context, src protoreflect.Mes
 
 		ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
 		if ext == nil {
-			if !isOneofWrapper {
-				log.WithFields(ctx, map[string]interface{}{
-					"message": src.FullName(),
-					"oneof":   oneof.Name(),
-				}).Warn("Unexposed Oneof")
-			}
 			continue
 		} else if !ext.Expose {
 			// By default, do not expose oneofs
 			continue
-		} else if isOneofWrapper {
-			return nil, fmt.Errorf("oneof wrapper cannot contain exposed oneofs")
 		}
 
 		oneofName := string(oneof.Name())
-		syntheticTypeName := fmt.Sprintf("%s_%s", src.Name(), oneofName)
-		oneofObject := &schema_j5pb.OneofWrapperItem{
-			ProtoFullName:    string(oneof.FullName()),
-			ProtoMessageName: oneofName,
-			GoTypeName:       syntheticTypeName,
-			GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
-			GrpcPackageName:  string(src.ParentFile().Package()),
+		oneofObject := &OneofSchema{
+			OneofDescriptor: oneof,
 		}
-		prop := &schema_j5pb.ObjectProperty{
-			ProtoFieldName: string(oneof.Name()),
-			Name:           camelCase(oneofName),
-			Description:    commentDescription(src),
-			Schema: &schema_j5pb.Schema{
-				Type: &schema_j5pb.Schema_OneofWrapper{
-					OneofWrapper: oneofObject,
-				},
+		prop := &ObjectProperty{
+			JSONName:    jsonFieldName(oneofName),
+			Description: commentDescription(src),
+			Schema: &Schema{
+				oneofItem: oneofObject,
 			},
 		}
 		pendingOneofProps[oneofName] = prop
@@ -116,17 +196,17 @@ func (ss *SchemaSet) BuildSchemaObject(ctx context.Context, src protoreflect.Mes
 		field := src.Fields().Get(ii)
 
 		if field.IsList() {
-			prop, err := ss.buildSchemaProperty(ctx, field)
+			prop, err := ss.buildSchemaProperty(field)
 			if err != nil {
 				return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 			}
-			prop.Schema = &schema_j5pb.Schema{
-				Type: &schema_j5pb.Schema_ArrayItem{
-					ArrayItem: &schema_j5pb.ArrayItem{
-						Items: prop.Schema,
-					},
+			// TODO: Rules
+			prop.Schema = &Schema{
+				arrayItem: &ArraySchema{
+					Schema: prop.Schema,
 				},
 			}
+
 			properties = append(properties, prop)
 			continue
 
@@ -134,22 +214,19 @@ func (ss *SchemaSet) BuildSchemaObject(ctx context.Context, src protoreflect.Mes
 		if field.IsMap() {
 			// TODO: Check that the map key is a string
 
-			valueProp, err := ss.buildSchemaProperty(ctx, field.MapValue())
+			valueProp, err := ss.buildSchemaProperty(field.MapValue())
 			if err != nil {
 				return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 			}
 
 			src := field
-			prop := &schema_j5pb.ObjectProperty{
-				ProtoFieldName:   string(src.Name()),
-				ProtoFieldNumber: int32(src.Number()),
-				Name:             string(src.JSONName()),
-				Description:      commentDescription(src),
-				Schema: &schema_j5pb.Schema{
-					Type: &schema_j5pb.Schema_MapItem{
-						MapItem: &schema_j5pb.MapItem{
-							ItemSchema: valueProp.Schema,
-						},
+			prop := &ObjectProperty{
+				ProtoField:  []protoreflect.FieldDescriptor{src},
+				JSONName:    string(src.JSONName()),
+				Description: commentDescription(src),
+				Schema: &Schema{
+					mapItem: &MapSchema{
+						Schema: valueProp.Schema,
 					},
 				},
 			}
@@ -165,19 +242,25 @@ func (ss *SchemaSet) BuildSchemaObject(ctx context.Context, src protoreflect.Mes
 				}
 
 				if msgOptions.Flatten {
-					subMessage, err := ss.BuildSchemaObject(ctx, field.Message())
+					// skips the schema set, this is used just to get the
+					// fields.
+					subMessage, err := ss.messageProperties(field.Message())
 					if err != nil {
 						return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 					}
 					// inline the properties of the sub-message directly into
 					// this message
-					properties = append(properties, subMessage.GetObjectItem().Properties...)
+					for _, property := range subMessage {
+
+						property.ProtoField = append([]protoreflect.FieldDescriptor{field}, property.ProtoField...)
+						properties = append(properties, property)
+					}
 					continue
 				}
 			}
 		}
 
-		prop, err := ss.buildSchemaProperty(ctx, field)
+		prop, err := ss.buildSchemaProperty(field)
 		if err != nil {
 			return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
 		}
@@ -208,46 +291,15 @@ func (ss *SchemaSet) BuildSchemaObject(ctx context.Context, src protoreflect.Mes
 	}
 
 	for _, pending := range pendingOneofProps {
-		return nil, fmt.Errorf("oneof %s has not been added", pending.Name)
-	}
-	description := commentDescription(src)
-
-	if isOneofWrapper {
-		return &schema_j5pb.Schema{
-			Description: description,
-			Type: &schema_j5pb.Schema_OneofWrapper{
-				OneofWrapper: &schema_j5pb.OneofWrapperItem{
-					ProtoFullName:    string(src.FullName()),
-					ProtoMessageName: string(src.Name()),
-					GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
-					GrpcPackageName:  string(src.ParentFile().Package()),
-					GoTypeName:       goTypeName,
-					Properties:       properties,
-				},
-			},
-		}, nil
-
+		return nil, fmt.Errorf("oneof %s has not been added", pending.JSONName)
 	}
 
-	return &schema_j5pb.Schema{
-		Description: description,
-		Type: &schema_j5pb.Schema_ObjectItem{
-			ObjectItem: &schema_j5pb.ObjectItem{
-				ProtoFullName:    string(src.FullName()),
-				ProtoMessageName: string(src.Name()),
-				GoPackageName:    src.ParentFile().Options().(*descriptorpb.FileOptions).GetGoPackage(),
-				GrpcPackageName:  string(src.ParentFile().Package()),
-				GoTypeName:       goTypeName,
-				Properties:       properties,
-			},
-		},
-	}, nil
+	return properties, nil
+
 }
 
-func camelCase(s string) string {
-	caser := cases.Title(language.English)
-	s = caser.String(strings.ReplaceAll(s, "_", " "))
-	return strings.ReplaceAll(strings.ToLower(s[:1])+s[1:], " ", "")
+func jsonFieldName(s string) string {
+	return strcase.ToLowerCamel(s)
 }
 
 func commentDescription(src protoreflect.Descriptor) string {
@@ -308,14 +360,20 @@ func quickUUID() string {
 	return lastUUID.String()
 }
 
-func (ss *SchemaSet) buildSchemaProperty(ctx context.Context, src protoreflect.FieldDescriptor) (*schema_j5pb.ObjectProperty, error) {
-	prop := &schema_j5pb.ObjectProperty{
-		ProtoFieldName:   string(src.Name()),
-		ProtoFieldNumber: int32(src.Number()),
-		Name:             string(src.JSONName()),
-		Description:      commentDescription(src),
-		Schema: &schema_j5pb.Schema{
-			Description: commentDescription(src),
+func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
+	schemaProto := &schema_j5pb.Schema{
+		Description: commentDescription(src),
+	}
+
+	prop := &ObjectProperty{
+		JSONName:    string(src.JSONName()),
+		ProtoField:  []protoreflect.FieldDescriptor{src},
+		Description: commentDescription(src),
+		Schema: &Schema{
+			scalarItem: &ScalarSchema{
+				proto: schemaProto,
+				Kind:  src.Kind(),
+			},
 		},
 	}
 
@@ -354,41 +412,11 @@ func (ss *SchemaSet) buildSchemaProperty(ctx context.Context, src protoreflect.F
 				boolItem.Rules.Const = boolConstraint.Const
 			}
 		}
-		prop.Schema.Type = &schema_j5pb.Schema_BooleanItem{
+		schemaProto.Type = &schema_j5pb.Schema_BooleanItem{
 			BooleanItem: boolItem,
 		}
 		prop.Required = true
-
-	case protoreflect.EnumKind:
-		enumConstraint := constraint.GetEnum()
-		values, err := EnumValues(src.Enum().Values(), enumConstraint)
-		if err != nil {
-			return nil, err
-		}
-
-		protoValues := make([]*schema_j5pb.EnumItem_Value, 0, len(values))
-		for _, value := range values {
-			protoValues = append(protoValues, &schema_j5pb.EnumItem_Value{
-				Name:        value.Name,
-				Description: value.Description,
-			})
-		}
-
-		refSchemaItem := &schema_j5pb.Schema{
-			Description: commentDescription(src),
-			Type: &schema_j5pb.Schema_EnumItem{
-				EnumItem: &schema_j5pb.EnumItem{
-					Options: protoValues,
-				},
-			},
-		}
-
-		refName := string(src.Enum().FullName())
-		ss.Schemas[refName] = refSchemaItem
-
-		prop.Schema.Type = &schema_j5pb.Schema_Ref{
-			Ref: refName,
-		}
+		return prop, nil
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
 		var integerRules *schema_j5pb.IntegerRules
@@ -425,12 +453,13 @@ func (ss *SchemaSet) buildSchemaProperty(ctx context.Context, src protoreflect.F
 			}
 
 		}
-		prop.Schema.Type = &schema_j5pb.Schema_IntegerItem{
+		schemaProto.Type = &schema_j5pb.Schema_IntegerItem{
 			IntegerItem: &schema_j5pb.IntegerItem{
 				Format: "int32",
 				Rules:  integerRules,
 			},
 		}
+		return prop, nil
 
 	case protoreflect.Uint32Kind:
 		var integerRules *schema_j5pb.IntegerRules
@@ -467,12 +496,13 @@ func (ss *SchemaSet) buildSchemaProperty(ctx context.Context, src protoreflect.F
 			}
 		}
 
-		prop.Schema.Type = &schema_j5pb.Schema_IntegerItem{
+		schemaProto.Type = &schema_j5pb.Schema_IntegerItem{
 			IntegerItem: &schema_j5pb.IntegerItem{
 				Format: "uint32",
 				Rules:  integerRules,
 			},
 		}
+		return prop, nil
 
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind:
 		var integerRules *schema_j5pb.IntegerRules
@@ -509,12 +539,13 @@ func (ss *SchemaSet) buildSchemaProperty(ctx context.Context, src protoreflect.F
 			}
 		}
 
-		prop.Schema.Type = &schema_j5pb.Schema_IntegerItem{
+		schemaProto.Type = &schema_j5pb.Schema_IntegerItem{
 			IntegerItem: &schema_j5pb.IntegerItem{
 				Format: "int64",
 				Rules:  integerRules,
 			},
 		}
+		return prop, nil
 
 	case protoreflect.FloatKind:
 		var numberRules *schema_j5pb.NumberRules
@@ -551,12 +582,13 @@ func (ss *SchemaSet) buildSchemaProperty(ctx context.Context, src protoreflect.F
 			}
 		}
 
-		prop.Schema.Type = &schema_j5pb.Schema_NumberItem{
+		schemaProto.Type = &schema_j5pb.Schema_NumberItem{
 			NumberItem: &schema_j5pb.NumberItem{
 				Format: "float",
 				Rules:  numberRules,
 			},
 		}
+		return prop, nil
 
 	case protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind, protoreflect.DoubleKind:
 		var numberRules *schema_j5pb.NumberRules
@@ -593,12 +625,13 @@ func (ss *SchemaSet) buildSchemaProperty(ctx context.Context, src protoreflect.F
 			}
 		}
 
-		prop.Schema.Type = &schema_j5pb.Schema_NumberItem{
+		schemaProto.Type = &schema_j5pb.Schema_NumberItem{
 			NumberItem: &schema_j5pb.NumberItem{
 				Format: "float",
 				Rules:  numberRules,
 			},
 		}
+		return prop, nil
 
 	case protoreflect.StringKind:
 		stringItem := &schema_j5pb.StringItem{}
@@ -672,31 +705,62 @@ func (ss *SchemaSet) buildSchemaProperty(ctx context.Context, src protoreflect.F
 
 		}
 
-		prop.Schema.Type = &schema_j5pb.Schema_StringItem{
+		schemaProto.Type = &schema_j5pb.Schema_StringItem{
 			StringItem: stringItem,
 		}
+		return prop, nil
 
 	case protoreflect.BytesKind:
-		prop.Schema.Type = &schema_j5pb.Schema_StringItem{
+		schemaProto.Type = &schema_j5pb.Schema_StringItem{
 			StringItem: &schema_j5pb.StringItem{
 				Format: Ptr("byte"),
 			},
 		}
+		return prop, nil
+
+	case protoreflect.EnumKind:
+
+		enumConstraint := constraint.GetEnum()
+		enumSchemaItem, err := buildEnum(src.Enum(), enumConstraint)
+		if err != nil {
+			return nil, err
+		}
+		refName := src.Enum().FullName()
+		ss.schemas[refName] = enumSchemaItem
+
+		prop.Schema.scalarItem = nil
+		prop.Schema.refItem = &RefSchema{
+			Name: refName,
+			To:   enumSchemaItem,
+		}
+		return prop, nil
 
 	case protoreflect.MessageKind:
-		// When called from a field of a message, this creates a ref. When built directly from a service RPC request or create, this code is not called, they are inlined with the buildSchemaObject call directly
-		if wktschema, ok := wktSchema(src.Message()); ok {
+		wktschema, ok := wktSchema(src.Message())
+		if ok {
 			prop.Schema = wktschema
+			return prop, nil
+		}
+		if strings.HasPrefix(string(src.Message().FullName()), "google.protobuf.") {
+			return nil, fmt.Errorf("unsupported google type %s", src.Message().FullName())
+		}
 
-		} else {
-			prop.Schema.Type = &schema_j5pb.Schema_Ref{
-				Ref: string(src.Message().FullName()),
-			}
-			if err := ss.addSchemaObject(ctx, src.Message()); err != nil {
+		msgName := src.Message().FullName()
+		schema, ok := ss.schemas[msgName]
+		if !ok {
+			schema = &Schema{}
+			ss.schemas[msgName] = schema
+			if err := ss.buildMessageSchema(src.Message(), schema); err != nil {
 				return nil, err
 			}
 		}
+		prop.Schema.scalarItem = nil
+		prop.Schema.refItem = &RefSchema{
+			Name: msgName,
+			To:   schema,
+		}
 
+		return prop, nil
 	default:
 		/* TODO:
 		Sfixed32Kind Kind = 15
@@ -708,10 +772,10 @@ func (ss *SchemaSet) buildSchemaProperty(ctx context.Context, src protoreflect.F
 		return nil, fmt.Errorf("unsupported field type %s", src.Kind())
 	}
 
-	return prop, nil
 }
 
-func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.EnumRules) ([]*schema_j5pb.EnumItem_Value, error) {
+func buildEnum(enumDescriptor protoreflect.EnumDescriptor, constraint *validate.EnumRules) (*Schema, error) {
+
 	specMap := map[int32]struct{}{}
 	var notIn bool
 	var isIn bool
@@ -735,9 +799,10 @@ func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.Enum
 		return nil, fmt.Errorf("enum cannot have both in and not_in constraints")
 	}
 
-	values := make([]*schema_j5pb.EnumItem_Value, 0, src.Len())
-	for ii := 0; ii < src.Len(); ii++ {
-		option := src.Get(ii)
+	sourceValues := enumDescriptor.Values()
+	values := make([]*schema_j5pb.EnumItem_Value, 0, sourceValues.Len())
+	for ii := 0; ii < sourceValues.Len(); ii++ {
+		option := sourceValues.Get(ii)
 		number := int32(option.Number())
 
 		if notIn {
@@ -761,7 +826,7 @@ func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.Enum
 
 	suffix := "UNSPECIFIED"
 
-	unspecifiedVal := string(src.Get(0).Name())
+	unspecifiedVal := string(sourceValues.Get(0).Name())
 	if !strings.HasSuffix(unspecifiedVal, suffix) {
 		return nil, fmt.Errorf("enum does not have an unspecified value ending in %q", suffix)
 	}
@@ -770,75 +835,80 @@ func EnumValues(src protoreflect.EnumValueDescriptors, constraint *validate.Enum
 	for ii := range values {
 		values[ii].Name = strings.TrimPrefix(values[ii].Name, trimPrefix)
 	}
-	return values, nil
+
+	enumSchemaItem := &Schema{
+		enumItem: &EnumSchema{
+			Description: commentDescription(enumDescriptor),
+			Options:     values,
+			NamePrefix:  trimPrefix,
+			Descriptor:  enumDescriptor,
+		},
+	}
+	return enumSchemaItem, nil
 }
 
 func Ptr[T any](val T) *T {
 	return &val
 }
 
-func wktSchema(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, bool) {
+func wktSchema(src protoreflect.MessageDescriptor) (*Schema, bool) {
 	switch string(src.FullName()) {
 	case "google.protobuf.Timestamp":
-		return &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_StringItem{
-				StringItem: &schema_j5pb.StringItem{
-					Format: Ptr("date-time"),
-				},
-			},
-		}, true
-
-	case "google.protobuf.Duration":
-		return &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_StringItem{
-				StringItem: &schema_j5pb.StringItem{
-					Format: Ptr("duration"),
-				},
-			},
-		}, true
-
-	case "google.protobuf.Struct":
-		return &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_MapItem{
-				MapItem: &schema_j5pb.MapItem{
-					ItemSchema: &schema_j5pb.Schema{
-						Type: &schema_j5pb.Schema_Any{
-							Any: &schema_j5pb.AnySchemmaItem{},
+		return &Schema{
+			scalarItem: &ScalarSchema{
+				WellKnownTypeName: src.FullName(),
+				proto: &schema_j5pb.Schema{
+					Type: &schema_j5pb.Schema_StringItem{
+						StringItem: &schema_j5pb.StringItem{
+							Format: Ptr("date-time"),
 						},
 					},
 				},
 			},
 		}, true
 
-	case "google.protobuf.Any":
-		return &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Any{
-				Any: &schema_j5pb.AnySchemmaItem{},
+	case "google.protobuf.Duration":
+		return &Schema{
+			scalarItem: &ScalarSchema{
+				WellKnownTypeName: src.FullName(),
+				proto: &schema_j5pb.Schema{
+					Type: &schema_j5pb.Schema_StringItem{
+						StringItem: &schema_j5pb.StringItem{
+							Format: Ptr("duration"),
+						},
+					},
+				},
 			},
+		}, true
+
+	case "j5.types.date.v1.Date":
+		return &Schema{
+			scalarItem: &ScalarSchema{
+				WellKnownTypeName: src.FullName(),
+				proto: &schema_j5pb.Schema{
+					Type: &schema_j5pb.Schema_StringItem{
+						StringItem: &schema_j5pb.StringItem{
+							Format: Ptr("date"),
+						},
+					},
+				},
+			},
+		}, true
+
+	case "google.protobuf.Struct":
+		return &Schema{
+			mapItem: &MapSchema{
+				Schema: &Schema{
+					anyItem: &AnySchema{},
+				},
+			},
+		}, true
+
+	case "google.protobuf.Any":
+		return &Schema{
+			anyItem: &AnySchema{},
 		}, true
 	}
 
 	return nil, false
-}
-
-func (ss *SchemaSet) addSchemaObject(ctx context.Context, src protoreflect.MessageDescriptor) error {
-	if _, ok := ss.Schemas[string(src.FullName())]; ok {
-		return nil
-	}
-
-	if strings.HasPrefix(string(src.FullName()), "google.protobuf.") {
-		return fmt.Errorf("unknown google.protobuf type %s", src.FullName())
-	}
-
-	// Prevents recursion errors
-	ss.Schemas[string(src.FullName())] = &schema_j5pb.Schema{}
-
-	schema, err := ss.BuildSchemaObject(ctx, src)
-	if err != nil {
-		return err
-	}
-
-	ss.Schemas[string(src.FullName())] = schema
-
-	return nil
 }

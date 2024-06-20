@@ -2,10 +2,16 @@ package cli
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
+	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gogen"
+	"github.com/pentops/j5/schema/j5reflect"
 	"github.com/pentops/j5/schema/structure"
 	"github.com/pentops/runner/commander"
+	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func generateSet() *commander.CommandSet {
@@ -32,7 +38,33 @@ func runGocode(ctx context.Context, cfg struct {
 		return err
 	}
 
-	jdefDoc, err := structure.BuildFromImage(ctx, image)
+	descriptors := &descriptorpb.FileDescriptorSet{
+		File: image.File,
+	}
+
+	if len(descriptors.File) < 1 {
+		panic("Expected at least one descriptor file, found none")
+	}
+
+	config := &config_j5pb.Config{
+		Packages: image.Packages,
+		Options:  image.Codec,
+	}
+
+	if config.Packages == nil || len(config.Packages) < 1 {
+		return fmt.Errorf("no packages to generate")
+	}
+
+	if config.Options == nil {
+		config.Options = &config_j5pb.CodecOptions{}
+	}
+
+	descFiles, err := protodesc.NewFiles(descriptors)
+	if err != nil {
+		return fmt.Errorf("descriptor files: %w", err)
+	}
+
+	rootPackages, err := structure.BuildPackages(config, descFiles, nil)
 	if err != nil {
 		return err
 	}
@@ -45,9 +77,16 @@ func runGocode(ctx context.Context, cfg struct {
 
 	output := gogen.DirFileWriter(cfg.OutputDir)
 
-	if err := gogen.WriteGoCode(jdefDoc, output, options); err != nil {
-		return err
-	}
+	schemaSet := j5reflect.NewSchemaResolver(descFiles)
 
+	for _, j5Package := range rootPackages { // Only generate packages within the prefix.
+		if !strings.HasPrefix(j5Package.Name, options.PackagePrefix) {
+			continue
+		}
+
+		if err := gogen.WriteGoCode(j5Package, schemaSet, output, options); err != nil {
+			return err
+		}
+	}
 	return nil
 }

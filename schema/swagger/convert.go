@@ -208,13 +208,11 @@ func convertObjectItem(item *schema_j5pb.ObjectItem) (*ObjectItem, error) {
 			return nil, fmt.Errorf("object property '%s': %w", prop.Name, err)
 		}
 		out.Properties[prop.Name] = &ObjectProperty{
-			Schema:           schema,
-			ReadOnly:         prop.ReadOnly,
-			WriteOnly:        prop.WriteOnly,
-			Description:      prop.Description,
-			ProtoFieldName:   prop.ProtoFieldName,
-			ProtoFieldNumber: prop.ProtoFieldNumber,
-			Optional:         prop.ExplicitlyOptional,
+			Schema:      schema,
+			ReadOnly:    prop.ReadOnly,
+			WriteOnly:   prop.WriteOnly,
+			Description: prop.Description,
+			Optional:    prop.ExplicitlyOptional,
 		}
 		if prop.Required {
 			out.Required = append(out.Required, prop.Name)
@@ -238,13 +236,11 @@ func convertOneofWrapper(item *schema_j5pb.OneofWrapperItem) (*ObjectItem, error
 			return nil, fmt.Errorf("oneof property '%s': %w", prop.Name, err)
 		}
 		out.Properties[prop.Name] = &ObjectProperty{
-			Schema:           schema,
-			ReadOnly:         prop.ReadOnly,
-			WriteOnly:        prop.WriteOnly,
-			Description:      prop.Description,
-			ProtoFieldName:   prop.ProtoFieldName,
-			ProtoFieldNumber: prop.ProtoFieldNumber,
-			Optional:         prop.ExplicitlyOptional,
+			Schema:      schema,
+			ReadOnly:    prop.ReadOnly,
+			WriteOnly:   prop.WriteOnly,
+			Description: prop.Description,
+			Optional:    prop.ExplicitlyOptional,
 		}
 	}
 
