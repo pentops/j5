@@ -174,12 +174,10 @@ func (ri *ObjectItem) TypeName() string {
 
 type ObjectProperty struct {
 	*Schema
-	ReadOnly         bool   `json:"readOnly,omitempty"`
-	WriteOnly        bool   `json:"writeOnly,omitempty"`
-	Description      string `json:"description,omitempty"`
-	ProtoFieldName   string `json:"x-proto-name,omitempty"`
-	ProtoFieldNumber int32  `json:"x-proto-number,omitempty"`
-	Optional         bool   `json:"x-proto-optional"` // The proto field is marked as optional, go code etc should use a pointer
+	ReadOnly    bool   `json:"readOnly,omitempty"`
+	WriteOnly   bool   `json:"writeOnly,omitempty"`
+	Description string `json:"description,omitempty"`
+	Optional    bool   `json:"x-proto-optional"` // The proto field is marked as optional, go code etc should use a pointer
 }
 
 func (op *ObjectProperty) MarshalJSON() ([]byte, error) {
@@ -190,12 +188,6 @@ func (op *ObjectProperty) MarshalJSON() ([]byte, error) {
 	}
 	if op.Description != "" {
 		base["description"] = op.Description
-	}
-	if op.ProtoFieldName != "" {
-		base["x-proto-name"] = op.ProtoFieldName
-	}
-	if op.ProtoFieldNumber != 0 {
-		base["x-proto-number"] = op.ProtoFieldNumber
 	}
 	if op.Optional {
 		base["x-proto-optional"] = op.Optional

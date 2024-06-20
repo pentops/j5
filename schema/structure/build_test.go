@@ -111,14 +111,9 @@ func TestBuild(t *testing.T) {
 							ProtoFullName:    "test.v1.TestResponse",
 							ProtoMessageName: "TestResponse",
 							//Rules:            &schema_j5pb.ObjectRules{},
-							GoPackageName:   "github.com/pentops/j5/test_pb",
-							GoTypeName:      "TestResponse",
-							GrpcPackageName: "test.v1",
 							Properties: []*schema_j5pb.ObjectProperty{{
 								Name:               "testField",
 								Description:        "",
-								ProtoFieldName:     "test_field",
-								ProtoFieldNumber:   1,
 								ExplicitlyOptional: true,
 								Required:           false,
 								WriteOnly:          false,
@@ -128,11 +123,10 @@ func TestBuild(t *testing.T) {
 										StringItem: &schema_j5pb.StringItem{},
 									},
 								},
+								ProtoField: []int32{1},
 							}, {
 								Name:               "msg",
 								Description:        "",
-								ProtoFieldName:     "msg",
-								ProtoFieldNumber:   2,
 								Required:           false,
 								ExplicitlyOptional: true,
 								Schema: &schema_j5pb.Schema{
@@ -140,6 +134,7 @@ func TestBuild(t *testing.T) {
 										Ref: "test.v1.Nested",
 									},
 								},
+								ProtoField: []int32{2},
 							}},
 						},
 					},
@@ -190,7 +185,7 @@ func TestBuild(t *testing.T) {
 
 	asObject := refSchema.GetObjectItem()
 	if asObject == nil {
-		t.Fatal("schema is not an object")
+		t.Fatalf("schema is not an object but a %T", refSchema.Type)
 	}
 	if len(asObject.Properties) != 2 {
 		t.Fatalf("unexpected properties: %d", len(asObject.Properties))

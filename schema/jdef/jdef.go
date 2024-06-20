@@ -103,20 +103,11 @@ func fromProtoEvent(protoEvent *schema_j5pb.EventSpec) (*EventSpec, error) {
 	out := &EventSpec{
 		Name: protoEvent.Name,
 	}
-	if protoEvent.StateSchema != nil {
-		schema, err := fromProtoSchema(protoEvent.StateSchema)
-		if err != nil {
-			return nil, err
-		}
-		out.StateSchema = schema
+	schema, err := fromProtoSchema(protoEvent.Schema)
+	if err != nil {
+		return nil, err
 	}
-	if protoEvent.EventSchema != nil {
-		schema, err := fromProtoSchema(protoEvent.EventSchema)
-		if err != nil {
-			return nil, err
-		}
-		out.EventSchema = schema
-	}
+	out.Schema = schema
 
 	return out, nil
 }
@@ -169,9 +160,8 @@ type Method struct {
 }
 
 type EventSpec struct {
-	Name        string          `json:"name"`
-	StateSchema *swagger.Schema `json:"stateSchema,omitempty"`
-	EventSchema *swagger.Schema `json:"eventSchema,omitempty"`
+	Name   string          `json:"name"`
+	Schema *swagger.Schema `json:"schema,omitempty"`
 }
 
 type Parameter struct {

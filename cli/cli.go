@@ -128,7 +128,7 @@ type SourceConfig struct {
 	GitAuto bool `flag:"git-auto" env:"COMMIT_INFO_GIT_AUTO" default:"false" description:"Automatically pull commit info from git"`
 }
 
-func (cfg SourceConfig) GetSource(ctx context.Context) (builder.Source, error) {
+func (cfg SourceConfig) GetSource(ctx context.Context) (*source.Source, error) {
 
 	sourceDir := cfg.Source
 

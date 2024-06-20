@@ -43,13 +43,11 @@ message Method {
 
 message EventSpec {
   string name = 1;
-  Schema state_schema = 2;
-  Schema event_schema = 3;
+  Schema schema = 2;
 }
 
 message Entity {
-  Schema state_schema = 1;
-  Schema event_schema = 2;
+  Schema schema = 1;
 }
 
 message Parameter {

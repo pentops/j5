@@ -41,8 +41,8 @@ type Invoker interface {
 }
 
 type Codec interface {
-	ToProto(body []byte, msg protoreflect.Message) error
-	FromProto(msg protoreflect.Message) ([]byte, error)
+	JSONToProto(body []byte, msg protoreflect.Message) error
+	ProtoToJSON(msg protoreflect.Message) ([]byte, error)
 }
 
 type Router struct {
@@ -221,7 +221,7 @@ func (mm *grpcMethod) mapRequest(r *http.Request) (protoreflect.Message, error) 
 	}
 
 	if len(reqBody) > 0 {
-		if err := mm.Codec.ToProto(reqBody, inputMessage); err != nil {
+		if err := mm.Codec.JSONToProto(reqBody, inputMessage); err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	}
@@ -295,7 +295,7 @@ func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bytesOut, err := mm.Codec.FromProto(outputMessage)
+	bytesOut, err := mm.Codec.ProtoToJSON(outputMessage)
 	if err != nil {
 		doError(ctx, w, err)
 		return

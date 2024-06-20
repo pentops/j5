@@ -2,23 +2,36 @@ package codec
 
 import (
 	"bytes"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"strings"
+	"strconv"
 
-	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
-	"google.golang.org/protobuf/proto"
+	"github.com/pentops/j5/schema/j5reflect"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func Encode(msg protoreflect.Message) ([]byte, error) {
+func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
 	enc := &encoder{
 		b: &bytes.Buffer{},
 	}
-	if err := enc.encodeMessage(msg); err != nil {
-		return nil, err
 
+	descriptor := msg.Descriptor()
+
+	schema, err := c.schemaSet.SchemaReflect(descriptor)
+	if err != nil {
+		return nil, fmt.Errorf("schema object: %w", err)
+	}
+
+	switch schema := schema.Type().(type) {
+	case *j5reflect.ObjectSchema:
+		if err := enc.encodeObject(schema, msg); err != nil {
+			return nil, err
+		}
+	case *j5reflect.OneofSchema:
+		if err := enc.encodeOneof(schema, msg); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, fmt.Errorf("unsupported schema type %T", schema)
 	}
 	return enc.b.Bytes(), nil
 }
@@ -29,16 +42,6 @@ type encoder struct {
 
 func (enc *encoder) add(b []byte) {
 	enc.b.Write(b)
-}
-
-// addJSON is a shortcut for actually writing the marshal code for scalars
-func (enc *encoder) addJSON(v interface{}) error {
-	jv, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-	enc.add(jv)
-	return nil
 }
 
 func (enc *encoder) openObject() {
@@ -61,245 +64,49 @@ func (enc *encoder) fieldSep() {
 	enc.add([]byte(","))
 }
 
-func (enc *encoder) fieldLabel(label string) {
-	enc.add([]byte(fmt.Sprintf(`"%s":`, label)))
-}
-
-func (enc *encoder) encodeEnum(enum protoreflect.EnumDescriptor, enumVal protoreflect.EnumNumber) (string, error) {
-
-	prefix := enumPrefix(enum)
-
-	val := enum.Values().ByNumber(enumVal)
-	if val == nil {
-		return "", fmt.Errorf("enum value %d not found in enum %s", enumVal, enum.FullName())
+func (enc *encoder) fieldLabel(label string) error {
+	if err := enc.addString(label); err != nil {
+		return err
 	}
-	fullStringValue := string(val.Name())
-
-	return strings.TrimPrefix(fullStringValue, prefix), nil
-}
-
-func (enc *encoder) encodeMessage(msg protoreflect.Message) error {
-
-	wktEncoder := wellKnownTypeMarshaler(msg.Descriptor().FullName())
-	if wktEncoder != nil {
-		return wktEncoder(enc, msg)
-	}
-
-	isOneofWrapper := false
-	msgOptions := msg.Descriptor().Options()
-	ext := proto.GetExtension(msgOptions, ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
-	if ext != nil {
-		isOneofWrapper = ext.IsOneofWrapper
-	}
-
-	fields := msg.Descriptor().Fields()
-
-	type fieldSpec struct {
-		field protoreflect.FieldDescriptor
-		value protoreflect.Value
-
-		inOneof *string
-	}
-
-	writeFields := make([]fieldSpec, 0, fields.Len())
-	for idx := 0; idx < fields.Len(); idx++ {
-		field := fields.Get(idx)
-		if !msg.Has(field) {
-			continue
-		}
-
-		value := msg.Get(field)
-
-		if !isOneofWrapper {
-			if oneof := field.ContainingOneof(); oneof != nil && !oneof.IsSynthetic() {
-
-				ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
-				if ext != nil && ext.Expose {
-					writeFields = append(writeFields, fieldSpec{
-						field:   field,
-						value:   value,
-						inOneof: proto.String(protoNameToJSON(oneof.Name())),
-					})
-
-					continue
-				}
-			}
-		}
-
-		fieldOptions := proto.GetExtension(field.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
-		if fieldOptions != nil {
-			switch option := fieldOptions.Type.(type) {
-			case *ext_j5pb.FieldOptions_Message:
-				if field.Kind() != protoreflect.MessageKind {
-					return fmt.Errorf("field %s is not a message but has a message annotation", field.FullName())
-				}
-
-				msgVal := value.Message()
-
-				if option.Message.Flatten {
-
-					subFields := field.Message().Fields()
-
-					for idx := 0; idx < subFields.Len(); idx++ {
-						subField := subFields.Get(idx)
-
-						if !msgVal.Has(subField) {
-							continue
-						}
-
-						writeFields = append(writeFields, fieldSpec{
-							field: subField,
-							value: msgVal.Get(subField),
-						})
-
-					}
-					continue
-				}
-
-			default:
-				return fmt.Errorf("unsupported field option type %T", option)
-			}
-		}
-
-		writeFields = append(writeFields, fieldSpec{
-			field: field,
-			value: value,
-		})
-	}
-
-	enc.openObject()
-	for idx, spec := range writeFields {
-		if idx > 0 {
-			enc.fieldSep()
-		}
-
-		if spec.inOneof != nil {
-
-			enc.fieldLabel(*spec.inOneof)
-			enc.openObject()
-			if err := enc.encodeField(spec.field, spec.value); err != nil {
-				return err
-			}
-			enc.closeObject()
-			continue
-		}
-
-		if err := enc.encodeField(spec.field, spec.value); err != nil {
-			return err
-		}
-	}
-
-	enc.closeObject()
+	enc.add([]byte(":"))
 	return nil
 }
 
-func (enc *encoder) encodeField(field protoreflect.FieldDescriptor, value protoreflect.Value) error {
-
-	enc.fieldLabel(field.JSONName())
-
-	if field.IsMap() {
-		return enc.encodeMapField(field, value)
+func (enc *encoder) addString(unclean string) error {
+	buffer := make([]byte, 0, len(unclean)+2)
+	var err error
+	buffer, err = appendString(buffer, unclean)
+	if err != nil {
+		return err
 	}
-	if field.IsList() {
-		return enc.encodeListField(field, value)
-	}
-
-	return enc.encodeValue(field, value)
-}
-
-func (enc *encoder) encodeMapField(field protoreflect.FieldDescriptor, value protoreflect.Value) error {
-	enc.openObject()
-	first := true
-	var outerError error
-	keyDesc := field.MapKey()
-	valDesc := field.MapValue()
-
-	value.Map().Range(func(key protoreflect.MapKey, val protoreflect.Value) bool {
-		if !first {
-			enc.fieldSep()
-		}
-		first = false
-		if err := enc.encodeValue(keyDesc, key.Value()); err != nil {
-			outerError = err
-			return false
-		}
-		enc.add([]byte(":"))
-		if err := enc.encodeValue(valDesc, val); err != nil {
-			outerError = err
-			return false
-		}
-		return true
-	})
-	if outerError != nil {
-		return outerError
-	}
-	enc.closeObject()
+	enc.add(buffer)
 	return nil
 }
 
-func (enc *encoder) encodeListField(field protoreflect.FieldDescriptor, value protoreflect.Value) error {
-	enc.openArray()
-	first := true
-	list := value.List()
-	for i := 0; i < list.Len(); i++ {
-		if !first {
-			enc.fieldSep()
-		}
-		first = false
-		if err := enc.encodeValue(field, value.List().Get(i)); err != nil {
-			return err
-		}
-	}
-
-	enc.closeArray()
-	return nil
+func (enc *encoder) addFloat(val float64, bitSize int) {
+	str := strconv.FormatFloat(val, 'g', -1, bitSize)
+	enc.add([]byte(str))
 }
 
-func (enc *encoder) encodeValue(field protoreflect.FieldDescriptor, value protoreflect.Value) error {
-
-	switch field.Kind() {
-	case protoreflect.MessageKind:
-		return enc.encodeMessage(value.Message())
-
-	case protoreflect.StringKind:
-		return enc.addJSON(value.String())
-
-	case protoreflect.BoolKind:
-		return enc.addJSON(value.Bool())
-
-	case protoreflect.Int32Kind, protoreflect.Sint32Kind, protoreflect.Sfixed32Kind:
-		return enc.addJSON(int32(value.Int()))
-
-	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Sfixed64Kind:
-		return enc.addJSON(int64(value.Int()))
-
-	case protoreflect.Uint32Kind, protoreflect.Fixed32Kind:
-		return enc.addJSON(uint32(value.Uint()))
-
-	case protoreflect.Uint64Kind, protoreflect.Fixed64Kind:
-		return enc.addJSON(uint64(value.Uint()))
-
-	case protoreflect.FloatKind:
-		return enc.addJSON(float32(value.Float()))
-
-	case protoreflect.DoubleKind:
-		return enc.addJSON(float64(value.Float()))
-
-	case protoreflect.EnumKind:
-		stringVal, err := enc.encodeEnum(field.Enum(), value.Enum())
-		if err != nil {
-			return err
-		}
-		return enc.addJSON(stringVal)
-
-	case protoreflect.BytesKind:
-		byteVal := value.Bytes()
-		encoded := base64.StdEncoding.EncodeToString(byteVal)
-		return enc.addJSON(encoded)
-
-	default:
-		return fmt.Errorf("unsupported kind %v", field.Kind())
-
-	}
-
+func (enc *encoder) addInt(val int64) {
+	v := strconv.FormatInt(val, 10)
+	enc.add([]byte(v))
 }
+
+func (enc *encoder) addUint(val uint64) {
+	v := strconv.FormatUint(val, 10)
+	enc.add([]byte(v))
+}
+
+func (enc *encoder) addBool(val bool) {
+	if val {
+		enc.add([]byte("true"))
+	} else {
+		enc.add([]byte("false"))
+	}
+}
+
+/*
+func (enc *encoder) addNull() {
+	enc.add([]byte("null"))
+}*/

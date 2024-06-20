@@ -1,20 +1,19 @@
 package gogen
 
 import (
-	"context"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"google.golang.org/protobuf/types/known/timestamppb"
+	"strings"
 	"testing"
 
-	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/test/foo/v1/foo_testpb"
-	"github.com/pentops/j5/schema/structure"
+	"github.com/pentops/j5/schema/j5reflect"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 type TestOutput struct {
@@ -32,38 +31,28 @@ func (o TestOutput) WriteFile(name string, data []byte) error {
 
 func TestTestProtoGen(t *testing.T) {
 
-	ctx := context.Background()
-	ss := structure.NewSchemaSet(&config_j5pb.CodecOptions{})
-
-	mustBuildSchema := func(desc protoreflect.MessageDescriptor) *schema_j5pb.Schema {
-		schemaItem, err := ss.BuildSchemaObject(ctx, desc)
-		if err != nil {
-			t.Fatal(err.Error())
+	refStub := func(desc protoreflect.MessageDescriptor) *schema_j5pb.Schema {
+		return &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_Ref{
+				Ref: string(desc.FullName()),
+			},
 		}
-		return schemaItem
-
 	}
 
-	jdef := &schema_j5pb.API{
-		Metadata: &schema_j5pb.Metadata{
-			BuiltAt: timestamppb.Now(),
-		},
-		Packages: []*schema_j5pb.Package{{
-			Label:        "package label",
-			Name:         "test.v1",
-			Hidden:       false,
-			Introduction: "FOOBAR",
-			Methods: []*schema_j5pb.Method{{
-				GrpcServiceName: "TestService",
-				FullGrpcName:    "/test.v1.TestService/Test",
-				GrpcMethodName:  "PostFoo",
-				HttpMethod:      "get",
-				HttpPath:        "/test/v1/foo",
-				ResponseBody:    mustBuildSchema((&foo_testpb.PostFooRequest{}).ProtoReflect().Descriptor()),
-				RequestBody:     mustBuildSchema((&foo_testpb.PostFooRequest{}).ProtoReflect().Descriptor()),
-			}},
+	packageDef := &schema_j5pb.Package{
+		Label:        "package label",
+		Name:         "test.v1",
+		Hidden:       false,
+		Introduction: "FOOBAR",
+		Methods: []*schema_j5pb.Method{{
+			GrpcServiceName: "TestService",
+			FullGrpcName:    "/test.v1.TestService/Test",
+			GrpcMethodName:  "PostFoo",
+			HttpMethod:      "get",
+			HttpPath:        "/test/v1/foo",
+			ResponseBody:    refStub((&foo_testpb.PostFooResponse{}).ProtoReflect().Descriptor()),
+			RequestBody:     refStub((&foo_testpb.PostFooRequest{}).ProtoReflect().Descriptor()),
 		}},
-		Schemas: ss.Schemas,
 	}
 
 	output := TestOutput{
@@ -75,7 +64,9 @@ func TestTestProtoGen(t *testing.T) {
 		AddGoPrefix:       "github.com/pentops/j5/testproto/clientgen",
 	}
 
-	if err := WriteGoCode(jdef, output, options); err != nil {
+	ss := j5reflect.NewSchemaResolver(protoregistry.GlobalFiles)
+
+	if err := WriteGoCode(packageDef, ss, output, options); err != nil {
 		t.Fatal(err)
 	}
 
@@ -87,6 +78,9 @@ func TestTestProtoGen(t *testing.T) {
 	fset := token.NewFileSet()
 	parsed, err := parser.ParseFile(fset, "", outFile, 0)
 	if err != nil {
+		for idx, line := range strings.Split(outFile, "\n") {
+			t.Logf("%d: %s", idx+1, line)
+		}
 		t.Fatal(err)
 	}
 
