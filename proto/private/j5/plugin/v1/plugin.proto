@@ -2,15 +2,33 @@ syntax = "proto3";
 
 package j5.plugin.v1;
 
+import "j5/schema/v1/document.proto";
+
 option go_package = "github.com/pentops/j5/gen/j5/plugin/v1/plugin_j5pb";
 
-message CodeGenerationRequest {}
+message CodeGenerationRequest {
+  repeated j5.schema.v1.Package packages = 1;
+  Config config = 2;
+  map<string, string> options = 3;
+}
+
+message Config {
+  string trim_package_prefix = 1;
+  string filter_package_prefix = 2;
+}
 
 message CodeGenerationResponse {
   repeated File files = 1;
+  repeated Dependency dependencies = 2;
+  optional string Error = 3;
 }
 
 message File {
   string name = 1;
   string content = 2;
+}
+
+message Dependency {
+  string name = 1;
+  string version = 2;
 }

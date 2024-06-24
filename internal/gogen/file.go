@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
+	"log"
 	"path"
 	"path/filepath"
 	"strings"
@@ -84,6 +85,7 @@ func NewFileSet(prefix string) *FileSet {
 
 func (fileSet *FileSet) WriteAll(output FileWriter) error {
 	for fullPackageName, file := range fileSet.files {
+		log.Printf("Writing %s", fullPackageName)
 		bb, err := file.ExportBytes()
 		if err != nil {
 			return err

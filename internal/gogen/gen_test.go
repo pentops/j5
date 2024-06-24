@@ -9,11 +9,8 @@ import (
 	"testing"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/gen/test/foo/v1/foo_testpb"
 	"github.com/pentops/j5/schema/j5reflect"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 type TestOutput struct {
@@ -31,29 +28,86 @@ func (o TestOutput) WriteFile(name string, data []byte) error {
 
 func TestTestProtoGen(t *testing.T) {
 
-	refStub := func(desc protoreflect.MessageDescriptor) *schema_j5pb.Schema {
-		return &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Ref{
-				Ref: string(desc.FullName()),
+	api, err := j5reflect.APIFromDesc(&schema_j5pb.API{
+		Packages: []*schema_j5pb.Package{{
+			Label:        "package label",
+			Name:         "test.v1",
+			Introduction: "FOOBAR",
+			Services: []*schema_j5pb.Service{{
+				Name: "TestService",
+				Methods: []*schema_j5pb.Method{{
+					Name:         "PostFoo",
+					FullGrpcName: "test.v1.TestService/PostFoo",
+					HttpMethod:   schema_j5pb.HTTPMethod_GET,
+					HttpPath:     "/test/v1/foo/:foo_id",
+					RequestBody: &schema_j5pb.Schema{
+						Type: &schema_j5pb.Schema_Object{
+							Object: &schema_j5pb.Object{
+								Name: "PostFooRequest",
+								Properties: []*schema_j5pb.ObjectProperty{{
+									Name: "foo_id",
+									Schema: &schema_j5pb.Schema{
+										Type: &schema_j5pb.Schema_String_{
+											String_: &schema_j5pb.String{},
+										},
+									},
+									ProtoField: []int32{1},
+								}, {
+									Name: "enum",
+									Schema: &schema_j5pb.Schema{
+										Type: &schema_j5pb.Schema_Ref{
+											Ref: &schema_j5pb.Ref{
+												Package: "test.v1",
+												Schema:  "TestEnum",
+											},
+										},
+									},
+									ProtoField: []int32{3},
+								}},
+							},
+						},
+					},
+					ResponseBody: &schema_j5pb.Schema{
+						Type: &schema_j5pb.Schema_Object{
+							Object: &schema_j5pb.Object{
+								Name: "PostFooRequest",
+								Properties: []*schema_j5pb.ObjectProperty{{
+									Name: "foo_id",
+									Schema: &schema_j5pb.Schema{
+										Type: &schema_j5pb.Schema_String_{
+											String_: &schema_j5pb.String{},
+										},
+									},
+									ProtoField: []int32{1},
+								}},
+							},
+						},
+					},
+				}},
+			}},
+			Schemas: map[string]*schema_j5pb.Schema{
+				"test.v1.TestEnum": {
+					Type: &schema_j5pb.Schema_Enum{
+						Enum: &schema_j5pb.Enum{
+							Name:   "TestEnum",
+							Prefix: "TEST_ENUM_",
+							Options: []*schema_j5pb.Enum_Value{{
+								Name:   "UNSPECIFIED",
+								Number: 0,
+							}, {
+								Name:   "FOO",
+								Number: 1,
+							}},
+						},
+					},
+				},
 			},
-		}
-	}
-
-	packageDef := &schema_j5pb.Package{
-		Label:        "package label",
-		Name:         "test.v1",
-		Hidden:       false,
-		Introduction: "FOOBAR",
-		Methods: []*schema_j5pb.Method{{
-			GrpcServiceName: "TestService",
-			FullGrpcName:    "/test.v1.TestService/Test",
-			GrpcMethodName:  "PostFoo",
-			HttpMethod:      "get",
-			HttpPath:        "/test/v1/foo",
-			ResponseBody:    refStub((&foo_testpb.PostFooResponse{}).ProtoReflect().Descriptor()),
-			RequestBody:     refStub((&foo_testpb.PostFooRequest{}).ProtoReflect().Descriptor()),
 		}},
+	})
+	if err != nil {
+		t.Fatalf("Building API from Descriptor: %s", err.Error())
 	}
+	pkg := api.Packages[0]
 
 	output := TestOutput{
 		Files: map[string]string{},
@@ -61,12 +115,10 @@ func TestTestProtoGen(t *testing.T) {
 
 	options := Options{
 		TrimPackagePrefix: "",
-		AddGoPrefix:       "github.com/pentops/j5/testproto/clientgen",
+		GoPackagePrefix:   "github.com/pentops/j5/testproto/clientgen",
 	}
 
-	ss := j5reflect.NewSchemaResolver(protoregistry.GlobalFiles)
-
-	if err := WriteGoCode(packageDef, ss, output, options); err != nil {
+	if err := WriteGoCode(pkg, output, options); err != nil {
 		t.Fatal(err)
 	}
 

@@ -1,0 +1,5 @@
+---
+packages:
+  - name: test.bar.v1
+  - name: test.foo.v1
+  - name: test.baz.v1

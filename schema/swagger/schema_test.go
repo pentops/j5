@@ -16,12 +16,11 @@ func TestConvertSchema(t *testing.T) {
 	}{{
 		name: "string",
 		input: &schema_j5pb.Schema{
-			Description: "desc",
-			Type: &schema_j5pb.Schema_StringItem{
-				StringItem: &schema_j5pb.StringItem{
+			Type: &schema_j5pb.Schema_String_{
+				String_: &schema_j5pb.String{
 					Format:  Ptr("uuid"),
 					Example: Ptr("example"),
-					Rules: &schema_j5pb.StringRules{
+					Rules: &schema_j5pb.String_Rules{
 						Pattern:   Ptr("regex-pattern"),
 						MinLength: Ptr(uint64(1)),
 						MaxLength: Ptr(uint64(2)),
@@ -30,21 +29,20 @@ func TestConvertSchema(t *testing.T) {
 			},
 		},
 		want: map[string]interface{}{
-			"type":        "string",
-			"example":     "example",
-			"format":      "uuid",
-			"pattern":     "regex-pattern",
-			"minLength":   1,
-			"maxLength":   2,
-			"description": "desc",
+			"type":      "string",
+			"example":   "example",
+			"format":    "uuid",
+			"pattern":   "regex-pattern",
+			"minLength": 1,
+			"maxLength": 2,
 		},
 	}, {
 		name: "number",
 		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_NumberItem{
-				NumberItem: &schema_j5pb.NumberItem{
-					Format: "double",
-					Rules: &schema_j5pb.NumberRules{
+			Type: &schema_j5pb.Schema_Float{
+				Float: &schema_j5pb.Float{
+					Format: schema_j5pb.Float_FORMAT_FLOAT64,
+					Rules: &schema_j5pb.Float_Rules{
 						Minimum:          Ptr(0.0),
 						Maximum:          Ptr(100.0),
 						ExclusiveMinimum: Ptr(true),
@@ -64,9 +62,9 @@ func TestConvertSchema(t *testing.T) {
 	}, {
 		name: "enum",
 		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_EnumItem{
-				EnumItem: &schema_j5pb.EnumItem{
-					Options: []*schema_j5pb.EnumItem_Value{{
+			Type: &schema_j5pb.Schema_Enum{
+				Enum: &schema_j5pb.Enum{
+					Options: []*schema_j5pb.Enum_Value{{
 						Name:        "FOO",
 						Description: "Foo Description",
 					}, {
@@ -90,22 +88,23 @@ func TestConvertSchema(t *testing.T) {
 		name: "ref",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Ref{
-				Ref: "#/definitions/foo",
+				Ref: &schema_j5pb.Ref{
+					Package: "package.v1",
+					Schema:  "Foo",
+				},
 			},
 		},
 		want: map[string]interface{}{
-			"$ref": "#/definitions/foo",
+			"$ref": "#/definitions/package.v1.Foo",
 		},
 	}, {
 		name: "object",
 		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_ObjectItem{
-				ObjectItem: &schema_j5pb.ObjectItem{
-
-					ProtoFullName:    "long",
-					ProtoMessageName: "short",
-
-					Rules: &schema_j5pb.ObjectRules{
+			Type: &schema_j5pb.Schema_Object{
+				Object: &schema_j5pb.Object{
+					Name:        "short",
+					Description: "description",
+					Rules: &schema_j5pb.Object_Rules{
 						MinProperties: Ptr(uint64(1)),
 						MaxProperties: Ptr(uint64(2)),
 					},
@@ -113,16 +112,16 @@ func TestConvertSchema(t *testing.T) {
 						Name:     "foo",
 						Required: true,
 						Schema: &schema_j5pb.Schema{
-							Type: &schema_j5pb.Schema_StringItem{
-								StringItem: &schema_j5pb.StringItem{},
+							Type: &schema_j5pb.Schema_String_{
+								String_: &schema_j5pb.String{},
 							},
 						},
 					}, {
 						Name:     "bar",
 						Required: false,
 						Schema: &schema_j5pb.Schema{
-							Type: &schema_j5pb.Schema_StringItem{
-								StringItem: &schema_j5pb.StringItem{},
+							Type: &schema_j5pb.Schema_String_{
+								String_: &schema_j5pb.String{},
 							},
 						},
 					}},
@@ -131,8 +130,8 @@ func TestConvertSchema(t *testing.T) {
 		},
 		want: map[string]interface{}{
 			"type":                "object",
-			"x-proto-name":        "short",
-			"x-proto-full-name":   "long",
+			"description":         "description",
+			"x-name":              "short",
 			"required.0":          "foo",
 			"properties.foo.type": "string",
 			"properties.bar.type": "string",
@@ -140,24 +139,22 @@ func TestConvertSchema(t *testing.T) {
 	}, {
 		name: "oneof",
 		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_OneofWrapper{
-				OneofWrapper: &schema_j5pb.OneofWrapperItem{
-
-					ProtoFullName:    "long",
-					ProtoMessageName: "short",
+			Type: &schema_j5pb.Schema_Oneof{
+				Oneof: &schema_j5pb.Oneof{
+					Name: "short",
 
 					Properties: []*schema_j5pb.ObjectProperty{{
 						Name: "foo",
 						Schema: &schema_j5pb.Schema{
-							Type: &schema_j5pb.Schema_StringItem{
-								StringItem: &schema_j5pb.StringItem{},
+							Type: &schema_j5pb.Schema_String_{
+								String_: &schema_j5pb.String{},
 							},
 						},
 					}, {
 						Name: "bar",
 						Schema: &schema_j5pb.Schema{
-							Type: &schema_j5pb.Schema_StringItem{
-								StringItem: &schema_j5pb.StringItem{},
+							Type: &schema_j5pb.Schema_String_{
+								String_: &schema_j5pb.String{},
 							},
 						},
 					}},
@@ -166,22 +163,21 @@ func TestConvertSchema(t *testing.T) {
 		},
 		want: map[string]interface{}{
 			"type":                "object",
-			"x-proto-name":        "short",
-			"x-proto-full-name":   "long",
+			"x-name":              "short",
 			"properties.foo.type": "string",
 			"properties.bar.type": "string",
 		},
 	}, {
 		name: "array",
 		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_ArrayItem{
-				ArrayItem: &schema_j5pb.ArrayItem{
+			Type: &schema_j5pb.Schema_Array{
+				Array: &schema_j5pb.Array{
 					Items: &schema_j5pb.Schema{
-						Type: &schema_j5pb.Schema_StringItem{
-							StringItem: &schema_j5pb.StringItem{},
+						Type: &schema_j5pb.Schema_String_{
+							String_: &schema_j5pb.String{},
 						},
 					},
-					Rules: &schema_j5pb.ArrayRules{
+					Rules: &schema_j5pb.Array_Rules{
 						MinItems:    Ptr(uint64(1)),
 						MaxItems:    Ptr(uint64(2)),
 						UniqueItems: Ptr(true),
@@ -199,11 +195,11 @@ func TestConvertSchema(t *testing.T) {
 	}, {
 		name: "map",
 		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_MapItem{
-				MapItem: &schema_j5pb.MapItem{
+			Type: &schema_j5pb.Schema_Map{
+				Map: &schema_j5pb.Map{
 					ItemSchema: &schema_j5pb.Schema{
-						Type: &schema_j5pb.Schema_StringItem{
-							StringItem: &schema_j5pb.StringItem{},
+						Type: &schema_j5pb.Schema_String_{
+							String_: &schema_j5pb.String{},
 						},
 					},
 				},
@@ -218,7 +214,7 @@ func TestConvertSchema(t *testing.T) {
 		name: "any",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Any{
-				Any: &schema_j5pb.AnySchemaItem{},
+				Any: &schema_j5pb.Any{},
 			},
 		},
 		want: map[string]interface{}{
@@ -257,7 +253,6 @@ func TestSchemaJSONMarshal(t *testing.T) {
 					"id": {
 						Schema: &Schema{
 							SchemaItem: &SchemaItem{
-								Description: "desc",
 								Type: StringItem{
 									Format: Some("uuid"),
 								},
@@ -267,7 +262,7 @@ func TestSchemaJSONMarshal(t *testing.T) {
 					"number": {
 						Schema: &Schema{
 							SchemaItem: &SchemaItem{
-								Type: NumberItem{
+								Type: FloatItem{
 									Format:  "double",
 									Minimum: Value(0.0),
 									Maximum: Value(100.0),
@@ -275,11 +270,13 @@ func TestSchemaJSONMarshal(t *testing.T) {
 							},
 						},
 					},
-					"object": {
+					"namedObject": {
 						Schema: &Schema{
 							SchemaItem: &SchemaItem{
 								Type: &ObjectItem{
-									Required: []string{"foo"},
+									Name:        "namedObject",
+									Description: "desc",
+									Required:    []string{"foo"},
 									Properties: map[string]*ObjectProperty{
 										"foo": {
 											Schema: &Schema{
@@ -323,7 +320,6 @@ func TestSchemaJSONMarshal(t *testing.T) {
 	out.AssertEqual(t, "type", "object")
 	out.AssertEqual(t, "properties.id.type", "string")
 	out.AssertEqual(t, "properties.id.format", "uuid")
-	out.AssertEqual(t, "properties.id.description", "desc")
 	out.AssertEqual(t, "required.0", "id")
 
 	out.AssertEqual(t, "properties.number.type", "number")
@@ -332,7 +328,9 @@ func TestSchemaJSONMarshal(t *testing.T) {
 	out.AssertEqual(t, "properties.number.maximum", 100.0)
 	out.AssertNotSet(t, "properties.number.exclusiveMinimum")
 
-	out.AssertEqual(t, "properties.object.properties.foo.type", "string")
+	out.AssertEqual(t, "properties.namedObject.properties.foo.type", "string")
+	out.AssertEqual(t, "properties.namedObject.x-name", "namedObject")
+	out.AssertEqual(t, "properties.namedObject.description", "desc")
 
 	out.AssertEqual(t, "properties.ref.$ref", "#/definitions/foo")
 }

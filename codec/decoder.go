@@ -25,7 +25,7 @@ func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 		return fmt.Errorf("schema object: %w", err)
 	}
 
-	switch schema := schema.Type().(type) {
+	switch schema := schema.(type) {
 	case *j5reflect.ObjectSchema:
 		return d2.decodeObject(schema, msg)
 	case *j5reflect.OneofSchema:
@@ -186,7 +186,7 @@ func (dec *decoder) decodeObject(object *j5reflect.ObjectSchema, msg protoreflec
 		}
 
 		protoFieldPath := field.ProtoField[:]
-		oneofWrapper, ok := field.Schema.Type().(*j5reflect.OneofSchema)
+		oneofWrapper, ok := field.Schema.(*j5reflect.OneofSchema)
 		if ok {
 			if err := dec.decodeOneof(oneofWrapper, msg); err != nil {
 				return err
@@ -199,10 +199,14 @@ func (dec *decoder) decodeObject(object *j5reflect.ObjectSchema, msg protoreflec
 		}
 
 		var protoField protoreflect.FieldDescriptor
+		var protoFieldNumber protoreflect.FieldNumber
 		settingMessage := msg
 		for {
-			protoField, protoFieldPath = protoFieldPath[0], protoFieldPath[1:]
-
+			protoFieldNumber, protoFieldPath = protoFieldPath[0], protoFieldPath[1:]
+			protoField = settingMessage.Descriptor().Fields().ByNumber(protoFieldNumber)
+			if protoField == nil {
+				return fmt.Errorf("no such field %d", protoFieldNumber)
+			}
 			if len(protoFieldPath) == 0 {
 				break
 			}
@@ -230,8 +234,13 @@ func (dec *decoder) decodeObject(object *j5reflect.ObjectSchema, msg protoreflec
 	})
 }
 
-func (dec *decoder) decodeField(schema *j5reflect.Schema, msg protoreflect.Message, protoField protoreflect.FieldDescriptor) error {
-	switch subSchema := schema.ResolvedType().(type) {
+func (dec *decoder) decodeField(schema j5reflect.Schema, msg protoreflect.Message, protoField protoreflect.FieldDescriptor) error {
+	switch subSchema := schema.(type) {
+	case *j5reflect.RefSchema:
+		if subSchema.To == nil {
+			return fmt.Errorf("unlinked ref to %s", subSchema.FullName())
+		}
+		return dec.decodeField(subSchema.To, msg, protoField)
 
 	case *j5reflect.MapSchema:
 		if !protoField.IsMap() {
@@ -239,7 +248,7 @@ func (dec *decoder) decodeField(schema *j5reflect.Schema, msg protoreflect.Messa
 		}
 
 		list := msg.Mutable(protoField).Map()
-		if err := dec.decodeMapField(subSchema, list); err != nil {
+		if err := dec.decodeMapField(subSchema.Schema, list); err != nil {
 			return err
 		}
 		msg.Set(protoField, protoreflect.ValueOf(list))
@@ -251,7 +260,7 @@ func (dec *decoder) decodeField(schema *j5reflect.Schema, msg protoreflect.Messa
 		}
 
 		list := msg.Mutable(protoField).List()
-		if err := dec.decodeListField(subSchema, list); err != nil {
+		if err := dec.decodeListField(subSchema.Schema, list); err != nil {
 			return err
 		}
 		msg.Set(protoField, protoreflect.ValueOf(list))
@@ -350,14 +359,15 @@ func (dec *decoder) decodeOneof(oneof *j5reflect.OneofSchema, msg protoreflect.M
 		foundKeys = append(foundKeys, keyTokenStr)
 
 		if len(matchedProperty.ProtoField) != 1 {
-			path := make([]string, 0, len(matchedProperty.ProtoField))
-			for _, f := range matchedProperty.ProtoField {
-				path = append(path, f.JSONName())
-			}
-			return fmt.Errorf("oneof property has proto path of %q", strings.Join(path, "."))
+			return fmt.Errorf("oneof property has proto path of %#v", matchedProperty.ProtoField)
 		}
 
-		if err := dec.decodeField(matchedProperty.Schema, msg, matchedProperty.ProtoField[0]); err != nil {
+		protoFieldNumber := matchedProperty.ProtoField[0]
+		protoField := msg.Descriptor().Fields().ByNumber(protoFieldNumber)
+		if protoField == nil {
+			return fmt.Errorf("no such field %d", protoFieldNumber)
+		}
+		if err := dec.decodeField(matchedProperty.Schema, msg, protoField); err != nil {
 			return err
 		}
 
@@ -382,9 +392,13 @@ func (dec *decoder) decodeOneof(oneof *j5reflect.OneofSchema, msg protoreflect.M
 		if len(matchedProperty.ProtoField) != 1 {
 			return newFieldError(keyTokenStr, "oneof has nested path")
 		}
-		protoField := matchedProperty.ProtoField[0]
+		protoFieldNumber := matchedProperty.ProtoField[0]
+		protoField := msg.Descriptor().Fields().ByNumber(protoFieldNumber)
+		if protoField == nil {
+			return fmt.Errorf("no such field %d", protoFieldNumber)
+		}
 		if protoField.Kind() == protoreflect.MessageKind {
-			msg.Mutable(matchedProperty.ProtoField[0])
+			msg.Mutable(protoField)
 		} else {
 			msg.Set(protoField, protoField.Default())
 		}
@@ -402,8 +416,14 @@ func (dec *decoder) decodeOneof(oneof *j5reflect.OneofSchema, msg protoreflect.M
 	return nil
 }
 
-func (dec *decoder) decodeMapField(schema *j5reflect.MapSchema, list protoreflect.Map) error {
-	switch subSchema := schema.Schema.ResolvedType().(type) {
+func (dec *decoder) decodeMapField(schema j5reflect.Schema, list protoreflect.Map) error {
+	switch subSchema := schema.(type) {
+	case *j5reflect.RefSchema:
+		if subSchema.To == nil {
+			return fmt.Errorf("unlinked ref to %s", subSchema.FullName())
+		}
+		return dec.decodeMapField(subSchema.To, list)
+
 	case *j5reflect.ObjectSchema:
 		return dec.jsonObject(func(keyTokenStr string) error {
 			subMsg := list.NewValue()
@@ -452,9 +472,15 @@ func (dec *decoder) decodeMapField(schema *j5reflect.MapSchema, list protoreflec
 	}
 }
 
-func (dec *decoder) decodeListField(schema *j5reflect.ArraySchema, list protoreflect.List) error {
+func (dec *decoder) decodeListField(schema j5reflect.Schema, list protoreflect.List) error {
 
-	switch subSchema := schema.Schema.ResolvedType().(type) {
+	switch subSchema := schema.(type) {
+	case *j5reflect.RefSchema:
+		if subSchema.To == nil {
+			return fmt.Errorf("unlinked ref to %s", subSchema.FullName())
+		}
+		return dec.decodeListField(subSchema.To, list)
+
 	case *j5reflect.ObjectSchema:
 		return dec.jsonArray(func() error {
 			subMsg := list.NewElement()

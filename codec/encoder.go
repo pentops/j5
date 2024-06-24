@@ -21,7 +21,7 @@ func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
 		return nil, fmt.Errorf("schema object: %w", err)
 	}
 
-	switch schema := schema.Type().(type) {
+	switch schema := schema.(type) {
 	case *j5reflect.ObjectSchema:
 		if err := enc.encodeObject(schema, msg); err != nil {
 			return nil, err

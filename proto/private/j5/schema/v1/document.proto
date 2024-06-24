@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package j5.schema.v1;
 
+import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/schema/v1/schema.proto";
 
@@ -9,7 +10,6 @@ option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
 
 message API {
   repeated Package packages = 1;
-  map<string, Schema> schemas = 2;
   Metadata metadata = 3;
 }
 
@@ -19,40 +19,55 @@ message Metadata {
 
 message Package {
   string label = 1;
-  string name = 2;
+  string name = 2 [(buf.validate.field).string.pattern = "^([a-z0-9_]+\\.)v[0-9]+$"];
   bool hidden = 3;
 
   string introduction = 4;
-  repeated Method methods = 5;
+  repeated Service services = 5;
   repeated Entity entities = 6;
   repeated EventSpec events = 7;
+  map<string, Schema> schemas = 8;
+}
+
+message Service {
+  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
+  repeated Method methods = 2;
 }
 
 message Method {
-  string grpc_service_name = 1;
-  string grpc_method_name = 2;
+  string name = 2 [(buf.validate.field).string.pattern = "^[a-z][a-zA-Z0-9]*$"];
   string full_grpc_name = 3;
 
-  string http_method = 4;
-  string http_path = 5;
-  Schema request_body = 6;
-  Schema response_body = 7;
-  repeated Parameter query_parameters = 8;
-  repeated Parameter path_parameters = 9;
+  HTTPMethod http_method = 4 [(buf.validate.field).enum = {
+    not_in: 0
+    defined_only: true
+  }];
+
+  string http_path = 5 [(buf.validate.field).string.pattern = "^(\\/:?[a-z0-9_]+)+$"];
+  Schema request_body = 6 [(buf.validate.field).required = true];
+  Schema response_body = 7 [(buf.validate.field).required = true];
 }
 
 message EventSpec {
-  string name = 1;
-  Schema schema = 2;
+  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
+  Schema schema = 2 [(buf.validate.field).required = true];
 }
 
 message Entity {
-  Schema schema = 1;
+  Schema schema = 1 [(buf.validate.field).required = true];
 }
 
-message Parameter {
-  string name = 1;
-  string description = 3;
-  bool required = 4;
-  Schema schema = 5;
+message CodeGenerationRequest {
+  repeated string packages = 1;
+  Metadata metadata = 2;
+  map<string, string> options = 3;
+}
+
+enum HTTPMethod {
+  HTTP_METHOD_UNSPECIFIED = 0;
+  HTTP_METHOD_GET = 1;
+  HTTP_METHOD_POST = 2;
+  HTTP_METHOD_PUT = 3;
+  HTTP_METHOD_DELETE = 4;
+  HTTP_METHOD_PATCH = 5;
 }

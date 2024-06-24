@@ -1,4 +1,4 @@
-package j5reflect
+package structure
 
 import (
 	"encoding/json"
@@ -33,11 +33,11 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	obj, ok := schemaItem.Type.(*schema_j5pb.Schema_ObjectItem)
+	obj, ok := schemaItem.Type.(*schema_j5pb.Schema_Object)
 	if !ok {
 		t.Fatalf("expected object item, got %T", schemaItem.Type)
 	}
-	prop := obj.ObjectItem.Properties[0]
+	prop := obj.Object.Properties[0]
 
 	bt, err := protojson.Marshal(prop)
 	if err != nil {
@@ -63,8 +63,8 @@ func TestStringSchemaTypes(t *testing.T) {
 			MaxLen: proto.Uint64(10),
 		},
 		expected: map[string]interface{}{
-			"schema.stringItem.rules.minLength": "1",
-			"schema.stringItem.rules.maxLength": "10",
+			"schema.string.rules.minLength": "1",
+			"schema.string.rules.maxLength": "10",
 		},
 	}, {
 		name: "pattern constraint",
@@ -72,7 +72,7 @@ func TestStringSchemaTypes(t *testing.T) {
 			Pattern: proto.String("^[a-z]+$"),
 		},
 		expected: map[string]interface{}{
-			"schema.stringItem.rules.pattern": "^[a-z]+$",
+			"schema.string.rules.pattern": "^[a-z]+$",
 		},
 	}, {
 		name: "uuid constraint",
@@ -82,7 +82,7 @@ func TestStringSchemaTypes(t *testing.T) {
 			},
 		},
 		expected: map[string]interface{}{
-			"schema.stringItem.format": "uuid",
+			"schema.string.format": "uuid",
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -129,10 +129,10 @@ func TestSchemaTypesSimple(t *testing.T) {
 			},
 		},
 		expected: map[string]interface{}{
-			"schema.integerItem.format":                 "int32",
-			"schema.integerItem.rules.minimum":          "1",
-			"schema.integerItem.rules.maximum":          "10",
-			"schema.integerItem.rules.exclusiveMaximum": true,
+			"schema.integer.format":                 schema_j5pb.Integer_FORMAT_INT32.String(),
+			"schema.integer.rules.minimum":          "1",
+			"schema.integer.rules.maximum":          "10",
+			"schema.integer.rules.exclusiveMaximum": true,
 		},
 	}, {
 		name: "int64",
@@ -154,10 +154,10 @@ func TestSchemaTypesSimple(t *testing.T) {
 			},
 		},
 		expected: map[string]interface{}{
-			"schema.integerItem.format":                 "int64",
-			"schema.integerItem.rules.minimum":          "1",
-			"schema.integerItem.rules.maximum":          "10",
-			"schema.integerItem.rules.exclusiveMaximum": true,
+			"schema.integer.format":                 schema_j5pb.Integer_FORMAT_INT64.String(),
+			"schema.integer.rules.minimum":          "1",
+			"schema.integer.rules.maximum":          "10",
+			"schema.integer.rules.exclusiveMaximum": true,
 		},
 	}, {
 		name: "uint32",
@@ -179,10 +179,10 @@ func TestSchemaTypesSimple(t *testing.T) {
 			},
 		},
 		expected: map[string]interface{}{
-			"schema.integerItem.format":                 "uint32",
-			"schema.integerItem.rules.minimum":          "1",
-			"schema.integerItem.rules.maximum":          "10",
-			"schema.integerItem.rules.exclusiveMaximum": true,
+			"schema.integer.format":                 schema_j5pb.Integer_FORMAT_UINT32.String(),
+			"schema.integer.rules.minimum":          "1",
+			"schema.integer.rules.maximum":          "10",
+			"schema.integer.rules.exclusiveMaximum": true,
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -208,9 +208,9 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	obj := schemaItem.Type.(*schema_j5pb.Schema_ObjectItem)
+	obj := schemaItem.Type.(*schema_j5pb.Schema_Object)
 	assertProperty := func(name string, expected map[string]interface{}) {
-		for _, prop := range obj.ObjectItem.Properties {
+		for _, prop := range obj.Object.Properties {
 			if prop.Name == name {
 				t.Run(name, func(t *testing.T) {
 					dd, err := jsontest.NewAsserter(prop)
@@ -236,13 +236,13 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 	})
 
 	assertProperty("rString", map[string]interface{}{
-		"protoField":                        jsontest.Array[float64]{3},
-		"schema.arrayItem.items.stringItem": map[string]interface{}{},
+		"protoField":                jsontest.Array[float64]{3},
+		"schema.array.items.string": map[string]interface{}{},
 	})
 
 	assertProperty("mapStringString", map[string]interface{}{
-		"protoField":                           jsontest.Array[float64]{15},
-		"schema.mapItem.itemSchema.stringItem": map[string]interface{}{},
+		"protoField":                   jsontest.Array[float64]{15},
+		"schema.map.itemSchema.string": map[string]interface{}{},
 	})
 }
 
@@ -263,8 +263,8 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"objectItem.protoMessageName": "TestMessage",
-			//"objectItem.properties":       jsontest.LenEqual(0),
+			"object.name": "TestMessage",
+			//"object.properties":       jsontest.LenEqual(0),
 		},
 	}, {
 		name: "array field",
@@ -282,8 +282,8 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"objectItem.protoMessageName":  "TestMessage",
-			"objectItem.properties.0.name": "testField",
+			"object.name":              "TestMessage",
+			"object.properties.0.name": "testField",
 		},
 	}, {
 		name: "flatten",
@@ -315,10 +315,10 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"objectItem.protoMessageName":               "TestMessage",
-			"objectItem.properties.0.name":              "childField",
-			"objectItem.properties.0.protoField":        jsontest.Array[float64]{1, 1},
-			"objectItem.properties.0.schema.stringItem": map[string]interface{}{},
+			"object.name":                       "TestMessage",
+			"object.properties.0.name":          "childField",
+			"object.properties.0.protoField":    jsontest.Array[float64]{1, 1},
+			"object.properties.0.schema.string": map[string]interface{}{},
 		},
 	}, {
 		name: "exposedOneof",
@@ -342,11 +342,11 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"objectItem.protoMessageName":                                         "TestMessage",
-			"objectItem.properties.0.name":                                        "exposeMe",
-			"objectItem.properties.0.schema.oneofWrapper.properties.0.name":       "testField",
-			"objectItem.properties.0.schema.oneofWrapper.properties.0.protoField": jsontest.Array[float64]{1},
-			"objectItem.properties.0.protoField":                                  jsontest.NotSet{},
+			"object.name":              "TestMessage",
+			"object.properties.0.name": "exposeMe",
+			"object.properties.0.schema.oneof.properties.0.name":       "testField",
+			"object.properties.0.schema.oneof.properties.0.protoField": jsontest.Array[float64]{1},
+			"object.properties.0.protoField":                           jsontest.NotSet{},
 		},
 	}, {
 		name: "map<string>string",
@@ -385,9 +385,9 @@ func TestSchemaTypesComplex(t *testing.T) {
 		},
 		expected: map[string]interface{}{
 			// Outer Wrapper
-			"objectItem.protoMessageName":                                  "TestMessage",
-			"objectItem.properties.0.name":                                 "testField",
-			"objectItem.properties.0.schema.mapItem.itemSchema.stringItem": map[string]interface{}{},
+			"object.name":              "TestMessage",
+			"object.properties.0.name": "testField",
+			"object.properties.0.schema.map.itemSchema.string": map[string]interface{}{},
 		},
 	}, {
 		name: "enum field",
@@ -427,12 +427,13 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"objectItem.properties.0.schema.ref": "test.TestEnum",
+			"object.properties.0.schema.ref.package": "test",
+			"object.properties.0.schema.ref.schema":  "TestEnum",
 		},
 		expectedRefs: map[string]map[string]interface{}{
 			"test.TestEnum": {
-				"enumItem.options.0.name": "FOO",
-				"enumItem.options.1.name": "BAR",
+				"enum.options.0.name": "FOO",
+				"enum.options.1.name": "BAR",
 			},
 		},
 	}} {
@@ -455,9 +456,13 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}
 
 			for path, expectSet := range tt.expectedRefs {
-				schema, ok := ss.schemas[protoreflect.FullName(path)]
+				ref, ok := ss.refs[protoreflect.FullName(path)]
 				if !ok {
 					t.Fatalf("schema %q not found", path)
+				}
+				schema := ref.To
+				if schema == nil {
+					t.Fatalf("schema %q not linked", path)
 				}
 				schemaJ5, err := schema.ToJ5Proto()
 				if err != nil {

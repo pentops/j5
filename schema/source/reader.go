@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -27,8 +26,8 @@ var ConfigPaths = []string{
 	"ext/j5/j5.yaml",
 }
 
-func readDirConfigs(root fs.FS) (*config_j5pb.Config, error) {
-	var config *config_j5pb.Config
+func readDirConfigs(root fs.FS) (*config_j5pb.RepoConfigFile, error) {
+	var config *config_j5pb.RepoConfigFile
 	var err error
 	for _, filename := range ConfigPaths {
 		config, err = readConfigFile(root, filename)
@@ -36,7 +35,7 @@ func readDirConfigs(root fs.FS) (*config_j5pb.Config, error) {
 			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
-			return nil, err
+			return nil, fmt.Errorf("reading file %s: %w", filename, err)
 		}
 		break
 	}
@@ -48,61 +47,62 @@ func readDirConfigs(root fs.FS) (*config_j5pb.Config, error) {
 	return config, nil
 }
 
-func readConfigFile(root fs.FS, filename string) (*config_j5pb.Config, error) {
+func readConfigFile(root fs.FS, filename string) (*config_j5pb.RepoConfigFile, error) {
 	data, err := fs.ReadFile(root, filename)
 	if err != nil {
 		return nil, err
 	}
-	config := &config_j5pb.Config{}
+	config := &config_j5pb.RepoConfigFile{}
 	if err := protoyaml.Unmarshal(data, config); err != nil {
 		return nil, err
 	}
 	return config, nil
 }
 
-func resolveBundle(repoRoot fs.FS, dir string) (*config_j5pb.Config, fs.FS, error) {
-
-	if dir == "" {
-		config, err := readDirConfigs(repoRoot)
-		if err != nil {
-			return nil, nil, err
-		}
-		if len(config.Packages) > 0 {
-			return config, repoRoot, nil
-		}
-		if len(config.Bundles) == 0 {
-			return nil, nil, fmt.Errorf("no packages or bundles in root config. Either specify a bundle or add a bundle config to the root config")
-		}
-		if len(config.Bundles) > 1 {
-			return nil, nil, fmt.Errorf("multiple bundles in root config. Specify a bundle")
-		}
-		dir = config.Bundles[0].Dir
-	}
-
-	subPath := path.Join(dir, "j5.yaml")
-	newConfig, err := readConfigFile(repoRoot, subPath)
+func readBundleConfigFile(root fs.FS, filename string) (*config_j5pb.BundleConfigFile, error) {
+	data, err := fs.ReadFile(root, filename)
 	if err != nil {
-		return nil, nil, fmt.Errorf("reading bundle config %s: %w", subPath, err)
+		return nil, err
 	}
-	subRoot, err := fs.Sub(repoRoot, dir)
-	if err != nil {
-		return nil, nil, fmt.Errorf("subbing bundle root %s: %w", dir, err)
+	config := &config_j5pb.BundleConfigFile{}
+	if err := protoyaml.Unmarshal(data, config); err != nil {
+		return nil, err
 	}
-
-	return newConfig, subRoot, nil
+	return config, nil
 }
 
-func readImageFromDir(ctx context.Context, repoRoot fs.FS, dir string) (*source_j5pb.SourceImage, error) {
-
-	config, bundleRoot, err := resolveBundle(repoRoot, dir)
+func readImageFromDir(ctx context.Context, src *bundle) (*source_j5pb.SourceImage, error) {
+	_, err := src.J5Config()
 	if err != nil {
 		return nil, err
 	}
 
 	bufCache := protosrc.NewBufCache()
-	extFiles, err := bufCache.GetDeps(ctx, repoRoot, dir)
+	extFiles, err := bufCache.GetDeps(ctx, src.repo.repoRoot, src.dirInRepo)
 	if err != nil {
 		return nil, fmt.Errorf("reading buf deps: %w", err)
+	}
+
+	var searchFS []fs.FS
+
+	for _, dep := range src.refConfig.Deps {
+		localBundle, ok := src.repo.bundles[dep]
+		if !ok {
+			return nil, fmt.Errorf("unknown dependency %q", dep)
+		}
+
+		fs, err := localBundle.fs()
+		if err != nil {
+			return nil, err
+		}
+
+		searchFS = append(searchFS, fs)
+
+	}
+
+	bundleRoot, err := src.fs()
+	if err != nil {
+		return nil, err
 	}
 
 	proseFiles := []*source_j5pb.ProseFile{}
@@ -142,14 +142,25 @@ func readImageFromDir(ctx context.Context, repoRoot fs.FS, dir string) (*source_
 		ImportPaths:           []string{""},
 		IncludeSourceCodeInfo: true,
 		WarningReporter: func(err reporter.ErrorWithPos) {
-			log.WithField(ctx, "error", err).Error("protoparse warning")
+			log.WithFields(ctx, map[string]interface{}{
+				"error": err.Error(),
+			}).Warn("protoparse warning")
 		},
 
 		Accessor: func(filename string) (io.ReadCloser, error) {
 			if content, ok := extFiles[filename]; ok {
 				return io.NopCloser(bytes.NewReader(content)), nil
 			}
-			return bundleRoot.Open(filename)
+			if reader, err := bundleRoot.Open(filename); err == nil {
+				return reader, nil
+			}
+			for _, fs := range searchFS {
+				if reader, err := fs.Open(filename); err == nil {
+					return reader, nil
+				}
+			}
+			return nil, fmt.Errorf("file not found: %s", filename)
+
 		},
 	}
 
@@ -162,10 +173,9 @@ func readImageFromDir(ctx context.Context, repoRoot fs.FS, dir string) (*source_
 
 	return &source_j5pb.SourceImage{
 		File:            realDesc.File,
-		Packages:        config.Packages,
-		Codec:           config.Options,
+		Packages:        src.config.Packages,
+		Options:         src.config.Options,
 		Prose:           proseFiles,
-		Registry:        config.Registry,
 		SourceFilenames: filenames,
 	}, nil
 

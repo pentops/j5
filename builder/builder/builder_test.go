@@ -3,18 +3,16 @@ package builder
 import (
 	"strings"
 	"testing"
-
-	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 )
 
 func TestMapEnvVars(t *testing.T) {
 	sampleIn := []string{"PROTOC_GEN_GO_MESSAGING_EXTRA_HEADERS=api-version:$GIT_HASH"}
 
-	cInfo := source_j5pb.CommitInfo{
-		Hash: "abcdef",
+	info := map[string]string{
+		"GIT_HASH": "abcdef",
 	}
 
-	r, err := MapEnvVars(sampleIn, &cInfo)
+	r, err := mapEnvVars(sampleIn, info)
 	if err != nil {
 		t.Errorf("Received error in mapenvvars: %v", err.Error())
 	}
@@ -22,7 +20,7 @@ func TestMapEnvVars(t *testing.T) {
 		t.Error("Got len other than expected")
 	}
 	if strings.Count(r[0], "=") > 1 {
-		t.Error("Too many equal signs in env var")
+		t.Errorf("Too many equal signs in env var %s", r[0])
 	}
 	if r[0] != "PROTOC_GEN_GO_MESSAGING_EXTRA_HEADERS=api-version:abcdef" {
 		t.Error("Output not correct for git hash substitution")

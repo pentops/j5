@@ -16,19 +16,15 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-func codeGeneratorRequestFromSource(ctx context.Context, repoRoot fs.FS, dir string) (*pluginpb.CodeGeneratorRequest, error) {
+func codeGeneratorRequestFromSource(ctx context.Context, bundle *bundle) (*pluginpb.CodeGeneratorRequest, error) {
 
 	out := &pluginpb.CodeGeneratorRequest{
-		CompilerVersion: &pluginpb.Version{
-			Major: ptr(0),
-			Minor: ptr(0),
-			Patch: ptr(0),
-		},
+		CompilerVersion: nil,
 	}
 
 	includeFiles := map[string]bool{}
 
-	walkRoot, err := fs.Sub(repoRoot, dir)
+	walkRoot, err := fs.Sub(bundle.repo.repoRoot, bundle.dirInRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +50,7 @@ func codeGeneratorRequestFromSource(ctx context.Context, repoRoot fs.FS, dir str
 	}
 
 	bufCache := protosrc.NewBufCache()
-	extFiles, err := bufCache.GetDeps(ctx, repoRoot, dir)
+	extFiles, err := bufCache.GetDeps(ctx, bundle.repo.repoRoot, bundle.dirInRepo)
 	if err != nil {
 		return nil, err
 	}
@@ -134,8 +130,4 @@ func codeGeneratorRequestFromSource(ctx context.Context, repoRoot fs.FS, dir str
 	}
 
 	return out, nil
-}
-
-func ptr(i int32) *int32 {
-	return &i
 }

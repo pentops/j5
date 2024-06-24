@@ -3,73 +3,79 @@ package j5reflect
 import (
 	"fmt"
 
-	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type Schema struct {
-	objectItem *ObjectSchema
-	oneofItem  *OneofSchema
-	arrayItem  *ArraySchema
-	mapItem    *MapSchema
-	enumItem   *EnumSchema
-	scalarItem *ScalarSchema
-	anyItem    *AnySchema
-	refItem    *RefSchema
+type SchemaRoot struct {
+	Description string
+	Package     string
+	Name        string
 }
 
-type schemaItem interface {
+func (s *SchemaRoot) FullName() string {
+	return fmt.Sprintf("%s.%s", s.Package, s.Name)
+}
+
+func (s *SchemaRoot) AsRef() *RefSchema {
+	return &RefSchema{
+		Package: s.Package,
+		Schema:  s.Name,
+	}
+}
+
+type Schema interface {
 	ToJ5Proto() (*schema_j5pb.Schema, error)
 }
 
-func (s *Schema) ResolvedType() schemaItem {
-	if s.refItem != nil {
-		return s.refItem.To.ResolvedType()
-	}
-	return s.Type()
-}
-
-func (s *Schema) Type() schemaItem {
-
-	if s.objectItem != nil {
-		return s.objectItem
-	} else if s.scalarItem != nil {
-		return s.scalarItem
-	} else if s.oneofItem != nil {
-		return s.oneofItem
-	} else if s.mapItem != nil {
-		return s.mapItem
-	} else if s.arrayItem != nil {
-		return s.arrayItem
-	} else if s.anyItem != nil {
-		return s.anyItem
-	} else if s.enumItem != nil {
-		return s.enumItem
-	} else if s.refItem != nil {
-		return s.refItem
-	}
-	return nil
-
-}
-
-func (s *Schema) ToJ5Proto() (*schema_j5pb.Schema, error) {
-	item := s.Type()
-	if item == nil {
-		return nil, fmt.Errorf("no schema type set")
-	}
-	return item.ToJ5Proto()
+type RootSchema interface {
+	Schema
+	AsRef() *RefSchema
+	FullName() string
 }
 
 type RefSchema struct {
-	Name protoreflect.FullName
-	To   *Schema
+	Package string
+	Schema  string
+	To      RootSchema
 }
 
+func (s *RefSchema) FullName() string {
+	return fmt.Sprintf("%s.%s", s.Package, s.Schema)
+}
+
+//func (s *RefSchema) AsRef() *RefSchema {
+//	return s
+//}
+
 func (s *RefSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
+	if s == nil {
+		return nil, fmt.Errorf("Nil Ref!")
+	}
+	if s.Schema == "" {
+		if s.To == nil {
+			return nil, fmt.Errorf("no schema or To link for ref")
+		}
+		switch t := s.To.(type) {
+		case *ObjectSchema:
+			s.Schema = t.Name
+			s.Package = t.Package
+		case *OneofSchema:
+			s.Schema = t.Name
+			s.Package = t.Package
+		case *EnumSchema:
+			s.Schema = t.Name
+			s.Package = t.Package
+		default:
+			return nil, fmt.Errorf("unsupported ref type %T", t)
+		}
+	}
 	return &schema_j5pb.Schema{
 		Type: &schema_j5pb.Schema_Ref{
-			Ref: string(s.Name),
+			Ref: &schema_j5pb.Ref{
+				Package: s.Package,
+				Schema:  s.Schema,
+			},
 		},
 	}, nil
 }
@@ -77,57 +83,46 @@ func (s *RefSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
 type ScalarSchema struct {
 	// subset of the available schema types, everything excluding ref, oneof
 	// wrapper, array, object, map
-	proto *schema_j5pb.Schema
+	Proto *schema_j5pb.Schema
 
 	Kind              protoreflect.Kind
 	WellKnownTypeName protoreflect.FullName
 }
 
 func (s *ScalarSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
-	return s.proto, nil
+	return s.Proto, nil
 }
 
 type AnySchema struct {
-	Description string
+	Description *string
 }
 
 func (s *AnySchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
 	return &schema_j5pb.Schema{
-		Description: s.Description,
 		Type: &schema_j5pb.Schema_Any{
-			Any: &schema_j5pb.AnySchemaItem{},
+			Any: &schema_j5pb.Any{},
 		},
 	}, nil
 }
 
 type EnumSchema struct {
-	Description string
-	NamePrefix  string
-	Descriptor  protoreflect.EnumDescriptor
-	Options     []*schema_j5pb.EnumItem_Value
+	SchemaRoot
+
+	NamePrefix string
+	Options    []*schema_j5pb.Enum_Value
 }
 
 func (s *EnumSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
 	return &schema_j5pb.Schema{
-		Description: s.Description,
-		Type: &schema_j5pb.Schema_EnumItem{
-			EnumItem: &schema_j5pb.EnumItem{
-				Options: s.Options,
+		Type: &schema_j5pb.Schema_Enum{
+			Enum: &schema_j5pb.Enum{
+				Name:        s.Name,
+				Description: s.Description,
+				Options:     s.Options,
+				Prefix:      s.NamePrefix,
 			},
 		},
 	}, nil
-}
-
-func walkName(src protoreflect.Descriptor) string {
-	goTypeName := string(src.Name())
-	parent := src.Parent()
-	// if parent is a message
-	msg, ok := parent.(protoreflect.MessageDescriptor)
-	if !ok {
-		return goTypeName
-	}
-
-	return fmt.Sprintf("%s_%s", walkName(msg), goTypeName)
 }
 
 type PropertySet []*ObjectProperty
@@ -142,19 +137,9 @@ func (ps PropertySet) ByJSONName(name string) *ObjectProperty {
 }
 
 type ObjectSchema struct {
-	Description string
-	Properties  PropertySet
-	Rules       *schema_j5pb.ObjectRules
-
-	ProtoMessage protoreflect.MessageDescriptor
-}
-
-func (s *ObjectSchema) GoTypeName() string {
-	return walkName(s.ProtoMessage)
-}
-
-func (s *ObjectSchema) GrpcPackageName() string {
-	return string(s.ProtoMessage.ParentFile().Package())
+	SchemaRoot
+	Properties PropertySet
+	Rules      *schema_j5pb.Object_Rules
 }
 
 func (s *ObjectSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
@@ -167,47 +152,21 @@ func (s *ObjectSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
 		properties = append(properties, property)
 	}
 	return &schema_j5pb.Schema{
-		Description: s.Description,
-		Type: &schema_j5pb.Schema_ObjectItem{
-			ObjectItem: &schema_j5pb.ObjectItem{
-				Properties:       properties,
-				Rules:            s.Rules,
-				ProtoMessageName: string(s.ProtoMessage.Name()),
-				ProtoFullName:    string(s.ProtoMessage.FullName()),
+		Type: &schema_j5pb.Schema_Object{
+			Object: &schema_j5pb.Object{
+				Description: s.Description,
+				Name:        s.Name,
+				Properties:  properties,
+				Rules:       s.Rules,
 			},
 		},
 	}, nil
 }
 
 type OneofSchema struct {
-	Description string
-	Properties  PropertySet
-	Rules       *schema_j5pb.OneofRules
-
-	// optional, only for proto types, otherwise is a oneof in the outer message
-	ProtoMessage protoreflect.MessageDescriptor
-
-	OneofDescriptor protoreflect.OneofDescriptor
-}
-
-func (s *OneofSchema) GoTypeName() string {
-	if s.ProtoMessage != nil {
-		return walkName(s.ProtoMessage)
-	}
-	if s.OneofDescriptor != nil {
-		return walkName(s.OneofDescriptor)
-	}
-	panic("invalid oneof, no message or descriptor set")
-}
-
-func (s *OneofSchema) GrpcPackageName() string {
-	if s.ProtoMessage != nil {
-		return string(s.ProtoMessage.ParentFile().Package())
-	}
-	if s.OneofDescriptor != nil {
-		return string(s.OneofDescriptor.ParentFile().Package())
-	}
-	panic("invalid oneof, no message or descriptor set")
+	SchemaRoot
+	Properties PropertySet
+	Rules      *schema_j5pb.Oneof_Rules
 }
 
 func (s *OneofSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
@@ -219,27 +178,23 @@ func (s *OneofSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
 		}
 		properties = append(properties, property)
 	}
-	wrapperItem := &schema_j5pb.OneofWrapperItem{
-		Properties: properties,
-		Rules:      s.Rules,
-	}
 
-	if s.ProtoMessage != nil {
-		wrapperItem.ProtoMessageName = string(s.ProtoMessage.Name())
-		wrapperItem.ProtoFullName = string(s.ProtoMessage.FullName())
-	}
 	return &schema_j5pb.Schema{
-		Description: s.Description,
-		Type: &schema_j5pb.Schema_OneofWrapper{
-			OneofWrapper: wrapperItem,
+		Type: &schema_j5pb.Schema_Oneof{
+			Oneof: &schema_j5pb.Oneof{
+				Description: s.Description,
+				Name:        s.Name,
+				Properties:  properties,
+				Rules:       s.Rules,
+			},
 		},
 	}, nil
 }
 
 type ObjectProperty struct {
-	Schema *Schema
+	Schema Schema
 
-	ProtoField []protoreflect.FieldDescriptor
+	ProtoField []protoreflect.FieldNumber
 
 	JSONName string
 
@@ -258,7 +213,7 @@ func (prop *ObjectProperty) ToJ5Proto() (*schema_j5pb.ObjectProperty, error) {
 	}
 	fieldPath := make([]int32, len(prop.ProtoField))
 	for idx, field := range prop.ProtoField {
-		fieldPath[idx] = int32(field.Number())
+		fieldPath[idx] = int32(field)
 	}
 	return &schema_j5pb.ObjectProperty{
 		Schema:             proto,
@@ -273,21 +228,9 @@ func (prop *ObjectProperty) ToJ5Proto() (*schema_j5pb.ObjectProperty, error) {
 
 }
 
-func (prop *ObjectProperty) GoFieldName() string {
-	return strcase.ToCamel(prop.JSONName)
-}
-
-func (prop *ObjectProperty) ProtoName() (string, error) {
-	if len(prop.ProtoField) != 1 {
-		return "", fmt.Errorf("invalid property for proto name")
-	}
-	return string(prop.ProtoField[0].Name()), nil
-}
-
 type MapSchema struct {
-	Description string
-	Schema      *Schema
-	Rules       *schema_j5pb.MapRules
+	Schema Schema
+	Rules  *schema_j5pb.Map_Rules
 }
 
 func (s *MapSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
@@ -297,9 +240,8 @@ func (s *MapSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
 	}
 
 	return &schema_j5pb.Schema{
-		Description: s.Description,
-		Type: &schema_j5pb.Schema_MapItem{
-			MapItem: &schema_j5pb.MapItem{
+		Type: &schema_j5pb.Schema_Map{
+			Map: &schema_j5pb.Map{
 				ItemSchema: item,
 				Rules:      s.Rules,
 			},
@@ -308,9 +250,8 @@ func (s *MapSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
 }
 
 type ArraySchema struct {
-	Description string
-	Schema      *Schema
-	Rules       *schema_j5pb.ArrayRules
+	Schema Schema
+	Rules  *schema_j5pb.Array_Rules
 }
 
 func (s *ArraySchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
@@ -321,9 +262,8 @@ func (s *ArraySchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
 	}
 
 	return &schema_j5pb.Schema{
-		Description: s.Description,
-		Type: &schema_j5pb.Schema_ArrayItem{
-			ArrayItem: &schema_j5pb.ArrayItem{
+		Type: &schema_j5pb.Schema_Array{
+			Array: &schema_j5pb.Array{
 				Items: item,
 				Rules: s.Rules,
 			},
