@@ -5,45 +5,70 @@ package j5.schema.v1;
 option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
 
 message Schema {
-  string description = 1;
-
   oneof type {
     // Special Cases
-    string ref = 10;
+    Ref ref = 10;
+    Any any = 11;
 
-    AnySchemaItem any = 11;
-    OneofWrapperItem oneof_wrapper = 12;
-    // OneOf
-    // AnyOf
+    // Named Root Types
+    Oneof oneof = 12;
+    Object object = 21;
+    Enum enum = 32;
 
     // Complex Types
-    ArrayItem array_item = 20;
-    ObjectItem object_item = 21;
-    MapItem map_item = 22;
+    Array array = 20;
+    Map map = 22;
 
     // Scalar Types
-    StringItem string_item = 30;
-    IntegerItem integer_item = 31;
-    EnumItem enum_item = 32;
-    NumberItem number_item = 33;
-    BooleanItem boolean_item = 34;
+    String string = 30;
+    Integer integer = 31;
+    Float float = 33;
+    Boolean boolean = 34;
   }
 }
 
-message StringItem {
-  optional string format = 1;
-  optional string example = 2;
-  StringRules rules = 3;
+message Ref {
+  string package = 1;
+  string schema = 2;
 }
 
-message StringRules {
-  optional string pattern = 1;
-  optional uint64 min_length = 2;
-  optional uint64 max_length = 3;
+// Allows anything
+message Any {}
+
+message Object {
+  string name = 1;
+  string description = 2;
+
+  repeated ObjectProperty properties = 3;
+  bool additional_properties = 4;
+  Rules rules = 5;
+
+  message Rules {
+    optional uint64 min_properties = 1;
+    optional uint64 max_properties = 2;
+  }
 }
 
-message EnumItem {
-  repeated Value options = 1;
+// Similar to ObjectItem (it is an object in JSON Schema), but where exactly one
+// property should be set
+message Oneof {
+  string name = 1;
+  string description = 2;
+
+  repeated ObjectProperty properties = 3;
+  Rules rules = 4;
+
+  message Rules {}
+}
+
+message Enum {
+  string name = 1;
+  string description = 2;
+
+  string prefix = 3;
+
+  repeated Value options = 4;
+
   message Value {
     string name = 1;
     int32 number = 2;
@@ -51,49 +76,81 @@ message EnumItem {
   }
 }
 
-message NumberItem {
-  string format = 1;
-  NumberRules rules = 2;
+message String {
+  optional string format = 1;
+  optional string example = 2;
+  Rules rules = 3;
+
+  message Rules {
+    optional string pattern = 1;
+    optional uint64 min_length = 2;
+    optional uint64 max_length = 3;
+  }
 }
 
-message NumberRules {
-  optional bool exclusive_maximum = 1;
-  optional bool exclusive_minimum = 2;
-  optional double minimum = 3;
-  optional double maximum = 4;
-  optional double multiple_of = 5;
+message Float {
+  Format format = 1;
+  Rules rules = 2;
+
+  enum Format {
+    FORMAT_UNSPECIFIED = 0;
+    FORMAT_FLOAT32 = 1;
+    FORMAT_FLOAT64 = 2;
+  }
+
+  message Rules {
+    optional bool exclusive_maximum = 1;
+    optional bool exclusive_minimum = 2;
+    optional double minimum = 3;
+    optional double maximum = 4;
+    optional double multiple_of = 5;
+  }
 }
 
-message IntegerItem {
-  string format = 1;
-  IntegerRules rules = 2;
+message Integer {
+  Format format = 1;
+  Rules rules = 2;
+
+  enum Format {
+    FORMAT_UNSPECIFIED = 0;
+    FORMAT_INT32 = 1;
+    FORMAT_INT64 = 2;
+    FORMAT_UINT32 = 3;
+    FORMAT_UINT64 = 4;
+  }
+
+  message Rules {
+    optional bool exclusive_maximum = 1;
+    optional bool exclusive_minimum = 2;
+    optional int64 minimum = 3;
+    optional int64 maximum = 4;
+    optional int64 multiple_of = 5;
+  }
 }
 
-message IntegerRules {
-  optional bool exclusive_maximum = 1;
-  optional bool exclusive_minimum = 2;
-  optional int64 minimum = 3;
-  optional int64 maximum = 4;
-  optional int64 multiple_of = 5;
+message Boolean {
+  Rules rules = 1;
+
+  message Rules {
+    optional bool const = 1;
+  }
 }
 
-message BooleanItem {
-  BooleanRules rules = 1;
-}
-
-message BooleanRules {
-  optional bool const = 1;
-}
-
-message ArrayItem {
-  ArrayRules rules = 1;
+message Array {
+  Rules rules = 1;
   Schema items = 2;
+
+  message Rules {
+    optional uint64 min_items = 1;
+    optional uint64 max_items = 2;
+    optional bool unique_items = 3;
+  }
 }
 
-message ArrayRules {
-  optional uint64 min_items = 1;
-  optional uint64 max_items = 2;
-  optional bool unique_items = 3;
+message Map {
+  Schema item_schema = 1;
+  Rules rules = 2;
+  message Rules {}
 }
 
 message ObjectProperty {
@@ -111,38 +168,3 @@ message ObjectProperty {
   // the field containing the property type.
   repeated int32 proto_field = 11;
 }
-
-message ObjectItem {
-  ObjectRules rules = 1;
-  repeated ObjectProperty properties = 2;
-  bool additional_properties = 3;
-
-  string proto_message_name = 4;
-  string proto_full_name = 5;
-}
-
-message ObjectRules {
-  optional uint64 min_properties = 1;
-  optional uint64 max_properties = 2;
-}
-
-// Similar to ObjectItem (it is an object in JSON Schema), but where exactly one
-// property should be set
-message OneofWrapperItem {
-  OneofRules rules = 1;
-  repeated ObjectProperty properties = 2;
-  string proto_message_name = 4;
-  string proto_full_name = 5;
-}
-
-message OneofRules {}
-
-message MapItem {
-  Schema item_schema = 1;
-  MapRules rules = 2;
-}
-
-message MapRules {}
-
-// Allows anything
-message AnySchemaItem {}

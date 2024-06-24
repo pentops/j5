@@ -2,25 +2,39 @@ package structure
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
 
+	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 )
 
-type ProseResolver interface {
-	ResolveProse(filename string) (string, error)
-}
+func ResolveProse(source *source_j5pb.SourceImage, api *schema_j5pb.API) error {
+	//resolver ProseResolver, rootConfig *config_j5pb.Config, api *schema_j5pb.API) error {
 
-type DirResolver string
+	resolver := imageResolver(source.Prose)
 
-func (dr DirResolver) ResolveProse(filename string) (string, error) {
-	data, err := os.ReadFile(filepath.Join(string(dr), filename))
-	if err != nil {
-		return "", err
+	configsByName := map[string]*config_j5pb.PackageConfig{}
+	for _, cfg := range source.Packages {
+		configsByName[cfg.Name] = cfg
 	}
-	return string(data), nil
+
+	for _, pkg := range api.Packages {
+		config, ok := configsByName[pkg.Name]
+		if !ok {
+			continue
+		}
+		var prose string
+		if config.Prose != "" {
+			resolved, err := resolver.ResolveProse(config.Prose)
+			if err != nil {
+				return fmt.Errorf("prose resolver: package %s: %w", pkg.Name, err)
+			}
+			prose = removeMarkdownHeader(resolved)
+		}
+		pkg.Introduction = prose
+	}
+	return nil
 }
 
 type mapResolver map[string]string
@@ -58,7 +72,7 @@ func removeMarkdownHeader(data string) string {
 	return strings.Join(lines, "\n")
 }
 
-func imageResolver(proseFiles []*source_j5pb.ProseFile) ProseResolver {
+func imageResolver(proseFiles []*source_j5pb.ProseFile) mapResolver {
 	mr := make(mapResolver)
 	for _, proseFile := range proseFiles {
 		mr[proseFile.Path] = string(proseFile.Content)

@@ -16,12 +16,6 @@ type Document struct {
 	Components Components `json:"components"`
 }
 
-func (dd *Document) GetSchema(name string) (*Schema, bool) {
-	name = strings.TrimPrefix(name, "#/components/schemas/")
-	schema, ok := dd.Components.Schemas[name]
-	return schema, ok
-}
-
 type Info struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
@@ -95,47 +89,114 @@ type Parameter struct {
 	Schema      *Schema `json:"schema"`
 }
 
-func (dd *Document) addMethod(method *schema_j5pb.Method) error {
-
-	parameters := make([]Parameter, 0)
-	for _, param := range method.PathParameters {
-		schema, err := ConvertSchema(param.Schema)
+func (dd *Document) addService(service *schema_j5pb.Service) error {
+	for _, method := range service.Methods {
+		err := dd.addMethod(service, method)
 		if err != nil {
-			return fmt.Errorf("path param %s: %w", param.Name, err)
+			return fmt.Errorf("method %s: %w", method.FullGrpcName, err)
 		}
-		parameters = append(parameters, Parameter{
-			Name:        param.Name,
+	}
+	return nil
+}
+
+var methodShortString = map[schema_j5pb.HTTPMethod]string{
+	schema_j5pb.HTTPMethod_HTTP_METHOD_GET:    "get",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_POST:   "post",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_PUT:    "put",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_DELETE: "delete",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_PATCH:  "patch",
+}
+
+func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.Method) error {
+
+	pathParameterNames := map[string]struct{}{}
+	pathParts := strings.Split(method.HttpPath, "/")
+	for _, part := range pathParts {
+		if !strings.HasPrefix(part, ":") {
+			continue
+		}
+		fieldName := strings.TrimPrefix(part, ":")
+		pathParameterNames[fieldName] = struct{}{}
+	}
+
+	pathProperties := make([]*schema_j5pb.ObjectProperty, 0)
+	bodyProperties := make([]*schema_j5pb.ObjectProperty, 0)
+
+	requestSchema := method.RequestBody.GetObject()
+	if requestSchema == nil {
+		return fmt.Errorf("request body was not an object: %T", method.RequestBody)
+	}
+	for _, prop := range requestSchema.Properties {
+		_, isPath := pathParameterNames[prop.Name]
+		if isPath {
+			pathProperties = append(pathProperties, prop)
+		} else {
+			bodyProperties = append(bodyProperties, prop)
+		}
+	}
+
+	operation := &Operation{
+		OperationHeader: OperationHeader{
+			Method:          methodShortString[method.HttpMethod],
+			Path:            method.HttpPath,
+			OperationID:     method.FullGrpcName,
+			GrpcMethodName:  method.Name,
+			GrpcServiceName: service.Name,
+
+			Parameters: make([]Parameter, 0, len(pathProperties)+len(bodyProperties)),
+		},
+	}
+
+	for _, property := range pathProperties {
+		schema, err := ConvertSchema(property.Schema)
+		if err != nil {
+			return fmt.Errorf("path param %s: %w", property.Name, err)
+		}
+		operation.OperationHeader.Parameters = append(operation.OperationHeader.Parameters, Parameter{
+			Name:        property.Name,
 			In:          "path",
-			Description: param.Description,
+			Description: property.Description,
 			Required:    true,
 			Schema:      schema,
 		})
 	}
 
-	for _, param := range method.QueryParameters {
-		schema, err := ConvertSchema(param.Schema)
-		if err != nil {
-			return fmt.Errorf("query param %s: %w", param.Name, err)
+	if method.HttpMethod == schema_j5pb.HTTPMethod_HTTP_METHOD_GET {
+		for _, property := range bodyProperties {
+			schema, err := ConvertSchema(property.Schema)
+			if err != nil {
+				return fmt.Errorf("query param %s: %w", property.Name, err)
+			}
+			operation.OperationHeader.Parameters = append(operation.OperationHeader.Parameters, Parameter{
+				Name:        property.Name,
+				In:          "query",
+				Description: property.Description,
+				Required:    property.Required,
+				Schema:      schema,
+			})
 		}
-		parameters = append(parameters, Parameter{
-			Name:        param.Name,
-			In:          "query",
-			Description: param.Description,
-			Required:    param.Required,
-			Schema:      schema,
-		})
-	}
-
-	operation := &Operation{
-		OperationHeader: OperationHeader{
-			Method:          method.HttpMethod,
-			Path:            method.HttpPath,
-			OperationID:     method.FullGrpcName,
-			GrpcMethodName:  method.GrpcMethodName,
-			GrpcServiceName: method.GrpcServiceName,
-
-			Parameters: parameters,
-		},
+	} else {
+		newRequest := &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_Object{
+				Object: &schema_j5pb.Object{
+					Properties:  bodyProperties,
+					Name:        requestSchema.Name,
+					Description: requestSchema.Description,
+				},
+			},
+		}
+		requestSchema, err := ConvertSchema(newRequest)
+		if err != nil {
+			return err
+		}
+		operation.RequestBody = &RequestBody{
+			Required: true,
+			Content: OperationContent{
+				JSON: &OperationSchema{
+					Schema: requestSchema,
+				},
+			},
+		}
 	}
 
 	responseSchema, err := ConvertSchema(method.ResponseBody)
@@ -151,21 +212,6 @@ func (dd *Document) addMethod(method *schema_j5pb.Method) error {
 			},
 		},
 	}}
-
-	if method.RequestBody != nil {
-		requestSchema, err := ConvertSchema(method.RequestBody)
-		if err != nil {
-			return err
-		}
-		operation.RequestBody = &RequestBody{
-			Required: true,
-			Content: OperationContent{
-				JSON: &OperationSchema{
-					Schema: requestSchema,
-				},
-			},
-		}
-	}
 
 	found := false
 	for _, pathItem := range dd.Paths {

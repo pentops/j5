@@ -36,7 +36,7 @@ func NewRawUploader() *RawUploader {
 
 type J5Upload struct {
 	Image   *source_j5pb.SourceImage
-	JDef    *schema_j5pb.API
+	J5API   *schema_j5pb.API
 	Swagger *swagger.Document
 }
 
@@ -50,7 +50,7 @@ func (uu *RawUploader) UploadJsonAPI(ctx context.Context, info FullInfo, data J5
 		return err
 	}
 
-	jDefJSON, err := jdef.FromProto(data.JDef)
+	jDefJSON, err := jdef.FromProto(data.J5API)
 	if err != nil {
 		return err
 	}
@@ -102,16 +102,6 @@ type FullInfo struct {
 
 func (uu *FSUploader) UploadGoModule(ctx context.Context, commitInfo *source_j5pb.CommitInfo, goModData []byte, packageRoot string) error {
 
-	/*
-		dest, err := os.MkdirTemp("", "j5-workdir")
-		if err != nil {
-			return err
-		}
-		packageRoot := filepath.Join(dest, "package")
-
-		defer os.RemoveAll(dest)
-	*/
-
 	gomodBytes, err := os.ReadFile(filepath.Join(packageRoot, "go.mod"))
 	if err != nil {
 		return err
@@ -154,54 +144,3 @@ func (uu *FSUploader) UploadGoModule(ctx context.Context, commitInfo *source_j5p
 	// TODO: This is a stub
 	return fmt.Errorf("not implemented")
 }
-
-/*
-func (uu *FSUploader) UploadJsonAPI(ctx context.Context, info FullInfo, data J5Upload) error {
-
-	log.WithFields(ctx, map[string]interface{}{
-		"package": info.Package,
-		"version": info.Version,
-		"aliases": info.Commit.Aliases,
-	}).Info("uploading jsonapi")
-
-	image, err := proto.Marshal(data.Image)
-	if err != nil {
-		return err
-	}
-
-	jDefJSON, err := json.Marshal(data.JDef)
-	if err != nil {
-		return err
-	}
-
-	swaggerJSON, err := json.Marshal(data.Swagger)
-	if err != nil {
-		return err
-	}
-
-	versionDests := make([]string, 0, len(info.Commit.Aliases)+1)
-	versionDests = append(versionDests, info.Commit.Hash)
-	versionDests = append(versionDests, info.Commit.Aliases...)
-	for _, version := range versionDests {
-		p := path.Join(uu.JsonPrefix, info.Package, version)
-		log.WithField(ctx, "path", p).Info("uploading image")
-
-		if err := uu.fs.Put(ctx, path.Join(p, "image.bin"), bytes.NewReader(image), map[string]string{
-			"Content-Type": "application/octet-stream",
-		}); err != nil {
-			return err
-		}
-		if err := uu.fs.Put(ctx, path.Join(p, "jdef.json"), bytes.NewReader(jDefJSON), map[string]string{
-			"Content-Type": "application/json",
-		}); err != nil {
-			return err
-		}
-		if err := uu.fs.Put(ctx, path.Join(p, "swagger.json"), bytes.NewReader(swaggerJSON), map[string]string{
-			"Content-Type": "application/json",
-		}); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}*/

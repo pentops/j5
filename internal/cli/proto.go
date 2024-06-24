@@ -8,8 +8,6 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/pentops/j5/builder/builder"
-	"github.com/pentops/j5/builder/docker"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -17,56 +15,8 @@ import (
 
 func protoSet() *commander.CommandSet {
 	protoGroup := commander.NewCommandSet()
-	protoGroup.Add("build", commander.NewCommand(runProtoBuild))
 	protoGroup.Add("request", commander.NewCommand(runProtoRequest))
 	return protoGroup
-}
-
-func runProtoBuild(ctx context.Context, cfg struct {
-	SourceConfig
-	Out  string `flag:"out" default:"" description:"Output directory for generated files. Default discards output, use to test that the proto will build"`
-	Pull bool   `flag:"pull" default:"false" description:"Pull images from registry, even if they already exist"`
-}) error {
-
-	src, err := cfg.GetSource(ctx)
-	if err != nil {
-		return err
-	}
-
-	var dest builder.FS
-
-	if cfg.Out == "" {
-		dest = NewDiscardFS()
-	} else {
-		dest, err = NewLocalFS(cfg.Out)
-		if err != nil {
-			return err
-		}
-	}
-
-	dockerWrapper, err := docker.NewDockerWrapper(docker.DefaultRegistryAuths)
-	if err != nil {
-		return err
-	}
-
-	bb := builder.NewBuilder(dockerWrapper)
-
-	if !cfg.Pull {
-		for _, builder := range src.J5Config().ProtoBuilds {
-			for _, plugin := range builder.Plugins {
-				plugin.Docker.Pull = false
-			}
-		}
-	}
-
-	err = bb.BuildAll(ctx, src, dest)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("All plugins built successfully")
-
-	return nil
 }
 
 func runProtoRequest(ctx context.Context, cfg struct {
@@ -74,12 +24,12 @@ func runProtoRequest(ctx context.Context, cfg struct {
 	Command string `flag:"command" default:"" description:"Pipe the output to a builder command and print files"`
 }) error {
 
-	src, err := cfg.GetSource(ctx)
+	src, err := cfg.GetInput(ctx)
 	if err != nil {
 		return err
 	}
 
-	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, ".")
+	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx)
 	if err != nil {
 		return err
 	}

@@ -5,37 +5,37 @@ package j5.config.v1;
 option go_package = "github.com/pentops/j5/gen/j5/config/v1/config_j5pb";
 
 // Config represents the config file (j5.yaml) for a repo.
-message Config {
-  repeated PackageConfig packages = 1;
-
-  CodecOptions options = 2;
-  RegistryConfig registry = 3;
-
-  repeated ProtoBuildConfig proto_builds = 4;
-
-  repeated BuildPlugin plugins = 5;
-
-  repeated GenerateConfig generate = 6;
-
-  repeated BundleConfig bundles = 8;
+message RepoConfigFile {
+  repeated BuildPlugin plugins = 3;
+  repeated GenerateConfig generate = 4;
+  repeated BundleReference bundles = 6;
 
   GitConfig git = 7;
+
+  // Inline Bundle
+  RegistryConfig registry = 8;
+  repeated PackageConfig packages = 9;
+  PublishConfig publish = 10;
+  CodecOptions options = 11;
 }
 
-message BundleConfig {
+message BundleConfigFile {
+  RegistryConfig registry = 1;
+  repeated PackageConfig packages = 2;
+  PublishConfig publish = 3;
+  CodecOptions options = 4;
+}
+
+message BundleReference {
   string name = 1;
   string dir = 2;
+  repeated string deps = 3;
 }
 
 message PackageConfig {
   string label = 1;
   string name = 2;
   string prose = 3;
-}
-
-message RegistryConfig {
-  string organization = 1;
-  string name = 2;
 }
 
 message CodecOptions {
@@ -53,20 +53,51 @@ message GitConfig {
   string main = 1;
 }
 
-message GenerateConfig {
-  string name = 1;
-  repeated string src = 2;
-  string out = 3;
-  map<string, string> opts = 4;
+message Input {
+  oneof type {
+    string local = 1; // name of a local bundle
+    Repo repo = 2;
+    Registry registry = 3;
+  }
 
-  repeated BuildPlugin plugins = 5;
+  message Repo {
+    string root = 1; // file:// or git://
+    string dir = 2;
+    string bundle = 3;
+  }
+
+  message Registry {
+    string organization = 1;
+    string name = 2;
+    string version = 3;
+  }
 }
 
-message ProtoBuildConfig {
-  string name = 1;
-  repeated BuildPlugin plugins = 2;
+message PublishConfig {
+  OutputType output_format = 3;
+  repeated string bundles = 4;
 
-  oneof package_type {
+  map<string, string> opts = 5;
+  repeated BuildPlugin plugins = 6;
+}
+
+message RegistryConfig {
+  string organization = 1;
+  string name = 2;
+}
+
+message GenerateConfig {
+  string name = 1;
+  repeated Input inputs = 2;
+
+  map<string, string> opts = 4;
+  repeated BuildPlugin plugins = 5;
+
+  string output = 3;
+}
+
+message OutputType {
+  oneof type {
     GoProxy go_proxy = 10;
   }
 
@@ -92,12 +123,14 @@ message BuildPlugin {
 
   Plugin type = 3;
 
-  // a docker container which will receive stdin and pipe stdout
-  // input is google.protobuf.compiler.CodeGeneratorRequest
-  // output is google.protobuf.compiler.CodeGeneratorResponse
-  DockerSpec docker = 4;
+  oneof runner {
+    // a docker container which will receive stdin and pipe stdout
+    // input is google.protobuf.compiler.CodeGeneratorRequest
+    // output is google.protobuf.compiler.CodeGeneratorResponse
+    DockerSpec docker = 4;
 
-  CommandSpec command = 5;
+    CommandSpec command = 5;
+  }
 
   map<string, string> opts = 7;
 }

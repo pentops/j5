@@ -1,6 +1,9 @@
 package jdef
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/schema/swagger"
 )
@@ -17,15 +20,17 @@ func FromProto(protoSchema *schema_j5pb.API) (*API, error) {
 			return nil, err
 		}
 		out.Packages[idx] = pkg
-	}
-	for key, protoSchema := range protoSchema.Schemas {
-		schema, err := fromProtoSchema(protoSchema)
-		if err != nil {
-			return nil, err
-		}
-		out.Schemas[key] = schema
-	}
 
+		for key, protoSchema := range protoPackage.Schemas {
+			schema, err := fromProtoSchema(protoSchema)
+			if err != nil {
+				return nil, err
+			}
+			fullKey := fmt.Sprintf("%s.%s", pkg.Name, key)
+			out.Schemas[fullKey] = schema
+		}
+
+	}
 	return out, nil
 }
 
@@ -37,13 +42,15 @@ func fromProtoPackage(protoPackage *schema_j5pb.Package) (*Package, error) {
 
 		Introduction: protoPackage.Introduction,
 	}
-	out.Methods = make([]*Method, len(protoPackage.Methods))
-	for idx, protoMethod := range protoPackage.Methods {
-		method, err := fromProtoMethod(protoMethod)
-		if err != nil {
-			return nil, err
+	out.Methods = make([]*Method, 0)
+	for _, protoService := range protoPackage.Services {
+		for _, protoMethod := range protoService.Methods {
+			method, err := fromProtoMethod(protoService, protoMethod)
+			if err != nil {
+				return nil, err
+			}
+			out.Methods = append(out.Methods, method)
 		}
-		out.Methods[idx] = method
 	}
 	out.Events = make([]*EventSpec, len(protoPackage.Events))
 	for idx, protoEvent := range protoPackage.Events {
@@ -56,13 +63,21 @@ func fromProtoPackage(protoPackage *schema_j5pb.Package) (*Package, error) {
 	return out, nil
 }
 
-func fromProtoMethod(protoMethod *schema_j5pb.Method) (*Method, error) {
+var methodShortString = map[schema_j5pb.HTTPMethod]string{
+	schema_j5pb.HTTPMethod_HTTP_METHOD_GET:    "get",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_POST:   "post",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_PUT:    "put",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_DELETE: "delete",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_PATCH:  "patch",
+}
+
+func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb.Method) (*Method, error) {
 	out := &Method{
-		GrpcServiceName: protoMethod.GrpcServiceName,
-		GrpcMethodName:  protoMethod.GrpcMethodName,
+		GrpcServiceName: protoService.Name,
+		GrpcMethodName:  protoMethod.Name,
 		FullGrpcName:    protoMethod.FullGrpcName,
 
-		HTTPMethod: protoMethod.HttpMethod,
+		HTTPMethod: methodShortString[protoMethod.HttpMethod],
 		HTTPPath:   protoMethod.HttpPath,
 	}
 	if protoMethod.RequestBody != nil {
@@ -72,30 +87,83 @@ func fromProtoMethod(protoMethod *schema_j5pb.Method) (*Method, error) {
 		}
 		out.RequestBody = schema
 	}
-	if protoMethod.ResponseBody != nil {
-		schema, err := fromProtoSchema(protoMethod.ResponseBody)
-		if err != nil {
-			return nil, err
+
+	pathParameterNames := map[string]struct{}{}
+	pathParts := strings.Split(protoMethod.HttpPath, "/")
+	for _, part := range pathParts {
+		if !strings.HasPrefix(part, ":") {
+			continue
 		}
-		out.ResponseBody = schema
+		fieldName := strings.TrimPrefix(part, ":")
+		pathParameterNames[fieldName] = struct{}{}
 	}
 
-	out.QueryParameters = make([]*Parameter, len(protoMethod.QueryParameters))
-	for idx, protoParam := range protoMethod.QueryParameters {
-		param, err := fromProtoParameter(protoParam)
+	pathProperties := make([]*schema_j5pb.ObjectProperty, 0)
+	bodyProperties := make([]*schema_j5pb.ObjectProperty, 0)
+
+	requestSchema := protoMethod.RequestBody.GetObject()
+	if requestSchema == nil {
+		return nil, fmt.Errorf("request body was not an object: %T", protoMethod.RequestBody)
+	}
+	for _, prop := range requestSchema.Properties {
+		_, isPath := pathParameterNames[prop.Name]
+		if isPath {
+			pathProperties = append(pathProperties, prop)
+		} else {
+			bodyProperties = append(bodyProperties, prop)
+		}
+	}
+
+	out.PathParameters = make([]*Parameter, len(pathProperties))
+	for idx, property := range pathProperties {
+		schema, err := fromProtoSchema(property.Schema)
+		if err != nil {
+			return nil, fmt.Errorf("path param %s: %w", property.Name, err)
+		}
+		out.PathParameters[idx] = &Parameter{
+			Name:        property.Name,
+			Description: property.Description,
+			Required:    true,
+			Schema:      *schema,
+		}
+	}
+
+	if protoMethod.HttpMethod == schema_j5pb.HTTPMethod_HTTP_METHOD_GET {
+		out.QueryParameters = make([]*Parameter, len(bodyProperties))
+		for idx, property := range bodyProperties {
+			schema, err := fromProtoSchema(property.Schema)
+			if err != nil {
+				return nil, fmt.Errorf("query param %s: %w", property.Name, err)
+			}
+			out.QueryParameters[idx] = &Parameter{
+				Name:        property.Name,
+				Description: property.Description,
+				Required:    property.Required,
+				Schema:      *schema,
+			}
+		}
+	} else {
+		newRequest := &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_Object{
+				Object: &schema_j5pb.Object{
+					Properties:  bodyProperties,
+					Name:        requestSchema.Name,
+					Description: requestSchema.Description,
+				},
+			},
+		}
+		requestSchema, err := fromProtoSchema(newRequest)
 		if err != nil {
 			return nil, err
 		}
-		out.QueryParameters[idx] = param
+		out.RequestBody = requestSchema
 	}
-	out.PathParameters = make([]*Parameter, len(protoMethod.PathParameters))
-	for idx, protoParam := range protoMethod.PathParameters {
-		param, err := fromProtoParameter(protoParam)
-		if err != nil {
-			return nil, err
-		}
-		out.PathParameters[idx] = param
+
+	responseSchema, err := fromProtoSchema(protoMethod.ResponseBody)
+	if err != nil {
+		return nil, err
 	}
+	out.ResponseBody = responseSchema
 	return out, nil
 }
 
@@ -109,20 +177,6 @@ func fromProtoEvent(protoEvent *schema_j5pb.EventSpec) (*EventSpec, error) {
 	}
 	out.Schema = schema
 
-	return out, nil
-}
-
-func fromProtoParameter(protoParam *schema_j5pb.Parameter) (*Parameter, error) {
-	out := &Parameter{
-		Name:        protoParam.Name,
-		Description: protoParam.Description,
-		Required:    protoParam.Required,
-	}
-	schema, err := fromProtoSchema(protoParam.Schema)
-	if err != nil {
-		return nil, err
-	}
-	out.Schema = *schema
 	return out, nil
 }
 

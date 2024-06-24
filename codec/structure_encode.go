@@ -14,6 +14,17 @@ type fieldSpec struct {
 	children []fieldSpec
 }
 
+func resolveType(schema j5reflect.Schema) (j5reflect.Schema, error) {
+	ref, ok := schema.(*j5reflect.RefSchema)
+	if !ok {
+		return schema, nil
+	}
+	if ref.To == nil {
+		return nil, fmt.Errorf("unresolved reference")
+	}
+	return j5reflect.Schema(ref.To), nil
+}
+
 func collectProperties(properties []*j5reflect.ObjectProperty, msg protoreflect.Message) ([]fieldSpec, error) {
 	var writeFields []fieldSpec
 
@@ -22,7 +33,10 @@ properties:
 		if len(property.ProtoField) == 0 {
 			var childProperties []*j5reflect.ObjectProperty
 
-			rt := property.Schema.ResolvedType()
+			rt, err := resolveType(property.Schema)
+			if err != nil {
+				return nil, err
+			}
 			switch wrapper := rt.(type) {
 			case *j5reflect.ObjectSchema:
 				childProperties = wrapper.Properties
@@ -44,11 +58,13 @@ properties:
 			continue
 		}
 
+		var walkFieldNumber protoreflect.FieldNumber
 		var walkField protoreflect.FieldDescriptor
 		walkPath := property.ProtoField[:]
 		walkMessage := msg
 		for len(walkPath) > 1 {
-			walkField, walkPath = walkPath[0], walkPath[1:]
+			walkFieldNumber, walkPath = walkPath[0], walkPath[1:]
+			walkField = walkMessage.Descriptor().Fields().ByNumber(walkFieldNumber)
 
 			if !walkMessage.Has(walkField) {
 				continue properties
@@ -58,7 +74,8 @@ properties:
 			}
 			walkMessage = walkMessage.Get(walkField).Message()
 		}
-		walkField = walkPath[0]
+		walkFieldNumber = walkPath[0]
+		walkField = walkMessage.Descriptor().Fields().ByNumber(walkFieldNumber)
 		if !walkMessage.Has(walkField) {
 			continue properties
 		}
@@ -84,7 +101,11 @@ func (enc *encoder) encodeObjectBody(fields []fieldSpec) error {
 			return err
 		}
 		if len(spec.children) > 0 {
-			switch subSchema := spec.property.Schema.ResolvedType().(type) {
+			subSchema, err := resolveType(spec.property.Schema)
+			if err != nil {
+				return err
+			}
+			switch subSchema := subSchema.(type) {
 			case *j5reflect.ObjectSchema:
 				if err := enc.encodeObjectBody(spec.children); err != nil {
 					return err
@@ -180,9 +201,13 @@ func (enc *encoder) encodeOneof(schema *j5reflect.OneofSchema, msg protoreflect.
 	return nil
 }
 
-func (enc *encoder) encodeValue(schema *j5reflect.Schema, value protoreflect.Value) error {
+func (enc *encoder) encodeValue(schema j5reflect.Schema, value protoreflect.Value) error {
+	resolved, err := resolveType(schema)
+	if err != nil {
+		return err
+	}
 
-	switch schema := schema.ResolvedType().(type) {
+	switch schema := resolved.(type) {
 	case *j5reflect.ObjectSchema:
 		return enc.encodeObject(schema, value.Message())
 

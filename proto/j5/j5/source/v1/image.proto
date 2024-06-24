@@ -15,8 +15,7 @@ message SourceImage {
   repeated google.protobuf.FileDescriptorProto file = 1;
   repeated j5.config.v1.PackageConfig packages = 2;
   repeated ProseFile prose = 3;
-  j5.config.v1.CodecOptions codec = 4;
-  j5.config.v1.RegistryConfig registry = 5;
+  j5.config.v1.CodecOptions options = 4;
 
   repeated string source_filenames = 6;
 }

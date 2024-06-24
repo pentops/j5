@@ -13,9 +13,10 @@ import (
 	"github.com/pentops/j5/builder/builder"
 	"github.com/pentops/j5/builder/docker"
 	"github.com/pentops/j5/builder/git"
-	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/schema/j5reflect"
 	"github.com/pentops/j5/schema/source"
+	"github.com/pentops/j5/schema/structure"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -38,11 +39,11 @@ func CommandSet() *commander.CommandSet {
 
 	cmdGroup.Add("registry", registrySet())
 	cmdGroup.Add("schema", schemaSet())
-	cmdGroup.Add("codegen", generateSet())
 	cmdGroup.Add("proto", protoSet())
 
 	cmdGroup.Add("version", commander.NewCommand(runVersion))
 	cmdGroup.Add("generate", commander.NewCommand(runGenerate))
+	cmdGroup.Add("verify", commander.NewCommand(runVerify))
 
 	return cmdGroup
 }
@@ -52,69 +53,137 @@ func runVersion(ctx context.Context, cfg struct{}) error {
 	return nil
 }
 
-func runGenerate(ctx context.Context, cfg struct {
-	SourceConfig
+func runVerify(ctx context.Context, cfg struct {
+	Dir string `flag:"dir" default:"." description:"Directory with j5.yaml root"`
 }) error {
+
+	src, err := source.ReadLocalSource(ctx, nil, os.DirFS(cfg.Dir))
+	if err != nil {
+		return err
+	}
 
 	dockerWrapper, err := docker.NewDockerWrapper(docker.DefaultRegistryAuths)
 	if err != nil {
 		return err
 	}
 
-	src, err := cfg.GetSource(ctx)
-	if err != nil {
-		return err
-	}
-
 	j5Config := src.J5Config()
-	commitInfo, err := src.CommitInfo(ctx)
-	if err != nil {
-		return err
-	}
 
-	for _, generator := range j5Config.Generate {
+	for _, bundle := range src.AllBundles() {
 
-		dest, err := NewLocalFS(generator.Out)
+		image, err := bundle.SourceImage(ctx)
 		if err != nil {
 			return err
 		}
 
-		bb := builder.NewBuilder(dockerWrapper)
-		resolvedPlugins := make([]*config_j5pb.BuildPlugin, 0, len(generator.Plugins))
-		for _, plugin := range generator.Plugins {
-			plugin, err = src.ResolvePlugin(plugin)
-			if err != nil {
-				return err
-			}
-			for k, v := range generator.Opts {
-				plugin.Opts[k] = v
-			}
-			resolvedPlugins = append(resolvedPlugins, plugin)
+		reflectionAPI, err := structure.ReflectFromSource(image)
+		if err != nil {
+			return fmt.Errorf("ReflectFromSource: %w", err)
 		}
 
-		for _, genSrc := range generator.Src {
-			protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx, genSrc)
-			if err != nil {
-				return err
-			}
+		descriptorAPI, err := structure.DescriptorFromReflection(reflectionAPI)
+		if err != nil {
+			return fmt.Errorf("DescriptorFromReflection: %w", err)
+		}
 
-			for _, plugin := range resolvedPlugins {
-				if plugin.Docker == nil {
-					return fmt.Errorf("plugin %q has no docker spec", plugin.Name)
-				}
-				envVars, err := builder.MapEnvVars(plugin.Docker.Env, commitInfo)
-				if err != nil {
-					return err
-				}
-				if err := bb.RunProtocPlugin(ctx, dest, plugin, protoBuildRequest, os.Stderr, envVars); err != nil {
-					return err
-				}
-			}
+		if err := structure.ResolveProse(image, descriptorAPI); err != nil {
+			return fmt.Errorf("ResolveProse: %w", err)
+		}
+
+		_, err = j5reflect.APIFromDesc(descriptorAPI)
+		if err != nil {
+			return fmt.Errorf("building reflection from descriptor: %w", err)
+		}
+		for _, pkg := range descriptorAPI.Packages {
+			fmt.Printf("Package %s OK\n", pkg.Name)
+		}
+
+	}
+
+	dest := NewDiscardFS()
+	for _, generator := range j5Config.Generate {
+		out := &lineWriter{
+			writeLine: func(line string) {
+				log.WithField(ctx, "generator", generator.Name).Info(line)
+			},
+		}
+
+		bb := builder.NewBuilder(dockerWrapper)
+		err = bb.RunGenerate(ctx, src, dest, generator, out)
+		out.flush()
+		if err != nil {
+			return err
 		}
 
 	}
 
 	return nil
+
+}
+
+func runGenerate(ctx context.Context, cfg struct {
+	Dir string `flag:"dir" default:"." description:"Directory with j5.yaml generate configured"`
+}) error {
+
+	src, err := source.ReadLocalSource(ctx, nil, os.DirFS(cfg.Dir))
+	if err != nil {
+		return err
+	}
+
+	dockerWrapper, err := docker.NewDockerWrapper(docker.DefaultRegistryAuths)
+	if err != nil {
+		return err
+	}
+
+	j5Config := src.J5Config()
+
+	for _, generator := range j5Config.Generate {
+		out := &lineWriter{
+			writeLine: func(line string) {
+				log.WithField(ctx, "generator", generator.Name).Info(line)
+			},
+		}
+
+		outDir := filepath.Join(cfg.Dir, generator.Output)
+		dest, err := NewLocalFS(outDir)
+		if err != nil {
+			return err
+		}
+
+		bb := builder.NewBuilder(dockerWrapper)
+		err = bb.RunGenerate(ctx, src, dest, generator, out)
+		out.flush()
+		if err != nil {
+			return err
+		}
+
+	}
+
+	return nil
+}
+
+type lineWriter struct {
+	buf       []byte
+	writeLine func(string)
+}
+
+func (w *lineWriter) Write(p []byte) (n int, err error) {
+	for _, b := range p {
+		if b == '\n' {
+			w.writeLine(string(w.buf))
+			w.buf = w.buf[:0]
+		} else {
+			w.buf = append(w.buf, b)
+		}
+	}
+	return len(p), nil
+}
+
+func (w *lineWriter) flush() {
+	if len(w.buf) > 0 {
+		w.writeLine(string(w.buf))
+	}
+	w.buf = []byte{}
 }
 
 type SourceConfig struct {
@@ -151,7 +220,15 @@ func (cfg SourceConfig) GetSource(ctx context.Context) (*source.Source, error) {
 		}
 	}
 
-	return source.ReadLocalSource(ctx, commitInfo, os.DirFS(sourceDir), cfg.Bundle)
+	return source.ReadLocalSource(ctx, commitInfo, os.DirFS(sourceDir))
+}
+
+func (cfg SourceConfig) GetInput(ctx context.Context) (source.Input, error) {
+	source, err := cfg.GetSource(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return source.NamedInput(cfg.Bundle)
 }
 
 type DiscardFS struct{}

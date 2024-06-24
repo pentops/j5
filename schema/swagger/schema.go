@@ -34,8 +34,7 @@ func (s *Schema) MarshalJSON() ([]byte, error) {
 }
 
 type SchemaItem struct {
-	Type        SchemaType
-	Description string
+	Type SchemaType
 }
 
 func (si SchemaItem) MarshalJSON() ([]byte, error) {
@@ -45,9 +44,6 @@ func (si SchemaItem) MarshalJSON() ([]byte, error) {
 
 	base := map[string]interface{}{}
 	base["type"] = si.Type.TypeName()
-	if si.Description != "" {
-		base["description"] = si.Description
-	}
 
 	if err := jsonStructFields(si.Type, base); err != nil {
 		return nil, err
@@ -94,7 +90,7 @@ func (ri EnumItem) TypeName() string {
 	return "string"
 }
 
-type NumberItem struct {
+type FloatItem struct {
 	Format           string            `json:"format,omitempty"`
 	ExclusiveMaximum Optional[bool]    `json:"exclusiveMaximum,omitempty"`
 	ExclusiveMinimum Optional[bool]    `json:"exclusiveMinimum,omitempty"`
@@ -103,7 +99,7 @@ type NumberItem struct {
 	MultipleOf       Optional[float64] `json:"multipleOf,omitempty"`
 }
 
-func (ri NumberItem) TypeName() string {
+func (ri FloatItem) TypeName() string {
 	return "number"
 }
 
@@ -157,15 +153,13 @@ func (ri AnySchemaItem) TypeName() string {
 }
 
 type ObjectItem struct {
-	Properties map[string]*ObjectProperty `json:"properties,omitempty"`
-	Required   []string                   `json:"required,omitempty"`
-
-	FullProtoName string `json:"x-proto-full-name"`
-	ProtoName     string `json:"x-proto-name"`
-	IsOneof       bool   `json:"x-is-oneof,omitempty"`
-
-	MinProperties Optional[uint64] `json:"minProperties,omitempty"`
-	MaxProperties Optional[uint64] `json:"maxProperties,omitempty"`
+	Name          string                     `json:"x-name"`
+	Description   string                     `json:"description,omitempty"`
+	IsOneof       bool                       `json:"x-is-oneof,omitempty"`
+	Properties    map[string]*ObjectProperty `json:"properties,omitempty"`
+	Required      []string                   `json:"required,omitempty"`
+	MinProperties Optional[uint64]           `json:"minProperties,omitempty"`
+	MaxProperties Optional[uint64]           `json:"maxProperties,omitempty"`
 }
 
 func (ri *ObjectItem) TypeName() string {
@@ -208,11 +202,7 @@ func (op *ObjectProperty) MarshalJSON() ([]byte, error) {
 		if si.Type == nil {
 			return nil, fmt.Errorf("no type set")
 		}
-
 		base["type"] = si.Type.TypeName()
-		if si.Description != "" {
-			base["description"] = si.Description
-		}
 		if err := jsonStructFields(si.Type, base); err != nil {
 			return nil, err
 		}

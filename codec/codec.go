@@ -1,17 +1,17 @@
 package codec
 
 import (
-	"github.com/pentops/j5/schema/j5reflect"
+	"github.com/pentops/j5/schema/structure"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type Codec struct {
-	schemaSet *j5reflect.SchemaSet
+	schemaSet *structure.SchemaSet
 }
 
 func NewCodec() *Codec {
 	return &Codec{
-		schemaSet: j5reflect.NewSchemaSet(),
+		schemaSet: structure.NewSchemaSet(),
 	}
 }
 

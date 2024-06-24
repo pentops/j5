@@ -2,165 +2,179 @@ package source
 
 import (
 	"context"
-	"errors"
 	"fmt"
+	"io"
 	"io/fs"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/descriptorpb"
-	"google.golang.org/protobuf/types/pluginpb"
 )
 
 type Source struct {
-	// input
-	commitInfo *source_j5pb.CommitInfo
-	config     *config_j5pb.Config
-	repoRoot   fs.FS
-	dir        string // the directory of the source within the root
-
-	// cache
-	codegenReqs map[string]*pluginpb.CodeGeneratorRequest
-	sourceImg   *source_j5pb.SourceImage
+	thisRepo       *repo
+	remoteRegistry string
+	HTTPClient     *http.Client
 }
 
-func NewLocalDirSource(ctx context.Context, commitInfo *source_j5pb.CommitInfo, config *config_j5pb.Config, repoRoot fs.FS, dir string) (*Source, error) {
+func ReadLocalSource(ctx context.Context, commitInfo *source_j5pb.CommitInfo, root fs.FS) (*Source, error) {
+	thisRepo, err := newRepo(commitInfo, ".", root)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Source{
-		config:      config,
-		commitInfo:  commitInfo,
-		repoRoot:    repoRoot,
-		dir:         dir,
-		codegenReqs: map[string]*pluginpb.CodeGeneratorRequest{},
+		thisRepo:       thisRepo,
+		remoteRegistry: os.Getenv("J5_REGISTRY"),
+		HTTPClient:     &http.Client{},
 	}, nil
 }
 
-func ReadLocalSource(ctx context.Context, commitInfo *source_j5pb.CommitInfo, root fs.FS, dir string) (*Source, error) {
-	config, err := readDirConfigs(root)
-	if err != nil {
-		return nil, err
-	}
-
-	return NewLocalDirSource(ctx, commitInfo, config, root, dir)
-}
-
-func (src Source) J5Config() *config_j5pb.Config {
-	return src.config
+func (src Source) J5Config() *config_j5pb.RepoConfigFile {
+	return src.thisRepo.config
 }
 
 func (src Source) CommitInfo(context.Context) (*source_j5pb.CommitInfo, error) {
-	return src.commitInfo, nil
+	return src.thisRepo.commitInfo, nil
 }
 
-func (src *Source) ProtoCodeGeneratorRequest(ctx context.Context, root string) (*pluginpb.CodeGeneratorRequest, error) {
-	if src.codegenReqs[root] == nil {
-		rr, err := codeGeneratorRequestFromSource(ctx, src.repoRoot, root)
-		if err != nil {
-			return nil, err
-		}
-		src.codegenReqs[root] = rr
+func (src Source) AllBundles() []Input {
+	out := make([]Input, 0, len(src.thisRepo.bundles))
+	for _, bundle := range src.thisRepo.bundles {
+		out = append(out, bundle)
 	}
-	return src.codegenReqs[root], nil
+	return out
 }
 
-func (src *Source) SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error) {
-	if src.sourceImg == nil {
-		img, err := readImageFromDir(ctx, src.repoRoot, src.dir)
-		if err != nil {
-			return nil, fmt.Errorf("reading source image: %w", err)
+func (src *Source) GetInput(ctx context.Context, input *config_j5pb.Input) (Input, error) {
+	switch st := input.Type.(type) {
+	case *config_j5pb.Input_Local:
+		bundle, ok := src.thisRepo.bundles[st.Local]
+		if !ok {
+			return nil, fmt.Errorf("bundle %q not found", st.Local)
 		}
-		src.sourceImg = img
+		return bundle, nil
+
+	case *config_j5pb.Input_Repo_:
+		var err error
+		repoRoot, debugName, err := anyRoot(st.Repo.Root, st.Repo.Dir)
+		if err != nil {
+			return nil, fmt.Errorf("resolving repo root: %w", err)
+		}
+		repo, err := newRepo(nil, debugName, repoRoot)
+		if err != nil {
+			return nil, fmt.Errorf("input %s: %w", st.Repo.Root, err)
+		}
+		bundle, ok := repo.bundles[st.Repo.Bundle]
+		if !ok {
+			return nil, fmt.Errorf("bundle %q not found in repo %q", st.Repo.Bundle, st.Repo.Root)
+		}
+		return bundle, nil
+
+	case *config_j5pb.Input_Registry_:
+		return src.registryInput(ctx, st.Registry)
+
+	default:
+		return nil, fmt.Errorf("unsupported source type %T", input.Type)
+	}
+}
+
+func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_Registry) (Input, error) {
+	if src.remoteRegistry == "" {
+		return nil, fmt.Errorf("remote registry not set ($J5_REGISTRY)")
+	}
+	if input.Name == "" {
+		return nil, fmt.Errorf("registry input name not set")
+	}
+	if input.Organization == "" {
+		return nil, fmt.Errorf("registry input organization not set")
+	}
+	if input.Version == "" {
+		input.Version = "main"
 	}
 
-	return src.sourceImg, nil
-}
-
-func (src *Source) SourceDescriptors(ctx context.Context) ([]*descriptorpb.FileDescriptorProto, error) {
-	img, err := src.SourceImage(ctx)
+	req, err := http.NewRequest("GET", fmt.Sprintf("%s/registry/v1/%s/%s/%s/image.bin", src.remoteRegistry, input.Organization, input.Name, input.Version), nil)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("creating registry input request: %w", err)
 	}
-	includeMap := map[string]struct{}{}
-	for _, include := range img.SourceFilenames {
-		includeMap[include] = struct{}{}
+	req = req.WithContext(ctx)
+
+	res, err := src.HTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("fetching registry input: %w", err)
+	}
+	defer res.Body.Close()
+	data, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, fmt.Errorf("reading registry input: %w", err)
 	}
 
-	out := []*descriptorpb.FileDescriptorProto{}
-	for _, file := range img.File {
-		if _, ok := includeMap[*file.Name]; !ok {
-			continue
+	apiDef := &source_j5pb.SourceImage{}
+	if err := proto.Unmarshal(data, apiDef); err != nil {
+		return nil, fmt.Errorf("unmarshalling registry input: %w", err)
+	}
+
+	return &imageBundle{
+		source: apiDef,
+		repo: &config_j5pb.RegistryConfig{
+			Organization: input.Organization,
+			Name:         input.Name,
+		},
+	}, nil
+}
+
+func anyRoot(name, subdir string) (fs.FS, string, error) {
+
+	if strings.HasPrefix(name, "file://") {
+		fullPath := strings.TrimPrefix(name, "file://")
+		absPath, err := filepath.Abs(fullPath)
+		if err != nil {
+			return nil, "", fmt.Errorf("resolving absolute path: %w", err)
 		}
-		out = append(out, file)
+
+		if subdir != "" {
+			absPath = filepath.Join(absPath, subdir)
+		}
+
+		workDir, err := os.Getwd()
+		if err == nil {
+			relPath, err := filepath.Rel(workDir, absPath)
+			if err == nil {
+				absPath = relPath
+			}
+		}
+		return os.DirFS(absPath), absPath, nil
 	}
 
-	return out, nil
+	return nil, "", fmt.Errorf("unsupported scheme %q", name)
+}
+
+func (src *Source) NamedInput(name string) (Input, error) {
+	if name != "" {
+		if bundle, ok := src.thisRepo.bundles[name]; ok {
+			return bundle, nil
+		}
+		return nil, fmt.Errorf("bundle %q not found", name)
+	}
+	if len(src.thisRepo.bundles) == 0 {
+		return nil, fmt.Errorf("no bundles found")
+	}
+	if len(src.thisRepo.bundles) > 1 {
+		return nil, fmt.Errorf("multiple bundles found, must specify a name")
+	}
+
+	for _, bundle := range src.thisRepo.bundles {
+		return bundle, nil
+	}
+
+	return nil, fmt.Errorf("no bundles found")
+
 }
 
 func (src *Source) SourceFile(ctx context.Context, filename string) ([]byte, error) {
-	filename = strings.TrimPrefix(filename, "./")
-	return fs.ReadFile(src.repoRoot, filename)
-}
-
-func (src *Source) PackageBuildConfig(name string) (*config_j5pb.ProtoBuildConfig, error) {
-	for _, plugin := range src.config.ProtoBuilds {
-		if plugin.Name == name {
-			return plugin, nil
-		}
-	}
-	return nil, fmt.Errorf("package build %q not found", name)
-}
-
-func (src *Source) ResolvePlugin(plugin *config_j5pb.BuildPlugin) (*config_j5pb.BuildPlugin, error) {
-	return src.resolvePlugin(map[string]struct{}{}, plugin)
-}
-
-var ErrPluginCycle = errors.New("plugin cycle detected")
-
-func (src *Source) resolvePlugin(visited map[string]struct{}, plugin *config_j5pb.BuildPlugin) (*config_j5pb.BuildPlugin, error) {
-	if plugin.Base == nil {
-		if plugin.Opts == nil {
-			plugin.Opts = map[string]string{}
-		}
-		return plugin, nil
-	}
-	if _, ok := visited[*plugin.Base]; ok {
-		return nil, ErrPluginCycle
-	}
-	visited[*plugin.Base] = struct{}{}
-	for _, search := range src.config.Plugins {
-		if search.Name == *plugin.Base {
-			resolvedBase, err := src.resolvePlugin(visited, search)
-			if err != nil {
-				return nil, err
-			}
-			if plugin.Type != config_j5pb.Plugin_PLUGIN_UNSPECIFIED {
-				if plugin.Type != resolvedBase.Type {
-					return nil, fmt.Errorf("base plugin %q has type %v, but extension has type %v", *plugin.Base, resolvedBase.Type, plugin.Type)
-				}
-			}
-			return extendPlugin(resolvedBase, plugin), nil
-		}
-	}
-	return nil, fmt.Errorf("base plugin %q not found", *plugin.Base)
-}
-
-func extendPlugin(base, ext *config_j5pb.BuildPlugin) *config_j5pb.BuildPlugin {
-	out := proto.Clone(base).(*config_j5pb.BuildPlugin)
-	if out.Opts == nil {
-		out.Opts = map[string]string{}
-	}
-	if ext.Name != "" {
-		out.Name = ext.Name
-	}
-	if ext.Docker != nil {
-		out.Docker = ext.Docker
-	}
-	if ext.Command != nil {
-		out.Command = ext.Command
-	}
-	for k, v := range ext.Opts {
-		out.Opts[k] = v
-	}
-	return out
+	return fs.ReadFile(src.thisRepo.repoRoot, filename)
 }
