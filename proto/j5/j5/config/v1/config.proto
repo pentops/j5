@@ -15,14 +15,14 @@ message RepoConfigFile {
   // Inline Bundle
   RegistryConfig registry = 8;
   repeated PackageConfig packages = 9;
-  PublishConfig publish = 10;
+  repeated PublishConfig publish = 10;
   CodecOptions options = 11;
 }
 
 message BundleConfigFile {
   RegistryConfig registry = 1;
   repeated PackageConfig packages = 2;
-  PublishConfig publish = 3;
+  repeated PublishConfig publish = 3;
   CodecOptions options = 4;
 }
 
@@ -74,11 +74,10 @@ message Input {
 }
 
 message PublishConfig {
-  OutputType output_format = 3;
-  repeated string bundles = 4;
-
-  map<string, string> opts = 5;
-  repeated BuildPlugin plugins = 6;
+  string name = 1;
+  OutputType output_format = 2;
+  map<string, string> opts = 3;
+  repeated BuildPlugin plugins = 4;
 }
 
 message RegistryConfig {

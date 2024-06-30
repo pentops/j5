@@ -12,9 +12,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/j5/schema/jdef"
+	"github.com/pentops/j5/schema/export"
 	"github.com/pentops/j5/schema/structure"
-	"github.com/pentops/j5/schema/swagger"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -59,7 +58,7 @@ func (cfg BuildConfig) descriptorAPI(ctx context.Context) (*schema_j5pb.API, err
 		return nil, fmt.Errorf("ReflectFromSource: %w", err)
 	}
 
-	descriptorAPI, err := structure.DescriptorFromReflection(reflectionAPI)
+	descriptorAPI, err := reflectionAPI.ToJ5Proto()
 	if err != nil {
 		return nil, fmt.Errorf("DescriptorFromReflection: %w", err)
 	}
@@ -105,7 +104,7 @@ func RunSwagger(ctx context.Context, cfg BuildConfig) error {
 		return err
 	}
 
-	swaggerDoc, err := swagger.BuildSwagger(descriptorAPI)
+	swaggerDoc, err := export.BuildSwagger(descriptorAPI)
 	if err != nil {
 		return err
 	}
@@ -124,7 +123,7 @@ func RunJDef(ctx context.Context, cfg BuildConfig) error {
 		return err
 	}
 
-	jDefJSON, err := jdef.FromProto(descriptorAPI)
+	jDefJSON, err := export.FromProto(descriptorAPI)
 	if err != nil {
 		return err
 	}

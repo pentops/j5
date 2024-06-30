@@ -1,4 +1,4 @@
-package swagger
+package export
 
 import (
 	"encoding/json"
@@ -10,13 +10,13 @@ import (
 )
 
 type Document struct {
-	OpenAPI    string     `json:"openapi"`
-	Info       Info       `json:"info"`
-	Paths      PathSet    `json:"paths"`
-	Components Components `json:"components"`
+	OpenAPI    string       `json:"openapi"`
+	Info       DocumentInfo `json:"info"`
+	Paths      PathSet      `json:"paths"`
+	Components Components   `json:"components"`
 }
 
-type Info struct {
+type DocumentInfo struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Version     string `json:"version"`
@@ -31,11 +31,11 @@ type OperationHeader struct {
 	Method string `json:"-"`
 	Path   string `json:"-"`
 
-	OperationID  string      `json:"operationId,omitempty"`
-	Summary      string      `json:"summary,omitempty"`
-	Description  string      `json:"description,omitempty"`
-	DisplayOrder int         `json:"x-display-order"`
-	Parameters   []Parameter `json:"parameters,omitempty"`
+	OperationID  string             `json:"operationId,omitempty"`
+	Summary      string             `json:"summary,omitempty"`
+	Description  string             `json:"description,omitempty"`
+	DisplayOrder int                `json:"x-display-order"`
+	Parameters   []SwaggerParameter `json:"parameters,omitempty"`
 
 	GrpcServiceName string `json:"x-grpc-service"`
 	GrpcMethodName  string `json:"x-grpc-method"`
@@ -81,7 +81,7 @@ type OperationSchema struct {
 	Schema *Schema `json:"schema"`
 }
 
-type Parameter struct {
+type SwaggerParameter struct {
 	Name        string  `json:"name"`
 	In          string  `json:"in"`
 	Description string  `json:"description,omitempty"`
@@ -97,14 +97,6 @@ func (dd *Document) addService(service *schema_j5pb.Service) error {
 		}
 	}
 	return nil
-}
-
-var methodShortString = map[schema_j5pb.HTTPMethod]string{
-	schema_j5pb.HTTPMethod_HTTP_METHOD_GET:    "get",
-	schema_j5pb.HTTPMethod_HTTP_METHOD_POST:   "post",
-	schema_j5pb.HTTPMethod_HTTP_METHOD_PUT:    "put",
-	schema_j5pb.HTTPMethod_HTTP_METHOD_DELETE: "delete",
-	schema_j5pb.HTTPMethod_HTTP_METHOD_PATCH:  "patch",
 }
 
 func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.Method) error {
@@ -143,7 +135,7 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 			GrpcMethodName:  method.Name,
 			GrpcServiceName: service.Name,
 
-			Parameters: make([]Parameter, 0, len(pathProperties)+len(bodyProperties)),
+			Parameters: make([]SwaggerParameter, 0, len(pathProperties)+len(bodyProperties)),
 		},
 	}
 
@@ -152,7 +144,7 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 		if err != nil {
 			return fmt.Errorf("path param %s: %w", property.Name, err)
 		}
-		operation.OperationHeader.Parameters = append(operation.OperationHeader.Parameters, Parameter{
+		operation.OperationHeader.Parameters = append(operation.OperationHeader.Parameters, SwaggerParameter{
 			Name:        property.Name,
 			In:          "path",
 			Description: property.Description,
@@ -167,7 +159,7 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 			if err != nil {
 				return fmt.Errorf("query param %s: %w", property.Name, err)
 			}
-			operation.OperationHeader.Parameters = append(operation.OperationHeader.Parameters, Parameter{
+			operation.OperationHeader.Parameters = append(operation.OperationHeader.Parameters, SwaggerParameter{
 				Name:        property.Name,
 				In:          "query",
 				Description: property.Description,

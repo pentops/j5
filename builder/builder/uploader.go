@@ -11,8 +11,7 @@ import (
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/j5/schema/jdef"
-	"github.com/pentops/j5/schema/swagger"
+	"github.com/pentops/j5/schema/export"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
 	"golang.org/x/mod/zip"
@@ -37,7 +36,7 @@ func NewRawUploader() *RawUploader {
 type J5Upload struct {
 	Image   *source_j5pb.SourceImage
 	J5API   *schema_j5pb.API
-	Swagger *swagger.Document
+	Swagger *export.Document
 }
 
 func (uu *RawUploader) UploadJsonAPI(ctx context.Context, info FullInfo, data J5Upload) error {
@@ -50,7 +49,7 @@ func (uu *RawUploader) UploadJsonAPI(ctx context.Context, info FullInfo, data J5
 		return err
 	}
 
-	jDefJSON, err := jdef.FromProto(data.J5API)
+	jDefJSON, err := export.FromProto(data.J5API)
 	if err != nil {
 		return err
 	}

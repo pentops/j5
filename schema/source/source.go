@@ -21,8 +21,8 @@ type Source struct {
 	HTTPClient     *http.Client
 }
 
-func ReadLocalSource(ctx context.Context, commitInfo *source_j5pb.CommitInfo, root fs.FS) (*Source, error) {
-	thisRepo, err := newRepo(commitInfo, ".", root)
+func ReadLocalSource(ctx context.Context, root fs.FS) (*Source, error) {
+	thisRepo, err := newRepo(".", root)
 	if err != nil {
 		return nil, err
 	}
@@ -38,9 +38,10 @@ func (src Source) J5Config() *config_j5pb.RepoConfigFile {
 	return src.thisRepo.config
 }
 
+/*
 func (src Source) CommitInfo(context.Context) (*source_j5pb.CommitInfo, error) {
 	return src.thisRepo.commitInfo, nil
-}
+}*/
 
 func (src Source) AllBundles() []Input {
 	out := make([]Input, 0, len(src.thisRepo.bundles))
@@ -65,7 +66,7 @@ func (src *Source) GetInput(ctx context.Context, input *config_j5pb.Input) (Inpu
 		if err != nil {
 			return nil, fmt.Errorf("resolving repo root: %w", err)
 		}
-		repo, err := newRepo(nil, debugName, repoRoot)
+		repo, err := newRepo(debugName, repoRoot)
 		if err != nil {
 			return nil, fmt.Errorf("input %s: %w", st.Repo.Root, err)
 		}

@@ -6,20 +6,16 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"time"
 
 	"runtime/debug"
 
 	"github.com/pentops/j5/builder/builder"
 	"github.com/pentops/j5/builder/docker"
-	"github.com/pentops/j5/builder/git"
-	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/schema/j5reflect"
 	"github.com/pentops/j5/schema/source"
 	"github.com/pentops/j5/schema/structure"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var Commit = func() string {
@@ -57,7 +53,7 @@ func runVerify(ctx context.Context, cfg struct {
 	Dir string `flag:"dir" default:"." description:"Directory with j5.yaml root"`
 }) error {
 
-	src, err := source.ReadLocalSource(ctx, nil, os.DirFS(cfg.Dir))
+	src, err := source.ReadLocalSource(ctx, os.DirFS(cfg.Dir))
 	if err != nil {
 		return err
 	}
@@ -81,7 +77,7 @@ func runVerify(ctx context.Context, cfg struct {
 			return fmt.Errorf("ReflectFromSource: %w", err)
 		}
 
-		descriptorAPI, err := structure.DescriptorFromReflection(reflectionAPI)
+		descriptorAPI, err := reflectionAPI.ToJ5Proto()
 		if err != nil {
 			return fmt.Errorf("DescriptorFromReflection: %w", err)
 		}
@@ -125,7 +121,7 @@ func runGenerate(ctx context.Context, cfg struct {
 	Dir string `flag:"dir" default:"." description:"Directory with j5.yaml generate configured"`
 }) error {
 
-	src, err := source.ReadLocalSource(ctx, nil, os.DirFS(cfg.Dir))
+	src, err := source.ReadLocalSource(ctx, os.DirFS(cfg.Dir))
 	if err != nil {
 		return err
 	}
@@ -189,38 +185,13 @@ func (w *lineWriter) flush() {
 type SourceConfig struct {
 	Source string `flag:"src" default:"." description:"Source directory containing j5.yaml and buf.lock.yaml"`
 	Bundle string `flag:"bundle" default:"" description:"When the bundle j5.yaml is in a subdirectory"`
-
-	CommitHash    string   `flag:"commit-hash" env:"COMMIT_HASH" default:""`
-	CommitTime    string   `flag:"commit-time" env:"COMMIT_TIME" default:""`
-	CommitAliases []string `flag:"commit-alias" env:"COMMIT_ALIAS" default:""`
-
-	GitAuto bool `flag:"git-auto" env:"COMMIT_INFO_GIT_AUTO" default:"false" description:"Automatically pull commit info from git"`
 }
 
 func (cfg SourceConfig) GetSource(ctx context.Context) (*source.Source, error) {
 
 	sourceDir := cfg.Source
 
-	var commitInfo *source_j5pb.CommitInfo
-	var err error
-
-	if cfg.CommitHash != "" && cfg.CommitTime != "" {
-		commitInfo = &source_j5pb.CommitInfo{}
-		commitInfo.Hash = cfg.CommitHash
-		commitTime, err := time.Parse(time.RFC3339, cfg.CommitTime)
-		if err != nil {
-			return nil, fmt.Errorf("parsing commit time: %w", err)
-		}
-		commitInfo.Time = timestamppb.New(commitTime)
-		commitInfo.Aliases = cfg.CommitAliases
-	} else {
-		commitInfo, err = git.ExtractGitMetadata(ctx, cfg.Source)
-		if err != nil {
-			return nil, fmt.Errorf("extracting git metadata from dir: %w", err)
-		}
-	}
-
-	return source.ReadLocalSource(ctx, commitInfo, os.DirFS(sourceDir))
+	return source.ReadLocalSource(ctx, os.DirFS(sourceDir))
 }
 
 func (cfg SourceConfig) GetInput(ctx context.Context) (source.Input, error) {

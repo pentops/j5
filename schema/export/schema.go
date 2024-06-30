@@ -1,4 +1,4 @@
-package swagger
+package export
 
 import (
 	"encoding/json"

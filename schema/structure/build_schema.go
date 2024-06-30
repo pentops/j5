@@ -7,7 +7,6 @@ import (
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 
-	"github.com/google/uuid"
 	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
@@ -369,29 +368,9 @@ func buildComment(sourceLocation protoreflect.SourceLocation, fallback string) s
 	return strings.Join(commentsOut, "\n")
 }
 
-type wellKnownStringPattern struct {
-	format  string
-	example string
-}
-
-var wellKnownStringPatterns = map[string]wellKnownStringPattern{
-	`^\d{4}-\d{2}-\d{2}$`: {format: "date", example: "2021-01-01"},
-	`^\d(.?\d)?$`:         {format: "number", example: "12.34"},
-}
-
-var lastUUID uuid.UUID
-
-func quickUUID() string {
-	if lastUUID == uuid.Nil {
-		lastUUID = uuid.New()
-		return lastUUID.String()
-	}
-	lastUUID[0]++
-	lastUUID[2]++
-	lastUUID[4]++
-	lastUUID[6] = (lastUUID[6] & 0x0f) | 0x40 // Version 4
-	lastUUID[8] = (lastUUID[8] & 0x3f) | 0x80 // Variant is 10
-	return lastUUID.String()
+var wellKnownStringPatterns = map[string]string{
+	`^\d{4}-\d{2}-\d{2}$`: "date",
+	`^\d(.?\d)?$`:         "number",
 }
 
 func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5reflect.ObjectProperty, error) {
@@ -682,8 +661,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 				pattern := *constraint.Pattern
 				wellKnownStringPattern, ok := wellKnownStringPatterns[pattern]
 				if ok {
-					stringItem.Format = Ptr(wellKnownStringPattern.format)
-					stringItem.Example = Ptr(wellKnownStringPattern.example)
+					stringItem.Format = Ptr(wellKnownStringPattern)
 				} else {
 					stringItem.Rules.Pattern = Ptr(pattern)
 				}
@@ -693,36 +671,30 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 			case *validate.StringRules_Uuid:
 				if wkt.Uuid {
 					stringItem.Format = Ptr("uuid")
-					stringItem.Example = Ptr(quickUUID())
 				}
 			case *validate.StringRules_Email:
 				if wkt.Email {
 					stringItem.Format = Ptr("email")
-					stringItem.Example = Ptr("test@example.com")
 				}
 
 			case *validate.StringRules_Hostname:
 				if wkt.Hostname {
 					stringItem.Format = Ptr("hostname")
-					stringItem.Example = Ptr("example.com")
 				}
 
 			case *validate.StringRules_Ipv4:
 				if wkt.Ipv4 {
 					stringItem.Format = Ptr("ipv4")
-					stringItem.Example = Ptr("10.10.10.10")
 				}
 
 			case *validate.StringRules_Ipv6:
 				if wkt.Ipv6 {
 					stringItem.Format = Ptr("ipv6")
-					stringItem.Example = Ptr("2001:db8::68")
 				}
 
 			case *validate.StringRules_Uri:
 				if wkt.Uri {
 					stringItem.Format = Ptr("uri")
-					stringItem.Example = Ptr("https://example.com")
 				}
 
 			// Other types not supported by swagger
