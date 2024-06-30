@@ -1,17 +1,57 @@
-package jdef
+package export
 
 import (
 	"fmt"
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/schema/swagger"
 )
+
+type API struct {
+	Packages []*Package            `json:"packages"`
+	Schemas  map[string]*Schema    `json:"schemas"`
+	Metadata *schema_j5pb.Metadata `json:"metadata"`
+}
+
+type Package struct {
+	Label  string `json:"label"`
+	Name   string `json:"name"`
+	Hidden bool   `json:"hidden"`
+
+	Introduction string       `json:"introduction,omitempty"`
+	Methods      []*Method    `json:"methods"`
+	Events       []*EventSpec `json:"events"`
+}
+
+type Method struct {
+	GrpcServiceName string `json:"grpcServiceName"`
+	GrpcMethodName  string `json:"grpcMethodName"`
+	FullGrpcName    string `json:"fullGrpcName"`
+
+	HTTPMethod      string           `json:"httpMethod"`
+	HTTPPath        string           `json:"httpPath"`
+	RequestBody     *Schema          `json:"requestBody,omitempty"`
+	ResponseBody    *Schema          `json:"responseBody,omitempty"`
+	QueryParameters []*JdefParameter `json:"queryParameters,omitempty"`
+	PathParameters  []*JdefParameter `json:"pathParameters,omitempty"`
+}
+
+type EventSpec struct {
+	Name   string  `json:"name"`
+	Schema *Schema `json:"schema,omitempty"`
+}
+
+type JdefParameter struct {
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Required    bool   `json:"required,omitempty"`
+	Schema      Schema `json:"schema"`
+}
 
 func FromProto(protoSchema *schema_j5pb.API) (*API, error) {
 	out := &API{
 		Packages: make([]*Package, len(protoSchema.Packages)),
-		Schemas:  make(map[string]*swagger.Schema),
+		Schemas:  make(map[string]*Schema),
 		Metadata: protoSchema.Metadata,
 	}
 	for idx, protoPackage := range protoSchema.Packages {
@@ -114,13 +154,13 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 		}
 	}
 
-	out.PathParameters = make([]*Parameter, len(pathProperties))
+	out.PathParameters = make([]*JdefParameter, len(pathProperties))
 	for idx, property := range pathProperties {
 		schema, err := fromProtoSchema(property.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("path param %s: %w", property.Name, err)
 		}
-		out.PathParameters[idx] = &Parameter{
+		out.PathParameters[idx] = &JdefParameter{
 			Name:        property.Name,
 			Description: property.Description,
 			Required:    true,
@@ -129,13 +169,13 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 	}
 
 	if protoMethod.HttpMethod == schema_j5pb.HTTPMethod_HTTP_METHOD_GET {
-		out.QueryParameters = make([]*Parameter, len(bodyProperties))
+		out.QueryParameters = make([]*JdefParameter, len(bodyProperties))
 		for idx, property := range bodyProperties {
 			schema, err := fromProtoSchema(property.Schema)
 			if err != nil {
 				return nil, fmt.Errorf("query param %s: %w", property.Name, err)
 			}
-			out.QueryParameters[idx] = &Parameter{
+			out.QueryParameters[idx] = &JdefParameter{
 				Name:        property.Name,
 				Description: property.Description,
 				Required:    property.Required,
@@ -180,47 +220,6 @@ func fromProtoEvent(protoEvent *schema_j5pb.EventSpec) (*EventSpec, error) {
 	return out, nil
 }
 
-func fromProtoSchema(protoSchema *schema_j5pb.Schema) (*swagger.Schema, error) {
-	return swagger.ConvertSchema(protoSchema)
-}
-
-type API struct {
-	Packages []*Package                 `json:"packages"`
-	Schemas  map[string]*swagger.Schema `json:"schemas"`
-	Metadata *schema_j5pb.Metadata      `json:"metadata"`
-}
-
-type Package struct {
-	Label  string `json:"label"`
-	Name   string `json:"name"`
-	Hidden bool   `json:"hidden"`
-
-	Introduction string       `json:"introduction,omitempty"`
-	Methods      []*Method    `json:"methods"`
-	Events       []*EventSpec `json:"events"`
-}
-
-type Method struct {
-	GrpcServiceName string `json:"grpcServiceName"`
-	GrpcMethodName  string `json:"grpcMethodName"`
-	FullGrpcName    string `json:"fullGrpcName"`
-
-	HTTPMethod      string          `json:"httpMethod"`
-	HTTPPath        string          `json:"httpPath"`
-	RequestBody     *swagger.Schema `json:"requestBody,omitempty"`
-	ResponseBody    *swagger.Schema `json:"responseBody,omitempty"`
-	QueryParameters []*Parameter    `json:"queryParameters,omitempty"`
-	PathParameters  []*Parameter    `json:"pathParameters,omitempty"`
-}
-
-type EventSpec struct {
-	Name   string          `json:"name"`
-	Schema *swagger.Schema `json:"schema,omitempty"`
-}
-
-type Parameter struct {
-	Name        string         `json:"name"`
-	Description string         `json:"description,omitempty"`
-	Required    bool           `json:"required,omitempty"`
-	Schema      swagger.Schema `json:"schema"`
+func fromProtoSchema(protoSchema *schema_j5pb.Schema) (*Schema, error) {
+	return ConvertSchema(protoSchema)
 }

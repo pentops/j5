@@ -1,4 +1,4 @@
-package swagger
+package export
 
 import (
 	"fmt"
@@ -104,9 +104,10 @@ func ConvertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 }
 
 func convertStringItem(item *schema_j5pb.String) *StringItem {
+
 	out := &StringItem{
 		Format:  Maybe(item.Format),
-		Example: Maybe(item.Example),
+		Example: Maybe(stringExample(item.Format)),
 	}
 
 	if item.Rules != nil {

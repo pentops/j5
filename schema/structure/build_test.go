@@ -244,7 +244,7 @@ func TestBuildPath(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	apiDescriptor, err := DescriptorFromReflection(apiReflection)
+	apiDescriptor, err := apiReflection.ToJ5Proto()
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -263,7 +263,7 @@ func TestBuildPath(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 		assert.Len(t, reflectionFromBuilt.Packages, 1)
-		builtDescriptor, err := DescriptorFromReflection(reflectionFromBuilt)
+		builtDescriptor, err := reflectionFromBuilt.ToJ5Proto()
 		if err != nil {
 			t.Fatal(err.Error())
 		}

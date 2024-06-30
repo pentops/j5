@@ -77,7 +77,7 @@ func runVerify(ctx context.Context, cfg struct {
 			return fmt.Errorf("ReflectFromSource: %w", err)
 		}
 
-		descriptorAPI, err := structure.DescriptorFromReflection(reflectionAPI)
+		descriptorAPI, err := reflectionAPI.ToJ5Proto()
 		if err != nil {
 			return fmt.Errorf("DescriptorFromReflection: %w", err)
 		}

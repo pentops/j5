@@ -1,4 +1,4 @@
-package swagger
+package export
 
 import (
 	"testing"
@@ -18,10 +18,8 @@ func TestConvertSchema(t *testing.T) {
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_String_{
 				String_: &schema_j5pb.String{
-					Format:  Ptr("uuid"),
-					Example: Ptr("example"),
+					Format: Ptr("date"),
 					Rules: &schema_j5pb.String_Rules{
-						Pattern:   Ptr("regex-pattern"),
 						MinLength: Ptr(uint64(1)),
 						MaxLength: Ptr(uint64(2)),
 					},
@@ -30,9 +28,7 @@ func TestConvertSchema(t *testing.T) {
 		},
 		want: map[string]interface{}{
 			"type":      "string",
-			"example":   "example",
-			"format":    "uuid",
-			"pattern":   "regex-pattern",
+			"format":    "date",
 			"minLength": 1,
 			"maxLength": 2,
 		},

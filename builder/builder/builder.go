@@ -14,9 +14,9 @@ import (
 	"github.com/pentops/j5/gen/j5/plugin/v1/plugin_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/schema/export"
 	"github.com/pentops/j5/schema/source"
 	"github.com/pentops/j5/schema/structure"
-	"github.com/pentops/j5/schema/swagger"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -50,12 +50,12 @@ func (b *Builder) BuildJsonAPI(ctx context.Context, img *source_j5pb.SourceImage
 		return nil, fmt.Errorf("reflection from image: %w", err)
 	}
 
-	apiDescriptor, err := structure.DescriptorFromReflection(apiReflection)
+	apiDescriptor, err := apiReflection.ToJ5Proto()
 	if err != nil {
 		return nil, fmt.Errorf("descriptor from reflection: %w", err)
 	}
 
-	swaggerDoc, err := swagger.BuildSwagger(apiDescriptor)
+	swaggerDoc, err := export.BuildSwagger(apiDescriptor)
 	if err != nil {
 		return nil, fmt.Errorf("build swagger: %w", err)
 	}
@@ -150,7 +150,7 @@ func (b *Builder) runPlugins(ctx context.Context, input source.Input, dst FS, pl
 				return fmt.Errorf("ReflectFromSource: %w", err)
 			}
 
-			descriptorAPI, err := structure.DescriptorFromReflection(reflectionAPI)
+			descriptorAPI, err := reflectionAPI.ToJ5Proto()
 			if err != nil {
 				return fmt.Errorf("DescriptorFromReflection: %w", err)
 			}
