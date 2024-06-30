@@ -12,20 +12,20 @@ import (
 
 type Input interface {
 	J5Config() (*config_j5pb.BundleConfigFile, error)
-	CommitInfo(ctx context.Context) (*source_j5pb.CommitInfo, error)
+	//CommitInfo(ctx context.Context) (*source_j5pb.CommitInfo, error)
 	ProtoCodeGeneratorRequest(ctx context.Context) (*pluginpb.CodeGeneratorRequest, error)
 	SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error)
 	Name() string
 }
 
 type repo struct {
-	repoRoot   fs.FS
-	bundles    map[string]*bundle
-	commitInfo *source_j5pb.CommitInfo
-	config     *config_j5pb.RepoConfigFile
+	repoRoot fs.FS
+	bundles  map[string]*bundle
+	//commitInfo *source_j5pb.CommitInfo
+	config *config_j5pb.RepoConfigFile
 }
 
-func newRepo(commitInfo *source_j5pb.CommitInfo, debugName string, repoRoot fs.FS) (*repo, error) {
+func newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
 
 	config, err := readDirConfigs(repoRoot)
 	if err != nil {
@@ -37,10 +37,10 @@ func newRepo(commitInfo *source_j5pb.CommitInfo, debugName string, repoRoot fs.F
 	}
 
 	thisRepo := &repo{
-		config:     config,
-		commitInfo: commitInfo,
-		repoRoot:   repoRoot,
-		bundles:    map[string]*bundle{},
+		config: config,
+		//commitInfo: commitInfo,
+		repoRoot: repoRoot,
+		bundles:  map[string]*bundle{},
 	}
 
 	for _, refConfig := range config.Bundles {
@@ -52,7 +52,7 @@ func newRepo(commitInfo *source_j5pb.CommitInfo, debugName string, repoRoot fs.F
 		}
 	}
 
-	if len(config.Packages) > 0 || config.Publish != nil || config.Registry != nil {
+	if len(config.Packages) > 0 || len(config.Publish) > 0 || config.Registry != nil {
 		// Inline Bundle
 		thisRepo.bundles[""] = &bundle{
 			debugName: debugName,
@@ -131,9 +131,10 @@ func (b *bundle) SourceImage(ctx context.Context) (*source_j5pb.SourceImage, err
 	return img, nil
 }
 
+/*
 func (b *bundle) CommitInfo(context.Context) (*source_j5pb.CommitInfo, error) {
 	return b.repo.commitInfo, nil
-}
+}*/
 
 type imageBundle struct {
 	source *source_j5pb.SourceImage

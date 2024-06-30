@@ -126,14 +126,7 @@ func (b *Builder) RunPublish(ctx context.Context, src Source, bundle string, dst
 }
 
 func (b *Builder) runPlugins(ctx context.Context, input source.Input, dst FS, plugins []*config_j5pb.BuildPlugin, errOut io.Writer) error {
-	commitInfo, err := input.CommitInfo(ctx)
-	if err != nil {
-		return err
-	}
 	variables := map[string]string{}
-	if commitInfo != nil {
-		variables["GIT_COMMIT"] = commitInfo.Hash
-	}
 	for _, plugin := range plugins {
 
 		switch plugin.Type {
