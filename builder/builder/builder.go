@@ -68,19 +68,15 @@ func (b *Builder) BuildJsonAPI(ctx context.Context, img *source_j5pb.SourceImage
 }
 
 func (b *Builder) RunGenerate(ctx context.Context, src Source, dst FS, build *config_j5pb.GenerateConfig, errOut io.Writer) error {
-	inputs := make([]source.Input, 0, len(build.Inputs))
 
 	for _, inputDef := range build.Inputs {
 		input, err := src.GetInput(ctx, inputDef)
 		if err != nil {
 			return fmt.Errorf("get input: %w", err)
 		}
-		inputs = append(inputs, input)
-	}
 
-	for _, input := range inputs {
 		if err := b.runPlugins(ctx, input, dst, build.Plugins, errOut); err != nil {
-			return err
+			return fmt.Errorf("input %s: %w", input.Name(), err)
 		}
 	}
 	return nil
@@ -128,47 +124,52 @@ func (b *Builder) RunPublish(ctx context.Context, src Source, bundle string, dst
 func (b *Builder) runPlugins(ctx context.Context, input source.Input, dst FS, plugins []*config_j5pb.BuildPlugin, errOut io.Writer) error {
 	variables := map[string]string{}
 	for _, plugin := range plugins {
-
-		switch plugin.Type {
-		case config_j5pb.Plugin_PLUGIN_PROTO:
-			protoBuildRequest, err := input.ProtoCodeGeneratorRequest(ctx)
-			if err != nil {
-				return fmt.Errorf("ProtoCodeGeneratorRequest: %w", err)
-			}
-
-			if err := b.RunProtocPlugin(ctx, variables, dst, plugin, protoBuildRequest, errOut); err != nil {
-				return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
-			}
-
-		case config_j5pb.Plugin_J5_CLIENT:
-			sourceImage, err := input.SourceImage(ctx)
-			if err != nil {
-				return fmt.Errorf("source image: %w", err)
-			}
-			reflectionAPI, err := structure.ReflectFromSource(sourceImage)
-			if err != nil {
-				return fmt.Errorf("ReflectFromSource: %w", err)
-			}
-
-			descriptorAPI, err := reflectionAPI.ToJ5Proto()
-			if err != nil {
-				return fmt.Errorf("DescriptorFromReflection: %w", err)
-			}
-
-			if len(descriptorAPI.Packages) == 0 {
-				return fmt.Errorf("no packages found for input %s", input.Name())
-			}
-			for _, pkg := range descriptorAPI.Packages {
-				log.WithField(ctx, "package", pkg.Name).Debug("Package")
-			}
-
-			if err := b.RunJ5ClientPlugin(ctx, variables, dst, plugin, descriptorAPI, errOut); err != nil {
-				return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
-			}
-
-		default:
-			return fmt.Errorf("unsupported plugin type: %s", plugin.Type)
+		err := b.runPlugin(ctx, input, dst, plugin, variables, errOut)
+		if err != nil {
+			return fmt.Errorf("plugin %s: %w", plugin.Name, err)
 		}
+	}
+	return nil
+}
+
+func (b *Builder) runPlugin(ctx context.Context, input source.Input, dst FS, plugin *config_j5pb.BuildPlugin, variables map[string]string, errOut io.Writer) error {
+
+	switch plugin.Type {
+	case config_j5pb.Plugin_PLUGIN_PROTO:
+		protoBuildRequest, err := input.ProtoCodeGeneratorRequest(ctx)
+		if err != nil {
+			return fmt.Errorf("ProtoCodeGeneratorRequest: %w", err)
+		}
+
+		if err := b.RunProtocPlugin(ctx, variables, dst, plugin, protoBuildRequest, errOut); err != nil {
+			return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
+		}
+
+	case config_j5pb.Plugin_J5_CLIENT:
+		sourceImage, err := input.SourceImage(ctx)
+		if err != nil {
+			return fmt.Errorf("source image: %w", err)
+		}
+		reflectionAPI, err := structure.ReflectFromSource(sourceImage)
+		if err != nil {
+			return fmt.Errorf("ReflectFromSource: %w", err)
+		}
+
+		descriptorAPI, err := reflectionAPI.ToJ5Proto()
+		if err != nil {
+			return fmt.Errorf("DescriptorFromReflection: %w", err)
+		}
+
+		if len(descriptorAPI.Packages) == 0 {
+			return fmt.Errorf("no packages found")
+		}
+
+		if err := b.RunJ5ClientPlugin(ctx, variables, dst, plugin, descriptorAPI, errOut); err != nil {
+			return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
+		}
+
+	default:
+		return fmt.Errorf("unsupported plugin type: %s", plugin.Type)
 	}
 
 	return nil

@@ -81,9 +81,11 @@ func extendPlugin(base, ext *config_j5pb.BuildPlugin) *config_j5pb.BuildPlugin {
 	if ext.Name != "" {
 		out.Name = ext.Name
 	}
-
 	if ext.Runner != nil {
 		out.Runner = ext.Runner
+	}
+	if ext.Type == config_j5pb.Plugin_UNSPECIFIED {
+		ext.Type = out.Type
 	}
 
 	for k, v := range ext.Opts {
