@@ -133,6 +133,8 @@ func (b *Builder) runPlugins(ctx context.Context, input source.Input, dst FS, pl
 }
 
 func (b *Builder) runPlugin(ctx context.Context, input source.Input, dst FS, plugin *config_j5pb.BuildPlugin, variables map[string]string, errOut io.Writer) error {
+	ctx = log.WithField(ctx, "plugin", plugin.Name)
+	log.Info(ctx, "Running Plugin")
 
 	switch plugin.Type {
 	case config_j5pb.Plugin_PLUGIN_PROTO:
