@@ -83,7 +83,7 @@ func (pkg *Package) ToJ5Proto() (*schema_j5pb.Package, error) {
 		})
 	}
 
-	events := make([]*schema_j5pb.EventSpec, len(pkg.Events))
+	events := make([]*schema_j5pb.EventSpec, 0, len(pkg.Events))
 
 	for _, event := range pkg.Events {
 		asProto, err := event.Schema.ToJ5Proto()

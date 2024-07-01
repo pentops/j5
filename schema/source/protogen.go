@@ -24,7 +24,7 @@ func codeGeneratorRequestFromSource(ctx context.Context, bundle *bundle) (*plugi
 
 	includeFiles := map[string]bool{}
 
-	walkRoot, err := fs.Sub(bundle.repo.repoRoot, bundle.dirInRepo)
+	walkRoot, err := bundle.fs()
 	if err != nil {
 		return nil, err
 	}
