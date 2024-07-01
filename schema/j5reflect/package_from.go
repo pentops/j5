@@ -182,6 +182,9 @@ func methodFromDesc(service *Service, protoService *schema_j5pb.Method) (*Method
 }
 
 func eventFromDesc(pkg *Package, protoEvent *schema_j5pb.EventSpec) (*Event, error) {
+	if protoEvent.Schema == nil {
+		return nil, fmt.Errorf("schema is required")
+	}
 	schema, err := RootSchemaFromDesc(pkg, protoEvent.Schema)
 	if err != nil {
 		return nil, wrapError(err, "schema")
