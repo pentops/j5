@@ -41,14 +41,13 @@ func resolveConfigReferences(config *config_j5pb.RepoConfigFile) error {
 
 	config.Plugins = nil
 
-	for _, gen := range config.Generate {
+	resolvePlugins := func(plugins []*config_j5pb.BuildPlugin, baseOpts map[string]string) error {
 		localBases := map[string]*config_j5pb.BuildPlugin{}
-		genOpts := gen.Opts
-		for idx, plugin := range gen.Plugins {
+		for idx, plugin := range plugins {
 			if plugin.Opts == nil {
 				plugin.Opts = map[string]string{}
 			}
-			for k, v := range genOpts {
+			for k, v := range baseOpts {
 				if _, ok := plugin.Opts[k]; !ok {
 					plugin.Opts[k] = v
 				}
@@ -65,8 +64,28 @@ func resolveConfigReferences(config *config_j5pb.RepoConfigFile) error {
 				plugin = extendPlugin(found, plugin)
 			}
 
-			gen.Plugins[idx] = plugin
-			localBases[plugin.Name] = plugin
+			if plugin.Type == config_j5pb.Plugin_UNSPECIFIED {
+				if plugin.Base == nil {
+					return fmt.Errorf("plugin %q has no type, did you mean to set 'base'?", plugin.Name)
+				}
+			}
+
+			plugins[idx] = plugin
+			if plugin.Name != "" {
+				localBases[plugin.Name] = plugin
+			}
+		}
+		return nil
+	}
+
+	for _, gen := range config.Generate {
+		if err := resolvePlugins(gen.Plugins, gen.Opts); err != nil {
+			return err
+		}
+	}
+	for _, pub := range config.Publish {
+		if err := resolvePlugins(pub.Plugins, pub.Opts); err != nil {
+			return err
 		}
 	}
 
