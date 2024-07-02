@@ -9,7 +9,7 @@ import (
 
 type API struct {
 	Packages []*Package            `json:"packages"`
-	Schemas  map[string]*Schema    `json:"schemas"`
+	Schemas  map[string]*Schema    `json:"definitions"`
 	Metadata *schema_j5pb.Metadata `json:"metadata"`
 }
 
