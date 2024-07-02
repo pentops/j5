@@ -66,8 +66,7 @@ func FromProto(protoSchema *schema_j5pb.API) (*API, error) {
 			if err != nil {
 				return nil, err
 			}
-			fullKey := fmt.Sprintf("%s.%s", pkg.Name, key)
-			out.Schemas[fullKey] = schema
+			out.Schemas[key] = schema
 		}
 
 	}
