@@ -31,7 +31,7 @@ func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("unsupported schema type %T", schema)
+		return nil, fmt.Errorf("unsupported root schema type %T", schema)
 	}
 	return enc.b.Bytes(), nil
 }

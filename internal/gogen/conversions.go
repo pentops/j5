@@ -6,10 +6,6 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-func goFieldName(jsonName string) string {
-	return strcase.ToCamel(jsonName)
-}
-
 func goTypeName(name string) string {
 	// Undescores are used to separate nested-scoped types, e.g. a message
 	// defined within a message in proto, this function preserves the underscores

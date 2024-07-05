@@ -31,7 +31,7 @@ func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 	case *j5reflect.OneofSchema:
 		return d2.decodeOneof(schema, msg)
 	default:
-		return fmt.Errorf("unsupported schema type %T", schema)
+		return fmt.Errorf("unsupported root schema type %T", schema)
 	}
 }
 

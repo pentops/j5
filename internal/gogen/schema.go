@@ -222,6 +222,7 @@ func (bb *builder) jsonField(property *j5reflect.ObjectProperty) (*Field, error)
 		Name:     goTypeName(property.JSONName),
 		DataType: *dataType,
 		Tags:     tags,
+		Property: property,
 	}, nil
 
 }

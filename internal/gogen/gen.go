@@ -100,7 +100,7 @@ func WriteGoCode(j5Package *j5reflect.Package, output FileWriter, options Option
 	for _, service := range j5Package.Services {
 		for _, method := range service.Methods {
 			if err := bb.addMethod(j5Package.Name, method); err != nil {
-				return err
+				return fmt.Errorf("%s.%s/%s: %w", service.Package.Name, service.Name, method.GRPCMethodName, err)
 			}
 		}
 	}
@@ -152,135 +152,73 @@ func (bb *builder) addMethod(grpcPackage string, operation *j5reflect.Method) er
 	service := gen.Service(operation.Service.Name)
 
 	responseType := fmt.Sprintf("%sResponse", operation.GRPCMethodName)
-	requestType := fmt.Sprintf("%sRequest", operation.GRPCMethodName)
 
-	pathParameters := map[string]*j5reflect.ObjectProperty{}
+	req, err := bb.prepareRequestObject(operation)
+	if err != nil {
+		return err
+	}
 	{
 
-		requestSchema, ok := operation.Request.(*j5reflect.ObjectSchema)
-		if !ok {
-			return fmt.Errorf("request type %q is not an object", requestType)
+		if _, ok := gen.types[req.Request.Name]; ok {
+			return fmt.Errorf("request type %q already exists", req.Request.Name)
 		}
+		gen.types[req.Request.Name] = req.Request
 
-		requestStruct := &Struct{
-			Name: requestType,
-		}
-
-		if _, ok := gen.types[requestType]; ok {
-			return fmt.Errorf("request type %q already exists", requestType)
-		}
-		gen.types[requestType] = requestStruct
-
-		pathParameterSet := map[string]struct{}{}
-
-		for _, parameter := range strings.Split(operation.HTTPPath, "/") {
-			if len(parameter) == 0 || parameter[0] != ':' {
-				continue
-			}
-			pathParameterSet[parameter[1:]] = struct{}{}
-		}
-
-		queryParameters := make([]*j5reflect.ObjectProperty, 0, len(requestSchema.Properties))
-		for _, property := range requestSchema.Properties {
-			field, err := bb.jsonField(property)
-			if err != nil {
+		if req.pageRequestField != nil {
+			if err := bb.addPaginationMethod(gen, req); err != nil {
 				return err
 			}
-
-			if _, ok := pathParameterSet[property.JSONName]; ok {
-				field.Tags = map[string]string{
-					"path": property.JSONName,
-					"json": "-",
-				}
-				pathParameters[property.JSONName] = property
-
-			} else if !operation.HasBody {
-				field.Tags = map[string]string{
-					"query": property.JSONName,
-					"json":  "-",
-				}
-				queryParameters = append(queryParameters, property)
-			}
-			requestStruct.Fields = append(requestStruct.Fields, field)
 		}
 
-		if len(queryParameters) > 0 {
-			queryMethod := &Function{
-				Name:       "QueryParameters",
-				Parameters: []*Parameter{},
-				Returns: []*Parameter{{
-					DataType: DataType{
-						Name:      "Values",
-						GoPackage: "net/url",
-					},
-				}, {
-					DataType: DataType{
-						Name: "error",
-					},
-				}},
-				StringGen: gen.ChildGen(),
-			}
-
-			queryMethod.P("  values := ", DataType{GoPackage: "net/url", Name: "Values"}, "{}")
-
-			for _, property := range queryParameters {
-
-				goName := goFieldName(property.JSONName)
-
-				switch property.Schema.(type) {
-
-				case *j5reflect.ScalarSchema:
-					if property.Required {
-						queryMethod.P("  values.Set(\"", property.JSONName, "\", s.", goName, ")")
-					} else {
-						queryMethod.P("  if s.", goName, " != nil {")
-						queryMethod.P("    values.Set(\"", property.JSONName, "\", *s.", goName, ")")
-						queryMethod.P("  }")
-					}
-
-				case *j5reflect.ObjectSchema:
-					// include as JSON
-					queryMethod.P("  if s.", goName, " != nil {")
-					queryMethod.P("    bb, err := ", DataType{GoPackage: "encoding/json", Name: "Marshal"}, "(s.", goName, ")")
-					queryMethod.P("    if err != nil {")
-					queryMethod.P("      return nil, err")
-					queryMethod.P("    }")
-					queryMethod.P("    values.Set(\"", property.JSONName, "\", string(bb))")
-					queryMethod.P("  }")
-
-				default:
-					queryMethod.P(" // Skipping query parameter ", property.JSONName)
-					//queryMethod.P("    values.Set(\"", parameter.Name, "\", fmt.Sprintf(\"%v\", *s.", GoName(parameter.Name), "))")
-				}
-			}
-
-			queryMethod.P("  return values, nil")
-
-			requestStruct.Methods = append(requestStruct.Methods, queryMethod)
-		}
-
-		for _, field := range requestStruct.Fields {
-			if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageRequest" {
-				setter := &Function{
-					Name:     "SetPageToken",
-					TakesPtr: true,
-					Parameters: []*Parameter{{
-						Name: "pageToken",
-						DataType: DataType{
-							Name:    "string",
-							Pointer: false,
-						}},
-					},
-					StringGen: gen.ChildGen(),
-				}
-				setter.P("if s.", field.Name, " == nil {")
-				setter.P("  s.", field.Name, " = ", field.DataType.Addr(), "{}")
-				setter.P("}")
-				setter.P("s.", field.Name, ".Token = &pageToken")
-
-				requestStruct.Methods = append(requestStruct.Methods, setter)
+		if !operation.HasBody {
+			if err := bb.addQueryMethod(gen, req); err != nil {
+				return err
 			}
 		}
+
+		requestMethod := &Function{
+			Name: operation.GRPCMethodName,
+			Parameters: []*Parameter{{
+				Name: "ctx",
+				DataType: DataType{
+					GoPackage: "context",
+					Name:      "Context",
+				},
+			}, {
+				Name: "req",
+				DataType: DataType{
+					Name:    req.Request.Name,
+					Pointer: true,
+				},
+			}},
+			Returns: []*Parameter{{
+				DataType: DataType{
+					Name:    responseType,
+					Pointer: true,
+				},
+			}, {
+				DataType: DataType{
+					Name: "error",
+				},
+			}},
+			StringGen: gen.ChildGen(),
+		}
+
+		requestMethod.P("  path := ", DataType{GoPackage: "fmt", Name: "Sprintf"}, "(\"", req.pathFmtString, "\", ")
+		for _, param := range req.pathFields {
+			requestMethod.P("   req.", param.Name, ", ")
+		}
+		requestMethod.P("  )")
+
+		requestMethod.P("  resp := &", responseType, "{}")
+		requestMethod.P("  err := s.Request(ctx, \"", operation.HTTPMethod.ShortString(), "\", path, req, resp)")
+		requestMethod.P("  if err != nil {")
+		requestMethod.P("    return nil, err")
+		requestMethod.P("  }")
+
+		requestMethod.P("  return resp, nil")
+
+		service.Methods = append(service.Methods, requestMethod)
 	}
 
 	{
@@ -349,25 +287,122 @@ func (bb *builder) addMethod(grpcPackage string, operation *j5reflect.Method) er
 		}
 	}
 
-	requestMethod := &Function{
-		Name: operation.GRPCMethodName,
+	return nil
+
+}
+
+type builtRequest struct {
+	Request          *Struct
+	pageRequestField *Field
+
+	pathFmtString string
+	pathFields    []*Field
+}
+
+func (bb *builder) prepareRequestObject(operation *j5reflect.Method) (*builtRequest, error) {
+	requestType := fmt.Sprintf("%sRequest", operation.GRPCMethodName)
+
+	requestSchema, ok := operation.Request.(*j5reflect.ObjectSchema)
+	if !ok {
+		return nil, fmt.Errorf("request type %q is not an object", requestType)
+	}
+
+	requestStruct := &Struct{
+		Name: requestType,
+	}
+
+	req := &builtRequest{
+		Request: requestStruct,
+	}
+
+	fields := map[string]*Field{}
+
+	for _, property := range requestSchema.Properties {
+		field, err := bb.jsonField(property)
+		if err != nil {
+			return nil, err
+		}
+		fields[property.JSONName] = field
+		requestStruct.Fields = append(requestStruct.Fields, field)
+
+		if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageRequest" {
+			req.pageRequestField = field
+		}
+	}
+
+	pathParameterSet := map[string]struct{}{}
+
+	pathParts := strings.Split(operation.HTTPPath, "/")
+	for idx, part := range pathParts {
+		if len(part) == 0 || part[0] != ':' {
+			continue
+		}
+		name := part[1:]
+
+		field, ok := fields[name]
+		if !ok {
+			return nil, fmt.Errorf("path parameter %q not found in request object %s", name, requestType)
+		}
+
+		field.Tags["json"] = "-"
+		field.Tags["path"] = field.Property.JSONName
+
+		pathParameterSet[name] = struct{}{}
+		pathParts[idx] = "%s"
+		req.pathFields = append(req.pathFields, field)
+	}
+	req.pathFmtString = strings.Join(pathParts, "/")
+
+	if !operation.HasBody {
+		for _, field := range requestStruct.Fields {
+			if _, ok := pathParameterSet[field.Name]; ok {
+				continue
+			}
+			field.Tags["json"] = "-"
+			field.Tags["query"] = field.Property.JSONName
+		}
+	}
+
+	return req, nil
+}
+
+func (bb *builder) addPaginationMethod(gen *GeneratedFile, req *builtRequest) error {
+
+	field := req.pageRequestField
+	if field.DataType.J5Package != "psm.list.v1" || field.DataType.Name != "PageRequest" {
+		return fmt.Errorf("invalid page request field %q %q", field.DataType.J5Package, field.DataType.Name)
+	}
+
+	setter := &Function{
+		Name:     "SetPageToken",
+		TakesPtr: true,
 		Parameters: []*Parameter{{
-			Name: "ctx",
+			Name: "pageToken",
 			DataType: DataType{
-				GoPackage: "context",
-				Name:      "Context",
-			},
-		}, {
-			Name: "req",
-			DataType: DataType{
-				Name:    requestType,
-				Pointer: true,
-			},
-		}},
+				Name:    "string",
+				Pointer: false,
+			}},
+		},
+		StringGen: gen.ChildGen(),
+	}
+	setter.P("if s.", field.Name, " == nil {")
+	setter.P("  s.", field.Name, " = ", field.DataType.Addr(), "{}")
+	setter.P("}")
+	setter.P("s.", field.Name, ".Token = &pageToken")
+
+	req.Request.Methods = append(req.Request.Methods, setter)
+
+	return nil
+}
+
+func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
+	queryMethod := &Function{
+		Name:       "QueryParameters",
+		Parameters: []*Parameter{},
 		Returns: []*Parameter{{
 			DataType: DataType{
-				Name:    responseType,
-				Pointer: true,
+				Name:      "Values",
+				GoPackage: "net/url",
 			},
 		}, {
 			DataType: DataType{
@@ -377,41 +412,42 @@ func (bb *builder) addMethod(grpcPackage string, operation *j5reflect.Method) er
 		StringGen: gen.ChildGen(),
 	}
 
-	pathParts := strings.Split(operation.HTTPPath, "/")
-	pathParams := make([]string, 0)
-	for idx, part := range pathParts {
-		if len(part) == 0 {
+	queryMethod.P("  values := ", DataType{GoPackage: "net/url", Name: "Values"}, "{}")
+
+	for _, field := range req.Request.Fields {
+		if _, ok := field.Tags["query"]; !ok {
 			continue
 		}
-		if part[0] == ':' {
-			name := part[1:]
-			field, ok := pathParameters[name]
-			if !ok {
-				return fmt.Errorf("path parameter %q not found in request object %s", name, requestType)
+
+		switch field.Property.Schema.(type) {
+
+		case *j5reflect.ScalarSchema:
+			if field.Property.Required {
+				queryMethod.P("  values.Set(\"", field.Property.JSONName, "\", s.", field.Name, ")")
+			} else {
+				queryMethod.P("  if s.", field.Name, " != nil {")
+				queryMethod.P("    values.Set(\"", field.Property.JSONName, "\", *s.", field.Name, ")")
+				queryMethod.P("  }")
 			}
 
-			pathParts[idx] = "%s"
+		case *j5reflect.ObjectSchema:
+			// include as JSON
+			queryMethod.P("  if s.", field.Name, " != nil {")
+			queryMethod.P("    bb, err := ", DataType{GoPackage: "encoding/json", Name: "Marshal"}, "(s.", field.Name, ")")
+			queryMethod.P("    if err != nil {")
+			queryMethod.P("      return nil, err")
+			queryMethod.P("    }")
+			queryMethod.P("    values.Set(\"", field.Name, "\", string(bb))")
+			queryMethod.P("  }")
 
-			pathParams = append(pathParams, fmt.Sprintf("req.%s", goFieldName(field.JSONName)))
+		default:
+			queryMethod.P(" // Skipping query parameter ", field.Property.JSONName)
+			//queryMethod.P("    values.Set(\"", parameter.Name, "\", fmt.Sprintf(\"%v\", *s.", GoName(parameter.Name), "))")
 		}
 	}
 
-	requestMethod.P("  path := ", DataType{GoPackage: "fmt", Name: "Sprintf"}, "(\"", strings.Join(pathParts, "/"), "\", ")
-	for _, param := range pathParams {
-		requestMethod.P("   ", param, ", ")
-	}
-	requestMethod.P("  )")
+	queryMethod.P("  return values, nil")
 
-	requestMethod.P("  resp := &", responseType, "{}")
-	requestMethod.P("  err := s.Request(ctx, \"", operation.HTTPMethod.ShortString(), "\", path, req, resp)")
-	requestMethod.P("  if err != nil {")
-	requestMethod.P("    return nil, err")
-	requestMethod.P("  }")
-
-	requestMethod.P("  return resp, nil")
-
-	service.Methods = append(service.Methods, requestMethod)
-
+	req.Request.Methods = append(req.Request.Methods, queryMethod)
 	return nil
-
 }
