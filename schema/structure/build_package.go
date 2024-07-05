@@ -236,7 +236,11 @@ func buildMethod(refs *SchemaResolver, method protoreflect.MethodDescriptor) (*j
 		}
 		if part[0] == '{' && part[len(part)-1] == '}' {
 			fieldName := part[1 : len(part)-1]
-			jsonName := jsonFieldName(protoreflect.Name(fieldName))
+			inputField := method.Input().Fields().ByName(protoreflect.Name(fieldName))
+			if inputField == nil {
+				return nil, fmt.Errorf("path field %q not found in input", fieldName)
+			}
+			jsonName := inputField.JSONName()
 			pathParts[idx] = ":" + jsonName
 
 		} else if strings.ContainsAny(part, "{}*:") {

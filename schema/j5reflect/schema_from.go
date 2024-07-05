@@ -116,7 +116,7 @@ func SchemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (Schema, error) {
 		return &AnySchema{}, nil
 
 	default:
-		return nil, fmt.Errorf("unsupported schema type %T", st)
+		return nil, fmt.Errorf("unsupported descriptor schema type %T", st)
 	}
 }
 

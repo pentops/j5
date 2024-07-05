@@ -98,7 +98,8 @@ func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_R
 		input.Version = "main"
 	}
 
-	req, err := http.NewRequest("GET", fmt.Sprintf("%s/registry/v1/%s/%s/%s/image.bin", src.remoteRegistry, input.Organization, input.Name, input.Version), nil)
+	imageURL := fmt.Sprintf("%s/registry/v1/%s/%s/%s/image.bin", src.remoteRegistry, input.Organization, input.Name, input.Version)
+	req, err := http.NewRequest("GET", imageURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating registry input request: %w", err)
 	}
@@ -116,7 +117,7 @@ func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_R
 
 	apiDef := &source_j5pb.SourceImage{}
 	if err := proto.Unmarshal(data, apiDef); err != nil {
-		return nil, fmt.Errorf("unmarshalling registry input: %w", err)
+		return nil, fmt.Errorf("unmarshalling registry input %s: %w", imageURL, err)
 	}
 
 	return &imageBundle{
