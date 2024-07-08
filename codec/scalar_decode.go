@@ -9,9 +9,9 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/pentops/j5/internal/j5reflect"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
-	"github.com/pentops/j5/schema/j5reflect"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -22,50 +22,50 @@ func (dec *decoder) decodeScalarField(schema *j5reflect.ScalarSchema) (protorefl
 	if schema.WellKnownTypeName != "" {
 		switch schema.WellKnownTypeName {
 
-		//case WKTAny:
+		//case wktAny:
 		//	return unmarshalAny
 
-		case WKTTimestamp:
+		case wktTimestamp:
 			return dec.unmarshalTimestamp()
 
-		case JTDate:
+		case jtDate:
 			return dec.unmarshalDate()
 
-			//case WKTDuration:
+		case jtDecimal:
+			return dec.decodeWrapper(&decimal_j5t.Decimal{})
+
+			//case wktDuration:
 			//	return unmarshalDuration
 
-		case WKTBool:
+		case wktBool:
 			return dec.decodeWrapper(&wrappers.BoolValue{})
 
-		case WKTInt32:
+		case wktInt32:
 			return dec.decodeWrapper(&wrappers.Int32Value{})
 
-		case WKTInt64:
+		case wktInt64:
 			return dec.decodeWrapper(&wrappers.Int64Value{})
 
-		case WKTUInt32:
+		case wktUInt32:
 			return dec.decodeWrapper(&wrappers.UInt32Value{})
 
-		case WKTUInt64:
+		case wktUInt64:
 			return dec.decodeWrapper(&wrappers.UInt64Value{})
 
-		case WKTFloat:
+		case wktFloat:
 			return dec.decodeWrapper(&wrappers.FloatValue{})
 
-		case WKTDouble:
+		case wktDouble:
 			return dec.decodeWrapper(&wrappers.DoubleValue{})
 
-		case WKTString:
+		case wktString:
 			return dec.decodeWrapper(&wrappers.StringValue{})
 
-		case WKTBytes:
+		case wktBytes:
 			return dec.decodeWrapper(&wrappers.BytesValue{})
 
-		case WKTEmpty:
+		case wktEmpty:
 			return protoreflect.Value{}, dec.unmarshalEmptyObject()
-
-		case JTDecimal:
-			return dec.decodeWrapper(&decimal_j5t.Decimal{})
 
 		default:
 			return protoreflect.Value{}, fmt.Errorf("unsupported well known type %q", schema.WellKnownTypeName)

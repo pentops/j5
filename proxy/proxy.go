@@ -77,7 +77,7 @@ func NewRouter(codec Codec) *Router {
 	}
 }
 
-func (rr *Router) Use(middleware func(http.Handler) http.Handler) {
+func (rr *Router) AddMiddleware(middleware func(http.Handler) http.Handler) {
 	rr.middleware = append(rr.middleware, middleware)
 }
 
@@ -85,7 +85,7 @@ func (rr *Router) SetNotFoundHandler(handler http.Handler) {
 	rr.router.NotFoundHandler = handler
 }
 
-func (rr *Router) HealthCheck(path string, callback func() error) {
+func (rr *Router) SetHealthCheck(path string, callback func() error) {
 	rr.router.HandleFunc(path, func(w http.ResponseWriter, r *http.Request) {
 		if err := callback(); err != nil {
 			doError(r.Context(), w, err)
@@ -114,22 +114,6 @@ func (rr *Router) StaticJSON(path string, document interface{}) error {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(jb) // nolint: errcheck
 	})
-	return nil
-}
-
-// RegisterService calls RegisterGRPCMethod on all methods of the service with
-// default config.
-func (rr *Router) RegisterService(ctx context.Context, ss protoreflect.ServiceDescriptor, conn Invoker) error {
-	methods := ss.Methods()
-	for ii := 0; ii < methods.Len(); ii++ {
-		method := methods.Get(ii)
-		if err := rr.RegisterGRPCMethod(ctx, GRPCMethodConfig{
-			Method:  method,
-			Invoker: conn,
-		}); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
@@ -379,22 +363,21 @@ func doStatusError(ctx context.Context, w http.ResponseWriter, statusError *stat
 }
 
 var statusToHTTPCode = map[codes.Code]int{
-	// TODO: These were autocompleted by AI, check if they are correct
 	codes.OK:                 http.StatusOK,
-	codes.Canceled:           http.StatusRequestTimeout,
 	codes.Unknown:            http.StatusInternalServerError,
+	codes.Canceled:           http.StatusRequestTimeout,
 	codes.InvalidArgument:    http.StatusBadRequest,
-	codes.DeadlineExceeded:   http.StatusGatewayTimeout,
+	codes.DeadlineExceeded:   http.StatusRequestTimeout,
 	codes.NotFound:           http.StatusNotFound,
-	codes.AlreadyExists:      http.StatusConflict,
 	codes.PermissionDenied:   http.StatusForbidden,
 	codes.ResourceExhausted:  http.StatusTooManyRequests,
 	codes.FailedPrecondition: http.StatusPreconditionFailed,
-	codes.Aborted:            http.StatusConflict,
+	codes.Aborted:            http.StatusPreconditionFailed,
+	codes.Unavailable:        http.StatusServiceUnavailable,
+	codes.AlreadyExists:      http.StatusConflict,
 	codes.OutOfRange:         http.StatusBadRequest,
 	codes.Unimplemented:      http.StatusNotImplemented,
 	codes.Internal:           http.StatusInternalServerError,
-	codes.Unavailable:        http.StatusServiceUnavailable,
 	codes.DataLoss:           http.StatusInternalServerError,
 	codes.Unauthenticated:    http.StatusUnauthorized,
 }

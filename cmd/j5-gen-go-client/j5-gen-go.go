@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 
 	"github.com/pentops/j5/gen/j5/plugin/v1/plugin_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/gogen"
-	"github.com/pentops/j5/schema/j5reflect"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -50,23 +48,12 @@ func do() error {
 		resp: &plugin_j5pb.CodeGenerationResponse{},
 	}
 
-	reflect, err := j5reflect.APIFromDesc(&schema_j5pb.API{
+	api := &schema_j5pb.API{
 		Packages: req.Packages,
-	})
-	if err != nil {
-		return err
 	}
 
-	for _, j5Package := range reflect.Packages { // Only generate packages within the prefix.
-		if options.FilterPackagePrefix != "" {
-			if !strings.HasPrefix(j5Package.Name, options.FilterPackagePrefix) {
-				continue
-			}
-		}
-
-		if err := gogen.WriteGoCode(j5Package, output, options); err != nil {
-			return err
-		}
+	if err := gogen.WriteGoCode(api, output, options); err != nil {
+		return err
 	}
 
 	outBytes, err := proto.Marshal(output.resp)

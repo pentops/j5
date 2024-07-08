@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pentops/j5/schema/j5reflect"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/internal/j5reflect"
 )
 
 type Options struct {
@@ -56,9 +57,6 @@ type SchemaResolver interface {
 // required. Returns nil when the package should not be generated (i.e. outside
 // of the generate prefix, a reference to externally hosted code)
 func (bb *builder) fileForPackage(grpcPackageName string) (*GeneratedFile, error) {
-	if !strings.HasPrefix(grpcPackageName, bb.options.FilterPackagePrefix) {
-		return nil, nil
-	}
 	objectPackage, err := bb.options.ReferenceGoPackage(grpcPackageName)
 	if err != nil {
 		return nil, fmt.Errorf("object package name '%s': %w", grpcPackageName, err)
@@ -84,8 +82,12 @@ func (fw DirFileWriter) WriteFile(relPath string, data []byte) error {
 	return nil
 }
 
-func WriteGoCode(j5Package *j5reflect.Package, output FileWriter, options Options) error {
+func WriteGoCode(api *schema_j5pb.API, output FileWriter, options Options) error {
 
+	reflect, err := j5reflect.APIFromDesc(api)
+	if err != nil {
+		return err
+	}
 	fileSet := NewFileSet(options.GoPackagePrefix)
 
 	bb := &builder{
@@ -93,14 +95,12 @@ func WriteGoCode(j5Package *j5reflect.Package, output FileWriter, options Option
 		options: options,
 	}
 
-	// Only generate packages within the prefix.
-	if !strings.HasPrefix(j5Package.Name, bb.options.FilterPackagePrefix) {
-		return fmt.Errorf("package %s not in prefix %s", j5Package.Name, bb.options.FilterPackagePrefix)
-	}
-	for _, service := range j5Package.Services {
-		for _, method := range service.Methods {
-			if err := bb.addMethod(j5Package.Name, method); err != nil {
-				return fmt.Errorf("%s.%s/%s: %w", service.Package.Name, service.Name, method.GRPCMethodName, err)
+	for _, j5Package := range reflect.Packages {
+		for _, service := range j5Package.Services {
+			for _, method := range service.Methods {
+				if err := bb.addMethod(j5Package.Name, method); err != nil {
+					return fmt.Errorf("%s.%s/%s: %w", service.Package.Name, service.Name, method.GRPCMethodName, err)
+				}
 			}
 		}
 	}
@@ -113,9 +113,6 @@ func (bb *builder) addMethod(grpcPackage string, operation *j5reflect.Method) er
 	gen, err := bb.fileForPackage(grpcPackage)
 	if err != nil {
 		return err
-	}
-	if gen == nil {
-		return nil
 	}
 
 	gen.EnsureInterface(&Interface{
@@ -347,7 +344,7 @@ func (bb *builder) prepareRequestObject(operation *j5reflect.Method) (*builtRequ
 		field.Tags["json"] = "-"
 		field.Tags["path"] = field.Property.JSONName
 
-		pathParameterSet[name] = struct{}{}
+		pathParameterSet[field.Name] = struct{}{}
 		pathParts[idx] = "%s"
 		req.pathFields = append(req.pathFields, field)
 	}
@@ -419,14 +416,30 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 			continue
 		}
 
-		switch field.Property.Schema.(type) {
+		switch fieldType := field.Property.Schema.(type) {
 
 		case *j5reflect.ScalarSchema:
+			accessor := "s." + field.Name
+			if !field.Property.Required {
+				accessor = "*s." + field.Name
+			}
+
+			switch fieldType.Proto.Type.(type) {
+			case *schema_j5pb.Schema_String_:
+				// pass through
+			case *schema_j5pb.Schema_Boolean:
+				accessor = "fmt.Sprintf(\"%v\", " + accessor + ")"
+
+			default:
+				return fmt.Errorf("unsupported scalar type %T", fieldType.Proto.Type)
+
+			}
+
 			if field.Property.Required {
-				queryMethod.P("  values.Set(\"", field.Property.JSONName, "\", s.", field.Name, ")")
+				queryMethod.P("  values.Set(\"", field.Property.JSONName, "\", ", accessor, ")")
 			} else {
 				queryMethod.P("  if s.", field.Name, " != nil {")
-				queryMethod.P("    values.Set(\"", field.Property.JSONName, "\", *s.", field.Name, ")")
+				queryMethod.P("    values.Set(\"", field.Property.JSONName, "\", ", accessor, ")")
 				queryMethod.P("  }")
 			}
 
