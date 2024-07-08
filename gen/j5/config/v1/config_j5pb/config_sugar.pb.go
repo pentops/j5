@@ -48,7 +48,6 @@ func (x *OutputType_GoProxy) TypeKey() OutputTypeKey {
 }
 
 type IsOutputType_Type = isOutputType_Type
-type IsBuildPlugin_Runner = isBuildPlugin_Runner
 type IsDockerRegistryAuth_Auth = isDockerRegistryAuth_Auth
 
 // Plugin

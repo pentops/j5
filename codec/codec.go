@@ -1,7 +1,7 @@
 package codec
 
 import (
-	"github.com/pentops/j5/schema/structure"
+	"github.com/pentops/j5/internal/structure"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 

@@ -1,4 +1,4 @@
-package docker
+package builder
 
 import (
 	"context"
@@ -12,12 +12,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
-	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/log.go/log"
-	"go.opentelemetry.io/otel/trace/noop"
 
 	glob "github.com/ryanuber/go-glob"
 )
@@ -34,48 +33,10 @@ var DefaultRegistryAuths = []*config_j5pb.DockerRegistryAuth{{
 	},
 }}
 
-type DockerWrapper struct {
-	pulledImages map[string]bool
-	client       *client.Client
-	auth         []*config_j5pb.DockerRegistryAuth
-}
+func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
 
-func NewDockerWrapper(registryAuth []*config_j5pb.DockerRegistryAuth) (*DockerWrapper, error) {
-
-	cli, err := client.NewClientWithOpts(
-		client.FromEnv,
-		client.WithAPIVersionNegotiation(),
-		client.WithTraceProvider(noop.NewTracerProvider()),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return &DockerWrapper{
-		pulledImages: make(map[string]bool),
-		client:       cli,
-		auth:         registryAuth,
-	}, nil
-}
-
-func (dw *DockerWrapper) Close() error {
-	return dw.client.Close()
-}
-
-func (dw *DockerWrapper) Run(ctx context.Context, spec *config_j5pb.DockerSpec, input io.Reader, output io.Writer, errOutput io.Writer, envVars []string) error {
-	if spec.Pull {
-		// skip if pulled...
-		if !dw.pulledImages[spec.Image] {
-			// only pull once for all plugins
-			dw.pulledImages[spec.Image] = true
-
-			log.Debug(ctx, "pulling image")
-			if err := dw.Pull(ctx, spec); err != nil {
-				log.WithError(ctx, err).Error("failed to pull image")
-				return err
-			}
-			log.Info(ctx, "image pulled")
-		}
+	if err := dw.pullIfNeeded(ctx, rc.Command.Docker.Image); err != nil {
+		return err
 	}
 
 	resp, err := dw.client.ContainerCreate(ctx, &container.Config{
@@ -87,10 +48,10 @@ func (dw *DockerWrapper) Run(ctx context.Context, spec *config_j5pb.DockerSpec, 
 
 		Tty: false,
 
-		Image:      spec.Image,
-		Env:        envVars,
-		Entrypoint: spec.Entrypoint,
-		Cmd:        spec.Command,
+		Env:        rc.Command.Env,
+		Image:      rc.Command.Docker.Image,
+		Entrypoint: rc.Command.Docker.Entrypoint,
+		Cmd:        rc.Command.Docker.Cmd,
 	}, nil, nil, nil, "")
 	if err != nil {
 		return err
@@ -122,11 +83,11 @@ func (dw *DockerWrapper) Run(ctx context.Context, spec *config_j5pb.DockerSpec, 
 
 	chOut := make(chan error)
 	go func() {
-		_, err = stdcopy.StdCopy(output, errOutput, hj.Reader)
+		_, err = stdcopy.StdCopy(rc.StdOut, rc.StdErr, hj.Reader)
 		chOut <- err
 	}()
 
-	if _, err := io.Copy(hj.Conn, input); err != nil {
+	if _, err := io.Copy(hj.Conn, rc.StdIn); err != nil {
 		return err
 	}
 	if err := hj.CloseWrite(); err != nil {
@@ -159,7 +120,24 @@ func (dw *DockerWrapper) Run(ctx context.Context, spec *config_j5pb.DockerSpec, 
 	return nil
 }
 
-func (dw *DockerWrapper) Pull(ctx context.Context, spec *config_j5pb.DockerSpec) error {
+func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
+	// skip if pulled...
+	if dw.pulledImages[img] {
+		return nil
+	}
+
+	// only pull once for all plugins
+	dw.pulledImages[img] = true
+
+	images, err := dw.client.ImageList(ctx, image.ListOptions{
+		Filters: filters.NewArgs(filters.Arg("reference", img)),
+	})
+	if err != nil {
+		return fmt.Errorf("image list: %w", err)
+	}
+	if len(images) > 0 {
+		return nil
+	}
 
 	type basicAuth struct {
 		Username string `json:"username"`
@@ -171,14 +149,14 @@ func (dw *DockerWrapper) Pull(ctx context.Context, spec *config_j5pb.DockerSpec)
 	var registryAuth *config_j5pb.DockerRegistryAuth
 	for _, auth := range dw.auth {
 		// If auth's registry pattern with * wildcards matches the spec's image, use it.
-		if glob.Glob(auth.Registry, spec.Image) {
+		if glob.Glob(auth.Registry, img) {
 			registryAuth = auth
 			log.WithField(ctx, "registry", auth.Registry).Debug("using auth")
 			break
 		}
 	}
 	if registryAuth == nil {
-		log.WithField(ctx, "image", spec.Image).Debug("no registry auth matched")
+		log.WithField(ctx, "image", img).Debug("no registry auth matched")
 	}
 
 	if registryAuth != nil {
@@ -253,7 +231,7 @@ func (dw *DockerWrapper) Pull(ctx context.Context, spec *config_j5pb.DockerSpec)
 		}
 	}
 
-	reader, err := dw.client.ImagePull(ctx, spec.Image, pullOptions)
+	reader, err := dw.client.ImagePull(ctx, img, pullOptions)
 	if err != nil {
 		// The ECS registry seems to return the 'wrong' status code for PrivilegeFunc errors.
 		// This is a workaround.
@@ -264,7 +242,7 @@ func (dw *DockerWrapper) Pull(ctx context.Context, spec *config_j5pb.DockerSpec)
 			}
 			pullOptions.PrivilegeFunc = nil
 			pullOptions.RegistryAuth = token
-			reader, err = dw.client.ImagePull(ctx, spec.Image, pullOptions)
+			reader, err = dw.client.ImagePull(ctx, img, pullOptions)
 			if err != nil {
 				return fmt.Errorf("image pull: %w", err)
 			}

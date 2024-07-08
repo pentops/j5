@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/schema/j5reflect"
+	"github.com/pentops/j5/internal/j5reflect"
 )
 
 type builder struct {

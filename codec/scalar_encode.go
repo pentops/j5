@@ -5,29 +5,29 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pentops/j5/schema/j5reflect"
+	"github.com/pentops/j5/internal/j5reflect"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 const (
-	WKTAny       = "google.protobuf.Any"
-	WKTTimestamp = "google.protobuf.Timestamp"
-	WKTDuration  = "google.protobuf.Duration"
+	wktAny       = "google.protobuf.Any"
+	wktTimestamp = "google.protobuf.Timestamp"
+	wktDuration  = "google.protobuf.Duration"
 
-	WKTBool   = "google.protobuf.BoolValue"
-	WKTInt32  = "google.protobuf.Int32Value"
-	WKTInt64  = "google.protobuf.Int64Value"
-	WKTUInt32 = "google.protobuf.UInt32Value"
-	WKTUInt64 = "google.protobuf.UInt64Value"
-	WKTFloat  = "google.protobuf.FloatValue"
-	WKTDouble = "google.protobuf.DoubleValue"
-	WKTString = "google.protobuf.StringValue"
-	WKTBytes  = "google.protobuf.BytesValue"
+	wktBool   = "google.protobuf.BoolValue"
+	wktInt32  = "google.protobuf.Int32Value"
+	wktInt64  = "google.protobuf.Int64Value"
+	wktUInt32 = "google.protobuf.UInt32Value"
+	wktUInt64 = "google.protobuf.UInt64Value"
+	wktFloat  = "google.protobuf.FloatValue"
+	wktDouble = "google.protobuf.DoubleValue"
+	wktString = "google.protobuf.StringValue"
+	wktBytes  = "google.protobuf.BytesValue"
 
-	WKTEmpty = "google.protobuf.Empty"
+	wktEmpty = "google.protobuf.Empty"
 
-	JTDate    = protoreflect.FullName("j5.types.date.v1.Date")
-	JTDecimal = protoreflect.FullName("j5.types.decimal.v1.Decimal")
+	jtDate    = protoreflect.FullName("j5.types.date.v1.Date")
+	jtDecimal = protoreflect.FullName("j5.types.decimal.v1.Decimal")
 )
 
 func (e *encoder) encodeScalarField(field *j5reflect.ScalarSchema, val protoreflect.Value) error {
@@ -35,7 +35,7 @@ func (e *encoder) encodeScalarField(field *j5reflect.ScalarSchema, val protorefl
 	if field.WellKnownTypeName != "" {
 		switch field.WellKnownTypeName {
 
-		case WKTTimestamp:
+		case wktTimestamp:
 			return e.marshalTimestamp(val.Message())
 
 		//case WKTAny:
@@ -45,23 +45,23 @@ func (e *encoder) encodeScalarField(field *j5reflect.ScalarSchema, val protorefl
 		//	return marshalDuration
 
 		case
-			WKTBool,
-			WKTInt32,
-			WKTInt64,
-			WKTUInt32,
-			WKTUInt64,
-			WKTFloat,
-			WKTDouble,
-			WKTString,
-			WKTBytes:
+			wktBool,
+			wktInt32,
+			wktInt64,
+			wktUInt32,
+			wktUInt64,
+			wktFloat,
+			wktDouble,
+			wktString,
+			wktBytes:
 			return e.marshalWrapperType(field, val.Message())
-		case WKTEmpty:
+		case wktEmpty:
 			e.marshalEmpty()
 			return nil
 
-		case JTDate:
+		case jtDate:
 			return e.marshalDate(val.Message())
-		case JTDecimal:
+		case jtDecimal:
 			return e.marshalWrapperType(field, val.Message())
 		}
 		return nil

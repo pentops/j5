@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/schema/j5reflect"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +27,7 @@ func (o TestOutput) WriteFile(name string, data []byte) error {
 
 func TestTestProtoGen(t *testing.T) {
 
-	api, err := j5reflect.APIFromDesc(&schema_j5pb.API{
+	api := &schema_j5pb.API{
 		Packages: []*schema_j5pb.Package{{
 			Label:        "package label",
 			Name:         "test.v1",
@@ -103,11 +102,7 @@ func TestTestProtoGen(t *testing.T) {
 				},
 			},
 		}},
-	})
-	if err != nil {
-		t.Fatalf("Building API from Descriptor: %s", err.Error())
 	}
-	pkg := api.Packages[0]
 
 	output := TestOutput{
 		Files: map[string]string{},
@@ -118,7 +113,7 @@ func TestTestProtoGen(t *testing.T) {
 		GoPackagePrefix:   "github.com/pentops/j5/testproto/clientgen",
 	}
 
-	if err := WriteGoCode(pkg, output, options); err != nil {
+	if err := WriteGoCode(api, output, options); err != nil {
 		t.Fatal(err)
 	}
 

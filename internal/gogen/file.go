@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pentops/j5/schema/j5reflect"
+	"github.com/pentops/j5/internal/j5reflect"
 )
 
 type StringGen struct {

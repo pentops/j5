@@ -20,16 +20,15 @@ import (
 	"github.com/pentops/prototools/protosrc"
 )
 
-var ConfigPaths = []string{
+var configPaths = []string{
 	"j5.yaml",
-	"jsonapi.yaml",
 	"ext/j5/j5.yaml",
 }
 
 func readDirConfigs(root fs.FS) (*config_j5pb.RepoConfigFile, error) {
 	var config *config_j5pb.RepoConfigFile
 	var err error
-	for _, filename := range ConfigPaths {
+	for _, filename := range configPaths {
 		config, err = readConfigFile(root, filename)
 		if err != nil {
 			if errors.Is(err, fs.ErrNotExist) {

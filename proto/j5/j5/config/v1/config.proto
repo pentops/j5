@@ -89,6 +89,7 @@ message GenerateConfig {
   string name = 1;
   repeated Input inputs = 2;
 
+  // Sets an option variable for all plugins in the build.
   map<string, string> opts = 4;
   repeated BuildPlugin plugins = 5;
 
@@ -109,7 +110,12 @@ message OutputType {
   // package, where using VCS requires a new commit for the build.
   message GoProxy {
     string path = 1; // e.g. github.com/pentops/o5-go
-    string go_mod_file = 2; // e.g. ./ext/builder/go.mod
+    repeated Dep deps = 2;
+
+    message Dep {
+      string path = 1; // e.g. github.com/pentops/o5-go
+      string version = 2; // e.g. v0.1.0
+    }
   }
 }
 
@@ -120,32 +126,48 @@ message BuildPlugin {
   // the name of this plugin
   string name = 2;
 
+  // Specifes the input and output format
   Plugin type = 3;
 
-  oneof runner {
-    // a docker container which will receive stdin and pipe stdout
-    // input is google.protobuf.compiler.CodeGeneratorRequest
-    // output is google.protobuf.compiler.CodeGeneratorResponse
-    DockerSpec docker = 4;
+  // Options for the given input type, e.g. protc-gen options.
+  // On conflicts, the last option wins in the order:
+  // 1. base opts (including the resolved opts of the base's base if applicable)
+  // 2. publish or generate opts (i.e. the parent of the plugin)
+  // 3. plugin opts here
+  map<string, string> opts = 4;
 
-    CommandSpec command = 5;
+  // Dpecification of how to run the plugin. When extending, the command is
+  // replaced atomically, not merged (e.g. env vars must be specified in full)
+  Command command = 5;
+}
+
+// Command is a specification for a process to run, accepting a request on stdin
+// and piping a response to stdout. The format of the request and response is
+// defined by the plugin type / caller.
+message Command {
+  // For non-docker, an executable in $PATH, also serves as the 'name' of the
+  // command for logging. Not passed in when using docker comtainers.
+  string cmd = 1;
+
+  repeated string args = 2; // CLI Arguments, passed as specified
+
+  // Environment Variables for the command or
+  // container, Expansion of runtime variables is performed, the available
+  // variables are set by the context calling the build,
+  repeated string env = 3;
+
+  // a docker container to replace the local $PATH executable.
+  DockerSpec docker = 4;
+
+  message DockerSpec {
+    string image = 1;
+
+    // passed as-is to the docker API, does not default to or reference Command.cmd
+    repeated string entrypoint = 2;
+
+    // passed as-is to the docker API, does not default to or reference Command.cmd
+    repeated string cmd = 3;
   }
-
-  map<string, string> opts = 7;
-}
-
-message DockerSpec {
-  string image = 2;
-  repeated string env = 3;
-  repeated string entrypoint = 4;
-  repeated string command = 5;
-  bool pull = 6;
-}
-
-message CommandSpec {
-  string command = 1;
-  repeated string args = 2;
-  repeated string env = 3;
 }
 
 // TODO: This currently floats without a config, we need to decide if it belongs
