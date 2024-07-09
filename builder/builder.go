@@ -187,7 +187,7 @@ func (b *Builder) runProtocPlugin(ctx context.Context, pc PluginContext, plugin 
 		StdIn:   inBuffer,
 		StdOut:  outBuffer,
 		StdErr:  pc.ErrOut,
-		Command: plugin.Command,
+		Command: plugin,
 	}); err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func (b *Builder) runJ5ClientPlugin(ctx context.Context, pc PluginContext, plugi
 		StdIn:   inBuffer,
 		StdOut:  outBuffer,
 		StdErr:  pc.ErrOut,
-		Command: plugin.Command,
+		Command: plugin,
 	}); err != nil {
 		return err
 	}

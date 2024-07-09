@@ -136,28 +136,19 @@ message BuildPlugin {
   // 3. plugin opts here
   map<string, string> opts = 4;
 
-  // Dpecification of how to run the plugin. When extending, the command is
-  // replaced atomically, not merged (e.g. env vars must be specified in full)
-  Command command = 5;
-}
-
-// Command is a specification for a process to run, accepting a request on stdin
-// and piping a response to stdout. The format of the request and response is
-// defined by the plugin type / caller.
-message Command {
   // For non-docker, an executable in $PATH, also serves as the 'name' of the
   // command for logging. Not passed in when using docker comtainers.
-  string cmd = 1;
+  string cmd = 5;
 
-  repeated string args = 2; // CLI Arguments, passed as specified
+  repeated string args = 6; // CLI Arguments, passed as specified
 
   // Environment Variables for the command or
   // container, Expansion of runtime variables is performed, the available
   // variables are set by the context calling the build,
-  repeated string env = 3;
+  repeated string env = 7;
 
   // a docker container to replace the local $PATH executable.
-  DockerSpec docker = 4;
+  DockerSpec docker = 8;
 
   message DockerSpec {
     string image = 1;
