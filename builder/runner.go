@@ -48,7 +48,7 @@ type RunContext struct {
 	StdIn   io.Reader
 	StdOut  io.Writer
 	StdErr  io.Writer
-	Command *config_j5pb.Command
+	Command *config_j5pb.BuildPlugin
 }
 
 func (rr *Runner) Run(ctx context.Context, rc RunContext) error {

@@ -11,10 +11,33 @@ import (
 
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
-	"github.com/pentops/prototools/protosrc"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
 )
+
+type FileSource interface {
+	GetFile(filename string) (io.ReadCloser, error)
+}
+
+type fsSource struct {
+	fs fs.FS
+}
+
+func (f fsSource) GetFile(filename string) (io.ReadCloser, error) {
+	return f.fs.Open(filename)
+}
+
+type mapSource struct {
+	files map[string][]byte
+}
+
+func (f mapSource) GetFile(filename string) (io.ReadCloser, error) {
+	content, ok := f.files[filename]
+	if !ok {
+		return nil, fs.ErrNotExist
+	}
+	return io.NopCloser(bytes.NewReader(content)), nil
+}
 
 func codeGeneratorRequestFromSource(ctx context.Context, bundle *bundle) (*pluginpb.CodeGeneratorRequest, error) {
 
@@ -22,13 +45,12 @@ func codeGeneratorRequestFromSource(ctx context.Context, bundle *bundle) (*plugi
 		CompilerVersion: nil,
 	}
 
-	includeFiles := map[string]bool{}
-
 	walkRoot, err := bundle.fs()
 	if err != nil {
 		return nil, err
 	}
 
+	includeFiles := map[string]bool{}
 	err = fs.WalkDir(walkRoot, ".", func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -46,13 +68,44 @@ func codeGeneratorRequestFromSource(ctx context.Context, bundle *bundle) (*plugi
 		return nil
 	})
 	if err != nil {
+
 		return nil, err
 	}
 
-	bufCache := protosrc.NewBufCache()
-	extFiles, err := bufCache.GetDeps(ctx, bundle.repo.repoRoot, bundle.dirInRepo)
+	bufCache, err := NewBufCache()
 	if err != nil {
 		return nil, err
+	}
+
+	allSources := []FileSource{
+		fsSource{fs: walkRoot},
+	}
+
+	bufDeps, err := bufCache.GetDeps(ctx, bundle.repo.repoRoot, bundle.dirInRepo)
+	if err != nil {
+		return nil, err
+	}
+	allSources = append(allSources, bufDeps...)
+
+	for _, localDep := range bundle.refConfig.Deps {
+		depBundle, ok := bundle.repo.bundles[localDep]
+		if !ok {
+			return nil, fmt.Errorf("unknown local dependency %q", localDep)
+		}
+
+		bundleFS, err := depBundle.fs()
+		if err != nil {
+			return nil, err
+		}
+
+		allSources = append(allSources, fsSource{fs: bundleFS})
+
+		bufDeps, err := bufCache.GetDeps(ctx, depBundle.repo.repoRoot, depBundle.dirInRepo)
+		if err != nil {
+			return nil, err
+		}
+
+		allSources = append(allSources, bufDeps...)
 	}
 
 	parser := protoparse.Parser{
@@ -60,10 +113,13 @@ func codeGeneratorRequestFromSource(ctx context.Context, bundle *bundle) (*plugi
 		IncludeSourceCodeInfo: true,
 
 		Accessor: func(filename string) (io.ReadCloser, error) {
-			if content, ok := extFiles[filename]; ok {
-				return io.NopCloser(bytes.NewReader(content)), nil
+			for _, src := range allSources {
+				content, err := src.GetFile(filename)
+				if err == nil {
+					return content, nil
+				}
 			}
-			return walkRoot.Open(filename)
+			return nil, fs.ErrNotExist
 		},
 	}
 

@@ -3,8 +3,7 @@
 bundles:
   - name: j5
     dir: proto/j5
-  - name: private
-    dir: proto/private
+
   - name: test
     dir: proto/test
 
@@ -12,7 +11,6 @@ generate:
   - name: go
     inputs:
       - local: j5
-      - local: private
       - local: test
     output: .
     opts:

@@ -93,22 +93,23 @@ func resolveConfigReferences(config *config_j5pb.RepoConfigFile) error {
 }
 
 func extendPlugin(base, ext *config_j5pb.BuildPlugin) *config_j5pb.BuildPlugin {
-	out := proto.Clone(base).(*config_j5pb.BuildPlugin)
-	if out.Opts == nil {
-		out.Opts = map[string]string{}
+	ext = proto.Clone(ext).(*config_j5pb.BuildPlugin)
+	if ext.Name == "" {
+		ext.Name = base.Name
 	}
-	if ext.Name != "" {
-		out.Name = ext.Name
-	}
-	if ext.Command != nil {
-		out.Command = ext.Command
+	if ext.Docker == nil && base.Docker != nil {
+		ext.Docker = base.Docker
 	}
 	if ext.Type == config_j5pb.Plugin_UNSPECIFIED {
-		ext.Type = out.Type
+		ext.Type = base.Type
 	}
-
+	if ext.Opts == nil {
+		ext.Opts = map[string]string{}
+	}
 	for k, v := range ext.Opts {
-		out.Opts[k] = v
+		if _, ok := base.Opts[k]; !ok {
+			ext.Opts[k] = v
+		}
 	}
-	return out
+	return ext
 }

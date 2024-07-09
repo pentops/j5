@@ -12,7 +12,6 @@ import (
 
 type Input interface {
 	J5Config() (*config_j5pb.BundleConfigFile, error)
-	//CommitInfo(ctx context.Context) (*source_j5pb.CommitInfo, error)
 	ProtoCodeGeneratorRequest(ctx context.Context) (*pluginpb.CodeGeneratorRequest, error)
 	SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error)
 	Name() string
@@ -21,8 +20,7 @@ type Input interface {
 type repo struct {
 	repoRoot fs.FS
 	bundles  map[string]*bundle
-	//commitInfo *source_j5pb.CommitInfo
-	config *config_j5pb.RepoConfigFile
+	config   *config_j5pb.RepoConfigFile
 }
 
 func newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
