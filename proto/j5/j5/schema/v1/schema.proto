@@ -148,7 +148,8 @@ message Array {
 
 message Map {
   Schema item_schema = 1;
-  Rules rules = 2;
+  Schema key_schema = 2;
+  Rules rules = 3;
   message Rules {}
 }
 
