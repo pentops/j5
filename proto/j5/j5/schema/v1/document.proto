@@ -44,8 +44,17 @@ message Method {
   }];
 
   string http_path = 5 [(buf.validate.field).string.pattern = "^(\\/:?[a-z0-9_]+)+$"];
-  Schema request_body = 6 [(buf.validate.field).required = true];
+  Request request = 6 [(buf.validate.field).required = true];
   Schema response_body = 7 [(buf.validate.field).required = true];
+
+  message Request {
+    Schema body = 1;
+    ObjectProperty path_parameters = 2;
+    ObjectProperty query_parameters = 3;
+    repeated string searchable_fields = 4;
+    repeated SortableField sortable_fields = 5;
+    repeated FilterableField filterable_fields = 6;
+  }
 }
 
 message EventSpec {
@@ -70,4 +79,19 @@ enum HTTPMethod {
   HTTP_METHOD_PUT = 3;
   HTTP_METHOD_DELETE = 4;
   HTTP_METHOD_PATCH = 5;
+}
+
+message SortableField {
+  string name = 1;
+  optional Direction default_sort = 2;
+
+  enum Direction {
+    ASC = 0;
+    DESC = 1;
+  }
+}
+
+message FilterableField {
+  string name = 1;
+  repeated string default_filters = 2;
 }
