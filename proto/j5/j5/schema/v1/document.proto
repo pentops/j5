@@ -54,6 +54,21 @@ message Method {
     repeated string searchable_fields = 4;
     repeated SortableField sortable_fields = 5;
     repeated FilterableField filterable_fields = 6;
+
+    message SortableField {
+      string name = 1;
+      optional Direction default_sort = 2;
+
+      enum Direction {
+        ASC = 0;
+        DESC = 1;
+      }
+    }
+
+    message FilterableField {
+      string name = 1;
+      repeated string default_filters = 2;
+    }
   }
 }
 
@@ -79,19 +94,4 @@ enum HTTPMethod {
   HTTP_METHOD_PUT = 3;
   HTTP_METHOD_DELETE = 4;
   HTTP_METHOD_PATCH = 5;
-}
-
-message SortableField {
-  string name = 1;
-  optional Direction default_sort = 2;
-
-  enum Direction {
-    ASC = 0;
-    DESC = 1;
-  }
-}
-
-message FilterableField {
-  string name = 1;
-  repeated string default_filters = 2;
 }
