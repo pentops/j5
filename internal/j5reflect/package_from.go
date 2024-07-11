@@ -98,21 +98,21 @@ func buildAPI(srcPackages []*schema_j5pb.Package) (*API, error) {
 
 		switch tt := root.(type) {
 
-		case *ObjectFieldSchema:
+		case *ObjectField:
 			return resolveRef(tt.Ref)
 
-		case *OneofFieldSchema:
+		case *OneofField:
 			return resolveRef(tt.Ref)
 
-		case *EnumFieldSchema:
+		case *EnumField:
 			return resolveRef(tt.Ref)
 
-		case *MapSchema:
+		case *MapField:
 			if err := resolveWalk(tt.Schema); err != nil {
 				return err
 			}
 
-		case *ArraySchema:
+		case *ArrayField:
 			if err := resolveWalk(tt.Schema); err != nil {
 				return err
 			}

@@ -17,7 +17,7 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 
 	switch schemaType := schema.(type) {
 
-	case *j5reflect.ObjectFieldSchema:
+	case *j5reflect.ObjectField:
 		if err := bb.addObject(schemaType.Schema()); err != nil {
 			return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref.FullName(), err)
 		}
@@ -34,7 +34,7 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 			Pointer:   true,
 		}, nil
 
-	case *j5reflect.OneofFieldSchema:
+	case *j5reflect.OneofField:
 		if err := bb.addOneofWrapper(schemaType.Schema()); err != nil {
 			return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref.FullName(), err)
 		}
@@ -51,13 +51,13 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 			J5Package: schemaType.Ref.Package,
 		}, nil
 
-	case *j5reflect.EnumFieldSchema:
+	case *j5reflect.EnumField:
 		return &DataType{
 			Name:    "string",
 			Pointer: false,
 		}, nil
 
-	case *j5reflect.ArraySchema:
+	case *j5reflect.ArrayField:
 		itemType, err := bb.buildTypeName(schemaType.Schema)
 		if err != nil {
 			return nil, err
@@ -71,7 +71,7 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 			Slice:     true,
 		}, nil
 
-	case *j5reflect.MapSchema:
+	case *j5reflect.MapField:
 		valueType, err := bb.buildTypeName(schemaType.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("map value: %w", err)
@@ -82,7 +82,7 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 			Pointer: false,
 		}, nil
 
-	case *j5reflect.AnySchema:
+	case *j5reflect.AnyField:
 		return &DataType{
 			Name:    "interface{}",
 			Pointer: false,
@@ -92,7 +92,7 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 		asProto := schemaType.Proto
 
 		switch schemaType := asProto.Type.(type) {
-		case *schema_j5pb.Schema_String_:
+		case *schema_j5pb.Field_String_:
 			item := schemaType.String_
 			if item.Format == nil {
 				return &DataType{
@@ -122,19 +122,19 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 				return nil, fmt.Errorf("Unknown string format: %s", *item.Format)
 			}
 
-		case *schema_j5pb.Schema_Float:
+		case *schema_j5pb.Field_Float:
 			return &DataType{
 				Name:    goFloatTypes[schemaType.Float.Format],
 				Pointer: false,
 			}, nil
 
-		case *schema_j5pb.Schema_Integer:
+		case *schema_j5pb.Field_Integer:
 			return &DataType{
 				Name:    goIntTypes[schemaType.Integer.Format],
 				Pointer: false,
 			}, nil
 
-		case *schema_j5pb.Schema_Boolean:
+		case *schema_j5pb.Field_Boolean:
 			return &DataType{
 				Name:    "bool",
 				Pointer: false,

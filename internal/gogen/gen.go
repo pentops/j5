@@ -49,10 +49,6 @@ func (o Options) ReferenceGoPackage(pkg string) (string, error) {
 	return pkg, nil
 }
 
-type SchemaResolver interface {
-	SchemaByRef(ref *j5reflect.RefSchema) (j5reflect.RootSchema, error)
-}
-
 // fileForPackage returns the file for the given package name, creating if
 // required. Returns nil when the package should not be generated (i.e. outside
 // of the generate prefix, a reference to externally hosted code)
@@ -425,9 +421,9 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 			}
 
 			switch fieldType.Proto.Type.(type) {
-			case *schema_j5pb.Schema_String_:
+			case *schema_j5pb.Field_String_:
 				// pass through
-			case *schema_j5pb.Schema_Boolean:
+			case *schema_j5pb.Field_Boolean:
 				accessor = "fmt.Sprintf(\"%v\", " + accessor + ")"
 
 			default:
@@ -443,7 +439,7 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 				queryMethod.P("  }")
 			}
 
-		case *j5reflect.ObjectFieldSchema, *j5reflect.OneofFieldSchema:
+		case *j5reflect.ObjectField, *j5reflect.OneofField:
 			// include as JSON
 			queryMethod.P("  if s.", field.Name, " != nil {")
 			queryMethod.P("    bb, err := ", DataType{GoPackage: "encoding/json", Name: "Marshal"}, "(s.", field.Name, ")")
@@ -453,7 +449,7 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 			queryMethod.P("    values.Set(\"", field.Name, "\", string(bb))")
 			queryMethod.P("  }")
 
-		case *j5reflect.EnumFieldSchema:
+		case *j5reflect.EnumField:
 
 			if field.Property.Required {
 				queryMethod.P("  values.Set(\"", field.Property.JSONName, "\", s.", field.Name, ")")

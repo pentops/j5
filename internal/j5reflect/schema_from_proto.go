@@ -14,7 +14,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func newBasePackage(descriptor protoreflect.Descriptor) SchemaRoot {
+func newBasePackage(descriptor protoreflect.Descriptor) rootSchema {
 	description := commentDescription(descriptor)
 	path := []string{}
 	current := descriptor
@@ -24,7 +24,7 @@ func newBasePackage(descriptor protoreflect.Descriptor) SchemaRoot {
 		parentFile, ok := parent.(protoreflect.FileDescriptor)
 		if ok {
 			slices.Reverse(path)
-			return SchemaRoot{
+			return rootSchema{
 				Name:        strings.Join(path, "_"),
 				Package:     string(parentFile.Package()),
 				Description: description,
@@ -185,7 +185,7 @@ func (ss *SchemaSet) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*O
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
 	return &OneofSchema{
-		SchemaRoot: newBasePackage(srcMsg),
+		rootSchema: newBasePackage(srcMsg),
 		Properties: properties,
 		// TODO: Rules
 	}, nil
@@ -197,7 +197,7 @@ func (ss *SchemaSet) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
 	return &ObjectSchema{
-		SchemaRoot: newBasePackage(srcMsg),
+		rootSchema: newBasePackage(srcMsg),
 		Properties: properties,
 		// TODO: Rules
 	}, nil
@@ -227,7 +227,7 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*O
 
 		oneofName := string(oneof.Name())
 		oneofObject := &OneofSchema{
-			SchemaRoot: newBasePackage(oneof),
+			rootSchema: newBasePackage(oneof),
 			//oneofDescriptor: oneof,
 		}
 		refPlaceholder := newRefPlaceholder(oneof)
@@ -236,7 +236,7 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*O
 		prop := &ObjectProperty{
 			JSONName:    jsonFieldName(oneof.Name()),
 			Description: commentDescription(src),
-			Schema: &OneofFieldSchema{
+			Schema: &OneofField{
 				Ref: refPlaceholder,
 				// TODO: Oneof Rules
 			},
@@ -255,7 +255,7 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*O
 				return nil, fmt.Errorf("list field %s: %w", field.Name(), err)
 			}
 			// TODO: Rules
-			prop.Schema = &ArraySchema{
+			prop.Schema = &ArrayField{
 				Schema: prop.Schema,
 			}
 
@@ -276,7 +276,7 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*O
 				ProtoField:  []protoreflect.FieldNumber{src.Number()},
 				JSONName:    string(src.JSONName()),
 				Description: commentDescription(src),
-				Schema: &MapSchema{
+				Schema: &MapField{
 					Schema: valueProp.Schema,
 				},
 			}
@@ -387,7 +387,7 @@ var wellKnownStringPatterns = map[string]string{
 }
 
 func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
-	schemaProto := &schema_j5pb.Schema{}
+	schemaProto := &schema_j5pb.Field{}
 
 	prop := &ObjectProperty{
 		JSONName:    string(src.JSONName()),
@@ -434,7 +434,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 				boolItem.Rules.Const = boolConstraint.Const
 			}
 		}
-		schemaProto.Type = &schema_j5pb.Schema_Boolean{
+		schemaProto.Type = &schema_j5pb.Field_Boolean{
 			Boolean: boolItem,
 		}
 		prop.Required = true
@@ -475,7 +475,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			}
 
 		}
-		schemaProto.Type = &schema_j5pb.Schema_Integer{
+		schemaProto.Type = &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
 				Format: schema_j5pb.IntegerField_FORMAT_INT32,
 				Rules:  integerRules,
@@ -518,7 +518,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			}
 		}
 
-		schemaProto.Type = &schema_j5pb.Schema_Integer{
+		schemaProto.Type = &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
 				Format: schema_j5pb.IntegerField_FORMAT_UINT32,
 				Rules:  integerRules,
@@ -561,7 +561,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			}
 		}
 
-		schemaProto.Type = &schema_j5pb.Schema_Integer{
+		schemaProto.Type = &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
 				Format: schema_j5pb.IntegerField_FORMAT_INT64,
 				Rules:  integerRules,
@@ -604,7 +604,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			}
 		}
 
-		schemaProto.Type = &schema_j5pb.Schema_Float{
+		schemaProto.Type = &schema_j5pb.Field_Float{
 			Float: &schema_j5pb.FloatField{
 				Format: schema_j5pb.FloatField_FORMAT_FLOAT32,
 				Rules:  numberRules,
@@ -647,7 +647,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			}
 		}
 
-		schemaProto.Type = &schema_j5pb.Schema_Float{
+		schemaProto.Type = &schema_j5pb.Field_Float{
 			Float: &schema_j5pb.FloatField{
 				Format: schema_j5pb.FloatField_FORMAT_FLOAT64,
 				Rules:  numberRules,
@@ -720,13 +720,13 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 		}
 
-		schemaProto.Type = &schema_j5pb.Schema_String_{
+		schemaProto.Type = &schema_j5pb.Field_String_{
 			String_: stringItem,
 		}
 		return prop, nil
 
 	case protoreflect.BytesKind:
-		schemaProto.Type = &schema_j5pb.Schema_String_{
+		schemaProto.Type = &schema_j5pb.Field_String_{
 			String_: &schema_j5pb.StringField{
 				Format: Ptr("byte"),
 			},
@@ -747,7 +747,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			ss.refs[protoName] = ref
 		}
 
-		prop.Schema = &EnumFieldSchema{
+		prop.Schema = &EnumField{
 			Ref: ref,
 		}
 		return prop, nil
@@ -780,11 +780,11 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			}
 		}
 		if isOneofWrapper {
-			prop.Schema = &OneofFieldSchema{
+			prop.Schema = &OneofField{
 				Ref: ref,
 			}
 		} else {
-			prop.Schema = &ObjectFieldSchema{
+			prop.Schema = &ObjectField{
 				Ref: ref,
 			}
 		}
@@ -865,7 +865,7 @@ func buildEnum(enumDescriptor protoreflect.EnumDescriptor, constraint *validate.
 	}
 
 	return &EnumSchema{
-		SchemaRoot: newBasePackage(enumDescriptor),
+		rootSchema: newBasePackage(enumDescriptor),
 		Options:    values,
 		NamePrefix: trimPrefix,
 		//descriptor:  enumDescriptor,
@@ -881,8 +881,8 @@ func wktSchema(src protoreflect.MessageDescriptor) (FieldSchema, bool) {
 	case "google.protobuf.Timestamp":
 		return &ScalarSchema{
 			WellKnownTypeName: src.FullName(),
-			Proto: &schema_j5pb.Schema{
-				Type: &schema_j5pb.Schema_String_{
+			Proto: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_String_{
 					String_: &schema_j5pb.StringField{
 						Format: Ptr("date-time"),
 					},
@@ -893,8 +893,8 @@ func wktSchema(src protoreflect.MessageDescriptor) (FieldSchema, bool) {
 	case "google.protobuf.Duration":
 		return &ScalarSchema{
 			WellKnownTypeName: src.FullName(),
-			Proto: &schema_j5pb.Schema{
-				Type: &schema_j5pb.Schema_String_{
+			Proto: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_String_{
 					String_: &schema_j5pb.StringField{
 						Format: Ptr("duration"),
 					},
@@ -905,8 +905,8 @@ func wktSchema(src protoreflect.MessageDescriptor) (FieldSchema, bool) {
 	case "j5.types.date.v1.Date":
 		return &ScalarSchema{
 			WellKnownTypeName: src.FullName(),
-			Proto: &schema_j5pb.Schema{
-				Type: &schema_j5pb.Schema_String_{
+			Proto: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_String_{
 					String_: &schema_j5pb.StringField{
 						Format: Ptr("date"),
 					},
@@ -915,12 +915,12 @@ func wktSchema(src protoreflect.MessageDescriptor) (FieldSchema, bool) {
 		}, true
 
 	case "google.protobuf.Struct":
-		return &MapSchema{
-			Schema: &AnySchema{},
+		return &MapField{
+			Schema: &AnyField{},
 		}, true
 
 	case "google.protobuf.Any":
-		return &AnySchema{}, true
+		return &AnyField{}, true
 	}
 
 	return nil, false

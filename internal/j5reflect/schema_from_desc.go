@@ -33,7 +33,7 @@ func RootSchemaFromDesc(pkg *Package, schema *schema_j5pb.RootSchema) (RootSchem
 	return nil, fmt.Errorf("expected root schema, got %T", schema.Type)
 }
 
-func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, error) {
+func schemaFromDesc(pkg *Package, schema *schema_j5pb.Field) (FieldSchema, error) {
 	if pkg == nil {
 		return nil, fmt.Errorf("package is nil")
 	}
@@ -44,19 +44,19 @@ func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, erro
 
 	switch st := schema.Type.(type) {
 
-	case *schema_j5pb.Schema_Object:
+	case *schema_j5pb.Field_Object:
 		switch inner := st.Object.Schema.(type) {
 		case *schema_j5pb.ObjectField_Object:
 			item, err := objectSchemaFromDesc(pkg, inner.Object)
 			if err != nil {
 				return nil, err
 			}
-			return &ObjectFieldSchema{
+			return &ObjectField{
 				Ref:   item.AsRef(),
 				Rules: st.Object.Rules,
 			}, nil
 		case *schema_j5pb.ObjectField_Ref:
-			return &ObjectFieldSchema{
+			return &ObjectField{
 				Ref: &RefSchema{
 					Package: inner.Ref.Package,
 					Schema:  inner.Ref.Schema,
@@ -67,19 +67,19 @@ func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, erro
 			return nil, fmt.Errorf("unsupported oneof schema type %T", inner)
 		}
 
-	case *schema_j5pb.Schema_Oneof:
+	case *schema_j5pb.Field_Oneof:
 		switch inner := st.Oneof.Schema.(type) {
 		case *schema_j5pb.OneofField_Oneof:
 			item, err := oneofSchemaFromDesc(pkg, inner.Oneof)
 			if err != nil {
 				return nil, err
 			}
-			return &OneofFieldSchema{
+			return &OneofField{
 				Ref:   item.AsRef(),
 				Rules: st.Oneof.Rules,
 			}, nil
 		case *schema_j5pb.OneofField_Ref:
-			return &OneofFieldSchema{
+			return &OneofField{
 				Ref: &RefSchema{
 					Package: inner.Ref.Package,
 					Schema:  inner.Ref.Schema,
@@ -90,16 +90,16 @@ func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, erro
 			return nil, fmt.Errorf("unsupported oneof schema type %T", inner)
 		}
 
-	case *schema_j5pb.Schema_Enum:
+	case *schema_j5pb.Field_Enum:
 		switch inner := st.Enum.Schema.(type) {
 		case *schema_j5pb.EnumField_Enum:
 			item := enumSchemaFromDesc(pkg, inner.Enum)
-			return &EnumFieldSchema{
+			return &EnumField{
 				Ref:   item.AsRef(),
 				Rules: st.Enum.Rules,
 			}, nil
 		case *schema_j5pb.EnumField_Ref:
-			return &EnumFieldSchema{
+			return &EnumField{
 				Ref: &RefSchema{
 					Package: inner.Ref.Package,
 					Schema:  inner.Ref.Schema,
@@ -110,39 +110,39 @@ func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, erro
 			return nil, fmt.Errorf("unsupported enum schema type %T", inner)
 		}
 
-	case *schema_j5pb.Schema_Array:
+	case *schema_j5pb.Field_Array:
 		itemSchema, err := schemaFromDesc(pkg, st.Array.Items)
 		if err != nil {
 			return nil, wrapError(err, "items")
 		}
-		return &ArraySchema{
+		return &ArrayField{
 			Rules:  st.Array.Rules,
 			Schema: itemSchema,
 		}, nil
 
-	case *schema_j5pb.Schema_Map:
+	case *schema_j5pb.Field_Map:
 		valueSchema, err := schemaFromDesc(pkg, st.Map.ItemSchema)
 		if err != nil {
 			return nil, wrapError(err, "items")
 		}
-		return &MapSchema{
+		return &MapField{
 			Rules:  st.Map.Rules,
 			Schema: valueSchema,
 		}, nil
 
-	case *schema_j5pb.Schema_Boolean:
+	case *schema_j5pb.Field_Boolean:
 		return &ScalarSchema{
 			Proto: schema,
 			Kind:  protoreflect.BoolKind,
 		}, nil
 
-	case *schema_j5pb.Schema_String_:
+	case *schema_j5pb.Field_String_:
 		return &ScalarSchema{
 			Proto: schema,
 			Kind:  protoreflect.StringKind,
 		}, nil
 
-	case *schema_j5pb.Schema_Integer:
+	case *schema_j5pb.Field_Integer:
 		intKind, ok := intKinds[st.Integer.Format]
 		if !ok {
 			return nil, fmt.Errorf("unsupported integer format %v", st.Integer.Format)
@@ -152,7 +152,7 @@ func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, erro
 			Kind:  intKind,
 		}, nil
 
-	case *schema_j5pb.Schema_Float:
+	case *schema_j5pb.Field_Float:
 		floatKind, ok := floatKinds[st.Float.Format]
 		if !ok {
 			return nil, fmt.Errorf("unsupported float format %v", st.Float.Format)
@@ -162,8 +162,8 @@ func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, erro
 			Kind:  floatKind,
 		}, nil
 
-	case *schema_j5pb.Schema_Any:
-		return &AnySchema{}, nil
+	case *schema_j5pb.Field_Any:
+		return &AnyField{}, nil
 
 	default:
 		return nil, fmt.Errorf("unsupported descriptor schema type %T", st)
@@ -194,7 +194,7 @@ func objectSchemaFromDesc(pkg *Package, sch *schema_j5pb.Object) (*ObjectSchema,
 
 	return &ObjectSchema{
 		Properties: properties,
-		SchemaRoot: SchemaRoot{
+		rootSchema: rootSchema{
 			Description: sch.Description,
 			Name:        sch.Name,
 			Package:     pkg.Name,
@@ -214,7 +214,7 @@ func oneofSchemaFromDesc(pkg *Package, sch *schema_j5pb.Oneof) (*OneofSchema, er
 
 	return &OneofSchema{
 		Properties: properties,
-		SchemaRoot: SchemaRoot{
+		rootSchema: rootSchema{
 			Description: sch.Description,
 			Name:        sch.Name,
 			Package:     pkg.Name,
@@ -225,7 +225,7 @@ func oneofSchemaFromDesc(pkg *Package, sch *schema_j5pb.Oneof) (*OneofSchema, er
 func enumSchemaFromDesc(pkg *Package, sch *schema_j5pb.Enum) *EnumSchema {
 	return &EnumSchema{
 		NamePrefix: sch.Prefix,
-		SchemaRoot: SchemaRoot{
+		rootSchema: rootSchema{
 			Description: sch.Description,
 			Name:        sch.Name,
 			Package:     pkg.Name,

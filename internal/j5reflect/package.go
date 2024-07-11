@@ -289,27 +289,27 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 	walkRefs = func(schema FieldSchema) error {
 
 		switch st := schema.(type) {
-		case *ObjectFieldSchema:
+		case *ObjectField:
 			if err := walkRefRoot(st.Ref.To); err != nil {
 				return fmt.Errorf("walk object as field: %w", err)
 			}
 
-		case *OneofFieldSchema:
+		case *OneofField:
 			if err := walkRefRoot(st.Ref.To); err != nil {
 				return fmt.Errorf("walk oneof as field: %w", err)
 			}
 
-		case *EnumFieldSchema:
+		case *EnumField:
 			if err := walkRefRoot(st.Ref.To); err != nil {
 				return fmt.Errorf("walk enum as field: %w", err)
 			}
 
-		case *ArraySchema:
+		case *ArrayField:
 			if err := walkRefs(st.Schema); err != nil {
 				return fmt.Errorf("walk array: %w", err)
 			}
 
-		case *MapSchema:
+		case *MapField:
 			if err := walkRefs(st.Schema); err != nil {
 				return fmt.Errorf("walk map: %w", err)
 			}
