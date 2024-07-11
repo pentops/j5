@@ -156,32 +156,28 @@ func testAPI() *schema_j5pb.API {
 							},
 						},
 					},
-					RequestBody: &schema_j5pb.Schema{
-						Type: &schema_j5pb.Schema_Object{
-							Object: &schema_j5pb.Object{
-								Name: "TestRequest",
-								Properties: []*schema_j5pb.ObjectProperty{{
-									Name:        "pathField",
-									Description: "",
-									Required:    true,
-									Schema: &schema_j5pb.Schema{
-										Type: &schema_j5pb.Schema_String_{
-											String_: &schema_j5pb.String{},
-										},
-									},
-									ProtoField: []int32{1},
-								}, {
-									Name:     "queryField",
-									Required: false,
-									Schema: &schema_j5pb.Schema{
-										Type: &schema_j5pb.Schema_String_{
-											String_: &schema_j5pb.String{},
-										},
-									},
-									ProtoField: []int32{2},
-								}},
+					Request: &schema_j5pb.Method_Request{
+						PathParameters: []*schema_j5pb.ObjectProperty{{
+							Name:        "pathField",
+							Description: "",
+							Required:    true,
+							Schema: &schema_j5pb.Schema{
+								Type: &schema_j5pb.Schema_String_{
+									String_: &schema_j5pb.String{},
+								},
 							},
-						},
+							ProtoField: []int32{1},
+						}},
+						QueryParameters: []*schema_j5pb.ObjectProperty{{
+							Name:     "queryField",
+							Required: false,
+							Schema: &schema_j5pb.Schema{
+								Type: &schema_j5pb.Schema_String_{
+									String_: &schema_j5pb.String{},
+								},
+							},
+							ProtoField: []int32{2},
+						}},
 					},
 				}},
 			}},

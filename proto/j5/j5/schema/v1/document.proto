@@ -49,8 +49,8 @@ message Method {
 
   message Request {
     Schema body = 1;
-    ObjectProperty path_parameters = 2;
-    ObjectProperty query_parameters = 3;
+    repeated ObjectProperty path_parameters = 2;
+    repeated ObjectProperty query_parameters = 3;
     repeated string searchable_fields = 4;
     repeated SortableField sortable_fields = 5;
     repeated FilterableField filterable_fields = 6;
@@ -60,8 +60,9 @@ message Method {
       optional Direction default_sort = 2;
 
       enum Direction {
-        ASC = 0;
-        DESC = 1;
+        DIRECTION_UNSPECIFIED = 0;
+        DIRECTION_ASC = 1;
+        DIRECTION_DESC = 2;
       }
     }
 

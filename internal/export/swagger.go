@@ -101,32 +101,6 @@ func (dd *Document) addService(service *schema_j5pb.Service) error {
 
 func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.Method) error {
 
-	pathParameterNames := map[string]struct{}{}
-	pathParts := strings.Split(method.HttpPath, "/")
-	for _, part := range pathParts {
-		if !strings.HasPrefix(part, ":") {
-			continue
-		}
-		fieldName := strings.TrimPrefix(part, ":")
-		pathParameterNames[fieldName] = struct{}{}
-	}
-
-	pathProperties := make([]*schema_j5pb.ObjectProperty, 0)
-	bodyProperties := make([]*schema_j5pb.ObjectProperty, 0)
-
-	requestSchema := method.RequestBody.GetObject()
-	if requestSchema == nil {
-		return fmt.Errorf("request body was not an object: %T", method.RequestBody)
-	}
-	for _, prop := range requestSchema.Properties {
-		_, isPath := pathParameterNames[prop.Name]
-		if isPath {
-			pathProperties = append(pathProperties, prop)
-		} else {
-			bodyProperties = append(bodyProperties, prop)
-		}
-	}
-
 	operation := &Operation{
 		OperationHeader: OperationHeader{
 			Method:          methodShortString[method.HttpMethod],
@@ -135,11 +109,11 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 			GrpcMethodName:  method.Name,
 			GrpcServiceName: service.Name,
 
-			Parameters: make([]SwaggerParameter, 0, len(pathProperties)+len(bodyProperties)),
+			Parameters: make([]SwaggerParameter, 0, len(method.Request.PathParameters)+len(method.Request.QueryParameters)),
 		},
 	}
 
-	for _, property := range pathProperties {
+	for _, property := range method.Request.PathParameters {
 		schema, err := ConvertSchema(property.Schema)
 		if err != nil {
 			return fmt.Errorf("path param %s: %w", property.Name, err)
@@ -153,31 +127,22 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 		})
 	}
 
-	if method.HttpMethod == schema_j5pb.HTTPMethod_HTTP_METHOD_GET {
-		for _, property := range bodyProperties {
-			schema, err := ConvertSchema(property.Schema)
-			if err != nil {
-				return fmt.Errorf("query param %s: %w", property.Name, err)
-			}
-			operation.OperationHeader.Parameters = append(operation.OperationHeader.Parameters, SwaggerParameter{
-				Name:        property.Name,
-				In:          "query",
-				Description: property.Description,
-				Required:    property.Required,
-				Schema:      schema,
-			})
+	for _, property := range method.Request.QueryParameters {
+		schema, err := ConvertSchema(property.Schema)
+		if err != nil {
+			return fmt.Errorf("query param %s: %w", property.Name, err)
 		}
-	} else {
-		newRequest := &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Object{
-				Object: &schema_j5pb.Object{
-					Properties:  bodyProperties,
-					Name:        requestSchema.Name,
-					Description: requestSchema.Description,
-				},
-			},
-		}
-		requestSchema, err := ConvertSchema(newRequest)
+		operation.OperationHeader.Parameters = append(operation.OperationHeader.Parameters, SwaggerParameter{
+			Name:        property.Name,
+			In:          "query",
+			Description: property.Description,
+			Required:    property.Required,
+			Schema:      schema,
+		})
+	}
+
+	if method.Request.Body != nil {
+		requestSchema, err := ConvertSchema(method.Request.Body)
 		if err != nil {
 			return err
 		}
