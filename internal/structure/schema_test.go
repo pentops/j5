@@ -129,7 +129,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 			},
 		},
 		expected: map[string]interface{}{
-			"schema.integer.format":                 schema_j5pb.Integer_FORMAT_INT32.String(),
+			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_INT32.String(),
 			"schema.integer.rules.minimum":          "1",
 			"schema.integer.rules.maximum":          "10",
 			"schema.integer.rules.exclusiveMaximum": true,
@@ -154,7 +154,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 			},
 		},
 		expected: map[string]interface{}{
-			"schema.integer.format":                 schema_j5pb.Integer_FORMAT_INT64.String(),
+			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_INT64.String(),
 			"schema.integer.rules.minimum":          "1",
 			"schema.integer.rules.maximum":          "10",
 			"schema.integer.rules.exclusiveMaximum": true,
@@ -179,7 +179,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 			},
 		},
 		expected: map[string]interface{}{
-			"schema.integer.format":                 schema_j5pb.Integer_FORMAT_UINT32.String(),
+			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_UINT32.String(),
 			"schema.integer.rules.minimum":          "1",
 			"schema.integer.rules.maximum":          "10",
 			"schema.integer.rules.exclusiveMaximum": true,

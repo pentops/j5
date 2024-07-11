@@ -4,6 +4,6 @@ package schema_j5pb
 
 type IsRootSchema_Type = isRootSchema_Type
 type IsSchema_Type = isSchema_Type
-type IsObjectAsField_Schema = isObjectAsField_Schema
-type IsOneofAsField_Schema = isOneofAsField_Schema
-type IsEnumAsField_Schema = isEnumAsField_Schema
+type IsObjectField_Schema = isObjectField_Schema
+type IsOneofField_Schema = isOneofField_Schema
+type IsEnumField_Schema = isEnumField_Schema

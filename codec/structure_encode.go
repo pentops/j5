@@ -23,9 +23,9 @@ properties:
 			var childProperties []*j5reflect.ObjectProperty
 
 			switch wrapper := property.Schema.(type) {
-			case *j5reflect.ObjectAsFieldSchema:
+			case *j5reflect.ObjectFieldSchema:
 				childProperties = wrapper.Schema().Properties
-			case *j5reflect.OneofAsFieldSchema:
+			case *j5reflect.OneofFieldSchema:
 				childProperties = wrapper.Schema().Properties
 			default:
 				return nil, fmt.Errorf("unsupported schema type %T for nested json", wrapper)
@@ -87,11 +87,11 @@ func (enc *encoder) encodeObjectBody(fields []fieldSpec) error {
 		}
 		if len(spec.children) > 0 {
 			switch subSchema := spec.property.Schema.(type) {
-			case *j5reflect.ObjectAsFieldSchema:
+			case *j5reflect.ObjectFieldSchema:
 				if err := enc.encodeObjectBody(spec.children); err != nil {
 					return err
 				}
-			case *j5reflect.OneofAsFieldSchema:
+			case *j5reflect.OneofFieldSchema:
 				if err := enc.encodeOneofBody(spec.children); err != nil {
 					return err
 				}
@@ -185,13 +185,13 @@ func (enc *encoder) encodeOneof(schema *j5reflect.OneofSchema, msg protoreflect.
 func (enc *encoder) encodeValue(schema j5reflect.FieldSchema, value protoreflect.Value) error {
 
 	switch schema := schema.(type) {
-	case *j5reflect.ObjectAsFieldSchema:
+	case *j5reflect.ObjectFieldSchema:
 		return enc.encodeObject(schema.Schema(), value.Message())
 
-	case *j5reflect.OneofAsFieldSchema:
+	case *j5reflect.OneofFieldSchema:
 		return enc.encodeOneof(schema.Schema(), value.Message())
 
-	case *j5reflect.EnumAsFieldSchema:
+	case *j5reflect.EnumFieldSchema:
 		return enc.encodeEnum(schema.Schema(), value.Enum())
 
 	case *j5reflect.ArraySchema:

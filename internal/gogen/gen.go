@@ -443,7 +443,7 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 				queryMethod.P("  }")
 			}
 
-		case *j5reflect.ObjectAsFieldSchema, *j5reflect.OneofAsFieldSchema:
+		case *j5reflect.ObjectFieldSchema, *j5reflect.OneofFieldSchema:
 			// include as JSON
 			queryMethod.P("  if s.", field.Name, " != nil {")
 			queryMethod.P("    bb, err := ", DataType{GoPackage: "encoding/json", Name: "Marshal"}, "(s.", field.Name, ")")
@@ -453,7 +453,7 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 			queryMethod.P("    values.Set(\"", field.Name, "\", string(bb))")
 			queryMethod.P("  }")
 
-		case *j5reflect.EnumAsFieldSchema:
+		case *j5reflect.EnumFieldSchema:
 
 			if field.Property.Required {
 				queryMethod.P("  values.Set(\"", field.Property.JSONName, "\", s.", field.Name, ")")

@@ -17,7 +17,7 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 
 	switch schemaType := schema.(type) {
 
-	case *j5reflect.ObjectAsFieldSchema:
+	case *j5reflect.ObjectFieldSchema:
 		if err := bb.addObject(schemaType.Schema()); err != nil {
 			return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref.FullName(), err)
 		}
@@ -34,7 +34,7 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 			Pointer:   true,
 		}, nil
 
-	case *j5reflect.OneofAsFieldSchema:
+	case *j5reflect.OneofFieldSchema:
 		if err := bb.addOneofWrapper(schemaType.Schema()); err != nil {
 			return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref.FullName(), err)
 		}
@@ -51,7 +51,7 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 			J5Package: schemaType.Ref.Package,
 		}, nil
 
-	case *j5reflect.EnumAsFieldSchema:
+	case *j5reflect.EnumFieldSchema:
 		return &DataType{
 			Name:    "string",
 			Pointer: false,
@@ -150,16 +150,16 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 
 }
 
-var goFloatTypes = map[schema_j5pb.Float_Format]string{
-	schema_j5pb.Float_FORMAT_FLOAT32: "float32",
-	schema_j5pb.Float_FORMAT_FLOAT64: "float64",
+var goFloatTypes = map[schema_j5pb.FloatField_Format]string{
+	schema_j5pb.FloatField_FORMAT_FLOAT32: "float32",
+	schema_j5pb.FloatField_FORMAT_FLOAT64: "float64",
 }
 
-var goIntTypes = map[schema_j5pb.Integer_Format]string{
-	schema_j5pb.Integer_FORMAT_INT32:  "int32",
-	schema_j5pb.Integer_FORMAT_INT64:  "int64",
-	schema_j5pb.Integer_FORMAT_UINT32: "uint32",
-	schema_j5pb.Integer_FORMAT_UINT64: "uint64",
+var goIntTypes = map[schema_j5pb.IntegerField_Format]string{
+	schema_j5pb.IntegerField_FORMAT_INT32:  "int32",
+	schema_j5pb.IntegerField_FORMAT_INT64:  "int64",
+	schema_j5pb.IntegerField_FORMAT_UINT32: "uint32",
+	schema_j5pb.IntegerField_FORMAT_UINT64: "uint64",
 }
 
 func (bb *builder) jsonField(property *j5reflect.ObjectProperty) (*Field, error) {
