@@ -35,7 +35,7 @@ func ReflectFromSource(image *source_j5pb.SourceImage) (*j5reflect.API, error) {
 		return true
 	})
 
-	refs := NewSchemaResolver(descFiles)
+	refs := j5reflect.NewSchemaResolver(descFiles)
 
 	if image.Options == nil {
 		image.Options = &config_j5pb.CodecOptions{}
@@ -134,7 +134,7 @@ func (bb *packageSet) getPackage(file protoreflect.FileDescriptor) *j5reflect.Pa
 	return pkg
 }
 
-func buildEvents(refs *SchemaResolver, src protoreflect.ServiceDescriptor) ([]*j5reflect.Event, error) {
+func buildEvents(refs *j5reflect.SchemaResolver, src protoreflect.ServiceDescriptor) ([]*j5reflect.Event, error) {
 	events := make([]*j5reflect.Event, 0)
 	methods := src.Methods()
 	for ii := 0; ii < methods.Len(); ii++ {
@@ -155,7 +155,7 @@ func buildEvents(refs *SchemaResolver, src protoreflect.ServiceDescriptor) ([]*j
 	return events, nil
 }
 
-func buildService(refs *SchemaResolver, src protoreflect.ServiceDescriptor) (*j5reflect.Service, error) {
+func buildService(refs *j5reflect.SchemaResolver, src protoreflect.ServiceDescriptor) (*j5reflect.Service, error) {
 	methods := src.Methods()
 	service := &j5reflect.Service{
 		Name:    string(src.Name()),
@@ -174,7 +174,7 @@ func buildService(refs *SchemaResolver, src protoreflect.ServiceDescriptor) (*j5
 	return service, nil
 }
 
-func buildMethod(refs *SchemaResolver, method protoreflect.MethodDescriptor) (*j5reflect.Method, error) {
+func buildMethod(refs *j5reflect.SchemaResolver, method protoreflect.MethodDescriptor) (*j5reflect.Method, error) {
 
 	methodOptions := method.Options().(*descriptorpb.MethodOptions)
 	httpOpt := proto.GetExtension(methodOptions, annotations.E_Http).(*annotations.HttpRule)
