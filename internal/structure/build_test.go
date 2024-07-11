@@ -135,7 +135,7 @@ func testAPI() *schema_j5pb.API {
 									WriteOnly:   false,
 									Schema: &schema_j5pb.Schema{
 										Type: &schema_j5pb.Schema_String_{
-											String_: &schema_j5pb.String{},
+											String_: &schema_j5pb.StringField{},
 										},
 									},
 									ProtoField: []int32{1},
@@ -145,8 +145,8 @@ func testAPI() *schema_j5pb.API {
 									Required:    false,
 									Schema: &schema_j5pb.Schema{
 										Type: &schema_j5pb.Schema_Object{
-											Object: &schema_j5pb.ObjectAsField{
-												Schema: &schema_j5pb.ObjectAsField_Ref{
+											Object: &schema_j5pb.ObjectField{
+												Schema: &schema_j5pb.ObjectField_Ref{
 													Ref: &schema_j5pb.Ref{
 														Package: "test.v1",
 														Schema:  "Referenced",
@@ -167,7 +167,7 @@ func testAPI() *schema_j5pb.API {
 							Required:    true,
 							Schema: &schema_j5pb.Schema{
 								Type: &schema_j5pb.Schema_String_{
-									String_: &schema_j5pb.String{},
+									String_: &schema_j5pb.StringField{},
 								},
 							},
 							ProtoField: []int32{1},
@@ -177,7 +177,7 @@ func testAPI() *schema_j5pb.API {
 							Required: false,
 							Schema: &schema_j5pb.Schema{
 								Type: &schema_j5pb.Schema_String_{
-									String_: &schema_j5pb.String{},
+									String_: &schema_j5pb.StringField{},
 								},
 							},
 							ProtoField: []int32{2},
@@ -196,7 +196,7 @@ func testAPI() *schema_j5pb.API {
 								Description: "Field Comment",
 								Schema: &schema_j5pb.Schema{
 									Type: &schema_j5pb.Schema_String_{
-										String_: &schema_j5pb.String{},
+										String_: &schema_j5pb.StringField{},
 									},
 								},
 								ProtoField: []int32{1},
@@ -204,8 +204,8 @@ func testAPI() *schema_j5pb.API {
 								Name: "enum",
 								Schema: &schema_j5pb.Schema{
 									Type: &schema_j5pb.Schema_Enum{
-										Enum: &schema_j5pb.EnumAsField{
-											Schema: &schema_j5pb.EnumAsField_Ref{
+										Enum: &schema_j5pb.EnumField{
+											Schema: &schema_j5pb.EnumField_Ref{
 												Ref: &schema_j5pb.Ref{
 													Package: "test.v1",
 													Schema:  "TestEnum",
@@ -273,7 +273,7 @@ func TestBuildPath(t *testing.T) {
 		}
 
 		prop := resObject.Properties[1]
-		fieldSchema, ok := prop.Schema.(*j5reflect.ObjectAsFieldSchema)
+		fieldSchema, ok := prop.Schema.(*j5reflect.ObjectFieldSchema)
 		if !ok {
 			t.Fatalf("unexpected type: %T", prop.Schema)
 		}

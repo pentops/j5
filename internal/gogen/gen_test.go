@@ -44,7 +44,7 @@ func TestTestProtoGen(t *testing.T) {
 							Name: "foo_id",
 							Schema: &schema_j5pb.Schema{
 								Type: &schema_j5pb.Schema_String_{
-									String_: &schema_j5pb.String{},
+									String_: &schema_j5pb.StringField{},
 								},
 							},
 							ProtoField: []int32{1},
@@ -57,8 +57,8 @@ func TestTestProtoGen(t *testing.T) {
 										Name: "enum",
 										Schema: &schema_j5pb.Schema{
 											Type: &schema_j5pb.Schema_Enum{
-												Enum: &schema_j5pb.EnumAsField{
-													Schema: &schema_j5pb.EnumAsField_Ref{
+												Enum: &schema_j5pb.EnumField{
+													Schema: &schema_j5pb.EnumField_Ref{
 														Ref: &schema_j5pb.Ref{
 															Package: "test.v1",
 															Schema:  "TestEnum",
@@ -81,7 +81,7 @@ func TestTestProtoGen(t *testing.T) {
 									Name: "foo_id",
 									Schema: &schema_j5pb.Schema{
 										Type: &schema_j5pb.Schema_String_{
-											String_: &schema_j5pb.String{},
+											String_: &schema_j5pb.StringField{},
 										},
 									},
 									ProtoField: []int32{1},

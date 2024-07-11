@@ -16,23 +16,23 @@ message RootSchema {
 message Schema {
   oneof type {
     // Special Cases
-    Any any = 11;
+    AnyField any = 11;
 
     // Named Root Types, wrapped as Field to separate the object-property rules
     // from the type itself.
-    OneofAsField oneof = 12;
-    ObjectAsField object = 21;
-    EnumAsField enum = 32;
+    OneofField oneof = 12;
+    ObjectField object = 21;
+    EnumField enum = 32;
 
     // Complex Types
-    Array array = 20;
-    Map map = 22;
+    ArrayField array = 20;
+    MapField map = 22;
 
     // Scalar Types
-    String string = 30;
-    Integer integer = 31;
-    Float float = 33;
-    Boolean boolean = 34;
+    StringField string = 30;
+    IntegerField integer = 31;
+    FloatField float = 33;
+    BooleanField boolean = 34;
   }
 }
 
@@ -42,12 +42,12 @@ message Ref {
 }
 
 // Allows anything
-message Any {}
+message AnyField {}
 
 // ObjectAsField is an object as-a-field in an ObjectProperty
-message ObjectAsField {
+message ObjectField {
   oneof schema {
-    Ref ref = 1;
+    Ref ref = 1; // Will always point to an Object.
     Object object = 2;
   }
 
@@ -68,9 +68,9 @@ message Object {
   repeated ObjectProperty properties = 3;
 }
 
-message OneofAsField {
+message OneofField {
   oneof schema {
-    Ref ref = 1;
+    Ref ref = 1; // Will always point to a Oneof
     Oneof oneof = 2;
   }
 
@@ -87,9 +87,9 @@ message Oneof {
   repeated ObjectProperty properties = 3;
 }
 
-message EnumAsField {
+message EnumField {
   oneof schema {
-    Ref ref = 1;
+    Ref ref = 1; // Will always point to an Enum
     Enum enum = 2;
   }
 
@@ -112,7 +112,25 @@ message Enum {
   }
 }
 
-message String {
+message ArrayField {
+  Rules rules = 1;
+  Schema items = 2;
+
+  message Rules {
+    optional uint64 min_items = 1;
+    optional uint64 max_items = 2;
+    optional bool unique_items = 3;
+  }
+}
+
+message MapField {
+  Schema item_schema = 1;
+  Schema key_schema = 2;
+  Rules rules = 3;
+  message Rules {}
+}
+
+message StringField {
   optional string format = 1;
   Rules rules = 3;
 
@@ -123,7 +141,7 @@ message String {
   }
 }
 
-message Float {
+message FloatField {
   Format format = 1;
   Rules rules = 2;
 
@@ -142,7 +160,7 @@ message Float {
   }
 }
 
-message Integer {
+message IntegerField {
   Format format = 1;
   Rules rules = 2;
 
@@ -163,30 +181,12 @@ message Integer {
   }
 }
 
-message Boolean {
+message BooleanField {
   Rules rules = 1;
 
   message Rules {
     optional bool const = 1;
   }
-}
-
-message Array {
-  Rules rules = 1;
-  Schema items = 2;
-
-  message Rules {
-    optional uint64 min_items = 1;
-    optional uint64 max_items = 2;
-    optional bool unique_items = 3;
-  }
-}
-
-message Map {
-  Schema item_schema = 1;
-  Schema key_schema = 2;
-  Rules rules = 3;
-  message Rules {}
 }
 
 message ObjectProperty {

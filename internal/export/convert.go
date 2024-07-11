@@ -88,9 +88,9 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 
 	case *schema_j5pb.Schema_Enum:
 		switch t := t.Enum.Schema.(type) {
-		case *schema_j5pb.EnumAsField_Enum:
+		case *schema_j5pb.EnumField_Enum:
 			out.SchemaItem.Type = convertEnumItem(t.Enum).Type
-		case *schema_j5pb.EnumAsField_Ref:
+		case *schema_j5pb.EnumField_Ref:
 			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
 			out.Ref = &refStr
 		default:
@@ -99,13 +99,13 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 
 	case *schema_j5pb.Schema_Object:
 		switch t := t.Object.Schema.(type) {
-		case *schema_j5pb.ObjectAsField_Object:
+		case *schema_j5pb.ObjectField_Object:
 			item, err := convertObjectItem(t.Object)
 			if err != nil {
 				return nil, err
 			}
 			out.SchemaItem.Type = item.Type
-		case *schema_j5pb.ObjectAsField_Ref:
+		case *schema_j5pb.ObjectField_Ref:
 			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
 			out.Ref = &refStr
 		default:
@@ -114,13 +114,13 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 
 	case *schema_j5pb.Schema_Oneof:
 		switch t := t.Oneof.Schema.(type) {
-		case *schema_j5pb.OneofAsField_Oneof:
+		case *schema_j5pb.OneofField_Oneof:
 			item, err := convertOneofItem(t.Oneof)
 			if err != nil {
 				return nil, err
 			}
 			out.SchemaItem.Type = item.Type
-		case *schema_j5pb.OneofAsField_Ref:
+		case *schema_j5pb.OneofField_Ref:
 			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
 			out.Ref = &refStr
 		default:
@@ -139,7 +139,7 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 	return out, nil
 }
 
-func convertStringItem(item *schema_j5pb.String) *StringItem {
+func convertStringItem(item *schema_j5pb.StringField) *StringItem {
 
 	out := &StringItem{
 		Format:  Maybe(item.Format),
@@ -155,14 +155,14 @@ func convertStringItem(item *schema_j5pb.String) *StringItem {
 	return out
 }
 
-var integerFormats map[schema_j5pb.Integer_Format]string = map[schema_j5pb.Integer_Format]string{
-	schema_j5pb.Integer_FORMAT_INT32:  "int32",
-	schema_j5pb.Integer_FORMAT_INT64:  "int64",
-	schema_j5pb.Integer_FORMAT_UINT32: "uint32",
-	schema_j5pb.Integer_FORMAT_UINT64: "uint64",
+var integerFormats map[schema_j5pb.IntegerField_Format]string = map[schema_j5pb.IntegerField_Format]string{
+	schema_j5pb.IntegerField_FORMAT_INT32:  "int32",
+	schema_j5pb.IntegerField_FORMAT_INT64:  "int64",
+	schema_j5pb.IntegerField_FORMAT_UINT32: "uint32",
+	schema_j5pb.IntegerField_FORMAT_UINT64: "uint64",
 }
 
-func convertIntegerItem(item *schema_j5pb.Integer) *IntegerItem {
+func convertIntegerItem(item *schema_j5pb.IntegerField) *IntegerItem {
 	out := &IntegerItem{
 		Format: integerFormats[item.Format], // may result in empty string if not set, should be pre-validated
 	}
@@ -178,12 +178,12 @@ func convertIntegerItem(item *schema_j5pb.Integer) *IntegerItem {
 	return out
 }
 
-var floatFormats map[schema_j5pb.Float_Format]string = map[schema_j5pb.Float_Format]string{
-	schema_j5pb.Float_FORMAT_FLOAT32: "float",
-	schema_j5pb.Float_FORMAT_FLOAT64: "double",
+var floatFormats map[schema_j5pb.FloatField_Format]string = map[schema_j5pb.FloatField_Format]string{
+	schema_j5pb.FloatField_FORMAT_FLOAT32: "float",
+	schema_j5pb.FloatField_FORMAT_FLOAT64: "double",
 }
 
-func convertFloatItem(item *schema_j5pb.Float) *FloatItem {
+func convertFloatItem(item *schema_j5pb.FloatField) *FloatItem {
 	out := &FloatItem{
 		Format: floatFormats[item.Format], // may result in empty string if not set, should be pre-validated
 	}
@@ -199,7 +199,7 @@ func convertFloatItem(item *schema_j5pb.Float) *FloatItem {
 	return out
 }
 
-func convertBooleanItem(item *schema_j5pb.Boolean) *BooleanItem {
+func convertBooleanItem(item *schema_j5pb.BooleanField) *BooleanItem {
 	out := &BooleanItem{}
 
 	if item.Rules != nil {
@@ -227,7 +227,7 @@ func convertEnumItem(item *schema_j5pb.Enum) *Schema {
 	}
 }
 
-func convertArrayItem(item *schema_j5pb.Array) (*ArrayItem, error) {
+func convertArrayItem(item *schema_j5pb.ArrayField) (*ArrayItem, error) {
 	items, err := convertSchema(item.Items)
 	if err != nil {
 		return nil, err
@@ -305,7 +305,7 @@ func convertOneofItem(item *schema_j5pb.Oneof) (*Schema, error) {
 	}, nil
 }
 
-func convertMapItem(item *schema_j5pb.Map) (*MapSchemaItem, error) {
+func convertMapItem(item *schema_j5pb.MapField) (*MapSchemaItem, error) {
 	schema, err := convertSchema(item.ItemSchema)
 	if err != nil {
 		return nil, err

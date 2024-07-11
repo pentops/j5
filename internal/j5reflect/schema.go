@@ -69,25 +69,25 @@ type AnySchema struct {
 func (s *AnySchema) ToJ5Field() (*schema_j5pb.Schema, error) {
 	return &schema_j5pb.Schema{
 		Type: &schema_j5pb.Schema_Any{
-			Any: &schema_j5pb.Any{},
+			Any: &schema_j5pb.AnyField{},
 		},
 	}, nil
 }
 
-type EnumAsFieldSchema struct {
+type EnumFieldSchema struct {
 	Ref   *RefSchema
-	Rules *schema_j5pb.EnumAsField_Rules
+	Rules *schema_j5pb.EnumField_Rules
 }
 
-func (s *EnumAsFieldSchema) Schema() *EnumSchema {
+func (s *EnumFieldSchema) Schema() *EnumSchema {
 	return s.Ref.To.(*EnumSchema)
 }
 
-func (s *EnumAsFieldSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
+func (s *EnumFieldSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
 	return &schema_j5pb.Schema{
 		Type: &schema_j5pb.Schema_Enum{
-			Enum: &schema_j5pb.EnumAsField{
-				Schema: &schema_j5pb.EnumAsField_Ref{
+			Enum: &schema_j5pb.EnumField{
+				Schema: &schema_j5pb.EnumField_Ref{
 					Ref: &schema_j5pb.Ref{
 						Package: s.Ref.Package,
 						Schema:  s.Ref.Schema,
@@ -99,76 +99,20 @@ func (s *EnumAsFieldSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
 	}, nil
 }
 
-type EnumSchema struct {
-	SchemaRoot
-
-	NamePrefix string
-	Options    []*schema_j5pb.Enum_Value
-}
-
-func (s *EnumSchema) ToJ5Root() (*schema_j5pb.RootSchema, error) {
-	return &schema_j5pb.RootSchema{
-		Type: &schema_j5pb.RootSchema_Enum{
-			Enum: &schema_j5pb.Enum{
-				Name:        s.Name,
-				Description: s.Description,
-				Options:     s.Options,
-				Prefix:      s.NamePrefix,
-			},
-		},
-	}, nil
-}
-
-type PropertySet []*ObjectProperty
-
-func (ps PropertySet) ByJSONName(name string) *ObjectProperty {
-	for _, prop := range ps {
-		if prop.JSONName == name {
-			return prop
-		}
-	}
-	return nil
-}
-
-type ObjectSchema struct {
-	SchemaRoot
-	Properties PropertySet
-}
-
-func (s *ObjectSchema) ToJ5Root() (*schema_j5pb.RootSchema, error) {
-	properties := make([]*schema_j5pb.ObjectProperty, 0, len(s.Properties))
-	for _, prop := range s.Properties {
-		property, err := prop.ToJ5Proto()
-		if err != nil {
-			return nil, fmt.Errorf("property %s: %w", prop.JSONName, err)
-		}
-		properties = append(properties, property)
-	}
-	return &schema_j5pb.RootSchema{
-		Type: &schema_j5pb.RootSchema_Object{
-			Object: &schema_j5pb.Object{
-				Description: s.Description,
-				Name:        s.Name,
-				Properties:  properties,
-			},
-		},
-	}, nil
-}
-
-type ObjectAsFieldSchema struct {
+type ObjectFieldSchema struct {
 	Ref   *RefSchema
-	Rules *schema_j5pb.ObjectAsField_Rules
+	Rules *schema_j5pb.ObjectField_Rules
 }
 
-func (s *ObjectAsFieldSchema) Schema() *ObjectSchema {
+func (s *ObjectFieldSchema) Schema() *ObjectSchema {
 	return s.Ref.To.(*ObjectSchema)
 }
 
-func (s *ObjectAsFieldSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
+func (s *ObjectFieldSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
 	return &schema_j5pb.Schema{
 		Type: &schema_j5pb.Schema_Object{
-			Object: &schema_j5pb.ObjectAsField{
-				Schema: &schema_j5pb.ObjectAsField_Ref{
+			Object: &schema_j5pb.ObjectField{
+				Schema: &schema_j5pb.ObjectField_Ref{
 					Ref: &schema_j5pb.Ref{
 						Package: s.Ref.Package,
 						Schema:  s.Ref.Schema,
@@ -180,46 +124,20 @@ func (s *ObjectAsFieldSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
 	}, nil
 }
 
-type OneofSchema struct {
-	SchemaRoot
-	Properties PropertySet
-}
-
-func (s *OneofSchema) ToJ5Root() (*schema_j5pb.RootSchema, error) {
-	properties := make([]*schema_j5pb.ObjectProperty, 0, len(s.Properties))
-	for _, prop := range s.Properties {
-		property, err := prop.ToJ5Proto()
-		if err != nil {
-			return nil, fmt.Errorf("property %s: %w", prop.JSONName, err)
-		}
-		properties = append(properties, property)
-	}
-
-	return &schema_j5pb.RootSchema{
-		Type: &schema_j5pb.RootSchema_Oneof{
-			Oneof: &schema_j5pb.Oneof{
-				Description: s.Description,
-				Name:        s.Name,
-				Properties:  properties,
-			},
-		},
-	}, nil
-}
-
-type OneofAsFieldSchema struct {
+type OneofFieldSchema struct {
 	Ref   *RefSchema
-	Rules *schema_j5pb.OneofAsField_Rules
+	Rules *schema_j5pb.OneofField_Rules
 }
 
-func (s *OneofAsFieldSchema) Schema() *OneofSchema {
+func (s *OneofFieldSchema) Schema() *OneofSchema {
 	return s.Ref.To.(*OneofSchema)
 }
 
-func (s *OneofAsFieldSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
+func (s *OneofFieldSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
 	return &schema_j5pb.Schema{
 		Type: &schema_j5pb.Schema_Oneof{
-			Oneof: &schema_j5pb.OneofAsField{
-				Schema: &schema_j5pb.OneofAsField_Ref{
+			Oneof: &schema_j5pb.OneofField{
+				Schema: &schema_j5pb.OneofField_Ref{
 					Ref: &schema_j5pb.Ref{
 						Package: s.Ref.Package,
 						Schema:  s.Ref.Schema,
@@ -229,48 +147,11 @@ func (s *OneofAsFieldSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
 			},
 		},
 	}, nil
-}
-
-type ObjectProperty struct {
-	Schema FieldSchema
-
-	ProtoField []protoreflect.FieldNumber
-
-	JSONName string
-
-	Required           bool
-	ReadOnly           bool
-	WriteOnly          bool
-	ExplicitlyOptional bool
-
-	Description string
-}
-
-func (prop *ObjectProperty) ToJ5Proto() (*schema_j5pb.ObjectProperty, error) {
-	proto, err := prop.Schema.ToJ5Field()
-	if err != nil {
-		return nil, fmt.Errorf("property %s: %w", prop.JSONName, err)
-	}
-	fieldPath := make([]int32, len(prop.ProtoField))
-	for idx, field := range prop.ProtoField {
-		fieldPath[idx] = int32(field)
-	}
-	return &schema_j5pb.ObjectProperty{
-		Schema:             proto,
-		Name:               prop.JSONName,
-		Required:           prop.Required,
-		ExplicitlyOptional: prop.ExplicitlyOptional,
-		ReadOnly:           prop.ReadOnly,
-		WriteOnly:          prop.WriteOnly,
-		Description:        prop.Description,
-		ProtoField:         fieldPath,
-	}, nil
-
 }
 
 type MapSchema struct {
 	Schema FieldSchema
-	Rules  *schema_j5pb.Map_Rules
+	Rules  *schema_j5pb.MapField_Rules
 }
 
 func (s *MapSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
@@ -281,7 +162,7 @@ func (s *MapSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
 
 	return &schema_j5pb.Schema{
 		Type: &schema_j5pb.Schema_Map{
-			Map: &schema_j5pb.Map{
+			Map: &schema_j5pb.MapField{
 				ItemSchema: item,
 				KeySchema:  &schema_j5pb.Schema{Type: &schema_j5pb.Schema_String_{}},
 				Rules:      s.Rules,
@@ -292,7 +173,7 @@ func (s *MapSchema) ToJ5Field() (*schema_j5pb.Schema, error) {
 
 type ArraySchema struct {
 	Schema FieldSchema
-	Rules  *schema_j5pb.Array_Rules
+	Rules  *schema_j5pb.ArrayField_Rules
 }
 
 func (s *ArraySchema) ToJ5Field() (*schema_j5pb.Schema, error) {
@@ -304,7 +185,7 @@ func (s *ArraySchema) ToJ5Field() (*schema_j5pb.Schema, error) {
 
 	return &schema_j5pb.Schema{
 		Type: &schema_j5pb.Schema_Array{
-			Array: &schema_j5pb.Array{
+			Array: &schema_j5pb.ArrayField{
 				Items: item,
 				Rules: s.Rules,
 			},

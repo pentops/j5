@@ -46,17 +46,17 @@ func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, erro
 
 	case *schema_j5pb.Schema_Object:
 		switch inner := st.Object.Schema.(type) {
-		case *schema_j5pb.ObjectAsField_Object:
+		case *schema_j5pb.ObjectField_Object:
 			item, err := objectSchemaFromDesc(pkg, inner.Object)
 			if err != nil {
 				return nil, err
 			}
-			return &ObjectAsFieldSchema{
+			return &ObjectFieldSchema{
 				Ref:   item.AsRef(),
 				Rules: st.Object.Rules,
 			}, nil
-		case *schema_j5pb.ObjectAsField_Ref:
-			return &ObjectAsFieldSchema{
+		case *schema_j5pb.ObjectField_Ref:
+			return &ObjectFieldSchema{
 				Ref: &RefSchema{
 					Package: inner.Ref.Package,
 					Schema:  inner.Ref.Schema,
@@ -69,17 +69,17 @@ func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, erro
 
 	case *schema_j5pb.Schema_Oneof:
 		switch inner := st.Oneof.Schema.(type) {
-		case *schema_j5pb.OneofAsField_Oneof:
+		case *schema_j5pb.OneofField_Oneof:
 			item, err := oneofSchemaFromDesc(pkg, inner.Oneof)
 			if err != nil {
 				return nil, err
 			}
-			return &OneofAsFieldSchema{
+			return &OneofFieldSchema{
 				Ref:   item.AsRef(),
 				Rules: st.Oneof.Rules,
 			}, nil
-		case *schema_j5pb.OneofAsField_Ref:
-			return &OneofAsFieldSchema{
+		case *schema_j5pb.OneofField_Ref:
+			return &OneofFieldSchema{
 				Ref: &RefSchema{
 					Package: inner.Ref.Package,
 					Schema:  inner.Ref.Schema,
@@ -92,14 +92,14 @@ func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, erro
 
 	case *schema_j5pb.Schema_Enum:
 		switch inner := st.Enum.Schema.(type) {
-		case *schema_j5pb.EnumAsField_Enum:
+		case *schema_j5pb.EnumField_Enum:
 			item := enumSchemaFromDesc(pkg, inner.Enum)
-			return &EnumAsFieldSchema{
+			return &EnumFieldSchema{
 				Ref:   item.AsRef(),
 				Rules: st.Enum.Rules,
 			}, nil
-		case *schema_j5pb.EnumAsField_Ref:
-			return &EnumAsFieldSchema{
+		case *schema_j5pb.EnumField_Ref:
+			return &EnumFieldSchema{
 				Ref: &RefSchema{
 					Package: inner.Ref.Package,
 					Schema:  inner.Ref.Schema,
@@ -170,16 +170,16 @@ func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, erro
 	}
 }
 
-var floatKinds = map[schema_j5pb.Float_Format]protoreflect.Kind{
-	schema_j5pb.Float_FORMAT_FLOAT32: protoreflect.FloatKind,
-	schema_j5pb.Float_FORMAT_FLOAT64: protoreflect.DoubleKind,
+var floatKinds = map[schema_j5pb.FloatField_Format]protoreflect.Kind{
+	schema_j5pb.FloatField_FORMAT_FLOAT32: protoreflect.FloatKind,
+	schema_j5pb.FloatField_FORMAT_FLOAT64: protoreflect.DoubleKind,
 }
 
-var intKinds = map[schema_j5pb.Integer_Format]protoreflect.Kind{
-	schema_j5pb.Integer_FORMAT_INT32:  protoreflect.Int32Kind,
-	schema_j5pb.Integer_FORMAT_INT64:  protoreflect.Int64Kind,
-	schema_j5pb.Integer_FORMAT_UINT32: protoreflect.Uint32Kind,
-	schema_j5pb.Integer_FORMAT_UINT64: protoreflect.Uint64Kind,
+var intKinds = map[schema_j5pb.IntegerField_Format]protoreflect.Kind{
+	schema_j5pb.IntegerField_FORMAT_INT32:  protoreflect.Int32Kind,
+	schema_j5pb.IntegerField_FORMAT_INT64:  protoreflect.Int64Kind,
+	schema_j5pb.IntegerField_FORMAT_UINT32: protoreflect.Uint32Kind,
+	schema_j5pb.IntegerField_FORMAT_UINT64: protoreflect.Uint64Kind,
 }
 
 func objectSchemaFromDesc(pkg *Package, sch *schema_j5pb.Object) (*ObjectSchema, error) {

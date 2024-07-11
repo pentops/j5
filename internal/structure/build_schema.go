@@ -237,7 +237,7 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*j
 		prop := &j5reflect.ObjectProperty{
 			JSONName:    jsonFieldName(oneof.Name()),
 			Description: commentDescription(src),
-			Schema: &j5reflect.OneofAsFieldSchema{
+			Schema: &j5reflect.OneofFieldSchema{
 				Ref: refPlaceholder,
 				// TODO: Oneof Rules
 			},
@@ -428,7 +428,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 	switch src.Kind() {
 	case protoreflect.BoolKind:
 		boolConstraint := constraint.GetBool()
-		boolItem := &schema_j5pb.Boolean{}
+		boolItem := &schema_j5pb.BooleanField{}
 
 		if boolConstraint != nil {
 			if boolConstraint.Const != nil {
@@ -442,10 +442,10 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 		return prop, nil
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
-		var integerRules *schema_j5pb.Integer_Rules
+		var integerRules *schema_j5pb.IntegerField_Rules
 		int32Constraint := constraint.GetInt32()
 		if int32Constraint != nil {
-			integerRules = &schema_j5pb.Integer_Rules{}
+			integerRules = &schema_j5pb.IntegerField_Rules{}
 			if int32Constraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
@@ -477,18 +477,18 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 
 		}
 		schemaProto.Type = &schema_j5pb.Schema_Integer{
-			Integer: &schema_j5pb.Integer{
-				Format: schema_j5pb.Integer_FORMAT_INT32,
+			Integer: &schema_j5pb.IntegerField{
+				Format: schema_j5pb.IntegerField_FORMAT_INT32,
 				Rules:  integerRules,
 			},
 		}
 		return prop, nil
 
 	case protoreflect.Uint32Kind:
-		var integerRules *schema_j5pb.Integer_Rules
+		var integerRules *schema_j5pb.IntegerField_Rules
 		uint32Constraint := constraint.GetUint32()
 		if uint32Constraint != nil {
-			integerRules = &schema_j5pb.Integer_Rules{}
+			integerRules = &schema_j5pb.IntegerField_Rules{}
 			if uint32Constraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
@@ -520,18 +520,18 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 		}
 
 		schemaProto.Type = &schema_j5pb.Schema_Integer{
-			Integer: &schema_j5pb.Integer{
-				Format: schema_j5pb.Integer_FORMAT_UINT32,
+			Integer: &schema_j5pb.IntegerField{
+				Format: schema_j5pb.IntegerField_FORMAT_UINT32,
 				Rules:  integerRules,
 			},
 		}
 		return prop, nil
 
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind:
-		var integerRules *schema_j5pb.Integer_Rules
+		var integerRules *schema_j5pb.IntegerField_Rules
 		int64Constraint := constraint.GetInt64()
 		if int64Constraint != nil {
-			integerRules = &schema_j5pb.Integer_Rules{}
+			integerRules = &schema_j5pb.IntegerField_Rules{}
 			if int64Constraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
@@ -563,18 +563,18 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 		}
 
 		schemaProto.Type = &schema_j5pb.Schema_Integer{
-			Integer: &schema_j5pb.Integer{
-				Format: schema_j5pb.Integer_FORMAT_INT64,
+			Integer: &schema_j5pb.IntegerField{
+				Format: schema_j5pb.IntegerField_FORMAT_INT64,
 				Rules:  integerRules,
 			},
 		}
 		return prop, nil
 
 	case protoreflect.FloatKind:
-		var numberRules *schema_j5pb.Float_Rules
+		var numberRules *schema_j5pb.FloatField_Rules
 		floatConstraint := constraint.GetFloat()
 		if floatConstraint != nil {
-			numberRules = &schema_j5pb.Float_Rules{}
+			numberRules = &schema_j5pb.FloatField_Rules{}
 			if floatConstraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
@@ -606,18 +606,18 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 		}
 
 		schemaProto.Type = &schema_j5pb.Schema_Float{
-			Float: &schema_j5pb.Float{
-				Format: schema_j5pb.Float_FORMAT_FLOAT32,
+			Float: &schema_j5pb.FloatField{
+				Format: schema_j5pb.FloatField_FORMAT_FLOAT32,
 				Rules:  numberRules,
 			},
 		}
 		return prop, nil
 
 	case protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind, protoreflect.DoubleKind:
-		var numberRules *schema_j5pb.Float_Rules
+		var numberRules *schema_j5pb.FloatField_Rules
 		floatConstraint := constraint.GetDouble()
 		if floatConstraint != nil {
-			numberRules = &schema_j5pb.Float_Rules{}
+			numberRules = &schema_j5pb.FloatField_Rules{}
 			if floatConstraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
@@ -649,22 +649,22 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 		}
 
 		schemaProto.Type = &schema_j5pb.Schema_Float{
-			Float: &schema_j5pb.Float{
-				Format: schema_j5pb.Float_FORMAT_FLOAT64,
+			Float: &schema_j5pb.FloatField{
+				Format: schema_j5pb.FloatField_FORMAT_FLOAT64,
 				Rules:  numberRules,
 			},
 		}
 		return prop, nil
 
 	case protoreflect.StringKind:
-		stringItem := &schema_j5pb.String{}
+		stringItem := &schema_j5pb.StringField{}
 		if constraint != nil && constraint.Type != nil {
 			stringConstraint, ok := constraint.Type.(*validate.FieldConstraints_String_)
 			if !ok {
 				return nil, fmt.Errorf("wrong constraint type for string: %T", constraint.Type)
 			}
 
-			stringItem.Rules = &schema_j5pb.String_Rules{}
+			stringItem.Rules = &schema_j5pb.StringField_Rules{}
 			constraint := stringConstraint.String_
 
 			stringItem.Rules.MinLength = constraint.MinLen
@@ -728,7 +728,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 
 	case protoreflect.BytesKind:
 		schemaProto.Type = &schema_j5pb.Schema_String_{
-			String_: &schema_j5pb.String{
+			String_: &schema_j5pb.StringField{
 				Format: Ptr("byte"),
 			},
 		}
@@ -748,7 +748,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 			ss.refs[protoName] = ref
 		}
 
-		prop.Schema = &j5reflect.EnumAsFieldSchema{
+		prop.Schema = &j5reflect.EnumFieldSchema{
 			Ref: ref,
 		}
 		return prop, nil
@@ -781,11 +781,11 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 			}
 		}
 		if isOneofWrapper {
-			prop.Schema = &j5reflect.OneofAsFieldSchema{
+			prop.Schema = &j5reflect.OneofFieldSchema{
 				Ref: ref,
 			}
 		} else {
-			prop.Schema = &j5reflect.ObjectAsFieldSchema{
+			prop.Schema = &j5reflect.ObjectFieldSchema{
 				Ref: ref,
 			}
 		}
@@ -884,7 +884,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (j5reflect.FieldSchema, bool)
 			WellKnownTypeName: src.FullName(),
 			Proto: &schema_j5pb.Schema{
 				Type: &schema_j5pb.Schema_String_{
-					String_: &schema_j5pb.String{
+					String_: &schema_j5pb.StringField{
 						Format: Ptr("date-time"),
 					},
 				},
@@ -896,7 +896,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (j5reflect.FieldSchema, bool)
 			WellKnownTypeName: src.FullName(),
 			Proto: &schema_j5pb.Schema{
 				Type: &schema_j5pb.Schema_String_{
-					String_: &schema_j5pb.String{
+					String_: &schema_j5pb.StringField{
 						Format: Ptr("duration"),
 					},
 				},
@@ -908,7 +908,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (j5reflect.FieldSchema, bool)
 			WellKnownTypeName: src.FullName(),
 			Proto: &schema_j5pb.Schema{
 				Type: &schema_j5pb.Schema_String_{
-					String_: &schema_j5pb.String{
+					String_: &schema_j5pb.StringField{
 						Format: Ptr("date"),
 					},
 				},

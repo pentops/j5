@@ -17,9 +17,9 @@ func TestConvertSchema(t *testing.T) {
 		name: "string",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_String_{
-				String_: &schema_j5pb.String{
+				String_: &schema_j5pb.StringField{
 					Format: Ptr("date"),
-					Rules: &schema_j5pb.String_Rules{
+					Rules: &schema_j5pb.StringField_Rules{
 						MinLength: Ptr(uint64(1)),
 						MaxLength: Ptr(uint64(2)),
 					},
@@ -36,9 +36,9 @@ func TestConvertSchema(t *testing.T) {
 		name: "number",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Float{
-				Float: &schema_j5pb.Float{
-					Format: schema_j5pb.Float_FORMAT_FLOAT64,
-					Rules: &schema_j5pb.Float_Rules{
+				Float: &schema_j5pb.FloatField{
+					Format: schema_j5pb.FloatField_FORMAT_FLOAT64,
+					Rules: &schema_j5pb.FloatField_Rules{
 						Minimum:          Ptr(0.0),
 						Maximum:          Ptr(100.0),
 						ExclusiveMinimum: Ptr(true),
@@ -59,8 +59,8 @@ func TestConvertSchema(t *testing.T) {
 		name: "enum",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Enum{
-				Enum: &schema_j5pb.EnumAsField{
-					Schema: &schema_j5pb.EnumAsField_Enum{
+				Enum: &schema_j5pb.EnumField{
+					Schema: &schema_j5pb.EnumField_Enum{
 						Enum: &schema_j5pb.Enum{
 							Options: []*schema_j5pb.Enum_Value{{
 								Name:        "FOO",
@@ -88,12 +88,12 @@ func TestConvertSchema(t *testing.T) {
 		name: "object",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Object{
-				Object: &schema_j5pb.ObjectAsField{
-					Rules: &schema_j5pb.ObjectAsField_Rules{
+				Object: &schema_j5pb.ObjectField{
+					Rules: &schema_j5pb.ObjectField_Rules{
 						MinProperties: Ptr(uint64(1)),
 						MaxProperties: Ptr(uint64(2)),
 					},
-					Schema: &schema_j5pb.ObjectAsField_Object{
+					Schema: &schema_j5pb.ObjectField_Object{
 						Object: &schema_j5pb.Object{
 							Name:        "short",
 							Description: "description",
@@ -102,7 +102,7 @@ func TestConvertSchema(t *testing.T) {
 								Required: true,
 								Schema: &schema_j5pb.Schema{
 									Type: &schema_j5pb.Schema_String_{
-										String_: &schema_j5pb.String{},
+										String_: &schema_j5pb.StringField{},
 									},
 								},
 							}, {
@@ -110,7 +110,7 @@ func TestConvertSchema(t *testing.T) {
 								Required: false,
 								Schema: &schema_j5pb.Schema{
 									Type: &schema_j5pb.Schema_String_{
-										String_: &schema_j5pb.String{},
+										String_: &schema_j5pb.StringField{},
 									},
 								},
 							}},
@@ -131,8 +131,8 @@ func TestConvertSchema(t *testing.T) {
 		name: "oneof",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Oneof{
-				Oneof: &schema_j5pb.OneofAsField{
-					Schema: &schema_j5pb.OneofAsField_Oneof{
+				Oneof: &schema_j5pb.OneofField{
+					Schema: &schema_j5pb.OneofField_Oneof{
 						Oneof: &schema_j5pb.Oneof{
 							Name: "short",
 
@@ -140,14 +140,14 @@ func TestConvertSchema(t *testing.T) {
 								Name: "foo",
 								Schema: &schema_j5pb.Schema{
 									Type: &schema_j5pb.Schema_String_{
-										String_: &schema_j5pb.String{},
+										String_: &schema_j5pb.StringField{},
 									},
 								},
 							}, {
 								Name: "bar",
 								Schema: &schema_j5pb.Schema{
 									Type: &schema_j5pb.Schema_String_{
-										String_: &schema_j5pb.String{},
+										String_: &schema_j5pb.StringField{},
 									},
 								},
 							}},
@@ -166,13 +166,13 @@ func TestConvertSchema(t *testing.T) {
 		name: "array",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Array{
-				Array: &schema_j5pb.Array{
+				Array: &schema_j5pb.ArrayField{
 					Items: &schema_j5pb.Schema{
 						Type: &schema_j5pb.Schema_String_{
-							String_: &schema_j5pb.String{},
+							String_: &schema_j5pb.StringField{},
 						},
 					},
-					Rules: &schema_j5pb.Array_Rules{
+					Rules: &schema_j5pb.ArrayField_Rules{
 						MinItems:    Ptr(uint64(1)),
 						MaxItems:    Ptr(uint64(2)),
 						UniqueItems: Ptr(true),
@@ -191,10 +191,10 @@ func TestConvertSchema(t *testing.T) {
 		name: "map",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Map{
-				Map: &schema_j5pb.Map{
+				Map: &schema_j5pb.MapField{
 					ItemSchema: &schema_j5pb.Schema{
 						Type: &schema_j5pb.Schema_String_{
-							String_: &schema_j5pb.String{},
+							String_: &schema_j5pb.StringField{},
 						},
 					},
 				},
@@ -209,7 +209,7 @@ func TestConvertSchema(t *testing.T) {
 		name: "any",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Any{
-				Any: &schema_j5pb.Any{},
+				Any: &schema_j5pb.AnyField{},
 			},
 		},
 		want: map[string]interface{}{
