@@ -42,6 +42,7 @@ message Object {
   repeated ObjectProperty properties = 3;
   bool additional_properties = 4;
   Rules rules = 5;
+  optional string primary_key = 6;
 
   message Rules {
     optional uint64 min_properties = 1;
