@@ -54,7 +54,7 @@ func ConvertRootSchema(schema *schema_j5pb.RootSchema) (*Schema, error) {
 	}
 }
 
-func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
+func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 
 	out := &Schema{
 		SchemaItem: &SchemaItem{},
@@ -63,30 +63,30 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 	var err error
 	switch t := schema.Type.(type) {
 
-	case *schema_j5pb.Schema_Any:
+	case *schema_j5pb.Field_Any:
 		out.SchemaItem.Type = &AnySchemaItem{
 			AdditionalProperties: true,
 		}
 
-	case *schema_j5pb.Schema_String_:
+	case *schema_j5pb.Field_String_:
 		out.SchemaItem.Type = convertStringItem(t.String_)
 
-	case *schema_j5pb.Schema_Integer:
+	case *schema_j5pb.Field_Integer:
 		out.SchemaItem.Type = convertIntegerItem(t.Integer)
 
-	case *schema_j5pb.Schema_Float:
+	case *schema_j5pb.Field_Float:
 		out.SchemaItem.Type = convertFloatItem(t.Float)
 
-	case *schema_j5pb.Schema_Boolean:
+	case *schema_j5pb.Field_Boolean:
 		out.SchemaItem.Type = convertBooleanItem(t.Boolean)
 
-	case *schema_j5pb.Schema_Array:
+	case *schema_j5pb.Field_Array:
 		out.SchemaItem.Type, err = convertArrayItem(t.Array)
 		if err != nil {
 			return nil, err
 		}
 
-	case *schema_j5pb.Schema_Enum:
+	case *schema_j5pb.Field_Enum:
 		switch t := t.Enum.Schema.(type) {
 		case *schema_j5pb.EnumField_Enum:
 			out.SchemaItem.Type = convertEnumItem(t.Enum).Type
@@ -97,7 +97,7 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 			return nil, fmt.Errorf("unknown schema type for swagger %T", t)
 		}
 
-	case *schema_j5pb.Schema_Object:
+	case *schema_j5pb.Field_Object:
 		switch t := t.Object.Schema.(type) {
 		case *schema_j5pb.ObjectField_Object:
 			item, err := convertObjectItem(t.Object)
@@ -112,7 +112,7 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 			return nil, fmt.Errorf("unknown schema type for swagger %T", t)
 		}
 
-	case *schema_j5pb.Schema_Oneof:
+	case *schema_j5pb.Field_Oneof:
 		switch t := t.Oneof.Schema.(type) {
 		case *schema_j5pb.OneofField_Oneof:
 			item, err := convertOneofItem(t.Oneof)
@@ -127,7 +127,7 @@ func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 			return nil, fmt.Errorf("unknown schema type for swagger %T", t)
 		}
 
-	case *schema_j5pb.Schema_Map:
+	case *schema_j5pb.Field_Map:
 		out.SchemaItem.Type, err = convertMapItem(t.Map)
 		if err != nil {
 			return nil, err

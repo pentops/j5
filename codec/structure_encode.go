@@ -23,9 +23,9 @@ properties:
 			var childProperties []*j5reflect.ObjectProperty
 
 			switch wrapper := property.Schema.(type) {
-			case *j5reflect.ObjectFieldSchema:
+			case *j5reflect.ObjectField:
 				childProperties = wrapper.Schema().Properties
-			case *j5reflect.OneofFieldSchema:
+			case *j5reflect.OneofField:
 				childProperties = wrapper.Schema().Properties
 			default:
 				return nil, fmt.Errorf("unsupported schema type %T for nested json", wrapper)
@@ -87,11 +87,11 @@ func (enc *encoder) encodeObjectBody(fields []fieldSpec) error {
 		}
 		if len(spec.children) > 0 {
 			switch subSchema := spec.property.Schema.(type) {
-			case *j5reflect.ObjectFieldSchema:
+			case *j5reflect.ObjectField:
 				if err := enc.encodeObjectBody(spec.children); err != nil {
 					return err
 				}
-			case *j5reflect.OneofFieldSchema:
+			case *j5reflect.OneofField:
 				if err := enc.encodeOneofBody(spec.children); err != nil {
 					return err
 				}
@@ -185,19 +185,19 @@ func (enc *encoder) encodeOneof(schema *j5reflect.OneofSchema, msg protoreflect.
 func (enc *encoder) encodeValue(schema j5reflect.FieldSchema, value protoreflect.Value) error {
 
 	switch schema := schema.(type) {
-	case *j5reflect.ObjectFieldSchema:
+	case *j5reflect.ObjectField:
 		return enc.encodeObject(schema.Schema(), value.Message())
 
-	case *j5reflect.OneofFieldSchema:
+	case *j5reflect.OneofField:
 		return enc.encodeOneof(schema.Schema(), value.Message())
 
-	case *j5reflect.EnumFieldSchema:
+	case *j5reflect.EnumField:
 		return enc.encodeEnum(schema.Schema(), value.Enum())
 
-	case *j5reflect.ArraySchema:
+	case *j5reflect.ArrayField:
 		return enc.encodeArray(schema, value.List())
 
-	case *j5reflect.MapSchema:
+	case *j5reflect.MapField:
 		return enc.encodeMap(schema, value.Map())
 
 	case *j5reflect.ScalarSchema:
@@ -208,7 +208,7 @@ func (enc *encoder) encodeValue(schema j5reflect.FieldSchema, value protoreflect
 	}
 }
 
-func (enc *encoder) encodeMap(schema *j5reflect.MapSchema, value protoreflect.Map) error {
+func (enc *encoder) encodeMap(schema *j5reflect.MapField, value protoreflect.Map) error {
 	enc.openObject()
 	first := true
 	var outerError error
@@ -234,7 +234,7 @@ func (enc *encoder) encodeMap(schema *j5reflect.MapSchema, value protoreflect.Ma
 	return nil
 }
 
-func (enc *encoder) encodeArray(schema *j5reflect.ArraySchema, list protoreflect.List) error {
+func (enc *encoder) encodeArray(schema *j5reflect.ArrayField, list protoreflect.List) error {
 	enc.openArray()
 	first := true
 	for i := 0; i < list.Len(); i++ {

@@ -7,8 +7,46 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+type RootSchema interface {
+	AsRef() *RefSchema
+	FullName() string
+	PackageName() string
+	ToJ5Root() (*schema_j5pb.RootSchema, error)
+}
+
+type RefSchema struct {
+	Package string
+	Schema  string
+	To      RootSchema
+}
+
+func (s *RefSchema) FullName() string {
+	return fmt.Sprintf("%s.%s", s.Package, s.Schema)
+}
+
+type rootSchema struct {
+	Description string
+	Package     string
+	Name        string
+}
+
+func (s *rootSchema) FullName() string {
+	return fmt.Sprintf("%s.%s", s.Package, s.Name)
+}
+
+func (s *rootSchema) PackageName() string {
+	return s.Package
+}
+
+func (s *rootSchema) AsRef() *RefSchema {
+	return &RefSchema{
+		Package: s.Package,
+		Schema:  s.Name,
+	}
+}
+
 type EnumSchema struct {
-	SchemaRoot
+	rootSchema
 
 	NamePrefix string
 	Options    []*schema_j5pb.Enum_Value
@@ -39,7 +77,7 @@ func (ps PropertySet) ByJSONName(name string) *ObjectProperty {
 }
 
 type ObjectSchema struct {
-	SchemaRoot
+	rootSchema
 	Properties PropertySet
 }
 
@@ -64,7 +102,7 @@ func (s *ObjectSchema) ToJ5Root() (*schema_j5pb.RootSchema, error) {
 }
 
 type OneofSchema struct {
-	SchemaRoot
+	rootSchema
 	Properties PropertySet
 }
 

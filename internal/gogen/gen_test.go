@@ -42,8 +42,8 @@ func TestTestProtoGen(t *testing.T) {
 					Request: &schema_j5pb.Method_Request{
 						PathParameters: []*schema_j5pb.ObjectProperty{{
 							Name: "foo_id",
-							Schema: &schema_j5pb.Schema{
-								Type: &schema_j5pb.Schema_String_{
+							Schema: &schema_j5pb.Field{
+								Type: &schema_j5pb.Field_String_{
 									String_: &schema_j5pb.StringField{},
 								},
 							},
@@ -55,8 +55,8 @@ func TestTestProtoGen(t *testing.T) {
 									Name: "PostFooRequest",
 									Properties: []*schema_j5pb.ObjectProperty{{
 										Name: "enum",
-										Schema: &schema_j5pb.Schema{
-											Type: &schema_j5pb.Schema_Enum{
+										Schema: &schema_j5pb.Field{
+											Type: &schema_j5pb.Field_Enum{
 												Enum: &schema_j5pb.EnumField{
 													Schema: &schema_j5pb.EnumField_Ref{
 														Ref: &schema_j5pb.Ref{
@@ -79,8 +79,8 @@ func TestTestProtoGen(t *testing.T) {
 								Name: "PostFooRequest",
 								Properties: []*schema_j5pb.ObjectProperty{{
 									Name: "foo_id",
-									Schema: &schema_j5pb.Schema{
-										Type: &schema_j5pb.Schema_String_{
+									Schema: &schema_j5pb.Field{
+										Type: &schema_j5pb.Field_String_{
 											String_: &schema_j5pb.StringField{},
 										},
 									},

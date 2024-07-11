@@ -11,12 +11,12 @@ func TestConvertSchema(t *testing.T) {
 
 	for _, tc := range []struct {
 		name  string
-		input *schema_j5pb.Schema
+		input *schema_j5pb.Field
 		want  map[string]interface{}
 	}{{
 		name: "string",
-		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_String_{
+		input: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_String_{
 				String_: &schema_j5pb.StringField{
 					Format: Ptr("date"),
 					Rules: &schema_j5pb.StringField_Rules{
@@ -34,8 +34,8 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "number",
-		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Float{
+		input: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_Float{
 				Float: &schema_j5pb.FloatField{
 					Format: schema_j5pb.FloatField_FORMAT_FLOAT64,
 					Rules: &schema_j5pb.FloatField_Rules{
@@ -57,8 +57,8 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "enum",
-		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Enum{
+		input: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_Enum{
 				Enum: &schema_j5pb.EnumField{
 					Schema: &schema_j5pb.EnumField_Enum{
 						Enum: &schema_j5pb.Enum{
@@ -86,8 +86,8 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "object",
-		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Object{
+		input: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_Object{
 				Object: &schema_j5pb.ObjectField{
 					Rules: &schema_j5pb.ObjectField_Rules{
 						MinProperties: Ptr(uint64(1)),
@@ -100,16 +100,16 @@ func TestConvertSchema(t *testing.T) {
 							Properties: []*schema_j5pb.ObjectProperty{{
 								Name:     "foo",
 								Required: true,
-								Schema: &schema_j5pb.Schema{
-									Type: &schema_j5pb.Schema_String_{
+								Schema: &schema_j5pb.Field{
+									Type: &schema_j5pb.Field_String_{
 										String_: &schema_j5pb.StringField{},
 									},
 								},
 							}, {
 								Name:     "bar",
 								Required: false,
-								Schema: &schema_j5pb.Schema{
-									Type: &schema_j5pb.Schema_String_{
+								Schema: &schema_j5pb.Field{
+									Type: &schema_j5pb.Field_String_{
 										String_: &schema_j5pb.StringField{},
 									},
 								},
@@ -129,8 +129,8 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "oneof",
-		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Oneof{
+		input: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_Oneof{
 				Oneof: &schema_j5pb.OneofField{
 					Schema: &schema_j5pb.OneofField_Oneof{
 						Oneof: &schema_j5pb.Oneof{
@@ -138,15 +138,15 @@ func TestConvertSchema(t *testing.T) {
 
 							Properties: []*schema_j5pb.ObjectProperty{{
 								Name: "foo",
-								Schema: &schema_j5pb.Schema{
-									Type: &schema_j5pb.Schema_String_{
+								Schema: &schema_j5pb.Field{
+									Type: &schema_j5pb.Field_String_{
 										String_: &schema_j5pb.StringField{},
 									},
 								},
 							}, {
 								Name: "bar",
-								Schema: &schema_j5pb.Schema{
-									Type: &schema_j5pb.Schema_String_{
+								Schema: &schema_j5pb.Field{
+									Type: &schema_j5pb.Field_String_{
 										String_: &schema_j5pb.StringField{},
 									},
 								},
@@ -164,11 +164,11 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "array",
-		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Array{
+		input: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_Array{
 				Array: &schema_j5pb.ArrayField{
-					Items: &schema_j5pb.Schema{
-						Type: &schema_j5pb.Schema_String_{
+					Items: &schema_j5pb.Field{
+						Type: &schema_j5pb.Field_String_{
 							String_: &schema_j5pb.StringField{},
 						},
 					},
@@ -189,11 +189,11 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "map",
-		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Map{
+		input: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_Map{
 				Map: &schema_j5pb.MapField{
-					ItemSchema: &schema_j5pb.Schema{
-						Type: &schema_j5pb.Schema_String_{
+					ItemSchema: &schema_j5pb.Field{
+						Type: &schema_j5pb.Field_String_{
 							String_: &schema_j5pb.StringField{},
 						},
 					},
@@ -207,8 +207,8 @@ func TestConvertSchema(t *testing.T) {
 		},
 	}, {
 		name: "any",
-		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Any{
+		input: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_Any{
 				Any: &schema_j5pb.AnyField{},
 			},
 		},
