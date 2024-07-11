@@ -2,6 +2,7 @@ package j5reflect
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -171,6 +172,51 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 		return nil, err
 	}
 
+	requestBodyObject := requestBody.GetObject()
+	if requestBodyObject == nil {
+		return nil, fmt.Errorf("request body should be an object, got %T", requestBody)
+	}
+
+	pathParameterNames := map[string]struct{}{}
+	pathParts := strings.Split(mm.HTTPPath, "/")
+	for _, part := range pathParts {
+		if !strings.HasPrefix(part, ":") {
+			continue
+		}
+		fieldName := strings.TrimPrefix(part, ":")
+		pathParameterNames[fieldName] = struct{}{}
+	}
+
+	pathProperties := make([]*schema_j5pb.ObjectProperty, 0)
+	bodyProperties := make([]*schema_j5pb.ObjectProperty, 0)
+
+	for _, prop := range requestBodyObject.Properties {
+		_, isPath := pathParameterNames[prop.Name]
+		if isPath {
+			pathProperties = append(pathProperties, prop)
+		} else {
+			bodyProperties = append(bodyProperties, prop)
+		}
+	}
+
+	request := &schema_j5pb.Method_Request{
+		PathParameters: pathProperties,
+	}
+
+	if mm.HasBody {
+		request.Body = &schema_j5pb.Schema{
+			Type: &schema_j5pb.Schema_Object{
+				Object: &schema_j5pb.Object{
+					Properties:  bodyProperties,
+					Name:        requestBodyObject.Name,
+					Description: requestBodyObject.Description,
+				},
+			},
+		}
+	} else {
+		request.QueryParameters = bodyProperties
+	}
+
 	responseSchema, ok := mm.Response.(*ObjectSchema)
 	if !ok {
 		return nil, fmt.Errorf("response schema was not an object: %T", mm.Response)
@@ -187,7 +233,7 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 		HttpMethod:   mm.HTTPMethod,
 		HttpPath:     mm.HTTPPath,
 		ResponseBody: responseBody,
-		RequestBody:  requestBody,
+		Request:      request,
 	}, nil
 }
 

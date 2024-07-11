@@ -39,30 +39,33 @@ func TestTestProtoGen(t *testing.T) {
 					FullGrpcName: "test.v1.TestService/PostFoo",
 					HttpMethod:   schema_j5pb.HTTPMethod_GET,
 					HttpPath:     "/test/v1/foo/:foo_id",
-					RequestBody: &schema_j5pb.Schema{
-						Type: &schema_j5pb.Schema_Object{
-							Object: &schema_j5pb.Object{
-								Name: "PostFooRequest",
-								Properties: []*schema_j5pb.ObjectProperty{{
-									Name: "foo_id",
-									Schema: &schema_j5pb.Schema{
-										Type: &schema_j5pb.Schema_String_{
-											String_: &schema_j5pb.String{},
-										},
-									},
-									ProtoField: []int32{1},
-								}, {
-									Name: "enum",
-									Schema: &schema_j5pb.Schema{
-										Type: &schema_j5pb.Schema_Ref{
-											Ref: &schema_j5pb.Ref{
-												Package: "test.v1",
-												Schema:  "TestEnum",
+					Request: &schema_j5pb.Method_Request{
+						PathParameters: []*schema_j5pb.ObjectProperty{{
+							Name: "foo_id",
+							Schema: &schema_j5pb.Schema{
+								Type: &schema_j5pb.Schema_String_{
+									String_: &schema_j5pb.String{},
+								},
+							},
+							ProtoField: []int32{1},
+						}},
+						Body: &schema_j5pb.Schema{
+							Type: &schema_j5pb.Schema_Object{
+								Object: &schema_j5pb.Object{
+									Name: "PostFooRequest",
+									Properties: []*schema_j5pb.ObjectProperty{{
+										Name: "enum",
+										Schema: &schema_j5pb.Schema{
+											Type: &schema_j5pb.Schema_Ref{
+												Ref: &schema_j5pb.Ref{
+													Package: "test.v1",
+													Schema:  "TestEnum",
+												},
 											},
 										},
-									},
-									ProtoField: []int32{3},
-								}},
+										ProtoField: []int32{3},
+									}},
+								},
 							},
 						},
 					},

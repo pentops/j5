@@ -2,7 +2,6 @@ package export
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 )
@@ -119,42 +118,16 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 		HTTPMethod: methodShortString[protoMethod.HttpMethod],
 		HTTPPath:   protoMethod.HttpPath,
 	}
-	if protoMethod.RequestBody != nil {
-		schema, err := fromProtoSchema(protoMethod.RequestBody)
+	if protoMethod.Request.Body != nil {
+		schema, err := fromProtoSchema(protoMethod.Request.Body)
 		if err != nil {
 			return nil, err
 		}
 		out.RequestBody = schema
 	}
 
-	pathParameterNames := map[string]struct{}{}
-	pathParts := strings.Split(protoMethod.HttpPath, "/")
-	for _, part := range pathParts {
-		if !strings.HasPrefix(part, ":") {
-			continue
-		}
-		fieldName := strings.TrimPrefix(part, ":")
-		pathParameterNames[fieldName] = struct{}{}
-	}
-
-	pathProperties := make([]*schema_j5pb.ObjectProperty, 0)
-	bodyProperties := make([]*schema_j5pb.ObjectProperty, 0)
-
-	requestSchema := protoMethod.RequestBody.GetObject()
-	if requestSchema == nil {
-		return nil, fmt.Errorf("request body was not an object: %T", protoMethod.RequestBody)
-	}
-	for _, prop := range requestSchema.Properties {
-		_, isPath := pathParameterNames[prop.Name]
-		if isPath {
-			pathProperties = append(pathProperties, prop)
-		} else {
-			bodyProperties = append(bodyProperties, prop)
-		}
-	}
-
-	out.PathParameters = make([]*JdefParameter, len(pathProperties))
-	for idx, property := range pathProperties {
+	out.PathParameters = make([]*JdefParameter, len(protoMethod.Request.PathParameters))
+	for idx, property := range protoMethod.Request.PathParameters {
 		schema, err := fromProtoSchema(property.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("path param %s: %w", property.Name, err)
@@ -167,35 +140,18 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 		}
 	}
 
-	if protoMethod.HttpMethod == schema_j5pb.HTTPMethod_HTTP_METHOD_GET {
-		out.QueryParameters = make([]*JdefParameter, len(bodyProperties))
-		for idx, property := range bodyProperties {
-			schema, err := fromProtoSchema(property.Schema)
-			if err != nil {
-				return nil, fmt.Errorf("query param %s: %w", property.Name, err)
-			}
-			out.QueryParameters[idx] = &JdefParameter{
-				Name:        property.Name,
-				Description: property.Description,
-				Required:    property.Required,
-				Schema:      *schema,
-			}
-		}
-	} else {
-		newRequest := &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Object{
-				Object: &schema_j5pb.Object{
-					Properties:  bodyProperties,
-					Name:        requestSchema.Name,
-					Description: requestSchema.Description,
-				},
-			},
-		}
-		requestSchema, err := fromProtoSchema(newRequest)
+	out.QueryParameters = make([]*JdefParameter, len(protoMethod.Request.QueryParameters))
+	for idx, property := range protoMethod.Request.QueryParameters {
+		schema, err := fromProtoSchema(property.Schema)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("query param %s: %w", property.Name, err)
 		}
-		out.RequestBody = requestSchema
+		out.QueryParameters[idx] = &JdefParameter{
+			Name:        property.Name,
+			Description: property.Description,
+			Required:    property.Required,
+			Schema:      *schema,
+		}
 	}
 
 	responseSchema, err := fromProtoSchema(protoMethod.ResponseBody)

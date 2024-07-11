@@ -160,7 +160,27 @@ func packageFromDesc(pkg *schema_j5pb.Package) (*Package, error) {
 func methodFromDesc(service *Service, protoService *schema_j5pb.Method) (*Method, error) {
 	pkg := service.Package
 
-	request, err := RootSchemaFromDesc(pkg, protoService.RequestBody)
+	var requestObject *schema_j5pb.Object
+	if protoService.Request.Body != nil {
+		requestObject = protoService.Request.Body.GetObject()
+		if requestObject == nil {
+			return nil, fmt.Errorf("request body must be an object")
+		}
+	} else {
+		requestObject = &schema_j5pb.Object{
+			Name:       fmt.Sprintf("%sRequest", protoService.Name),
+			Properties: []*schema_j5pb.ObjectProperty{},
+		}
+	}
+
+	requestObject.Properties = append(requestObject.Properties, protoService.Request.PathParameters...)
+	requestObject.Properties = append(requestObject.Properties, protoService.Request.QueryParameters...)
+
+	request, err := RootSchemaFromDesc(pkg, &schema_j5pb.Schema{
+		Type: &schema_j5pb.Schema_Object{
+			Object: requestObject,
+		},
+	})
 	if err != nil {
 		return nil, wrapError(err, "requestBody")
 	}
