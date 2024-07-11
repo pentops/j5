@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/dynamicpb"
@@ -159,11 +160,11 @@ func TestUnmarshal(t *testing.T) {
 		}, {
 			name: "anon oneof",
 			json: `{
-				"oneofString": "oneofStringVal"
+				"aOneofString": "stringVal"
 			}`,
 			wantProto: &foo_testpb.PostFooRequest{
-				AnonOneof: &foo_testpb.PostFooRequest_OneofString{
-					OneofString: "oneofStringVal",
+				AnonOneof: &foo_testpb.PostFooRequest_AOneofString{
+					AOneofString: "stringVal",
 				},
 			},
 		}, {
@@ -171,26 +172,26 @@ func TestUnmarshal(t *testing.T) {
 			json: `{
 				"exposedOneof": {
 					"!type": "exposedString",
-					"exposedString": "oneofStringVal"
+					"exposedString": "stringVal"
 				}
 			}`,
 			wantProto: &foo_testpb.PostFooRequest{
 				ExposedOneof: &foo_testpb.PostFooRequest_ExposedString{
-					ExposedString: "oneofStringVal",
+					ExposedString: "stringVal",
 				},
 			},
 		}, {
 			name: "oneof wrapper",
 			json: `{
 				"wrappedOneof": {
-					"!type": "oneofString",
-					"oneofString": "oneofStringVal"
+					"!type": "wOneofString",
+					"wOneofString": "Wrapped oneofStringVal"
 				}
 			}`,
 			wantProto: &foo_testpb.PostFooRequest{
 				WrappedOneof: &foo_testpb.WrappedOneof{
-					Type: &foo_testpb.WrappedOneof_OneofString{
-						OneofString: "oneofStringVal",
+					Type: &foo_testpb.WrappedOneof_WOneofString{
+						WOneofString: "Wrapped oneofStringVal",
 					},
 				},
 			},
@@ -336,24 +337,27 @@ func TestUnmarshal(t *testing.T) {
 
 			codec := NewCodec()
 			for _, input := range allInputs {
-
+				schema, err := codec.schemaSet.SchemaObject(tc.wantProto.ProtoReflect().Descriptor())
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Logf("SCHEMA: %s", protojson.Format(schema))
 				buffer := &bytes.Buffer{}
-				if err := json.Indent(buffer, []byte(input), "", "  "); err != nil {
+				if err := json.Indent(buffer, []byte(input), " | ", "  "); err != nil {
 					t.Fatalf("invalid test case: %s", err)
 				}
+				t.Logf("input: \n | %s\n", buffer.String())
 
-				t.Log(input)
 				msg := tc.wantProto.ProtoReflect().New().Interface()
 				if err := codec.JSONToProto([]byte(input), msg.ProtoReflect()); err != nil {
 					t.Fatal(err)
 				}
 
-				t.Logf("protojson format: \n%v\n", protojson.Format(msg))
+				t.Logf("got decoded proto: %s \n%v\n", msg.ProtoReflect().Descriptor().FullName(), prototext.Format(msg))
 
 				if !proto.Equal(tc.wantProto, msg) {
-					a := protojson.Format(tc.wantProto)
-					b := protojson.Format(msg)
-					t.Fatalf("expected \n%v but got\n%v", string(a), string(b))
+					a := prototext.Format(tc.wantProto)
+					t.Fatalf("expected proto %s\n%v\n", tc.wantProto.ProtoReflect().Descriptor().FullName(), string(a))
 				}
 
 				encoded, err := codec.ProtoToJSON(msg.ProtoReflect())

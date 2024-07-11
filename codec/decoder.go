@@ -186,16 +186,20 @@ func (dec *decoder) decodeObject(object *j5reflect.ObjectSchema, msg protoreflec
 		}
 
 		protoFieldPath := field.ProtoField[:]
-		oneofWrapper, ok := field.Schema.(*j5reflect.OneofSchema)
-		if ok {
-			if err := dec.decodeOneof(oneofWrapper, msg); err != nil {
+		if len(protoFieldPath) == 0 {
+			// oneof annotations in proto messages are not fields, so there is
+			// no 'path' from the message to the oneof.
+			// Wrapped oneofs are messages, so they ARE fields, and don't get
+			// handled here.
+			oneofWrapper, ok := field.Schema.(*j5reflect.OneofAsFieldSchema)
+			if !ok {
+				return newFieldError(keyTokenStr, "field has no proto field and is not a oneof")
+			}
+
+			if err := dec.decodeOneof(oneofWrapper.Schema(), msg); err != nil {
 				return err
 			}
 			return nil
-		}
-
-		if len(protoFieldPath) == 0 {
-			return newFieldError(keyTokenStr, "field has no proto field")
 		}
 
 		var protoField protoreflect.FieldDescriptor
@@ -234,13 +238,8 @@ func (dec *decoder) decodeObject(object *j5reflect.ObjectSchema, msg protoreflec
 	})
 }
 
-func (dec *decoder) decodeField(schema j5reflect.Schema, msg protoreflect.Message, protoField protoreflect.FieldDescriptor) error {
+func (dec *decoder) decodeField(schema j5reflect.FieldSchema, msg protoreflect.Message, protoField protoreflect.FieldDescriptor) error {
 	switch subSchema := schema.(type) {
-	case *j5reflect.RefSchema:
-		if subSchema.To == nil {
-			return fmt.Errorf("unlinked ref to %s", subSchema.FullName())
-		}
-		return dec.decodeField(subSchema.To, msg, protoField)
 
 	case *j5reflect.MapSchema:
 		if !protoField.IsMap() {
@@ -266,27 +265,27 @@ func (dec *decoder) decodeField(schema j5reflect.Schema, msg protoreflect.Messag
 		msg.Set(protoField, protoreflect.ValueOf(list))
 		return nil
 
-	case *j5reflect.ObjectSchema:
+	case *j5reflect.ObjectAsFieldSchema:
 		if protoField.Kind() != protoreflect.MessageKind {
 			return errors.New("expected message")
 		}
 
 		subMsg := msg.Mutable(protoField).Message()
-		return dec.decodeObject(subSchema, subMsg)
+		return dec.decodeObject(subSchema.Schema(), subMsg)
 
-	case *j5reflect.OneofSchema:
+	case *j5reflect.OneofAsFieldSchema:
 		if protoField.Kind() != protoreflect.MessageKind {
 			return errors.New("expected message for oneof")
 		}
 		subMsg := msg.Mutable(protoField).Message()
-		return dec.decodeOneof(subSchema, subMsg)
+		return dec.decodeOneof(subSchema.Schema(), subMsg)
 
-	case *j5reflect.EnumSchema:
+	case *j5reflect.EnumAsFieldSchema:
 		if protoField.Kind() != protoreflect.EnumKind {
 			return errors.New("expected enum")
 		}
 
-		val, err := dec.decodeEnum(subSchema)
+		val, err := dec.decodeEnum(subSchema.Schema())
 		if err != nil {
 			return err
 		}
@@ -410,24 +409,19 @@ func (dec *decoder) decodeOneof(oneof *j5reflect.OneofSchema, msg protoreflect.M
 	}
 
 	if constrainType != nil && foundKeys[0] != *constrainType {
-		return newFieldError(foundKeys[0], "key does not match type")
+		return newFieldError(foundKeys[0], fmt.Sprintf("key %q does not match type %q", foundKeys[0], *constrainType))
 	}
 
 	return nil
 }
 
-func (dec *decoder) decodeMapField(schema j5reflect.Schema, list protoreflect.Map) error {
+func (dec *decoder) decodeMapField(schema j5reflect.FieldSchema, list protoreflect.Map) error {
 	switch subSchema := schema.(type) {
-	case *j5reflect.RefSchema:
-		if subSchema.To == nil {
-			return fmt.Errorf("unlinked ref to %s", subSchema.FullName())
-		}
-		return dec.decodeMapField(subSchema.To, list)
 
-	case *j5reflect.ObjectSchema:
+	case *j5reflect.ObjectAsFieldSchema:
 		return dec.jsonObject(func(keyTokenStr string) error {
 			subMsg := list.NewValue()
-			if err := dec.decodeObject(subSchema, subMsg.Message()); err != nil {
+			if err := dec.decodeObject(subSchema.Schema(), subMsg.Message()); err != nil {
 				return err
 			}
 
@@ -435,10 +429,10 @@ func (dec *decoder) decodeMapField(schema j5reflect.Schema, list protoreflect.Ma
 			return nil
 		})
 
-	case *j5reflect.OneofSchema:
+	case *j5reflect.OneofAsFieldSchema:
 		return dec.jsonObject(func(keyTokenStr string) error {
 			subMsg := list.NewValue()
-			if err := dec.decodeOneof(subSchema, subMsg.Message()); err != nil {
+			if err := dec.decodeOneof(subSchema.Schema(), subMsg.Message()); err != nil {
 				return err
 			}
 
@@ -446,9 +440,9 @@ func (dec *decoder) decodeMapField(schema j5reflect.Schema, list protoreflect.Ma
 			return nil
 		})
 
-	case *j5reflect.EnumSchema:
+	case *j5reflect.EnumAsFieldSchema:
 		return dec.jsonObject(func(keyTokenStr string) error {
-			value, err := dec.decodeEnum(subSchema)
+			value, err := dec.decodeEnum(subSchema.Schema())
 			if err != nil {
 				return err
 			}
@@ -472,19 +466,14 @@ func (dec *decoder) decodeMapField(schema j5reflect.Schema, list protoreflect.Ma
 	}
 }
 
-func (dec *decoder) decodeListField(schema j5reflect.Schema, list protoreflect.List) error {
+func (dec *decoder) decodeListField(schema j5reflect.FieldSchema, list protoreflect.List) error {
 
 	switch subSchema := schema.(type) {
-	case *j5reflect.RefSchema:
-		if subSchema.To == nil {
-			return fmt.Errorf("unlinked ref to %s", subSchema.FullName())
-		}
-		return dec.decodeListField(subSchema.To, list)
 
-	case *j5reflect.ObjectSchema:
+	case *j5reflect.ObjectAsFieldSchema:
 		return dec.jsonArray(func() error {
 			subMsg := list.NewElement()
-			if err := dec.decodeObject(subSchema, subMsg.Message()); err != nil {
+			if err := dec.decodeObject(subSchema.Schema(), subMsg.Message()); err != nil {
 				return err
 			}
 
@@ -492,10 +481,10 @@ func (dec *decoder) decodeListField(schema j5reflect.Schema, list protoreflect.L
 			return nil
 		})
 
-	case *j5reflect.OneofSchema:
+	case *j5reflect.OneofAsFieldSchema:
 		return dec.jsonArray(func() error {
 			subMsg := list.NewElement()
-			if err := dec.decodeOneof(subSchema, subMsg.Message()); err != nil {
+			if err := dec.decodeOneof(subSchema.Schema(), subMsg.Message()); err != nil {
 				return err
 			}
 
@@ -503,10 +492,10 @@ func (dec *decoder) decodeListField(schema j5reflect.Schema, list protoreflect.L
 			return nil
 		})
 
-	case *j5reflect.EnumSchema:
+	case *j5reflect.EnumAsFieldSchema:
 
 		return dec.jsonArray(func() error {
-			value, err := dec.decodeEnum(subSchema)
+			value, err := dec.decodeEnum(subSchema.Schema())
 			if err != nil {
 				return err
 			}

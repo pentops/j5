@@ -8,23 +8,32 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func RootSchemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (RootSchema, error) {
-	item, err := SchemaFromDesc(pkg, schema)
-	if err != nil {
-		return nil, err
+func RootSchemaFromDesc(pkg *Package, schema *schema_j5pb.RootSchema) (RootSchema, error) {
+	switch st := schema.Type.(type) {
+	case *schema_j5pb.RootSchema_Object:
+		item, err := objectSchemaFromDesc(pkg, st.Object)
+		if err != nil {
+			return nil, err
+		}
+		return item, nil
+
+	case *schema_j5pb.RootSchema_Oneof:
+		item, err := oneofSchemaFromDesc(pkg, st.Oneof)
+		if err != nil {
+			return nil, err
+		}
+		return item, nil
+
+	case *schema_j5pb.RootSchema_Enum:
+		itemSchema := enumSchemaFromDesc(pkg, st.Enum)
+
+		return itemSchema, nil
 	}
-	switch it := item.(type) {
-	case *ObjectSchema:
-		return it, nil
-	case *OneofSchema:
-		return it, nil
-	case *EnumSchema:
-		return it, nil
-	}
-	return nil, fmt.Errorf("expected root schema, got %T", item)
+
+	return nil, fmt.Errorf("expected root schema, got %T", schema.Type)
 }
 
-func SchemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (Schema, error) {
+func schemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (FieldSchema, error) {
 	if pkg == nil {
 		return nil, fmt.Errorf("package is nil")
 	}
@@ -35,33 +44,74 @@ func SchemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (Schema, error) {
 
 	switch st := schema.Type.(type) {
 
-	case *schema_j5pb.Schema_Ref:
-		item := &RefSchema{
-			Package: st.Ref.Package,
-			Schema:  st.Ref.Schema,
-			// To will be resolved later
-		}
-		return item, nil
 	case *schema_j5pb.Schema_Object:
-		item, err := objectSchemaFromDesc(pkg, st.Object)
-		if err != nil {
-			return nil, err
+		switch inner := st.Object.Schema.(type) {
+		case *schema_j5pb.ObjectAsField_Object:
+			item, err := objectSchemaFromDesc(pkg, inner.Object)
+			if err != nil {
+				return nil, err
+			}
+			return &ObjectAsFieldSchema{
+				Ref:   item.AsRef(),
+				Rules: st.Object.Rules,
+			}, nil
+		case *schema_j5pb.ObjectAsField_Ref:
+			return &ObjectAsFieldSchema{
+				Ref: &RefSchema{
+					Package: inner.Ref.Package,
+					Schema:  inner.Ref.Schema,
+				},
+				Rules: st.Object.Rules,
+			}, nil
+		default:
+			return nil, fmt.Errorf("unsupported oneof schema type %T", inner)
 		}
-		return item, nil
 
 	case *schema_j5pb.Schema_Oneof:
-		item, err := oneofSchemaFromDesc(pkg, st.Oneof)
-		if err != nil {
-			return nil, err
+		switch inner := st.Oneof.Schema.(type) {
+		case *schema_j5pb.OneofAsField_Oneof:
+			item, err := oneofSchemaFromDesc(pkg, inner.Oneof)
+			if err != nil {
+				return nil, err
+			}
+			return &OneofAsFieldSchema{
+				Ref:   item.AsRef(),
+				Rules: st.Oneof.Rules,
+			}, nil
+		case *schema_j5pb.OneofAsField_Ref:
+			return &OneofAsFieldSchema{
+				Ref: &RefSchema{
+					Package: inner.Ref.Package,
+					Schema:  inner.Ref.Schema,
+				},
+				Rules: st.Oneof.Rules,
+			}, nil
+		default:
+			return nil, fmt.Errorf("unsupported oneof schema type %T", inner)
 		}
-		return item, nil
 
 	case *schema_j5pb.Schema_Enum:
-		itemSchema := enumSchemaFromDesc(pkg, st.Enum)
+		switch inner := st.Enum.Schema.(type) {
+		case *schema_j5pb.EnumAsField_Enum:
+			item := enumSchemaFromDesc(pkg, inner.Enum)
+			return &EnumAsFieldSchema{
+				Ref:   item.AsRef(),
+				Rules: st.Enum.Rules,
+			}, nil
+		case *schema_j5pb.EnumAsField_Ref:
+			return &EnumAsFieldSchema{
+				Ref: &RefSchema{
+					Package: inner.Ref.Package,
+					Schema:  inner.Ref.Schema,
+				},
+				Rules: st.Enum.Rules,
+			}, nil
+		default:
+			return nil, fmt.Errorf("unsupported enum schema type %T", inner)
+		}
 
-		return itemSchema, nil
 	case *schema_j5pb.Schema_Array:
-		itemSchema, err := SchemaFromDesc(pkg, st.Array.Items)
+		itemSchema, err := schemaFromDesc(pkg, st.Array.Items)
 		if err != nil {
 			return nil, wrapError(err, "items")
 		}
@@ -71,7 +121,7 @@ func SchemaFromDesc(pkg *Package, schema *schema_j5pb.Schema) (Schema, error) {
 		}, nil
 
 	case *schema_j5pb.Schema_Map:
-		valueSchema, err := SchemaFromDesc(pkg, st.Map.ItemSchema)
+		valueSchema, err := schemaFromDesc(pkg, st.Map.ItemSchema)
 		if err != nil {
 			return nil, wrapError(err, "items")
 		}
@@ -143,7 +193,6 @@ func objectSchemaFromDesc(pkg *Package, sch *schema_j5pb.Object) (*ObjectSchema,
 	}
 
 	return &ObjectSchema{
-		Rules:      sch.Rules,
 		Properties: properties,
 		SchemaRoot: SchemaRoot{
 			Description: sch.Description,
@@ -164,7 +213,6 @@ func oneofSchemaFromDesc(pkg *Package, sch *schema_j5pb.Oneof) (*OneofSchema, er
 	}
 
 	return &OneofSchema{
-		Rules:      sch.Rules,
 		Properties: properties,
 		SchemaRoot: SchemaRoot{
 			Description: sch.Description,
@@ -191,7 +239,7 @@ func objectPropertyFromDesc(pkg *Package, prop *schema_j5pb.ObjectProperty) (*Ob
 	for i, field := range prop.ProtoField {
 		protoField[i] = protoreflect.FieldNumber(field)
 	}
-	propSchema, err := SchemaFromDesc(pkg, prop.Schema)
+	propSchema, err := schemaFromDesc(pkg, prop.Schema)
 	if err != nil {
 		return nil, wrapError(err, "properties", prop.Name)
 	}

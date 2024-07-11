@@ -49,17 +49,21 @@ func TestTestProtoGen(t *testing.T) {
 							},
 							ProtoField: []int32{1},
 						}},
-						Body: &schema_j5pb.Schema{
-							Type: &schema_j5pb.Schema_Object{
+						Body: &schema_j5pb.RootSchema{
+							Type: &schema_j5pb.RootSchema_Object{
 								Object: &schema_j5pb.Object{
 									Name: "PostFooRequest",
 									Properties: []*schema_j5pb.ObjectProperty{{
 										Name: "enum",
 										Schema: &schema_j5pb.Schema{
-											Type: &schema_j5pb.Schema_Ref{
-												Ref: &schema_j5pb.Ref{
-													Package: "test.v1",
-													Schema:  "TestEnum",
+											Type: &schema_j5pb.Schema_Enum{
+												Enum: &schema_j5pb.EnumAsField{
+													Schema: &schema_j5pb.EnumAsField_Ref{
+														Ref: &schema_j5pb.Ref{
+															Package: "test.v1",
+															Schema:  "TestEnum",
+														},
+													},
 												},
 											},
 										},
@@ -69,8 +73,8 @@ func TestTestProtoGen(t *testing.T) {
 							},
 						},
 					},
-					ResponseBody: &schema_j5pb.Schema{
-						Type: &schema_j5pb.Schema_Object{
+					ResponseBody: &schema_j5pb.RootSchema{
+						Type: &schema_j5pb.RootSchema_Object{
 							Object: &schema_j5pb.Object{
 								Name: "PostFooRequest",
 								Properties: []*schema_j5pb.ObjectProperty{{
@@ -87,9 +91,9 @@ func TestTestProtoGen(t *testing.T) {
 					},
 				}},
 			}},
-			Schemas: map[string]*schema_j5pb.Schema{
+			Schemas: map[string]*schema_j5pb.RootSchema{
 				"test.v1.TestEnum": {
-					Type: &schema_j5pb.Schema_Enum{
+					Type: &schema_j5pb.RootSchema_Enum{
 						Enum: &schema_j5pb.Enum{
 							Name:   "TestEnum",
 							Prefix: "TEST_ENUM_",

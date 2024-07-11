@@ -61,7 +61,7 @@ func FromProto(protoSchema *schema_j5pb.API) (*API, error) {
 		out.Packages[idx] = pkg
 
 		for key, protoSchema := range protoPackage.Schemas {
-			schema, err := fromProtoSchema(protoSchema)
+			schema, err := ConvertRootSchema(protoSchema)
 			if err != nil {
 				return nil, err
 			}
@@ -119,7 +119,7 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 		HTTPPath:   protoMethod.HttpPath,
 	}
 	if protoMethod.Request.Body != nil {
-		schema, err := fromProtoSchema(protoMethod.Request.Body)
+		schema, err := ConvertRootSchema(protoMethod.Request.Body)
 		if err != nil {
 			return nil, err
 		}
@@ -128,7 +128,7 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 
 	out.PathParameters = make([]*JdefParameter, len(protoMethod.Request.PathParameters))
 	for idx, property := range protoMethod.Request.PathParameters {
-		schema, err := fromProtoSchema(property.Schema)
+		schema, err := convertSchema(property.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("path param %s: %w", property.Name, err)
 		}
@@ -142,7 +142,7 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 
 	out.QueryParameters = make([]*JdefParameter, len(protoMethod.Request.QueryParameters))
 	for idx, property := range protoMethod.Request.QueryParameters {
-		schema, err := fromProtoSchema(property.Schema)
+		schema, err := convertSchema(property.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("query param %s: %w", property.Name, err)
 		}
@@ -154,7 +154,7 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 		}
 	}
 
-	responseSchema, err := fromProtoSchema(protoMethod.ResponseBody)
+	responseSchema, err := ConvertRootSchema(protoMethod.ResponseBody)
 	if err != nil {
 		return nil, err
 	}
@@ -166,15 +166,11 @@ func fromProtoEvent(protoEvent *schema_j5pb.EventSpec) (*EventSpec, error) {
 	out := &EventSpec{
 		Name: protoEvent.Name,
 	}
-	schema, err := fromProtoSchema(protoEvent.Schema)
+	schema, err := ConvertRootSchema(protoEvent.Schema)
 	if err != nil {
 		return nil, err
 	}
 	out.Schema = schema
 
 	return out, nil
-}
-
-func fromProtoSchema(protoSchema *schema_j5pb.Schema) (*Schema, error) {
-	return ConvertSchema(protoSchema)
 }

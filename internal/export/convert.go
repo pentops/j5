@@ -27,7 +27,7 @@ func BuildSwagger(b *schema_j5pb.API) (*Document, error) {
 	schemas := make(map[string]*Schema)
 	for _, pkg := range b.Packages {
 		for key, schema := range pkg.Schemas {
-			schema, err := ConvertSchema(schema)
+			schema, err := ConvertRootSchema(schema)
 			if err != nil {
 				return nil, err
 			}
@@ -40,7 +40,21 @@ func BuildSwagger(b *schema_j5pb.API) (*Document, error) {
 	return doc, nil
 }
 
-func ConvertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
+func ConvertRootSchema(schema *schema_j5pb.RootSchema) (*Schema, error) {
+	switch t := schema.Type.(type) {
+	case *schema_j5pb.RootSchema_Object:
+		return convertObjectItem(t.Object)
+	case *schema_j5pb.RootSchema_Oneof:
+		return convertOneofItem(t.Oneof)
+	case *schema_j5pb.RootSchema_Enum:
+		return convertEnumItem(t.Enum), nil
+	default:
+		return nil, fmt.Errorf("expected root schema, got %T", schema.Type)
+
+	}
+}
+
+func convertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 
 	out := &Schema{
 		SchemaItem: &SchemaItem{},
@@ -48,10 +62,6 @@ func ConvertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 
 	var err error
 	switch t := schema.Type.(type) {
-
-	case *schema_j5pb.Schema_Ref:
-		refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
-		out.Ref = &refStr
 
 	case *schema_j5pb.Schema_Any:
 		out.SchemaItem.Type = &AnySchemaItem{
@@ -63,9 +73,6 @@ func ConvertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 
 	case *schema_j5pb.Schema_Integer:
 		out.SchemaItem.Type = convertIntegerItem(t.Integer)
-
-	case *schema_j5pb.Schema_Enum:
-		out.SchemaItem.Type = convertEnumItem(t.Enum)
 
 	case *schema_j5pb.Schema_Float:
 		out.SchemaItem.Type = convertFloatItem(t.Float)
@@ -79,16 +86,45 @@ func ConvertSchema(schema *schema_j5pb.Schema) (*Schema, error) {
 			return nil, err
 		}
 
+	case *schema_j5pb.Schema_Enum:
+		switch t := t.Enum.Schema.(type) {
+		case *schema_j5pb.EnumAsField_Enum:
+			out.SchemaItem.Type = convertEnumItem(t.Enum).Type
+		case *schema_j5pb.EnumAsField_Ref:
+			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
+			out.Ref = &refStr
+		default:
+			return nil, fmt.Errorf("unknown schema type for swagger %T", t)
+		}
+
 	case *schema_j5pb.Schema_Object:
-		out.SchemaItem.Type, err = convertObjectItem(t.Object)
-		if err != nil {
-			return nil, err
+		switch t := t.Object.Schema.(type) {
+		case *schema_j5pb.ObjectAsField_Object:
+			item, err := convertObjectItem(t.Object)
+			if err != nil {
+				return nil, err
+			}
+			out.SchemaItem.Type = item.Type
+		case *schema_j5pb.ObjectAsField_Ref:
+			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
+			out.Ref = &refStr
+		default:
+			return nil, fmt.Errorf("unknown schema type for swagger %T", t)
 		}
 
 	case *schema_j5pb.Schema_Oneof:
-		out.SchemaItem.Type, err = convertOneofWrapper(t.Oneof)
-		if err != nil {
-			return nil, err
+		switch t := t.Oneof.Schema.(type) {
+		case *schema_j5pb.OneofAsField_Oneof:
+			item, err := convertOneofItem(t.Oneof)
+			if err != nil {
+				return nil, err
+			}
+			out.SchemaItem.Type = item.Type
+		case *schema_j5pb.OneofAsField_Ref:
+			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
+			out.Ref = &refStr
+		default:
+			return nil, fmt.Errorf("unknown schema type for swagger %T", t)
 		}
 
 	case *schema_j5pb.Schema_Map:
@@ -173,7 +209,7 @@ func convertBooleanItem(item *schema_j5pb.Boolean) *BooleanItem {
 	return out
 }
 
-func convertEnumItem(item *schema_j5pb.Enum) *EnumItem {
+func convertEnumItem(item *schema_j5pb.Enum) *Schema {
 	out := &EnumItem{}
 
 	for _, val := range item.Options {
@@ -184,11 +220,15 @@ func convertEnumItem(item *schema_j5pb.Enum) *EnumItem {
 		})
 	}
 
-	return out
+	return &Schema{
+		SchemaItem: &SchemaItem{
+			Type: out,
+		},
+	}
 }
 
 func convertArrayItem(item *schema_j5pb.Array) (*ArrayItem, error) {
-	items, err := ConvertSchema(item.Items)
+	items, err := convertSchema(item.Items)
 	if err != nil {
 		return nil, err
 	}
@@ -206,7 +246,7 @@ func convertArrayItem(item *schema_j5pb.Array) (*ArrayItem, error) {
 	return out, nil
 }
 
-func convertObjectItem(item *schema_j5pb.Object) (*ObjectItem, error) {
+func convertObjectItem(item *schema_j5pb.Object) (*Schema, error) {
 	out := &ObjectItem{
 		Properties:  map[string]*ObjectProperty{},
 		Name:        item.Name,
@@ -214,7 +254,7 @@ func convertObjectItem(item *schema_j5pb.Object) (*ObjectItem, error) {
 	}
 
 	for _, prop := range item.Properties {
-		schema, err := ConvertSchema(prop.Schema)
+		schema, err := convertSchema(prop.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("object property '%s': %w", prop.Name, err)
 		}
@@ -230,10 +270,14 @@ func convertObjectItem(item *schema_j5pb.Object) (*ObjectItem, error) {
 		}
 	}
 
-	return out, nil
+	return &Schema{
+		SchemaItem: &SchemaItem{
+			Type: out,
+		},
+	}, nil
 }
 
-func convertOneofWrapper(item *schema_j5pb.Oneof) (*ObjectItem, error) {
+func convertOneofItem(item *schema_j5pb.Oneof) (*Schema, error) {
 	out := &ObjectItem{
 		Properties: map[string]*ObjectProperty{},
 		Name:       item.Name,
@@ -241,7 +285,7 @@ func convertOneofWrapper(item *schema_j5pb.Oneof) (*ObjectItem, error) {
 	}
 
 	for _, prop := range item.Properties {
-		schema, err := ConvertSchema(prop.Schema)
+		schema, err := convertSchema(prop.Schema)
 		if err != nil {
 			return nil, fmt.Errorf("oneof property '%s': %w", prop.Name, err)
 		}
@@ -254,11 +298,15 @@ func convertOneofWrapper(item *schema_j5pb.Oneof) (*ObjectItem, error) {
 		}
 	}
 
-	return out, nil
+	return &Schema{
+		SchemaItem: &SchemaItem{
+			Type: out,
+		},
+	}, nil
 }
 
 func convertMapItem(item *schema_j5pb.Map) (*MapSchemaItem, error) {
-	schema, err := ConvertSchema(item.ItemSchema)
+	schema, err := convertSchema(item.ItemSchema)
 	if err != nil {
 		return nil, err
 	}

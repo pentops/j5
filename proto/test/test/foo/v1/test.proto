@@ -113,10 +113,10 @@ message PostFooRequest {
   map<string, string> map_string_string = 15;
 
   oneof anon_oneof {
-    string oneof_string = 100;
-    Bar one_bar = 101;
-    float oneof_float = 102;
-    Enum oneof_enum = 103;
+    string a_oneof_string = 100;
+    Bar a_oneof_bar = 101;
+    float a_oneof_float = 102;
+    Enum a_oneof_enum = 103;
   }
 
   oneof exposed_oneof {
@@ -140,10 +140,10 @@ message WrappedOneof {
   option (j5.ext.v1.message).is_oneof_wrapper = true;
 
   oneof type {
-    string oneof_string = 100;
-    Bar one_bar = 101;
-    float oneof_float = 102;
-    Enum oneof_enum = 103;
+    string w_oneof_string = 1;
+    Bar w_oneof_bar = 2;
+    float w_oneof_float = 3;
+    Enum w_oneof_enum = 4;
   }
 }
 

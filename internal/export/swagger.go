@@ -114,7 +114,7 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 	}
 
 	for _, property := range method.Request.PathParameters {
-		schema, err := ConvertSchema(property.Schema)
+		schema, err := convertSchema(property.Schema)
 		if err != nil {
 			return fmt.Errorf("path param %s: %w", property.Name, err)
 		}
@@ -128,7 +128,7 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 	}
 
 	for _, property := range method.Request.QueryParameters {
-		schema, err := ConvertSchema(property.Schema)
+		schema, err := convertSchema(property.Schema)
 		if err != nil {
 			return fmt.Errorf("query param %s: %w", property.Name, err)
 		}
@@ -142,7 +142,7 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 	}
 
 	if method.Request.Body != nil {
-		requestSchema, err := ConvertSchema(method.Request.Body)
+		requestSchema, err := ConvertRootSchema(method.Request.Body)
 		if err != nil {
 			return err
 		}
@@ -156,7 +156,7 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 		}
 	}
 
-	responseSchema, err := ConvertSchema(method.ResponseBody)
+	responseSchema, err := ConvertRootSchema(method.ResponseBody)
 	if err != nil {
 		return fmt.Errorf("response body: %w", err)
 	}
