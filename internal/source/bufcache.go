@@ -229,6 +229,8 @@ func (bc *BufCache) tryV2FSDep(ctx context.Context, dep *BufLockFileDependency) 
 		return nil, err
 	}
 
+	log.WithField(ctx, "v2Path", indexPath).Debug("found v2 dep")
+
 	lines := strings.Split(string(indexContent), "\n")
 	files := map[string]string{}
 
