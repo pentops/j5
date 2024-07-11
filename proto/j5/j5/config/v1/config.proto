@@ -110,7 +110,8 @@ message OutputType {
   // package, where using VCS requires a new commit for the build.
   message GoProxy {
     string path = 1; // e.g. github.com/pentops/o5-go
-    repeated Dep deps = 2;
+    string go_version = 2;
+    repeated Dep deps = 3;
 
     message Dep {
       string path = 1; // e.g. github.com/pentops/o5-go
