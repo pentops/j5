@@ -4,16 +4,25 @@ package j5.schema.v1;
 
 option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
 
-message Schema {
+message RootSchema {
   oneof type {
-    // Special Cases
-    Ref ref = 10;
-    Any any = 11;
-
     // Named Root Types
     Oneof oneof = 12;
     Object object = 21;
     Enum enum = 32;
+  }
+}
+
+message Schema {
+  oneof type {
+    // Special Cases
+    Any any = 11;
+
+    // Named Root Types, wrapped as Field to separate the object-property rules
+    // from the type itself.
+    OneofAsField oneof = 12;
+    ObjectAsField object = 21;
+    EnumAsField enum = 32;
 
     // Complex Types
     Array array = 20;
@@ -35,11 +44,13 @@ message Ref {
 // Allows anything
 message Any {}
 
-message Object {
-  string name = 1;
-  string description = 2;
+// ObjectAsField is an object as-a-field in an ObjectProperty
+message ObjectAsField {
+  oneof schema {
+    Ref ref = 1;
+    Object object = 2;
+  }
 
-  repeated ObjectProperty properties = 3;
   bool additional_properties = 4;
   Rules rules = 5;
   optional string primary_key = 6;
@@ -50,6 +61,23 @@ message Object {
   }
 }
 
+message Object {
+  string name = 1;
+  string description = 2;
+
+  repeated ObjectProperty properties = 3;
+}
+
+message OneofAsField {
+  oneof schema {
+    Ref ref = 1;
+    Oneof oneof = 2;
+  }
+
+  Rules rules = 4;
+  message Rules {}
+}
+
 // Similar to ObjectItem (it is an object in JSON Schema), but where exactly one
 // property should be set
 message Oneof {
@@ -57,8 +85,15 @@ message Oneof {
   string description = 2;
 
   repeated ObjectProperty properties = 3;
-  Rules rules = 4;
+}
 
+message EnumAsField {
+  oneof schema {
+    Ref ref = 1;
+    Enum enum = 2;
+  }
+
+  Rules rules = 4;
   message Rules {}
 }
 

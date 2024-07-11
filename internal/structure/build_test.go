@@ -123,8 +123,8 @@ func testAPI() *schema_j5pb.API {
 					Name:         "Test",
 					HttpMethod:   schema_j5pb.HTTPMethod_HTTP_METHOD_GET,
 					HttpPath:     "/test/:pathField",
-					ResponseBody: &schema_j5pb.Schema{
-						Type: &schema_j5pb.Schema_Object{
+					ResponseBody: &schema_j5pb.RootSchema{
+						Type: &schema_j5pb.RootSchema_Object{
 							Object: &schema_j5pb.Object{
 								Name: "TestResponse",
 								//Rules:            &schema_j5pb.ObjectRules{},
@@ -144,10 +144,14 @@ func testAPI() *schema_j5pb.API {
 									Description: "",
 									Required:    false,
 									Schema: &schema_j5pb.Schema{
-										Type: &schema_j5pb.Schema_Ref{
-											Ref: &schema_j5pb.Ref{
-												Package: "test.v1",
-												Schema:  "Referenced",
+										Type: &schema_j5pb.Schema_Object{
+											Object: &schema_j5pb.ObjectAsField{
+												Schema: &schema_j5pb.ObjectAsField_Ref{
+													Ref: &schema_j5pb.Ref{
+														Package: "test.v1",
+														Schema:  "Referenced",
+													},
+												},
 											},
 										},
 									},
@@ -181,9 +185,9 @@ func testAPI() *schema_j5pb.API {
 					},
 				}},
 			}},
-			Schemas: map[string]*schema_j5pb.Schema{
+			Schemas: map[string]*schema_j5pb.RootSchema{
 				"test.v1.Referenced": {
-					Type: &schema_j5pb.Schema_Object{
+					Type: &schema_j5pb.RootSchema_Object{
 						Object: &schema_j5pb.Object{
 							Name:        "Referenced",
 							Description: "Message Comment",
@@ -199,10 +203,14 @@ func testAPI() *schema_j5pb.API {
 							}, {
 								Name: "enum",
 								Schema: &schema_j5pb.Schema{
-									Type: &schema_j5pb.Schema_Ref{
-										Ref: &schema_j5pb.Ref{
-											Package: "test.v1",
-											Schema:  "TestEnum",
+									Type: &schema_j5pb.Schema_Enum{
+										Enum: &schema_j5pb.EnumAsField{
+											Schema: &schema_j5pb.EnumAsField_Ref{
+												Ref: &schema_j5pb.Ref{
+													Package: "test.v1",
+													Schema:  "TestEnum",
+												},
+											},
 										},
 									},
 								},
@@ -212,7 +220,7 @@ func testAPI() *schema_j5pb.API {
 					},
 				},
 				"test.v1.TestEnum": {
-					Type: &schema_j5pb.Schema_Enum{
+					Type: &schema_j5pb.RootSchema_Enum{
 						Enum: &schema_j5pb.Enum{
 							Name:   "TestEnum",
 							Prefix: "TEST_ENUM_",
@@ -239,6 +247,42 @@ func TestBuildPath(t *testing.T) {
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+
+	t.Run("Reflect Direct", func(t *testing.T) {
+		if len(apiReflection.Packages) != 1 {
+			t.Fatalf("unexpected packages: %d", len(apiReflection.Packages))
+		}
+		pkg := apiReflection.Packages[0]
+		assert.Equal(t, "test.v1", pkg.Name)
+		if len(pkg.Services) != 1 {
+			t.Fatalf("unexpected services: %d", len(pkg.Services))
+		}
+		service := pkg.Services[0]
+		if len(service.Methods) != 1 {
+			t.Fatalf("unexpected methods: %d", len(service.Methods))
+		}
+		method := service.Methods[0]
+
+		resObject, ok := method.Response.(*j5reflect.ObjectSchema)
+		if !ok {
+			t.Fatalf("unexpected type: %T", resObject)
+		}
+
+		if len(resObject.Properties) != 2 {
+			t.Fatalf("unexpected properties: %d", len(resObject.Properties))
+		}
+
+		prop := resObject.Properties[1]
+		fieldSchema, ok := prop.Schema.(*j5reflect.ObjectAsFieldSchema)
+		if !ok {
+			t.Fatalf("unexpected type: %T", prop.Schema)
+		}
+
+		// The field is a ref, as all are in reflection.
+		assert.Equal(t, "test.v1", fieldSchema.Ref.Package)
+		assert.Equal(t, "Referenced", fieldSchema.Ref.Schema)
+
+	})
 
 	apiDescriptor, err := apiReflection.ToJ5Proto()
 	if err != nil {
@@ -318,7 +362,7 @@ func TestBuildPath(t *testing.T) {
 			t.Errorf("unexpected field name: '%s'", fEnum.Name)
 		}
 
-		ref := fEnum.Schema.GetRef()
+		ref := fEnum.Schema.GetEnum().GetRef()
 		if ref.Schema != "TestEnum" || ref.Package != "test.v1" {
 			refStr := protojson.Format(ref)
 			t.Fatalf("ref is %s", refStr)

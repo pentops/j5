@@ -28,49 +28,16 @@ func buildAPI(srcPackages []*schema_j5pb.Package) (*API, error) {
 
 	var seenSchemas = map[string]RootSchema{}
 
-	var resolveWalk func(Schema) error
-	resolveWalk = func(root Schema) error {
-		if asRoot, ok := root.(RootSchema); ok {
-			name := asRoot.FullName()
-			if _, ok := seenSchemas[name]; ok {
-				return nil
-			}
-			seenSchemas[name] = asRoot
+	var resolveWalkRoot func(RootSchema) error
+	var resolveWalk func(FieldSchema) error
+	resolveWalkRoot = func(root RootSchema) error {
+		name := root.FullName()
+		if _, ok := seenSchemas[name]; ok {
+			return nil
 		}
+		seenSchemas[name] = root
 
 		switch tt := root.(type) {
-		case *RefSchema:
-			if tt.To != nil {
-				if err := resolveWalk(tt.To); err != nil {
-					return err
-				}
-				return nil
-			}
-			refPkg, ok := packageMap[tt.Package]
-			if !ok {
-				return fmt.Errorf("reference to unknown package %q", tt.FullName())
-			}
-			refSchema, ok := refPkg.Schemas[tt.FullName()]
-			if !ok {
-				return fmt.Errorf("reference to unknown schema %q", tt.FullName())
-			}
-
-			referencePackage := builtPackageMap[tt.Package]
-
-			referenced, ok := seenSchemas[tt.FullName()]
-			if !ok {
-				var err error
-				referenced, err = RootSchemaFromDesc(referencePackage, refSchema)
-				if err != nil {
-					return fmt.Errorf("linking schema %s.%s", tt.Package, tt.Schema)
-				}
-			}
-
-			tt.To = referenced
-			if err := resolveWalk(referenced); err != nil {
-				return err
-			}
-
 		case *ObjectSchema:
 			for _, field := range tt.Properties {
 				if err := resolveWalk(field.Schema); err != nil {
@@ -85,6 +52,61 @@ func buildAPI(srcPackages []*schema_j5pb.Package) (*API, error) {
 				}
 			}
 
+		case *EnumSchema:
+		// nothing to do
+		default:
+			return fmt.Errorf("unexpected schema type %T", root)
+		}
+		return nil
+	}
+
+	resolveRef := func(tt *RefSchema) error {
+		if tt.To != nil {
+			if err := resolveWalkRoot(tt.To); err != nil {
+				return err
+			}
+			return nil
+		}
+		refPkg, ok := packageMap[tt.Package]
+		if !ok {
+			return fmt.Errorf("reference to unknown package %q", tt.FullName())
+		}
+		refSchema, ok := refPkg.Schemas[tt.FullName()]
+		if !ok {
+			return fmt.Errorf("reference to unknown schema %q", tt.FullName())
+		}
+
+		referencePackage := builtPackageMap[tt.Package]
+
+		referenced, ok := seenSchemas[tt.FullName()]
+		if !ok {
+			var err error
+			referenced, err = RootSchemaFromDesc(referencePackage, refSchema)
+			if err != nil {
+				return fmt.Errorf("linking schema %s.%s", tt.Package, tt.Schema)
+			}
+		}
+
+		tt.To = referenced
+		if err := resolveWalkRoot(referenced); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	resolveWalk = func(root FieldSchema) error {
+
+		switch tt := root.(type) {
+
+		case *ObjectAsFieldSchema:
+			return resolveRef(tt.Ref)
+
+		case *OneofAsFieldSchema:
+			return resolveRef(tt.Ref)
+
+		case *EnumAsFieldSchema:
+			return resolveRef(tt.Ref)
+
 		case *MapSchema:
 			if err := resolveWalk(tt.Schema); err != nil {
 				return err
@@ -94,7 +116,6 @@ func buildAPI(srcPackages []*schema_j5pb.Package) (*API, error) {
 			if err := resolveWalk(tt.Schema); err != nil {
 				return err
 			}
-
 		}
 
 		return nil
@@ -104,17 +125,17 @@ func buildAPI(srcPackages []*schema_j5pb.Package) (*API, error) {
 	for _, pkg := range out.Packages {
 		for _, service := range pkg.Services {
 			for _, method := range service.Methods {
-				if err := resolveWalk(method.Request); err != nil {
+				if err := resolveWalkRoot(method.Request); err != nil {
 					return nil, err
 				}
-				if err := resolveWalk(method.Response); err != nil {
+				if err := resolveWalkRoot(method.Response); err != nil {
 					return nil, err
 				}
 
 			}
 		}
 		for _, event := range pkg.Events {
-			if err := resolveWalk(event.Schema); err != nil {
+			if err := resolveWalkRoot(event.Schema); err != nil {
 				return nil, err
 			}
 		}
@@ -176,8 +197,8 @@ func methodFromDesc(service *Service, protoService *schema_j5pb.Method) (*Method
 	requestObject.Properties = append(requestObject.Properties, protoService.Request.PathParameters...)
 	requestObject.Properties = append(requestObject.Properties, protoService.Request.QueryParameters...)
 
-	request, err := RootSchemaFromDesc(pkg, &schema_j5pb.Schema{
-		Type: &schema_j5pb.Schema_Object{
+	request, err := RootSchemaFromDesc(pkg, &schema_j5pb.RootSchema{
+		Type: &schema_j5pb.RootSchema_Object{
 			Object: requestObject,
 		},
 	})

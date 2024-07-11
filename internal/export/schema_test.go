@@ -59,14 +59,18 @@ func TestConvertSchema(t *testing.T) {
 		name: "enum",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Enum{
-				Enum: &schema_j5pb.Enum{
-					Options: []*schema_j5pb.Enum_Value{{
-						Name:        "FOO",
-						Description: "Foo Description",
-					}, {
-						Name:        "BAR",
-						Description: "Bar Description",
-					}},
+				Enum: &schema_j5pb.EnumAsField{
+					Schema: &schema_j5pb.EnumAsField_Enum{
+						Enum: &schema_j5pb.Enum{
+							Options: []*schema_j5pb.Enum_Value{{
+								Name:        "FOO",
+								Description: "Foo Description",
+							}, {
+								Name:        "BAR",
+								Description: "Bar Description",
+							}},
+						},
+					},
 				}},
 		},
 		want: map[string]interface{}{
@@ -81,46 +85,37 @@ func TestConvertSchema(t *testing.T) {
 			"enum.1":               "BAR",
 		},
 	}, {
-		name: "ref",
-		input: &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Ref{
-				Ref: &schema_j5pb.Ref{
-					Package: "package.v1",
-					Schema:  "Foo",
-				},
-			},
-		},
-		want: map[string]interface{}{
-			"$ref": "#/definitions/package.v1.Foo",
-		},
-	}, {
 		name: "object",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Object{
-				Object: &schema_j5pb.Object{
-					Name:        "short",
-					Description: "description",
-					Rules: &schema_j5pb.Object_Rules{
+				Object: &schema_j5pb.ObjectAsField{
+					Rules: &schema_j5pb.ObjectAsField_Rules{
 						MinProperties: Ptr(uint64(1)),
 						MaxProperties: Ptr(uint64(2)),
 					},
-					Properties: []*schema_j5pb.ObjectProperty{{
-						Name:     "foo",
-						Required: true,
-						Schema: &schema_j5pb.Schema{
-							Type: &schema_j5pb.Schema_String_{
-								String_: &schema_j5pb.String{},
-							},
+					Schema: &schema_j5pb.ObjectAsField_Object{
+						Object: &schema_j5pb.Object{
+							Name:        "short",
+							Description: "description",
+							Properties: []*schema_j5pb.ObjectProperty{{
+								Name:     "foo",
+								Required: true,
+								Schema: &schema_j5pb.Schema{
+									Type: &schema_j5pb.Schema_String_{
+										String_: &schema_j5pb.String{},
+									},
+								},
+							}, {
+								Name:     "bar",
+								Required: false,
+								Schema: &schema_j5pb.Schema{
+									Type: &schema_j5pb.Schema_String_{
+										String_: &schema_j5pb.String{},
+									},
+								},
+							}},
 						},
-					}, {
-						Name:     "bar",
-						Required: false,
-						Schema: &schema_j5pb.Schema{
-							Type: &schema_j5pb.Schema_String_{
-								String_: &schema_j5pb.String{},
-							},
-						},
-					}},
+					},
 				},
 			},
 		},
@@ -136,24 +131,28 @@ func TestConvertSchema(t *testing.T) {
 		name: "oneof",
 		input: &schema_j5pb.Schema{
 			Type: &schema_j5pb.Schema_Oneof{
-				Oneof: &schema_j5pb.Oneof{
-					Name: "short",
+				Oneof: &schema_j5pb.OneofAsField{
+					Schema: &schema_j5pb.OneofAsField_Oneof{
+						Oneof: &schema_j5pb.Oneof{
+							Name: "short",
 
-					Properties: []*schema_j5pb.ObjectProperty{{
-						Name: "foo",
-						Schema: &schema_j5pb.Schema{
-							Type: &schema_j5pb.Schema_String_{
-								String_: &schema_j5pb.String{},
-							},
+							Properties: []*schema_j5pb.ObjectProperty{{
+								Name: "foo",
+								Schema: &schema_j5pb.Schema{
+									Type: &schema_j5pb.Schema_String_{
+										String_: &schema_j5pb.String{},
+									},
+								},
+							}, {
+								Name: "bar",
+								Schema: &schema_j5pb.Schema{
+									Type: &schema_j5pb.Schema_String_{
+										String_: &schema_j5pb.String{},
+									},
+								},
+							}},
 						},
-					}, {
-						Name: "bar",
-						Schema: &schema_j5pb.Schema{
-							Type: &schema_j5pb.Schema_String_{
-								String_: &schema_j5pb.String{},
-							},
-						},
-					}},
+					},
 				},
 			},
 		},
@@ -220,7 +219,7 @@ func TestConvertSchema(t *testing.T) {
 	}} {
 		t.Run(tc.name, func(t *testing.T) {
 
-			output, err := ConvertSchema(tc.input)
+			output, err := convertSchema(tc.input)
 			if err != nil {
 				t.Fatal(err)
 			}

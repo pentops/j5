@@ -98,13 +98,13 @@ func NewSchemaSet() *SchemaSet {
 	}
 }
 
-func (ss *SchemaSet) SchemaObject(src protoreflect.MessageDescriptor) (*schema_j5pb.Schema, error) {
+func (ss *SchemaSet) SchemaObject(src protoreflect.MessageDescriptor) (*schema_j5pb.RootSchema, error) {
 	val, err := ss.SchemaReflect(src)
 	if err != nil {
 		return nil, err
 	}
 
-	return val.ToJ5Proto()
+	return val.ToJ5Root()
 }
 
 func (ss *SchemaSet) SchemaReflect(src protoreflect.MessageDescriptor) (j5reflect.RootSchema, error) {
@@ -122,12 +122,18 @@ func (ss *SchemaSet) SchemaReflect(src protoreflect.MessageDescriptor) (j5reflec
 		Schema:  base.Name,
 	}
 	ss.refs[name] = placeholder
-	concrete, err := ss.buildMessageSchema(src)
+
+	isOneofWrapper := isOneofWrapper(src)
+	var err error
+	if isOneofWrapper {
+		placeholder.To, err = ss.buildOneofSchema(src)
+	} else {
+		placeholder.To, err = ss.buildObjectSchema(src)
+	}
 	if err != nil {
 		return nil, err
 	}
-	placeholder.To = concrete
-	return concrete, nil
+	return placeholder.To, nil
 }
 
 func isOneofWrapper(src protoreflect.MessageDescriptor) bool {
@@ -174,21 +180,23 @@ func isOneofWrapper(src protoreflect.MessageDescriptor) bool {
 	return true
 }
 
-func (ss *SchemaSet) buildMessageSchema(srcMsg protoreflect.MessageDescriptor) (j5reflect.RootSchema, error) {
+func (ss *SchemaSet) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*j5reflect.OneofSchema, error) {
 	properties, err := ss.messageProperties(srcMsg)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
-	isOneofWrapper := isOneofWrapper(srcMsg)
+	return &j5reflect.OneofSchema{
+		SchemaRoot: newBasePackage(srcMsg),
+		Properties: properties,
+		// TODO: Rules
+	}, nil
+}
 
-	if isOneofWrapper {
-		return &j5reflect.OneofSchema{
-			SchemaRoot: newBasePackage(srcMsg),
-			Properties: properties,
-			// TODO: Rules
-		}, nil
+func (ss *SchemaSet) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*j5reflect.ObjectSchema, error) {
+	properties, err := ss.messageProperties(srcMsg)
+	if err != nil {
+		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
-
 	return &j5reflect.ObjectSchema{
 		SchemaRoot: newBasePackage(srcMsg),
 		Properties: properties,
@@ -223,10 +231,16 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*j
 			SchemaRoot: newBasePackage(oneof),
 			//oneofDescriptor: oneof,
 		}
+		refPlaceholder := newRefPlaceholder(oneof)
+		refPlaceholder.To = oneofObject
+		ss.refs[protoreflect.FullName(refPlaceholder.FullName())] = refPlaceholder
 		prop := &j5reflect.ObjectProperty{
 			JSONName:    jsonFieldName(oneof.Name()),
 			Description: commentDescription(src),
-			Schema:      oneofObject,
+			Schema: &j5reflect.OneofAsFieldSchema{
+				Ref: refPlaceholder,
+				// TODO: Oneof Rules
+			},
 		}
 		pendingOneofProps[oneofName] = prop
 		exposeOneofs[oneofName] = oneofObject
@@ -239,7 +253,7 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*j
 		if field.IsList() {
 			prop, err := ss.buildSchemaProperty(field)
 			if err != nil {
-				return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
+				return nil, fmt.Errorf("list field %s: %w", field.Name(), err)
 			}
 			// TODO: Rules
 			prop.Schema = &j5reflect.ArraySchema{
@@ -255,7 +269,7 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*j
 
 			valueProp, err := ss.buildSchemaProperty(field.MapValue())
 			if err != nil {
-				return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
+				return nil, fmt.Errorf("map field %s: %w", field.Name(), err)
 			}
 
 			src := field
@@ -275,7 +289,7 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*j
 		if fieldOptions != nil {
 			if msgOptions := fieldOptions.GetMessage(); msgOptions != nil {
 				if field.Kind() != protoreflect.MessageKind {
-					return nil, fmt.Errorf("field %s is not a message but has a message annotation", field.FullName())
+					return nil, fmt.Errorf("field %s is not a message but has a message annotation", field.Name())
 				}
 
 				if msgOptions.Flatten {
@@ -299,7 +313,7 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*j
 
 		prop, err := ss.buildSchemaProperty(field)
 		if err != nil {
-			return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
+			return nil, fmt.Errorf("simple field %s: %w", field.Name(), err)
 		}
 
 		inOneof := field.ContainingOneof()
@@ -734,7 +748,9 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 			ss.refs[protoName] = ref
 		}
 
-		prop.Schema = ref
+		prop.Schema = &j5reflect.EnumAsFieldSchema{
+			Ref: ref,
+		}
 		return prop, nil
 
 	case protoreflect.MessageKind:
@@ -747,19 +763,32 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 			return nil, fmt.Errorf("unsupported google type %s", src.Message().FullName())
 		}
 		msg := src.Message()
+		isOneofWrapper := isOneofWrapper(msg)
 
 		protoName := src.Message().FullName()
 		ref, ok := ss.refs[protoName]
 		if !ok {
 			ref = newRefPlaceholder(msg)
 			ss.refs[protoName] = ref
-			built, err := ss.buildMessageSchema(msg)
+			var err error
+			if isOneofWrapper {
+				ref.To, err = ss.buildOneofSchema(msg)
+			} else {
+				ref.To, err = ss.buildObjectSchema(msg)
+			}
 			if err != nil {
 				return nil, err
 			}
-			ref.To = built
 		}
-		prop.Schema = ref
+		if isOneofWrapper {
+			prop.Schema = &j5reflect.OneofAsFieldSchema{
+				Ref: ref,
+			}
+		} else {
+			prop.Schema = &j5reflect.ObjectAsFieldSchema{
+				Ref: ref,
+			}
+		}
 		return prop, nil
 	default:
 		/* TODO:
@@ -848,7 +877,7 @@ func Ptr[T any](val T) *T {
 	return &val
 }
 
-func wktSchema(src protoreflect.MessageDescriptor) (j5reflect.Schema, bool) {
+func wktSchema(src protoreflect.MessageDescriptor) (j5reflect.FieldSchema, bool) {
 	switch string(src.FullName()) {
 	case "google.protobuf.Timestamp":
 		return &j5reflect.ScalarSchema{

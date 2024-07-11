@@ -33,7 +33,7 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 	if err != nil {
 		t.Fatal(err.Error())
 	}
-	obj, ok := schemaItem.Type.(*schema_j5pb.Schema_Object)
+	obj, ok := schemaItem.Type.(*schema_j5pb.RootSchema_Object)
 	if !ok {
 		t.Fatalf("expected object item, got %T", schemaItem.Type)
 	}
@@ -208,7 +208,7 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 		t.Fatal(err.Error())
 	}
 
-	obj := schemaItem.Type.(*schema_j5pb.Schema_Object)
+	obj := schemaItem.Type.(*schema_j5pb.RootSchema_Object)
 	assertProperty := func(name string, expected map[string]interface{}) {
 		for _, prop := range obj.Object.Properties {
 			if prop.Name == name {
@@ -344,9 +344,15 @@ func TestSchemaTypesComplex(t *testing.T) {
 		expected: map[string]interface{}{
 			"object.name":              "TestMessage",
 			"object.properties.0.name": "exposeMe",
-			"object.properties.0.schema.oneof.properties.0.name":       "testField",
-			"object.properties.0.schema.oneof.properties.0.protoField": jsontest.Array[float64]{1},
-			"object.properties.0.protoField":                           jsontest.NotSet{},
+			"object.properties.0.schema.oneof.ref.package": "test",
+			"object.properties.0.schema.oneof.ref.schema":  "TestMessage_expose_me",
+			"object.properties.0.protoField":               jsontest.NotSet{},
+		},
+		expectedRefs: map[string]map[string]interface{}{
+			"test.TestMessage_expose_me": {
+				"oneof.properties.0.name":       "testField",
+				"oneof.properties.0.protoField": jsontest.Array[float64]{1},
+			},
 		},
 	}, {
 		name: "map<string>string",
@@ -427,8 +433,8 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"object.properties.0.schema.ref.package": "test",
-			"object.properties.0.schema.ref.schema":  "TestEnum",
+			"object.properties.0.schema.enum.ref.package": "test",
+			"object.properties.0.schema.enum.ref.schema":  "TestEnum",
 		},
 		expectedRefs: map[string]map[string]interface{}{
 			"test.TestEnum": {
@@ -464,7 +470,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 				if schema == nil {
 					t.Fatalf("schema %q not linked", path)
 				}
-				schemaJ5, err := schema.ToJ5Proto()
+				schemaJ5, err := schema.ToJ5Root()
 				if err != nil {
 					t.Fatal(err.Error())
 				}

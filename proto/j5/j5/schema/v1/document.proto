@@ -26,7 +26,7 @@ message Package {
   repeated Service services = 5;
   repeated Entity entities = 6;
   repeated EventSpec events = 7;
-  map<string, Schema> schemas = 8;
+  map<string, RootSchema> schemas = 8;
 }
 
 message Service {
@@ -45,10 +45,10 @@ message Method {
 
   string http_path = 5 [(buf.validate.field).string.pattern = "^(\\/:?[a-z0-9_]+)+$"];
   Request request = 6 [(buf.validate.field).required = true];
-  Schema response_body = 7 [(buf.validate.field).required = true];
+  RootSchema response_body = 7 [(buf.validate.field).required = true];
 
   message Request {
-    Schema body = 1;
+    RootSchema body = 1;
     repeated ObjectProperty path_parameters = 2;
     repeated ObjectProperty query_parameters = 3;
     repeated string searchable_fields = 4;
@@ -75,11 +75,11 @@ message Method {
 
 message EventSpec {
   string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
-  Schema schema = 2 [(buf.validate.field).required = true];
+  RootSchema schema = 2 [(buf.validate.field).required = true];
 }
 
 message Entity {
-  Schema schema = 1 [(buf.validate.field).required = true];
+  RootSchema schema = 1 [(buf.validate.field).required = true];
 }
 
 message CodeGenerationRequest {

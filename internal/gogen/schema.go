@@ -13,61 +13,49 @@ type builder struct {
 	//schemas SchemaResolver
 }
 
-func (bb *builder) buildTypeName(schema j5reflect.Schema) (*DataType, error) {
+func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error) {
 
 	switch schemaType := schema.(type) {
-	case *j5reflect.RefSchema:
-		refVal := schemaType.To
-		if refVal == nil {
-			return nil, fmt.Errorf("unlinked ref: %s", schemaType.FullName())
+
+	case *j5reflect.ObjectAsFieldSchema:
+		if err := bb.addObject(schemaType.Schema()); err != nil {
+			return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref.FullName(), err)
 		}
 
-		switch refVal := refVal.(type) {
-		case *j5reflect.EnumSchema:
-			return &DataType{
-				Name:    "string",
-				Pointer: false,
-			}, nil
-
-		case *j5reflect.ObjectSchema:
-
-			if err := bb.addObject(refVal); err != nil {
-				return nil, fmt.Errorf("referencedType in %s: %w", schemaType.FullName(), err)
-			}
-
-			objectPackage, err := bb.options.ReferenceGoPackage(refVal.Package)
-			if err != nil {
-				return nil, fmt.Errorf("referredType in %s: %w", schemaType.FullName(), err)
-			}
-
-			return &DataType{
-				Name:      goTypeName(refVal.Name),
-				GoPackage: objectPackage,
-				J5Package: refVal.Package,
-				Pointer:   true,
-			}, nil
-
-		case *j5reflect.OneofSchema:
-
-			if err := bb.addOneofWrapper(refVal); err != nil {
-				return nil, fmt.Errorf("referencedType in %s: %w", schemaType.FullName(), err)
-			}
-
-			objectPackage, err := bb.options.ReferenceGoPackage(refVal.Package)
-			if err != nil {
-				return nil, fmt.Errorf("referredType in %s: %w", schemaType.FullName(), err)
-			}
-
-			return &DataType{
-				Name:      goTypeName(refVal.Name),
-				GoPackage: objectPackage,
-				Pointer:   true,
-				J5Package: refVal.Package,
-			}, nil
-
-		default:
-			return nil, fmt.Errorf("Unknown ref type for %s - %T", schemaType.FullName(), refVal)
+		objectPackage, err := bb.options.ReferenceGoPackage(schemaType.Ref.Package)
+		if err != nil {
+			return nil, fmt.Errorf("referredType in %s: %w", schemaType.Ref.FullName(), err)
 		}
+
+		return &DataType{
+			Name:      goTypeName(schemaType.Ref.Schema),
+			GoPackage: objectPackage,
+			J5Package: schemaType.Ref.Package,
+			Pointer:   true,
+		}, nil
+
+	case *j5reflect.OneofAsFieldSchema:
+		if err := bb.addOneofWrapper(schemaType.Schema()); err != nil {
+			return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref.FullName(), err)
+		}
+
+		objectPackage, err := bb.options.ReferenceGoPackage(schemaType.Ref.Package)
+		if err != nil {
+			return nil, fmt.Errorf("referredType in %s: %w", schemaType.Ref.FullName(), err)
+		}
+
+		return &DataType{
+			Name:      goTypeName(schemaType.Ref.Schema),
+			GoPackage: objectPackage,
+			Pointer:   true,
+			J5Package: schemaType.Ref.Package,
+		}, nil
+
+	case *j5reflect.EnumAsFieldSchema:
+		return &DataType{
+			Name:    "string",
+			Pointer: false,
+		}, nil
 
 	case *j5reflect.ArraySchema:
 		itemType, err := bb.buildTypeName(schemaType.Schema)
@@ -94,35 +82,9 @@ func (bb *builder) buildTypeName(schema j5reflect.Schema) (*DataType, error) {
 			Pointer: false,
 		}, nil
 
-	case *j5reflect.ObjectSchema:
-		if err := bb.addObject(schemaType); err != nil {
-			return nil, fmt.Errorf("directObject: %w", err)
-		}
-
-		return &DataType{
-			Name:    goTypeName(schemaType.Name),
-			Pointer: true,
-		}, nil
-
-	case *j5reflect.OneofSchema:
-		if err := bb.addOneofWrapper(schemaType); err != nil {
-			return nil, fmt.Errorf("oneofWrapper: %w", err)
-		}
-
-		return &DataType{
-			Name:    goTypeName(schemaType.Name),
-			Pointer: true,
-		}, nil
-
 	case *j5reflect.AnySchema:
 		return &DataType{
 			Name:    "interface{}",
-			Pointer: false,
-		}, nil
-
-	case *j5reflect.EnumSchema:
-		return &DataType{
-			Name:    "string",
 			Pointer: false,
 		}, nil
 

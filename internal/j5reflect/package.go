@@ -30,7 +30,7 @@ func (api *API) ToJ5Proto() (*schema_j5pb.API, error) {
 
 	referencedSchemas, err := collectPackageRefs(api)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("collecting package refs: %w", err)
 	}
 
 	for schemaName, schema := range referencedSchemas {
@@ -41,7 +41,7 @@ func (api *API) ToJ5Proto() (*schema_j5pb.API, error) {
 		}
 		refPackage := &schema_j5pb.Package{
 			Name: schema.inPackage,
-			Schemas: map[string]*schema_j5pb.Schema{
+			Schemas: map[string]*schema_j5pb.RootSchema{
 				schemaName: schema.schema,
 			},
 		}
@@ -87,7 +87,7 @@ func (pkg *Package) ToJ5Proto() (*schema_j5pb.Package, error) {
 	events := make([]*schema_j5pb.EventSpec, 0, len(pkg.Events))
 
 	for _, event := range pkg.Events {
-		asProto, err := event.Schema.ToJ5Proto()
+		asProto, err := event.Schema.ToJ5Root()
 		if err != nil {
 			return nil, fmt.Errorf("event schema %q: %w", event.Name, err)
 		}
@@ -111,7 +111,7 @@ func (pkg *Package) ToJ5Proto() (*schema_j5pb.Package, error) {
 	return &schema_j5pb.Package{
 		Label:    pkg.Label,
 		Name:     pkg.Name,
-		Schemas:  map[string]*schema_j5pb.Schema{},
+		Schemas:  map[string]*schema_j5pb.RootSchema{},
 		Events:   events,
 		Services: services,
 	}, nil
@@ -167,7 +167,7 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 		return nil, fmt.Errorf("request should be an object, got %T", mm.Request)
 	}
 
-	requestBody, err := requestSchema.ToJ5Proto()
+	requestBody, err := requestSchema.ToJ5Root()
 	if err != nil {
 		return nil, err
 	}
@@ -204,8 +204,8 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 	}
 
 	if mm.HasBody {
-		request.Body = &schema_j5pb.Schema{
-			Type: &schema_j5pb.Schema_Object{
+		request.Body = &schema_j5pb.RootSchema{
+			Type: &schema_j5pb.RootSchema_Object{
 				Object: &schema_j5pb.Object{
 					Properties:  bodyProperties,
 					Name:        requestBodyObject.Name,
@@ -222,7 +222,7 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 		return nil, fmt.Errorf("response schema was not an object: %T", mm.Response)
 	}
 
-	responseBody, err := responseSchema.ToJ5Proto()
+	responseBody, err := responseSchema.ToJ5Root()
 	if err != nil {
 		return nil, err
 	}
@@ -238,16 +238,33 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 }
 
 type schemaRef struct {
-	schema    *schema_j5pb.Schema
+	schema    *schema_j5pb.RootSchema
 	inPackage string
 }
 
+// collectPackageRefs walks the entire API, returning all schemas which are
+// accessible via a method, event etc.
 func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
+	// map[
 	schemas := make(map[string]*schemaRef)
 
-	var walkRefs func(Schema) error
-	walkRefs = func(schema Schema) error {
+	var walkRefRoot func(RootSchema) error
 
+	var walkRefs func(FieldSchema) error
+	walkRefRoot = func(schema RootSchema) error {
+		_, ok := schemas[schema.FullName()]
+		if ok {
+			return nil
+		}
+
+		schemaProto, err := schema.ToJ5Root()
+		if err != nil {
+			return fmt.Errorf("schema %s to j5 root: %w", schema.FullName(), err)
+		}
+		schemas[schema.FullName()] = &schemaRef{
+			schema:    schemaProto,
+			inPackage: schema.PackageName(),
+		}
 		switch st := schema.(type) {
 		case *ObjectSchema:
 			for _, prop := range st.Properties {
@@ -255,62 +272,81 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 					return fmt.Errorf("walk %s: %w", st.FullName(), err)
 				}
 			}
-
-		case *ArraySchema:
-			if err := walkRefs(st.Schema); err != nil {
-				return fmt.Errorf("walk array: %w", err)
-			}
-
 		case *OneofSchema:
 			for _, prop := range st.Properties {
 				if err := walkRefs(prop.Schema); err != nil {
 					return fmt.Errorf("walk oneof: %w", err)
 				}
 			}
+		case *EnumSchema:
+		// do nothing
+
+		default:
+			return fmt.Errorf("unsupported ref type %T", st)
+		}
+		return nil
+	}
+	walkRefs = func(schema FieldSchema) error {
+
+		switch st := schema.(type) {
+		case *ObjectAsFieldSchema:
+			if err := walkRefRoot(st.Ref.To); err != nil {
+				return fmt.Errorf("walk object as field: %w", err)
+			}
+
+		case *OneofAsFieldSchema:
+			if err := walkRefRoot(st.Ref.To); err != nil {
+				return fmt.Errorf("walk oneof as field: %w", err)
+			}
+
+		case *EnumAsFieldSchema:
+			if err := walkRefRoot(st.Ref.To); err != nil {
+				return fmt.Errorf("walk enum as field: %w", err)
+			}
+
+		case *ArraySchema:
+			if err := walkRefs(st.Schema); err != nil {
+				return fmt.Errorf("walk array: %w", err)
+			}
 
 		case *MapSchema:
 			if err := walkRefs(st.Schema); err != nil {
 				return fmt.Errorf("walk map: %w", err)
-			}
-
-		case *RefSchema:
-			stringName := st.FullName()
-			if _, ok := schemas[stringName]; ok {
-				return nil
-			}
-			if st.To == nil {
-				return fmt.Errorf("unlinked schema %s", st.FullName())
-			}
-			asProto, err := st.To.ToJ5Proto()
-			if err != nil {
-				return fmt.Errorf("ref schema %q.%q: %w", st.Package, st.Schema, err)
-			}
-			schemas[stringName] = &schemaRef{
-				schema:    asProto,
-				inPackage: st.Package,
-			}
-			if err := walkRefs(st.To); err != nil {
-				return fmt.Errorf("walk ref %q.%q: %w", st.Package, st.Schema, err)
 			}
 		}
 
 		return nil
 	}
 
+	walkRootObject := func(schema RootSchema) error {
+		obj, ok := schema.(*ObjectSchema)
+		if !ok {
+			return fmt.Errorf("expected object schema, got %T", schema)
+		}
+
+		for _, prop := range obj.Properties {
+			if err := walkRefs(prop.Schema); err != nil {
+				return fmt.Errorf("walk root object: %w", err)
+			}
+		}
+		return nil
+
+	}
+
 	for _, pkg := range api.Packages {
 		for _, service := range pkg.Services {
 			for _, method := range service.Methods {
-				if err := walkRefs(method.Request); err != nil {
+				if err := walkRootObject(method.Request); err != nil {
 					return nil, fmt.Errorf("request schema %q: %w", method.Request.FullName(), err)
 				}
 
-				if err := walkRefs(method.Response); err != nil {
+				if err := walkRootObject(method.Response); err != nil {
 					return nil, fmt.Errorf("response schema %q: %w", method.Response.FullName(), err)
 				}
 			}
 		}
 		for _, event := range pkg.Events {
-			err := walkRefs(event.Schema)
+			err := walkRefRoot(event.Schema)
 			if err != nil {
 				return nil, fmt.Errorf("event schema %q: %w", event.Schema.FullName(), err)
 			}

@@ -443,7 +443,7 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 				queryMethod.P("  }")
 			}
 
-		case *j5reflect.ObjectSchema:
+		case *j5reflect.ObjectAsFieldSchema, *j5reflect.OneofAsFieldSchema:
 			// include as JSON
 			queryMethod.P("  if s.", field.Name, " != nil {")
 			queryMethod.P("    bb, err := ", DataType{GoPackage: "encoding/json", Name: "Marshal"}, "(s.", field.Name, ")")
@@ -453,9 +453,21 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 			queryMethod.P("    values.Set(\"", field.Name, "\", string(bb))")
 			queryMethod.P("  }")
 
+		case *j5reflect.EnumAsFieldSchema:
+
+			if field.Property.Required {
+				queryMethod.P("  values.Set(\"", field.Property.JSONName, "\", s.", field.Name, ")")
+			} else {
+				queryMethod.P("  if s.", field.Name, " != nil {")
+				queryMethod.P("    values.Set(\"", field.Property.JSONName, "\", *s.", field.Name, ")")
+				queryMethod.P("  }")
+			}
+
 		default:
 			queryMethod.P(" // Skipping query parameter ", field.Property.JSONName)
 			//queryMethod.P("    values.Set(\"", parameter.Name, "\", fmt.Sprintf(\"%v\", *s.", GoName(parameter.Name), "))")
+			return fmt.Errorf("unsupported type for query %T", fieldType)
+
 		}
 	}
 
