@@ -106,8 +106,8 @@ func extendPlugin(base, ext *config_j5pb.BuildPlugin) *config_j5pb.BuildPlugin {
 	if ext.Opts == nil {
 		ext.Opts = map[string]string{}
 	}
-	for k, v := range ext.Opts {
-		if _, ok := base.Opts[k]; !ok {
+	for k, v := range base.Opts {
+		if _, ok := ext.Opts[k]; !ok {
 			ext.Opts[k] = v
 		}
 	}
