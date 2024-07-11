@@ -14,8 +14,22 @@ import (
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
+
+func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constraints *validate.FieldConstraints) *descriptorpb.FieldDescriptorProto {
+	return fieldWithExtension(field, validate.E_Field, constraints)
+}
+
+func fieldWithExtension(field *descriptorpb.FieldDescriptorProto, extensionType protoreflect.ExtensionType, extensionValue interface{}) *descriptorpb.FieldDescriptorProto {
+	if field.Options == nil {
+		field.Options = &descriptorpb.FieldOptions{}
+	}
+
+	proto.SetExtension(field.Options, extensionType, extensionValue)
+	return field
+}
 
 const (
 	pathMessage = 4

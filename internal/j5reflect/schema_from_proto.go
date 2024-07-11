@@ -1,4 +1,4 @@
-package structure
+package j5reflect
 
 import (
 	"fmt"
@@ -10,12 +10,11 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/internal/j5reflect"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func newBasePackage(descriptor protoreflect.Descriptor) j5reflect.SchemaRoot {
+func newBasePackage(descriptor protoreflect.Descriptor) SchemaRoot {
 	description := commentDescription(descriptor)
 	path := []string{}
 	current := descriptor
@@ -25,7 +24,7 @@ func newBasePackage(descriptor protoreflect.Descriptor) j5reflect.SchemaRoot {
 		parentFile, ok := parent.(protoreflect.FileDescriptor)
 		if ok {
 			slices.Reverse(path)
-			return j5reflect.SchemaRoot{
+			return SchemaRoot{
 				Name:        strings.Join(path, "_"),
 				Package:     string(parentFile.Package()),
 				Description: description,
@@ -35,9 +34,9 @@ func newBasePackage(descriptor protoreflect.Descriptor) j5reflect.SchemaRoot {
 	}
 }
 
-func newRefPlaceholder(descriptor protoreflect.Descriptor) *j5reflect.RefSchema {
+func newRefPlaceholder(descriptor protoreflect.Descriptor) *RefSchema {
 	base := newBasePackage(descriptor)
-	return &j5reflect.RefSchema{
+	return &RefSchema{
 		Package: base.Package,
 		Schema:  base.Name,
 	}
@@ -63,7 +62,7 @@ func NewSchemaResolver(resolver DescriptorResolver) *SchemaResolver {
 	}
 }
 
-func (ss *SchemaResolver) SchemaByName(name protoreflect.FullName) (j5reflect.RootSchema, error) {
+func (ss *SchemaResolver) SchemaByName(name protoreflect.FullName) (RootSchema, error) {
 	obj, ok := ss.refs[name]
 	if ok {
 		if obj.To == nil {
@@ -82,19 +81,19 @@ func (ss *SchemaResolver) SchemaByName(name protoreflect.FullName) (j5reflect.Ro
 	return ss.SchemaReflect(msg)
 }
 
-func (ss *SchemaResolver) SchemaByRef(ref *j5reflect.RefSchema) (j5reflect.RootSchema, error) {
+func (ss *SchemaResolver) SchemaByRef(ref *RefSchema) (RootSchema, error) {
 	return ss.SchemaByName(protoreflect.FullName(ref.FullName()))
 }
 
 type SchemaSet struct {
-	//schemas map[protoreflect.FullName]j5reflect.RootSchema
-	refs map[protoreflect.FullName]*j5reflect.RefSchema
+	//schemas map[protoreflect.FullName]RootSchema
+	refs map[protoreflect.FullName]*RefSchema
 }
 
 func NewSchemaSet() *SchemaSet {
 	return &SchemaSet{
-		//schemas: make(map[protoreflect.FullName]j5reflect.RootSchema),
-		refs: make(map[protoreflect.FullName]*j5reflect.RefSchema),
+		//schemas: make(map[protoreflect.FullName]RootSchema),
+		refs: make(map[protoreflect.FullName]*RefSchema),
 	}
 }
 
@@ -107,7 +106,7 @@ func (ss *SchemaSet) SchemaObject(src protoreflect.MessageDescriptor) (*schema_j
 	return val.ToJ5Root()
 }
 
-func (ss *SchemaSet) SchemaReflect(src protoreflect.MessageDescriptor) (j5reflect.RootSchema, error) {
+func (ss *SchemaSet) SchemaReflect(src protoreflect.MessageDescriptor) (RootSchema, error) {
 	name := src.FullName()
 	if built, ok := ss.refs[name]; ok {
 		if built.To == nil {
@@ -117,7 +116,7 @@ func (ss *SchemaSet) SchemaReflect(src protoreflect.MessageDescriptor) (j5reflec
 	}
 
 	base := newBasePackage(src)
-	placeholder := &j5reflect.RefSchema{
+	placeholder := &RefSchema{
 		Package: base.Package,
 		Schema:  base.Name,
 	}
@@ -180,24 +179,24 @@ func isOneofWrapper(src protoreflect.MessageDescriptor) bool {
 	return true
 }
 
-func (ss *SchemaSet) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*j5reflect.OneofSchema, error) {
+func (ss *SchemaSet) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*OneofSchema, error) {
 	properties, err := ss.messageProperties(srcMsg)
 	if err != nil {
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
-	return &j5reflect.OneofSchema{
+	return &OneofSchema{
 		SchemaRoot: newBasePackage(srcMsg),
 		Properties: properties,
 		// TODO: Rules
 	}, nil
 }
 
-func (ss *SchemaSet) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*j5reflect.ObjectSchema, error) {
+func (ss *SchemaSet) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*ObjectSchema, error) {
 	properties, err := ss.messageProperties(srcMsg)
 	if err != nil {
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
-	return &j5reflect.ObjectSchema{
+	return &ObjectSchema{
 		SchemaRoot: newBasePackage(srcMsg),
 		Properties: properties,
 		// TODO: Rules
@@ -205,12 +204,12 @@ func (ss *SchemaSet) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*
 
 }
 
-func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*j5reflect.ObjectProperty, error) {
+func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*ObjectProperty, error) {
 
-	properties := make([]*j5reflect.ObjectProperty, 0, src.Fields().Len())
+	properties := make([]*ObjectProperty, 0, src.Fields().Len())
 
-	exposeOneofs := make(map[string]*j5reflect.OneofSchema)
-	pendingOneofProps := make(map[string]*j5reflect.ObjectProperty)
+	exposeOneofs := make(map[string]*OneofSchema)
+	pendingOneofProps := make(map[string]*ObjectProperty)
 
 	for idx := 0; idx < src.Oneofs().Len(); idx++ {
 		oneof := src.Oneofs().Get(idx)
@@ -227,17 +226,17 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*j
 		}
 
 		oneofName := string(oneof.Name())
-		oneofObject := &j5reflect.OneofSchema{
+		oneofObject := &OneofSchema{
 			SchemaRoot: newBasePackage(oneof),
 			//oneofDescriptor: oneof,
 		}
 		refPlaceholder := newRefPlaceholder(oneof)
 		refPlaceholder.To = oneofObject
 		ss.refs[protoreflect.FullName(refPlaceholder.FullName())] = refPlaceholder
-		prop := &j5reflect.ObjectProperty{
+		prop := &ObjectProperty{
 			JSONName:    jsonFieldName(oneof.Name()),
 			Description: commentDescription(src),
-			Schema: &j5reflect.OneofFieldSchema{
+			Schema: &OneofFieldSchema{
 				Ref: refPlaceholder,
 				// TODO: Oneof Rules
 			},
@@ -256,7 +255,7 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*j
 				return nil, fmt.Errorf("list field %s: %w", field.Name(), err)
 			}
 			// TODO: Rules
-			prop.Schema = &j5reflect.ArraySchema{
+			prop.Schema = &ArraySchema{
 				Schema: prop.Schema,
 			}
 
@@ -273,11 +272,11 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*j
 			}
 
 			src := field
-			prop := &j5reflect.ObjectProperty{
+			prop := &ObjectProperty{
 				ProtoField:  []protoreflect.FieldNumber{src.Number()},
 				JSONName:    string(src.JSONName()),
 				Description: commentDescription(src),
-				Schema: &j5reflect.MapSchema{
+				Schema: &MapSchema{
 					Schema: valueProp.Schema,
 				},
 			}
@@ -387,14 +386,14 @@ var wellKnownStringPatterns = map[string]string{
 	`^\d(.?\d)?$`:         "number",
 }
 
-func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5reflect.ObjectProperty, error) {
+func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
 	schemaProto := &schema_j5pb.Schema{}
 
-	prop := &j5reflect.ObjectProperty{
+	prop := &ObjectProperty{
 		JSONName:    string(src.JSONName()),
 		ProtoField:  []protoreflect.FieldNumber{src.Number()},
 		Description: commentDescription(src),
-		Schema: &j5reflect.ScalarSchema{
+		Schema: &ScalarSchema{
 			Proto: schemaProto,
 			Kind:  src.Kind(),
 		},
@@ -748,7 +747,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 			ss.refs[protoName] = ref
 		}
 
-		prop.Schema = &j5reflect.EnumFieldSchema{
+		prop.Schema = &EnumFieldSchema{
 			Ref: ref,
 		}
 		return prop, nil
@@ -781,11 +780,11 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 			}
 		}
 		if isOneofWrapper {
-			prop.Schema = &j5reflect.OneofFieldSchema{
+			prop.Schema = &OneofFieldSchema{
 				Ref: ref,
 			}
 		} else {
-			prop.Schema = &j5reflect.ObjectFieldSchema{
+			prop.Schema = &ObjectFieldSchema{
 				Ref: ref,
 			}
 		}
@@ -803,7 +802,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*j5r
 
 }
 
-func buildEnum(enumDescriptor protoreflect.EnumDescriptor, constraint *validate.EnumRules) (*j5reflect.EnumSchema, error) {
+func buildEnum(enumDescriptor protoreflect.EnumDescriptor, constraint *validate.EnumRules) (*EnumSchema, error) {
 
 	specMap := map[int32]struct{}{}
 	var notIn bool
@@ -865,7 +864,7 @@ func buildEnum(enumDescriptor protoreflect.EnumDescriptor, constraint *validate.
 		values[ii].Name = strings.TrimPrefix(values[ii].Name, trimPrefix)
 	}
 
-	return &j5reflect.EnumSchema{
+	return &EnumSchema{
 		SchemaRoot: newBasePackage(enumDescriptor),
 		Options:    values,
 		NamePrefix: trimPrefix,
@@ -877,10 +876,10 @@ func Ptr[T any](val T) *T {
 	return &val
 }
 
-func wktSchema(src protoreflect.MessageDescriptor) (j5reflect.FieldSchema, bool) {
+func wktSchema(src protoreflect.MessageDescriptor) (FieldSchema, bool) {
 	switch string(src.FullName()) {
 	case "google.protobuf.Timestamp":
-		return &j5reflect.ScalarSchema{
+		return &ScalarSchema{
 			WellKnownTypeName: src.FullName(),
 			Proto: &schema_j5pb.Schema{
 				Type: &schema_j5pb.Schema_String_{
@@ -892,7 +891,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (j5reflect.FieldSchema, bool)
 		}, true
 
 	case "google.protobuf.Duration":
-		return &j5reflect.ScalarSchema{
+		return &ScalarSchema{
 			WellKnownTypeName: src.FullName(),
 			Proto: &schema_j5pb.Schema{
 				Type: &schema_j5pb.Schema_String_{
@@ -904,7 +903,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (j5reflect.FieldSchema, bool)
 		}, true
 
 	case "j5.types.date.v1.Date":
-		return &j5reflect.ScalarSchema{
+		return &ScalarSchema{
 			WellKnownTypeName: src.FullName(),
 			Proto: &schema_j5pb.Schema{
 				Type: &schema_j5pb.Schema_String_{
@@ -916,12 +915,12 @@ func wktSchema(src protoreflect.MessageDescriptor) (j5reflect.FieldSchema, bool)
 		}, true
 
 	case "google.protobuf.Struct":
-		return &j5reflect.MapSchema{
-			Schema: &j5reflect.AnySchema{},
+		return &MapSchema{
+			Schema: &AnySchema{},
 		}, true
 
 	case "google.protobuf.Any":
-		return &j5reflect.AnySchema{}, true
+		return &AnySchema{}, true
 	}
 
 	return nil, false

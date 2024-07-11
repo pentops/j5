@@ -1,4 +1,4 @@
-package structure
+package j5reflect
 
 import (
 	"encoding/json"
