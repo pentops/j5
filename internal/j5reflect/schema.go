@@ -243,6 +243,7 @@ func (s *MapSchema) ToJ5Proto() (*schema_j5pb.Schema, error) {
 		Type: &schema_j5pb.Schema_Map{
 			Map: &schema_j5pb.Map{
 				ItemSchema: item,
+				KeySchema:  &schema_j5pb.Schema{Type: &schema_j5pb.Schema_String_{}},
 				Rules:      s.Rules,
 			},
 		},
