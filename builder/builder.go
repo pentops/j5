@@ -106,6 +106,14 @@ func buildGomodFile(pkg *config_j5pb.OutputType_GoProxy) ([]byte, error) {
 		return nil, err
 	}
 
+	if pkg.GoVersion == "" {
+		pkg.GoVersion = "1.22.3"
+	}
+
+	if err := mm.AddGoStmt(pkg.GoVersion); err != nil {
+		return nil, err
+	}
+
 	for _, dep := range pkg.Deps {
 		if err := mm.AddRequire(dep.Path, dep.Version); err != nil {
 			return nil, err

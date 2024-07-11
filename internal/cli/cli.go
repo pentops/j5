@@ -35,6 +35,7 @@ func CommandSet() *commander.CommandSet {
 
 	cmdGroup.Add("version", commander.NewCommand(runVersion))
 	cmdGroup.Add("generate", commander.NewCommand(runGenerate))
+	cmdGroup.Add("publish", commander.NewCommand(runPublish))
 	cmdGroup.Add("verify", commander.NewCommand(runVerify))
 
 	return cmdGroup
