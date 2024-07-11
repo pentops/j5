@@ -1,23 +1,16 @@
 package source
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"path/filepath"
 	"strings"
 
-	"github.com/bufbuild/protocompile/reporter"
 	"github.com/bufbuild/protoyaml-go"
-	"github.com/jhump/protoreflect/desc"
-	"github.com/jhump/protoreflect/desc/protoparse"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/log.go/log"
-	"github.com/pentops/prototools/protosrc"
 )
 
 var configPaths = []string{
@@ -76,29 +69,6 @@ func readImageFromDir(ctx context.Context, src *bundle) (*source_j5pb.SourceImag
 		return nil, err
 	}
 
-	bufCache := protosrc.NewBufCache()
-	extFiles, err := bufCache.GetDeps(ctx, src.repo.repoRoot, src.dirInRepo)
-	if err != nil {
-		return nil, fmt.Errorf("reading buf deps: %w", err)
-	}
-
-	var searchFS []fs.FS
-
-	for _, dep := range src.refConfig.Deps {
-		localBundle, ok := src.repo.bundles[dep]
-		if !ok {
-			return nil, fmt.Errorf("unknown dependency %q", dep)
-		}
-
-		fs, err := localBundle.fs()
-		if err != nil {
-			return nil, err
-		}
-
-		searchFS = append(searchFS, fs)
-
-	}
-
 	bundleRoot, err := src.fs()
 	if err != nil {
 		return nil, err
@@ -137,38 +107,10 @@ func readImageFromDir(ctx context.Context, src *bundle) (*source_j5pb.SourceImag
 		return nil, err
 	}
 
-	parser := protoparse.Parser{
-		ImportPaths:           []string{""},
-		IncludeSourceCodeInfo: true,
-		WarningReporter: func(err reporter.ErrorWithPos) {
-			log.WithFields(ctx, map[string]interface{}{
-				"error": err.Error(),
-			}).Warn("protoparse warning")
-		},
-
-		Accessor: func(filename string) (io.ReadCloser, error) {
-			if content, ok := extFiles[filename]; ok {
-				return io.NopCloser(bytes.NewReader(content)), nil
-			}
-			if reader, err := bundleRoot.Open(filename); err == nil {
-				return reader, nil
-			}
-			for _, fs := range searchFS {
-				if reader, err := fs.Open(filename); err == nil {
-					return reader, nil
-				}
-			}
-			return nil, fmt.Errorf("file not found: %s", filename)
-
-		},
-	}
-
-	customDesc, err := parser.ParseFiles(filenames...)
+	realDesc, err := bundleProtoparse(ctx, src, filenames)
 	if err != nil {
-		return nil, fmt.Errorf("protoparse: %w", err)
+		return nil, err
 	}
-
-	realDesc := desc.ToFileDescriptorSet(customDesc...)
 
 	return &source_j5pb.SourceImage{
 		File:            realDesc.File,

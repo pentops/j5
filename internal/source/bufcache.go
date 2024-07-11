@@ -106,17 +106,25 @@ func (bc *BufCache) fetchDep(ctx context.Context, dep *BufLockFileDependency) (F
 		externalFiles[file.Path] = file.Content
 	}
 
-	return mapSource{files: externalFiles}, nil
+	return mapSource{
+		files: externalFiles,
+		name:  fmt.Sprintf("bufRemote:%s/%s:%s", dep.Owner, dep.Repository, dep.Commit),
+	}, nil
 }
 
 func (bc *BufCache) GetDeps(ctx context.Context, root fs.FS, subDir string) ([]FileSource, error) {
 
 	var lockFileData []byte
+
 	searchPath := subDir
 	for {
 		lockFile, err := fs.ReadFile(root, path.Join(searchPath, "buf.lock"))
 		if err == nil {
 			lockFileData = lockFile
+
+			log.WithFields(ctx, map[string]interface{}{
+				"lockFile": path.Join(searchPath, "buf.lock"),
+			}).Debug("found lock file")
 			break
 		}
 		if !errors.Is(err, fs.ErrNotExist) {
@@ -165,6 +173,7 @@ func (bc *BufCache) GetDeps(ctx context.Context, root fs.FS, subDir string) ([]F
 		if err != nil {
 			return nil, err
 		}
+		log.WithField(ctx, "dep", fmt.Sprintf("buf.build/%s/%s", dep.Owner, dep.Repository)).Debug("including buf dep")
 		allDeps = append(allDeps, files)
 	}
 
@@ -187,7 +196,10 @@ func (bc *BufCache) tryV3FSDep(ctx context.Context, dep *BufLockFileDependency) 
 	}
 
 	log.WithField(ctx, "v3Path", v3Dep).Debug("found v3 dep")
-	return fsSource{fs: os.DirFS(v3Dep)}, nil
+	return fsSource{
+		fs:   os.DirFS(v3Dep),
+		name: fmt.Sprintf("bufv3:%s/%s/%s", dep.Owner, dep.Repository, dep.Commit),
+	}, nil
 }
 
 type bufv2Dep struct {
@@ -202,6 +214,10 @@ func (bd bufv2Dep) GetFile(filename string) (io.ReadCloser, error) {
 	return nil, os.ErrNotExist
 }
 
+func (bd bufv2Dep) Name() string {
+	return "bufv2:" + bd.root
+}
+
 func (bc *BufCache) tryV2FSDep(ctx context.Context, dep *BufLockFileDependency) (FileSource, error) {
 
 	contentStr := dep.Digest
@@ -210,10 +226,6 @@ func (bc *BufCache) tryV2FSDep(ctx context.Context, dep *BufLockFileDependency) 
 	indexPath := filepath.Join("v2", "module", "buf.build", bc.root, dep.Owner, dep.Repository, "blobs", hdr, rem)
 	indexContent, err := os.ReadFile(indexPath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			log.WithField(ctx, "mod", indexPath).Warn("buf mod not found")
-			return nil, nil
-		}
 		return nil, err
 	}
 
