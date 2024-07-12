@@ -202,7 +202,6 @@ type isRootSchema_Type interface {
 }
 
 type RootSchema_Oneof struct {
-	// Named Root Types
 	Oneof *Oneof `protobuf:"bytes,12,opt,name=oneof,proto3,oneof"`
 }
 

@@ -103,7 +103,7 @@ func (ss *SchemaSet) SchemaObject(src protoreflect.MessageDescriptor) (*schema_j
 		return nil, err
 	}
 
-	return val.ToJ5Root()
+	return val.ToJ5Root(), nil
 }
 
 func (ss *SchemaSet) SchemaReflect(src protoreflect.MessageDescriptor) (RootSchema, error) {

@@ -142,7 +142,7 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 	}
 
 	if method.Request.Body != nil {
-		requestSchema, err := ConvertRootSchema(method.Request.Body)
+		requestSchema, err := convertObjectItem(method.Request.Body)
 		if err != nil {
 			return err
 		}
@@ -156,7 +156,7 @@ func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.
 		}
 	}
 
-	responseSchema, err := ConvertRootSchema(method.ResponseBody)
+	responseSchema, err := convertObjectItem(method.ResponseBody)
 	if err != nil {
 		return fmt.Errorf("response body: %w", err)
 	}

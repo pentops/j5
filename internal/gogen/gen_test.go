@@ -49,45 +49,37 @@ func TestTestProtoGen(t *testing.T) {
 							},
 							ProtoField: []int32{1},
 						}},
-						Body: &schema_j5pb.RootSchema{
-							Type: &schema_j5pb.RootSchema_Object{
-								Object: &schema_j5pb.Object{
-									Name: "PostFooRequest",
-									Properties: []*schema_j5pb.ObjectProperty{{
-										Name: "enum",
-										Schema: &schema_j5pb.Field{
-											Type: &schema_j5pb.Field_Enum{
-												Enum: &schema_j5pb.EnumField{
-													Schema: &schema_j5pb.EnumField_Ref{
-														Ref: &schema_j5pb.Ref{
-															Package: "test.v1",
-															Schema:  "TestEnum",
-														},
-													},
+						Body: &schema_j5pb.Object{
+							Name: "PostFooRequest",
+							Properties: []*schema_j5pb.ObjectProperty{{
+								Name: "enum",
+								Schema: &schema_j5pb.Field{
+									Type: &schema_j5pb.Field_Enum{
+										Enum: &schema_j5pb.EnumField{
+											Schema: &schema_j5pb.EnumField_Ref{
+												Ref: &schema_j5pb.Ref{
+													Package: "test.v1",
+													Schema:  "TestEnum",
 												},
 											},
 										},
-										ProtoField: []int32{3},
-									}},
+									},
 								},
-							},
+								ProtoField: []int32{3},
+							}},
 						},
 					},
-					ResponseBody: &schema_j5pb.RootSchema{
-						Type: &schema_j5pb.RootSchema_Object{
-							Object: &schema_j5pb.Object{
-								Name: "PostFooRequest",
-								Properties: []*schema_j5pb.ObjectProperty{{
-									Name: "foo_id",
-									Schema: &schema_j5pb.Field{
-										Type: &schema_j5pb.Field_String_{
-											String_: &schema_j5pb.StringField{},
-										},
-									},
-									ProtoField: []int32{1},
-								}},
+					ResponseBody: &schema_j5pb.Object{
+						Name: "PostFooRequest",
+						Properties: []*schema_j5pb.ObjectProperty{{
+							Name: "foo_id",
+							Schema: &schema_j5pb.Field{
+								Type: &schema_j5pb.Field_String_{
+									String_: &schema_j5pb.StringField{},
+								},
 							},
-						},
+							ProtoField: []int32{1},
+						}},
 					},
 				}},
 			}},

@@ -20,11 +20,10 @@ message Metadata {
 message Package {
   string label = 1;
   string name = 2 [(buf.validate.field).string.pattern = "^([a-z0-9_]+\\.)v[0-9]+$"];
-  bool hidden = 3;
 
   string introduction = 4;
   repeated Service services = 5;
-  repeated Entity entities = 6;
+  repeated PackageEntity entities = 6;
   repeated EventSpec events = 7;
   map<string, RootSchema> schemas = 8;
 }
@@ -45,17 +44,18 @@ message Method {
 
   string http_path = 5 [(buf.validate.field).string.pattern = "^(\\/:?[a-z0-9_]+)+$"];
   Request request = 6 [(buf.validate.field).required = true];
-  RootSchema response_body = 7 [(buf.validate.field).required = true];
+  Object response_body = 7 [(buf.validate.field).required = true];
 
   message Request {
-    RootSchema body = 1;
+    Object body = 1;
     repeated ObjectProperty path_parameters = 2;
     repeated ObjectProperty query_parameters = 3;
-    repeated string searchable_fields = 4;
-    repeated SortableField sortable_fields = 5;
-    repeated FilterableField filterable_fields = 6;
 
-    message SortableField {
+    repeated SearchField searchable_fields = 4;
+    repeated SortField sortable_fields = 5;
+    repeated FilterField filterable_fields = 6;
+
+    message SortField {
       string name = 1;
       optional Direction default_sort = 2;
 
@@ -66,26 +66,24 @@ message Method {
       }
     }
 
-    message FilterableField {
+    message FilterField {
       string name = 1;
       repeated string default_filters = 2;
+    }
+
+    message SearchField {
+      string name = 1;
     }
   }
 }
 
 message EventSpec {
   string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
-  RootSchema schema = 2 [(buf.validate.field).required = true];
+  Object schema = 2 [(buf.validate.field).required = true];
 }
 
-message Entity {
-  RootSchema schema = 1 [(buf.validate.field).required = true];
-}
-
-message CodeGenerationRequest {
-  repeated string packages = 1;
-  Metadata metadata = 2;
-  map<string, string> options = 3;
+message PackageEntity {
+  Object schema = 1 [(buf.validate.field).required = true];
 }
 
 enum HTTPMethod {

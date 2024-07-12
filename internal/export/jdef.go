@@ -13,9 +13,8 @@ type API struct {
 }
 
 type Package struct {
-	Label  string `json:"label"`
-	Name   string `json:"name"`
-	Hidden bool   `json:"hidden"`
+	Label string `json:"label"`
+	Name  string `json:"name"`
 
 	Introduction string       `json:"introduction,omitempty"`
 	Methods      []*Method    `json:"methods"`
@@ -74,9 +73,8 @@ func FromProto(protoSchema *schema_j5pb.API) (*API, error) {
 
 func fromProtoPackage(protoPackage *schema_j5pb.Package) (*Package, error) {
 	out := &Package{
-		Label:  protoPackage.Label,
-		Name:   protoPackage.Name,
-		Hidden: protoPackage.Hidden,
+		Label: protoPackage.Label,
+		Name:  protoPackage.Name,
 
 		Introduction: protoPackage.Introduction,
 	}
@@ -119,7 +117,7 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 		HTTPPath:   protoMethod.HttpPath,
 	}
 	if protoMethod.Request.Body != nil {
-		schema, err := ConvertRootSchema(protoMethod.Request.Body)
+		schema, err := convertObjectItem(protoMethod.Request.Body)
 		if err != nil {
 			return nil, err
 		}
@@ -154,7 +152,7 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 		}
 	}
 
-	responseSchema, err := ConvertRootSchema(protoMethod.ResponseBody)
+	responseSchema, err := convertObjectItem(protoMethod.ResponseBody)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +164,7 @@ func fromProtoEvent(protoEvent *schema_j5pb.EventSpec) (*EventSpec, error) {
 	out := &EventSpec{
 		Name: protoEvent.Name,
 	}
-	schema, err := ConvertRootSchema(protoEvent.Schema)
+	schema, err := convertObjectItem(protoEvent.Schema)
 	if err != nil {
 		return nil, err
 	}
