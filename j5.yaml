@@ -6,6 +6,8 @@ bundles:
 
   - name: test
     dir: proto/test
+    deps:
+      - j5
 
 generate:
   - name: go
