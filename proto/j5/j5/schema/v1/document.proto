@@ -21,9 +21,11 @@ message Package {
   string label = 1;
   string name = 2 [(buf.validate.field).string.pattern = "^([a-z0-9_]+\\.)v[0-9]+$"];
 
-  string introduction = 4;
+  // markdown formatted prose
+  string prose = 3;
+
   repeated Service services = 5;
-  repeated PackageEntity entities = 6;
+  repeated Entity entities = 6;
   repeated EventSpec events = 7;
   map<string, RootSchema> schemas = 8;
 }
@@ -77,15 +79,6 @@ message Method {
   }
 }
 
-message EventSpec {
-  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
-  Object schema = 2 [(buf.validate.field).required = true];
-}
-
-message PackageEntity {
-  Object schema = 1 [(buf.validate.field).required = true];
-}
-
 enum HTTPMethod {
   HTTP_METHOD_UNSPECIFIED = 0;
   HTTP_METHOD_GET = 1;
@@ -93,4 +86,25 @@ enum HTTPMethod {
   HTTP_METHOD_PUT = 3;
   HTTP_METHOD_DELETE = 4;
   HTTP_METHOD_PATCH = 5;
+}
+
+message EventSpec {
+  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]+$"];
+
+  Object schema = 2 [(buf.validate.field).required = true];
+
+  // markdown formatted prose
+  string overview = 3;
+}
+
+message Entity {
+  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
+
+  // an entry in the current package's schema map
+  string schema = 2 [(buf.validate.field).required = true];
+
+  // markdown formatted prose
+  string overview = 3;
+
+  repeated string primary_key = 4;
 }

@@ -29,9 +29,9 @@ func TestTestProtoGen(t *testing.T) {
 
 	api := &schema_j5pb.API{
 		Packages: []*schema_j5pb.Package{{
-			Label:        "package label",
-			Name:         "test.v1",
-			Introduction: "FOOBAR",
+			Label: "package label",
+			Name:  "test.v1",
+			Prose: "FOOBAR",
 			Services: []*schema_j5pb.Service{{
 				Name: "TestService",
 				Methods: []*schema_j5pb.Method{{

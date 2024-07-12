@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package j5.ext.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/pentops/j5/gen/j5/oxt/v1/ext_j5pb";
+
+extend google.protobuf.MessageOptions {
+  optional ListRequestMessage list_request = 555112;
+}
+
+message ListRequestMessage {
+  repeated string default_sort = 1;
+  repeated string sort_tiebreaker = 2;
+}
+
+message FilteringConstraint {
+  bool filterable = 1;
+
+  repeated string default_filters = 2;
+}
+
+message SortingConstraint {
+  bool sortable = 1;
+  bool default_sort = 2;
+}
+
+message SearchingConstraint {
+  bool searchable = 1;
+  string field_identifier = 2;
+}

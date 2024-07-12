@@ -3,22 +3,21 @@ syntax = "proto3";
 package j5.ext.v1;
 
 import "google/protobuf/descriptor.proto";
+import "j5/ext/v1/query_annotations.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb";
 
 extend google.protobuf.MessageOptions {
-  MessageOptions message = 90443353;
+  MessageOptions message = 555000;
 }
 
 message MessageOptions {
-  // When true, all fields in this message should be wrapped in a single oneof
-  // field. The message will show in json-schema as-is but with the
-  // x-oneof flag set.
+  // When true, the message becomes a schema.Oneof.
   bool is_oneof_wrapper = 1;
 }
 
 extend google.protobuf.OneofOptions {
-  OneofOptions oneof = 90443355;
+  OneofOptions oneof = 555000;
 }
 
 message OneofOptions {
@@ -26,10 +25,12 @@ message OneofOptions {
   // than being a validation rule.
   // Will show in json-schema as an object with the x-oneof flag set.
   bool expose = 1;
+
+  FilteringConstraint filtering = 10;
 }
 
 extend google.protobuf.MethodOptions {
-  MethodOptions method = 90443356;
+  MethodOptions method = 555000;
 }
 
 message MethodOptions {
@@ -38,26 +39,62 @@ message MethodOptions {
 }
 
 extend google.protobuf.FieldOptions {
-  FieldOptions field = 90443357;
+  FieldOptions field = 555000;
 }
 
 message FieldOptions {
   oneof type {
-    StringFieldOptions string = 1;
-    MessageFieldOptions message = 2;
+    MessageFieldOptions message = 1;
+
+    ObjectFieldOptions object = 10;
+    EnumFieldOptions enum = 11;
+    OneofFieldOptions oneof = 12;
+
+    MapFieldOptions map = 20;
+    ArrayFieldOptions array = 21;
+
+    StringFieldOptions string = 30;
+    IntegerFieldOptions integer = 31;
+    FloatFieldOptions float = 32;
+    BoolFieldOptions boolean = 33;
+    BytesFieldOptions bytes = 34;
+    DecimalFieldOptions decimal = 35;
+    DateFieldOptions date = 36;
+    TimestampFieldOptions timestamp = 37;
+    UUIDFieldOptions uuid = 38;
   }
 }
 
-message StringFieldOptions {
-  StringFormat format = 1;
-}
-
-enum StringFormat {
-  STRING_FORMAT_UNSPECIFIED = 0;
-  STRING_FORMAT_DATE = 1;
-}
-
 message MessageFieldOptions {
-  // When true, the fields of the child message are flattened into the parent message.
+  // When true, the fields of the child message are flattened into the parent
+  // message, overriding this to not be an object in the client schemas.
   bool flatten = 1;
 }
+
+message ObjectFieldOptions {}
+
+message EnumFieldOptions {}
+
+message OneofFieldOptions {}
+
+message MapFieldOptions {}
+
+message ArrayFieldOptions {}
+
+message StringFieldOptions {}
+
+message IntegerFieldOptions {}
+
+message FloatFieldOptions {}
+
+message BoolFieldOptions {}
+
+message BytesFieldOptions {}
+
+message DecimalFieldOptions {}
+
+message DateFieldOptions {}
+
+message TimestampFieldOptions {}
+
+message UUIDFieldOptions {}

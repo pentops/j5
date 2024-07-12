@@ -7,6 +7,7 @@
 package ext_j5pb
 
 import (
+	ext_j5pb "github.com/pentops/j5/gen/j5/oxt/v1/ext_j5pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	descriptorpb "google.golang.org/protobuf/types/descriptorpb"
@@ -21,60 +22,12 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-type StringFormat int32
-
-const (
-	StringFormat_STRING_FORMAT_UNSPECIFIED StringFormat = 0
-	StringFormat_STRING_FORMAT_DATE        StringFormat = 1
-)
-
-// Enum value maps for StringFormat.
-var (
-	StringFormat_name = map[int32]string{
-		0: "STRING_FORMAT_UNSPECIFIED",
-		1: "STRING_FORMAT_DATE",
-	}
-	StringFormat_value = map[string]int32{
-		"STRING_FORMAT_UNSPECIFIED": 0,
-		"STRING_FORMAT_DATE":        1,
-	}
-)
-
-func (x StringFormat) Enum() *StringFormat {
-	p := new(StringFormat)
-	*p = x
-	return p
-}
-
-func (x StringFormat) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (StringFormat) Descriptor() protoreflect.EnumDescriptor {
-	return file_j5_ext_v1_annotations_proto_enumTypes[0].Descriptor()
-}
-
-func (StringFormat) Type() protoreflect.EnumType {
-	return &file_j5_ext_v1_annotations_proto_enumTypes[0]
-}
-
-func (x StringFormat) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use StringFormat.Descriptor instead.
-func (StringFormat) EnumDescriptor() ([]byte, []int) {
-	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{0}
-}
-
 type MessageOptions struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// When true, all fields in this message should be wrapped in a single oneof
-	// field. The message will show in json-schema as-is but with the
-	// x-oneof flag set.
+	// When true, the message becomes a schema.Oneof.
 	IsOneofWrapper bool `protobuf:"varint,1,opt,name=is_oneof_wrapper,json=isOneofWrapper,proto3" json:"is_oneof_wrapper,omitempty"`
 }
 
@@ -125,7 +78,8 @@ type OneofOptions struct {
 	// When true, the oneof is exposed as a field in the parent message, rather
 	// than being a validation rule.
 	// Will show in json-schema as an object with the x-oneof flag set.
-	Expose bool `protobuf:"varint,1,opt,name=expose,proto3" json:"expose,omitempty"`
+	Expose    bool                          `protobuf:"varint,1,opt,name=expose,proto3" json:"expose,omitempty"`
+	Filtering *ext_j5pb.FilteringConstraint `protobuf:"bytes,10,opt,name=filtering,proto3" json:"filtering,omitempty"`
 }
 
 func (x *OneofOptions) Reset() {
@@ -165,6 +119,13 @@ func (x *OneofOptions) GetExpose() bool {
 		return x.Expose
 	}
 	return false
+}
+
+func (x *OneofOptions) GetFiltering() *ext_j5pb.FilteringConstraint {
+	if x != nil {
+		return x.Filtering
+	}
+	return nil
 }
 
 type MethodOptions struct {
@@ -229,8 +190,21 @@ type FieldOptions struct {
 
 	// Types that are assignable to Type:
 	//
-	//	*FieldOptions_String_
 	//	*FieldOptions_Message
+	//	*FieldOptions_Object
+	//	*FieldOptions_Enum
+	//	*FieldOptions_Oneof
+	//	*FieldOptions_Map
+	//	*FieldOptions_Array
+	//	*FieldOptions_String_
+	//	*FieldOptions_Integer
+	//	*FieldOptions_Float
+	//	*FieldOptions_Boolean
+	//	*FieldOptions_Bytes
+	//	*FieldOptions_Decimal
+	//	*FieldOptions_Date
+	//	*FieldOptions_Timestamp
+	//	*FieldOptions_Uuid
 	Type isFieldOptions_Type `protobuf_oneof:"type"`
 }
 
@@ -273,6 +247,48 @@ func (m *FieldOptions) GetType() isFieldOptions_Type {
 	return nil
 }
 
+func (x *FieldOptions) GetMessage() *MessageFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Message); ok {
+		return x.Message
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetObject() *ObjectFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Object); ok {
+		return x.Object
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetEnum() *EnumFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Enum); ok {
+		return x.Enum
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetOneof() *OneofFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Oneof); ok {
+		return x.Oneof
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetMap() *MapFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Map); ok {
+		return x.Map
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetArray() *ArrayFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Array); ok {
+		return x.Array
+	}
+	return nil
+}
+
 func (x *FieldOptions) GetString_() *StringFieldOptions {
 	if x, ok := x.GetType().(*FieldOptions_String_); ok {
 		return x.String_
@@ -280,9 +296,58 @@ func (x *FieldOptions) GetString_() *StringFieldOptions {
 	return nil
 }
 
-func (x *FieldOptions) GetMessage() *MessageFieldOptions {
-	if x, ok := x.GetType().(*FieldOptions_Message); ok {
-		return x.Message
+func (x *FieldOptions) GetInteger() *IntegerFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Integer); ok {
+		return x.Integer
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetFloat() *FloatFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Float); ok {
+		return x.Float
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetBoolean() *BoolFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Boolean); ok {
+		return x.Boolean
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetBytes() *BytesFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Bytes); ok {
+		return x.Bytes
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetDecimal() *DecimalFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Decimal); ok {
+		return x.Decimal
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetDate() *DateFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Date); ok {
+		return x.Date
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetTimestamp() *TimestampFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Timestamp); ok {
+		return x.Timestamp
+	}
+	return nil
+}
+
+func (x *FieldOptions) GetUuid() *UUIDFieldOptions {
+	if x, ok := x.GetType().(*FieldOptions_Uuid); ok {
+		return x.Uuid
 	}
 	return nil
 }
@@ -291,78 +356,110 @@ type isFieldOptions_Type interface {
 	isFieldOptions_Type()
 }
 
-type FieldOptions_String_ struct {
-	String_ *StringFieldOptions `protobuf:"bytes,1,opt,name=string,proto3,oneof"`
-}
-
 type FieldOptions_Message struct {
-	Message *MessageFieldOptions `protobuf:"bytes,2,opt,name=message,proto3,oneof"`
+	Message *MessageFieldOptions `protobuf:"bytes,1,opt,name=message,proto3,oneof"`
 }
 
-func (*FieldOptions_String_) isFieldOptions_Type() {}
+type FieldOptions_Object struct {
+	Object *ObjectFieldOptions `protobuf:"bytes,10,opt,name=object,proto3,oneof"`
+}
+
+type FieldOptions_Enum struct {
+	Enum *EnumFieldOptions `protobuf:"bytes,11,opt,name=enum,proto3,oneof"`
+}
+
+type FieldOptions_Oneof struct {
+	Oneof *OneofFieldOptions `protobuf:"bytes,12,opt,name=oneof,proto3,oneof"`
+}
+
+type FieldOptions_Map struct {
+	Map *MapFieldOptions `protobuf:"bytes,20,opt,name=map,proto3,oneof"`
+}
+
+type FieldOptions_Array struct {
+	Array *ArrayFieldOptions `protobuf:"bytes,21,opt,name=array,proto3,oneof"`
+}
+
+type FieldOptions_String_ struct {
+	String_ *StringFieldOptions `protobuf:"bytes,30,opt,name=string,proto3,oneof"`
+}
+
+type FieldOptions_Integer struct {
+	Integer *IntegerFieldOptions `protobuf:"bytes,31,opt,name=integer,proto3,oneof"`
+}
+
+type FieldOptions_Float struct {
+	Float *FloatFieldOptions `protobuf:"bytes,32,opt,name=float,proto3,oneof"`
+}
+
+type FieldOptions_Boolean struct {
+	Boolean *BoolFieldOptions `protobuf:"bytes,33,opt,name=boolean,proto3,oneof"`
+}
+
+type FieldOptions_Bytes struct {
+	Bytes *BytesFieldOptions `protobuf:"bytes,34,opt,name=bytes,proto3,oneof"`
+}
+
+type FieldOptions_Decimal struct {
+	Decimal *DecimalFieldOptions `protobuf:"bytes,35,opt,name=decimal,proto3,oneof"`
+}
+
+type FieldOptions_Date struct {
+	Date *DateFieldOptions `protobuf:"bytes,36,opt,name=date,proto3,oneof"`
+}
+
+type FieldOptions_Timestamp struct {
+	Timestamp *TimestampFieldOptions `protobuf:"bytes,37,opt,name=timestamp,proto3,oneof"`
+}
+
+type FieldOptions_Uuid struct {
+	Uuid *UUIDFieldOptions `protobuf:"bytes,38,opt,name=uuid,proto3,oneof"`
+}
 
 func (*FieldOptions_Message) isFieldOptions_Type() {}
 
-type StringFieldOptions struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
+func (*FieldOptions_Object) isFieldOptions_Type() {}
 
-	Format StringFormat `protobuf:"varint,1,opt,name=format,proto3,enum=j5.ext.v1.StringFormat" json:"format,omitempty"`
-}
+func (*FieldOptions_Enum) isFieldOptions_Type() {}
 
-func (x *StringFieldOptions) Reset() {
-	*x = StringFieldOptions{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_ext_v1_annotations_proto_msgTypes[4]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
+func (*FieldOptions_Oneof) isFieldOptions_Type() {}
 
-func (x *StringFieldOptions) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
+func (*FieldOptions_Map) isFieldOptions_Type() {}
 
-func (*StringFieldOptions) ProtoMessage() {}
+func (*FieldOptions_Array) isFieldOptions_Type() {}
 
-func (x *StringFieldOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_ext_v1_annotations_proto_msgTypes[4]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
+func (*FieldOptions_String_) isFieldOptions_Type() {}
 
-// Deprecated: Use StringFieldOptions.ProtoReflect.Descriptor instead.
-func (*StringFieldOptions) Descriptor() ([]byte, []int) {
-	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{4}
-}
+func (*FieldOptions_Integer) isFieldOptions_Type() {}
 
-func (x *StringFieldOptions) GetFormat() StringFormat {
-	if x != nil {
-		return x.Format
-	}
-	return StringFormat_STRING_FORMAT_UNSPECIFIED
-}
+func (*FieldOptions_Float) isFieldOptions_Type() {}
+
+func (*FieldOptions_Boolean) isFieldOptions_Type() {}
+
+func (*FieldOptions_Bytes) isFieldOptions_Type() {}
+
+func (*FieldOptions_Decimal) isFieldOptions_Type() {}
+
+func (*FieldOptions_Date) isFieldOptions_Type() {}
+
+func (*FieldOptions_Timestamp) isFieldOptions_Type() {}
+
+func (*FieldOptions_Uuid) isFieldOptions_Type() {}
 
 type MessageFieldOptions struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// When true, the fields of the child message are flattened into the parent message.
+	// When true, the fields of the child message are flattened into the parent
+	// message, overriding this to not be an object in the client schemas.
 	Flatten bool `protobuf:"varint,1,opt,name=flatten,proto3" json:"flatten,omitempty"`
 }
 
 func (x *MessageFieldOptions) Reset() {
 	*x = MessageFieldOptions{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_ext_v1_annotations_proto_msgTypes[5]
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -375,7 +472,7 @@ func (x *MessageFieldOptions) String() string {
 func (*MessageFieldOptions) ProtoMessage() {}
 
 func (x *MessageFieldOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_ext_v1_annotations_proto_msgTypes[5]
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -388,7 +485,7 @@ func (x *MessageFieldOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use MessageFieldOptions.ProtoReflect.Descriptor instead.
 func (*MessageFieldOptions) Descriptor() ([]byte, []int) {
-	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{5}
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *MessageFieldOptions) GetFlatten() bool {
@@ -398,62 +495,594 @@ func (x *MessageFieldOptions) GetFlatten() bool {
 	return false
 }
 
+type ObjectFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *ObjectFieldOptions) Reset() {
+	*x = ObjectFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ObjectFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ObjectFieldOptions) ProtoMessage() {}
+
+func (x *ObjectFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ObjectFieldOptions.ProtoReflect.Descriptor instead.
+func (*ObjectFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{5}
+}
+
+type EnumFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *EnumFieldOptions) Reset() {
+	*x = EnumFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[6]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *EnumFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnumFieldOptions) ProtoMessage() {}
+
+func (x *EnumFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[6]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnumFieldOptions.ProtoReflect.Descriptor instead.
+func (*EnumFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{6}
+}
+
+type OneofFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *OneofFieldOptions) Reset() {
+	*x = OneofFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[7]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *OneofFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*OneofFieldOptions) ProtoMessage() {}
+
+func (x *OneofFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[7]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use OneofFieldOptions.ProtoReflect.Descriptor instead.
+func (*OneofFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{7}
+}
+
+type MapFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *MapFieldOptions) Reset() {
+	*x = MapFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[8]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *MapFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MapFieldOptions) ProtoMessage() {}
+
+func (x *MapFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[8]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MapFieldOptions.ProtoReflect.Descriptor instead.
+func (*MapFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{8}
+}
+
+type ArrayFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *ArrayFieldOptions) Reset() {
+	*x = ArrayFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[9]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *ArrayFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ArrayFieldOptions) ProtoMessage() {}
+
+func (x *ArrayFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[9]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ArrayFieldOptions.ProtoReflect.Descriptor instead.
+func (*ArrayFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{9}
+}
+
+type StringFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *StringFieldOptions) Reset() {
+	*x = StringFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[10]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StringFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StringFieldOptions) ProtoMessage() {}
+
+func (x *StringFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[10]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StringFieldOptions.ProtoReflect.Descriptor instead.
+func (*StringFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{10}
+}
+
+type IntegerFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *IntegerFieldOptions) Reset() {
+	*x = IntegerFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[11]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *IntegerFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IntegerFieldOptions) ProtoMessage() {}
+
+func (x *IntegerFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[11]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IntegerFieldOptions.ProtoReflect.Descriptor instead.
+func (*IntegerFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{11}
+}
+
+type FloatFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *FloatFieldOptions) Reset() {
+	*x = FloatFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[12]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FloatFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FloatFieldOptions) ProtoMessage() {}
+
+func (x *FloatFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[12]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FloatFieldOptions.ProtoReflect.Descriptor instead.
+func (*FloatFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{12}
+}
+
+type BoolFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *BoolFieldOptions) Reset() {
+	*x = BoolFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[13]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BoolFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoolFieldOptions) ProtoMessage() {}
+
+func (x *BoolFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[13]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoolFieldOptions.ProtoReflect.Descriptor instead.
+func (*BoolFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{13}
+}
+
+type BytesFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *BytesFieldOptions) Reset() {
+	*x = BytesFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[14]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BytesFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BytesFieldOptions) ProtoMessage() {}
+
+func (x *BytesFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[14]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BytesFieldOptions.ProtoReflect.Descriptor instead.
+func (*BytesFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{14}
+}
+
+type DecimalFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *DecimalFieldOptions) Reset() {
+	*x = DecimalFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[15]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DecimalFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DecimalFieldOptions) ProtoMessage() {}
+
+func (x *DecimalFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[15]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DecimalFieldOptions.ProtoReflect.Descriptor instead.
+func (*DecimalFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{15}
+}
+
+type DateFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *DateFieldOptions) Reset() {
+	*x = DateFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[16]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DateFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DateFieldOptions) ProtoMessage() {}
+
+func (x *DateFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[16]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DateFieldOptions.ProtoReflect.Descriptor instead.
+func (*DateFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{16}
+}
+
+type TimestampFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *TimestampFieldOptions) Reset() {
+	*x = TimestampFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[17]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TimestampFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimestampFieldOptions) ProtoMessage() {}
+
+func (x *TimestampFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[17]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimestampFieldOptions.ProtoReflect.Descriptor instead.
+func (*TimestampFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{17}
+}
+
+type UUIDFieldOptions struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *UUIDFieldOptions) Reset() {
+	*x = UUIDFieldOptions{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_ext_v1_annotations_proto_msgTypes[18]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *UUIDFieldOptions) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UUIDFieldOptions) ProtoMessage() {}
+
+func (x *UUIDFieldOptions) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_ext_v1_annotations_proto_msgTypes[18]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UUIDFieldOptions.ProtoReflect.Descriptor instead.
+func (*UUIDFieldOptions) Descriptor() ([]byte, []int) {
+	return file_j5_ext_v1_annotations_proto_rawDescGZIP(), []int{18}
+}
+
 var file_j5_ext_v1_annotations_proto_extTypes = []protoimpl.ExtensionInfo{
 	{
 		ExtendedType:  (*descriptorpb.MessageOptions)(nil),
 		ExtensionType: (*MessageOptions)(nil),
-		Field:         90443353,
+		Field:         555000,
 		Name:          "j5.ext.v1.message",
-		Tag:           "bytes,90443353,opt,name=message",
+		Tag:           "bytes,555000,opt,name=message",
 		Filename:      "j5/ext/v1/annotations.proto",
 	},
 	{
 		ExtendedType:  (*descriptorpb.OneofOptions)(nil),
 		ExtensionType: (*OneofOptions)(nil),
-		Field:         90443355,
+		Field:         555000,
 		Name:          "j5.ext.v1.oneof",
-		Tag:           "bytes,90443355,opt,name=oneof",
+		Tag:           "bytes,555000,opt,name=oneof",
 		Filename:      "j5/ext/v1/annotations.proto",
 	},
 	{
 		ExtendedType:  (*descriptorpb.MethodOptions)(nil),
 		ExtensionType: (*MethodOptions)(nil),
-		Field:         90443356,
+		Field:         555000,
 		Name:          "j5.ext.v1.method",
-		Tag:           "bytes,90443356,opt,name=method",
+		Tag:           "bytes,555000,opt,name=method",
 		Filename:      "j5/ext/v1/annotations.proto",
 	},
 	{
 		ExtendedType:  (*descriptorpb.FieldOptions)(nil),
 		ExtensionType: (*FieldOptions)(nil),
-		Field:         90443357,
+		Field:         555000,
 		Name:          "j5.ext.v1.field",
-		Tag:           "bytes,90443357,opt,name=field",
+		Tag:           "bytes,555000,opt,name=field",
 		Filename:      "j5/ext/v1/annotations.proto",
 	},
 }
 
 // Extension fields to descriptorpb.MessageOptions.
 var (
-	// optional j5.ext.v1.MessageOptions message = 90443353;
+	// optional j5.ext.v1.MessageOptions message = 555000;
 	E_Message = &file_j5_ext_v1_annotations_proto_extTypes[0]
 )
 
 // Extension fields to descriptorpb.OneofOptions.
 var (
-	// optional j5.ext.v1.OneofOptions oneof = 90443355;
+	// optional j5.ext.v1.OneofOptions oneof = 555000;
 	E_Oneof = &file_j5_ext_v1_annotations_proto_extTypes[1]
 )
 
 // Extension fields to descriptorpb.MethodOptions.
 var (
-	// optional j5.ext.v1.MethodOptions method = 90443356;
+	// optional j5.ext.v1.MethodOptions method = 555000;
 	E_Method = &file_j5_ext_v1_annotations_proto_extTypes[2]
 )
 
 // Extension fields to descriptorpb.FieldOptions.
 var (
-	// optional j5.ext.v1.FieldOptions field = 90443357;
+	// optional j5.ext.v1.FieldOptions field = 555000;
 	E_Field = &file_j5_ext_v1_annotations_proto_extTypes[3]
 )
 
@@ -464,63 +1093,123 @@ var file_j5_ext_v1_annotations_proto_rawDesc = []byte{
 	0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x12, 0x09, 0x6a,
 	0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x1a, 0x20, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
 	0x2f, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69,
-	0x70, 0x74, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x3a, 0x0a, 0x0e, 0x4d, 0x65,
-	0x73, 0x73, 0x61, 0x67, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x28, 0x0a, 0x10,
-	0x69, 0x73, 0x5f, 0x6f, 0x6e, 0x65, 0x6f, 0x66, 0x5f, 0x77, 0x72, 0x61, 0x70, 0x70, 0x65, 0x72,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0e, 0x69, 0x73, 0x4f, 0x6e, 0x65, 0x6f, 0x66, 0x57,
-	0x72, 0x61, 0x70, 0x70, 0x65, 0x72, 0x22, 0x26, 0x0a, 0x0c, 0x4f, 0x6e, 0x65, 0x6f, 0x66, 0x4f,
-	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x16, 0x0a, 0x06, 0x65, 0x78, 0x70, 0x6f, 0x73, 0x65,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x65, 0x78, 0x70, 0x6f, 0x73, 0x65, 0x22, 0x3d,
-	0x0a, 0x0d, 0x4d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12,
-	0x14, 0x0a, 0x05, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05,
-	0x6c, 0x61, 0x62, 0x65, 0x6c, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x69, 0x64, 0x64, 0x65, 0x6e, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x68, 0x69, 0x64, 0x64, 0x65, 0x6e, 0x22, 0x8b, 0x01,
-	0x0a, 0x0c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x37,
-	0x0a, 0x06, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d,
-	0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x74, 0x72, 0x69, 0x6e,
-	0x67, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52,
-	0x06, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x12, 0x3a, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61,
-	0x67, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78,
-	0x74, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x46, 0x69, 0x65, 0x6c,
-	0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x42, 0x06, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x22, 0x45, 0x0a, 0x12, 0x53,
-	0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
-	0x73, 0x12, 0x2f, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0e, 0x32, 0x17, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x74,
-	0x72, 0x69, 0x6e, 0x67, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x52, 0x06, 0x66, 0x6f, 0x72, 0x6d,
-	0x61, 0x74, 0x22, 0x2f, 0x0a, 0x13, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x46, 0x69, 0x65,
-	0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x18, 0x0a, 0x07, 0x66, 0x6c, 0x61,
-	0x74, 0x74, 0x65, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x66, 0x6c, 0x61, 0x74,
-	0x74, 0x65, 0x6e, 0x2a, 0x45, 0x0a, 0x0c, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x6f, 0x72,
-	0x6d, 0x61, 0x74, 0x12, 0x1d, 0x0a, 0x19, 0x53, 0x54, 0x52, 0x49, 0x4e, 0x47, 0x5f, 0x46, 0x4f,
-	0x52, 0x4d, 0x41, 0x54, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44,
-	0x10, 0x00, 0x12, 0x16, 0x0a, 0x12, 0x53, 0x54, 0x52, 0x49, 0x4e, 0x47, 0x5f, 0x46, 0x4f, 0x52,
-	0x4d, 0x41, 0x54, 0x5f, 0x44, 0x41, 0x54, 0x45, 0x10, 0x01, 0x3a, 0x57, 0x0a, 0x07, 0x6d, 0x65,
-	0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x1f, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
-	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x4f,
-	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xd9, 0x9c, 0x90, 0x2b, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73,
-	0x61, 0x67, 0x65, 0x3a, 0x4f, 0x0a, 0x05, 0x6f, 0x6e, 0x65, 0x6f, 0x66, 0x12, 0x1d, 0x2e, 0x67,
-	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x4f,
-	0x6e, 0x65, 0x6f, 0x66, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xdb, 0x9c, 0x90, 0x2b,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31,
-	0x2e, 0x4f, 0x6e, 0x65, 0x6f, 0x66, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x05, 0x6f,
-	0x6e, 0x65, 0x6f, 0x66, 0x3a, 0x53, 0x0a, 0x06, 0x6d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x12, 0x1e,
-	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
-	0x2e, 0x4d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xdc,
-	0x9c, 0x90, 0x2b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74,
-	0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
-	0x73, 0x52, 0x06, 0x6d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x3a, 0x4f, 0x0a, 0x05, 0x66, 0x69, 0x65,
-	0x6c, 0x64, 0x12, 0x1d, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
-	0x73, 0x18, 0xdd, 0x9c, 0x90, 0x2b, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x6a, 0x35, 0x2e,
-	0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69,
-	0x6f, 0x6e, 0x73, 0x52, 0x05, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x42, 0x2e, 0x5a, 0x2c, 0x67, 0x69,
-	0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x74, 0x6f, 0x70, 0x73,
-	0x2f, 0x6a, 0x35, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x6a, 0x35, 0x2f, 0x65, 0x78, 0x74, 0x2f, 0x76,
-	0x31, 0x2f, 0x65, 0x78, 0x74, 0x5f, 0x6a, 0x35, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x33,
+	0x70, 0x74, 0x6f, 0x72, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x21, 0x6a, 0x35, 0x2f, 0x65,
+	0x78, 0x74, 0x2f, 0x76, 0x31, 0x2f, 0x71, 0x75, 0x65, 0x72, 0x79, 0x5f, 0x61, 0x6e, 0x6e, 0x6f,
+	0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x3a, 0x0a,
+	0x0e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12,
+	0x28, 0x0a, 0x10, 0x69, 0x73, 0x5f, 0x6f, 0x6e, 0x65, 0x6f, 0x66, 0x5f, 0x77, 0x72, 0x61, 0x70,
+	0x70, 0x65, 0x72, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0e, 0x69, 0x73, 0x4f, 0x6e, 0x65,
+	0x6f, 0x66, 0x57, 0x72, 0x61, 0x70, 0x70, 0x65, 0x72, 0x22, 0x64, 0x0a, 0x0c, 0x4f, 0x6e, 0x65,
+	0x6f, 0x66, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x16, 0x0a, 0x06, 0x65, 0x78, 0x70,
+	0x6f, 0x73, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x65, 0x78, 0x70, 0x6f, 0x73,
+	0x65, 0x12, 0x3c, 0x0a, 0x09, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x18, 0x0a,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31,
+	0x2e, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x43, 0x6f, 0x6e, 0x73, 0x74, 0x72,
+	0x61, 0x69, 0x6e, 0x74, 0x52, 0x09, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x22,
+	0x3d, 0x0a, 0x0d, 0x4d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x12, 0x14, 0x0a, 0x05, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x05, 0x6c, 0x61, 0x62, 0x65, 0x6c, 0x12, 0x16, 0x0a, 0x06, 0x68, 0x69, 0x64, 0x64, 0x65, 0x6e,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x06, 0x68, 0x69, 0x64, 0x64, 0x65, 0x6e, 0x22, 0xd8,
+	0x06, 0x0a, 0x0c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12,
+	0x3a, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x73,
+	0x73, 0x61, 0x67, 0x65, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x48, 0x00, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12, 0x37, 0x0a, 0x06, 0x6f,
+	0x62, 0x6a, 0x65, 0x63, 0x74, 0x18, 0x0a, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x6a, 0x35,
+	0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x4f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x46, 0x69,
+	0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52, 0x06, 0x6f, 0x62,
+	0x6a, 0x65, 0x63, 0x74, 0x12, 0x31, 0x0a, 0x04, 0x65, 0x6e, 0x75, 0x6d, 0x18, 0x0b, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x45,
+	0x6e, 0x75, 0x6d, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48,
+	0x00, 0x52, 0x04, 0x65, 0x6e, 0x75, 0x6d, 0x12, 0x34, 0x0a, 0x05, 0x6f, 0x6e, 0x65, 0x6f, 0x66,
+	0x18, 0x0c, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e,
+	0x76, 0x31, 0x2e, 0x4f, 0x6e, 0x65, 0x6f, 0x66, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52, 0x05, 0x6f, 0x6e, 0x65, 0x6f, 0x66, 0x12, 0x2e, 0x0a,
+	0x03, 0x6d, 0x61, 0x70, 0x18, 0x14, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x6a, 0x35, 0x2e,
+	0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x61, 0x70, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f,
+	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52, 0x03, 0x6d, 0x61, 0x70, 0x12, 0x34, 0x0a,
+	0x05, 0x61, 0x72, 0x72, 0x61, 0x79, 0x18, 0x15, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a,
+	0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x41, 0x72, 0x72, 0x61, 0x79, 0x46, 0x69,
+	0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52, 0x05, 0x61, 0x72,
+	0x72, 0x61, 0x79, 0x12, 0x37, 0x0a, 0x06, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x18, 0x1e, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e,
+	0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x73, 0x48, 0x00, 0x52, 0x06, 0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x12, 0x3a, 0x0a, 0x07,
+	0x69, 0x6e, 0x74, 0x65, 0x67, 0x65, 0x72, 0x18, 0x1f, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e,
+	0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x74, 0x65, 0x67, 0x65,
+	0x72, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52,
+	0x07, 0x69, 0x6e, 0x74, 0x65, 0x67, 0x65, 0x72, 0x12, 0x34, 0x0a, 0x05, 0x66, 0x6c, 0x6f, 0x61,
+	0x74, 0x18, 0x20, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74,
+	0x2e, 0x76, 0x31, 0x2e, 0x46, 0x6c, 0x6f, 0x61, 0x74, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52, 0x05, 0x66, 0x6c, 0x6f, 0x61, 0x74, 0x12, 0x37,
+	0x0a, 0x07, 0x62, 0x6f, 0x6f, 0x6c, 0x65, 0x61, 0x6e, 0x18, 0x21, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x1b, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x6f, 0x6f, 0x6c,
+	0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52, 0x07,
+	0x62, 0x6f, 0x6f, 0x6c, 0x65, 0x61, 0x6e, 0x12, 0x34, 0x0a, 0x05, 0x62, 0x79, 0x74, 0x65, 0x73,
+	0x18, 0x22, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e,
+	0x76, 0x31, 0x2e, 0x42, 0x79, 0x74, 0x65, 0x73, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52, 0x05, 0x62, 0x79, 0x74, 0x65, 0x73, 0x12, 0x3a, 0x0a,
+	0x07, 0x64, 0x65, 0x63, 0x69, 0x6d, 0x61, 0x6c, 0x18, 0x23, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e,
+	0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x63, 0x69, 0x6d,
+	0x61, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00,
+	0x52, 0x07, 0x64, 0x65, 0x63, 0x69, 0x6d, 0x61, 0x6c, 0x12, 0x31, 0x0a, 0x04, 0x64, 0x61, 0x74,
+	0x65, 0x18, 0x24, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74,
+	0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x65, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52, 0x04, 0x64, 0x61, 0x74, 0x65, 0x12, 0x40, 0x0a, 0x09,
+	0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x18, 0x25, 0x20, 0x01, 0x28, 0x0b, 0x32,
+	0x20, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65,
+	0x73, 0x74, 0x61, 0x6d, 0x70, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x48, 0x00, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x12, 0x31,
+	0x0a, 0x04, 0x75, 0x75, 0x69, 0x64, 0x18, 0x26, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6a,
+	0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x55, 0x55, 0x49, 0x44, 0x46, 0x69, 0x65,
+	0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x48, 0x00, 0x52, 0x04, 0x75, 0x75, 0x69,
+	0x64, 0x42, 0x06, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x22, 0x2f, 0x0a, 0x13, 0x4d, 0x65, 0x73,
+	0x73, 0x61, 0x67, 0x65, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x12, 0x18, 0x0a, 0x07, 0x66, 0x6c, 0x61, 0x74, 0x74, 0x65, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x08, 0x52, 0x07, 0x66, 0x6c, 0x61, 0x74, 0x74, 0x65, 0x6e, 0x22, 0x14, 0x0a, 0x12, 0x4f, 0x62,
+	0x6a, 0x65, 0x63, 0x74, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x22, 0x12, 0x0a, 0x10, 0x45, 0x6e, 0x75, 0x6d, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x22, 0x13, 0x0a, 0x11, 0x4f, 0x6e, 0x65, 0x6f, 0x66, 0x46, 0x69, 0x65,
+	0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x11, 0x0a, 0x0f, 0x4d, 0x61, 0x70,
+	0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x13, 0x0a, 0x11,
+	0x41, 0x72, 0x72, 0x61, 0x79, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e,
+	0x73, 0x22, 0x14, 0x0a, 0x12, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x65, 0x6c, 0x64,
+	0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x15, 0x0a, 0x13, 0x49, 0x6e, 0x74, 0x65, 0x67,
+	0x65, 0x72, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x13,
+	0x0a, 0x11, 0x46, 0x6c, 0x6f, 0x61, 0x74, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x22, 0x12, 0x0a, 0x10, 0x42, 0x6f, 0x6f, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64,
+	0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x13, 0x0a, 0x11, 0x42, 0x79, 0x74, 0x65, 0x73,
+	0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x15, 0x0a, 0x13,
+	0x44, 0x65, 0x63, 0x69, 0x6d, 0x61, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x22, 0x12, 0x0a, 0x10, 0x44, 0x61, 0x74, 0x65, 0x46, 0x69, 0x65, 0x6c, 0x64,
+	0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x17, 0x0a, 0x15, 0x54, 0x69, 0x6d, 0x65, 0x73,
+	0x74, 0x61, 0x6d, 0x70, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x22, 0x12, 0x0a, 0x10, 0x55, 0x55, 0x49, 0x44, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x3a, 0x56, 0x0a, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x12,
+	0x1f, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75,
+	0x66, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x18, 0xf8, 0xef, 0x21, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78,
+	0x74, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x4f, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x52, 0x07, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x3a, 0x4e, 0x0a, 0x05,
+	0x6f, 0x6e, 0x65, 0x6f, 0x66, 0x12, 0x1d, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70,
+	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x4f, 0x6e, 0x65, 0x6f, 0x66, 0x4f, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x73, 0x18, 0xf8, 0xef, 0x21, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x6a,
+	0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x4f, 0x6e, 0x65, 0x6f, 0x66, 0x4f, 0x70,
+	0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x05, 0x6f, 0x6e, 0x65, 0x6f, 0x66, 0x3a, 0x52, 0x0a, 0x06,
+	0x6d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x12, 0x1e, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x4d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x4f,
+	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xf8, 0xef, 0x21, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18,
+	0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x68, 0x6f,
+	0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x06, 0x6d, 0x65, 0x74, 0x68, 0x6f, 0x64,
+	0x3a, 0x4e, 0x0a, 0x05, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x1d, 0x2e, 0x67, 0x6f, 0x6f, 0x67,
+	0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x46, 0x69, 0x65, 0x6c,
+	0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0xf8, 0xef, 0x21, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x17, 0x2e, 0x6a, 0x35, 0x2e, 0x65, 0x78, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x69, 0x65,
+	0x6c, 0x64, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x52, 0x05, 0x66, 0x69, 0x65, 0x6c, 0x64,
+	0x42, 0x2e, 0x5a, 0x2c, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70,
+	0x65, 0x6e, 0x74, 0x6f, 0x70, 0x73, 0x2f, 0x6a, 0x35, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x6a, 0x35,
+	0x2f, 0x65, 0x78, 0x74, 0x2f, 0x76, 0x31, 0x2f, 0x65, 0x78, 0x74, 0x5f, 0x6a, 0x35, 0x70, 0x62,
+	0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -535,38 +1224,63 @@ func file_j5_ext_v1_annotations_proto_rawDescGZIP() []byte {
 	return file_j5_ext_v1_annotations_proto_rawDescData
 }
 
-var file_j5_ext_v1_annotations_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_j5_ext_v1_annotations_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_j5_ext_v1_annotations_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_j5_ext_v1_annotations_proto_goTypes = []any{
-	(StringFormat)(0),                   // 0: j5.ext.v1.StringFormat
-	(*MessageOptions)(nil),              // 1: j5.ext.v1.MessageOptions
-	(*OneofOptions)(nil),                // 2: j5.ext.v1.OneofOptions
-	(*MethodOptions)(nil),               // 3: j5.ext.v1.MethodOptions
-	(*FieldOptions)(nil),                // 4: j5.ext.v1.FieldOptions
-	(*StringFieldOptions)(nil),          // 5: j5.ext.v1.StringFieldOptions
-	(*MessageFieldOptions)(nil),         // 6: j5.ext.v1.MessageFieldOptions
-	(*descriptorpb.MessageOptions)(nil), // 7: google.protobuf.MessageOptions
-	(*descriptorpb.OneofOptions)(nil),   // 8: google.protobuf.OneofOptions
-	(*descriptorpb.MethodOptions)(nil),  // 9: google.protobuf.MethodOptions
-	(*descriptorpb.FieldOptions)(nil),   // 10: google.protobuf.FieldOptions
+	(*MessageOptions)(nil),               // 0: j5.ext.v1.MessageOptions
+	(*OneofOptions)(nil),                 // 1: j5.ext.v1.OneofOptions
+	(*MethodOptions)(nil),                // 2: j5.ext.v1.MethodOptions
+	(*FieldOptions)(nil),                 // 3: j5.ext.v1.FieldOptions
+	(*MessageFieldOptions)(nil),          // 4: j5.ext.v1.MessageFieldOptions
+	(*ObjectFieldOptions)(nil),           // 5: j5.ext.v1.ObjectFieldOptions
+	(*EnumFieldOptions)(nil),             // 6: j5.ext.v1.EnumFieldOptions
+	(*OneofFieldOptions)(nil),            // 7: j5.ext.v1.OneofFieldOptions
+	(*MapFieldOptions)(nil),              // 8: j5.ext.v1.MapFieldOptions
+	(*ArrayFieldOptions)(nil),            // 9: j5.ext.v1.ArrayFieldOptions
+	(*StringFieldOptions)(nil),           // 10: j5.ext.v1.StringFieldOptions
+	(*IntegerFieldOptions)(nil),          // 11: j5.ext.v1.IntegerFieldOptions
+	(*FloatFieldOptions)(nil),            // 12: j5.ext.v1.FloatFieldOptions
+	(*BoolFieldOptions)(nil),             // 13: j5.ext.v1.BoolFieldOptions
+	(*BytesFieldOptions)(nil),            // 14: j5.ext.v1.BytesFieldOptions
+	(*DecimalFieldOptions)(nil),          // 15: j5.ext.v1.DecimalFieldOptions
+	(*DateFieldOptions)(nil),             // 16: j5.ext.v1.DateFieldOptions
+	(*TimestampFieldOptions)(nil),        // 17: j5.ext.v1.TimestampFieldOptions
+	(*UUIDFieldOptions)(nil),             // 18: j5.ext.v1.UUIDFieldOptions
+	(*ext_j5pb.FilteringConstraint)(nil), // 19: j5.ext.v1.FilteringConstraint
+	(*descriptorpb.MessageOptions)(nil),  // 20: google.protobuf.MessageOptions
+	(*descriptorpb.OneofOptions)(nil),    // 21: google.protobuf.OneofOptions
+	(*descriptorpb.MethodOptions)(nil),   // 22: google.protobuf.MethodOptions
+	(*descriptorpb.FieldOptions)(nil),    // 23: google.protobuf.FieldOptions
 }
 var file_j5_ext_v1_annotations_proto_depIdxs = []int32{
-	5,  // 0: j5.ext.v1.FieldOptions.string:type_name -> j5.ext.v1.StringFieldOptions
-	6,  // 1: j5.ext.v1.FieldOptions.message:type_name -> j5.ext.v1.MessageFieldOptions
-	0,  // 2: j5.ext.v1.StringFieldOptions.format:type_name -> j5.ext.v1.StringFormat
-	7,  // 3: j5.ext.v1.message:extendee -> google.protobuf.MessageOptions
-	8,  // 4: j5.ext.v1.oneof:extendee -> google.protobuf.OneofOptions
-	9,  // 5: j5.ext.v1.method:extendee -> google.protobuf.MethodOptions
-	10, // 6: j5.ext.v1.field:extendee -> google.protobuf.FieldOptions
-	1,  // 7: j5.ext.v1.message:type_name -> j5.ext.v1.MessageOptions
-	2,  // 8: j5.ext.v1.oneof:type_name -> j5.ext.v1.OneofOptions
-	3,  // 9: j5.ext.v1.method:type_name -> j5.ext.v1.MethodOptions
-	4,  // 10: j5.ext.v1.field:type_name -> j5.ext.v1.FieldOptions
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	7,  // [7:11] is the sub-list for extension type_name
-	3,  // [3:7] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	19, // 0: j5.ext.v1.OneofOptions.filtering:type_name -> j5.ext.v1.FilteringConstraint
+	4,  // 1: j5.ext.v1.FieldOptions.message:type_name -> j5.ext.v1.MessageFieldOptions
+	5,  // 2: j5.ext.v1.FieldOptions.object:type_name -> j5.ext.v1.ObjectFieldOptions
+	6,  // 3: j5.ext.v1.FieldOptions.enum:type_name -> j5.ext.v1.EnumFieldOptions
+	7,  // 4: j5.ext.v1.FieldOptions.oneof:type_name -> j5.ext.v1.OneofFieldOptions
+	8,  // 5: j5.ext.v1.FieldOptions.map:type_name -> j5.ext.v1.MapFieldOptions
+	9,  // 6: j5.ext.v1.FieldOptions.array:type_name -> j5.ext.v1.ArrayFieldOptions
+	10, // 7: j5.ext.v1.FieldOptions.string:type_name -> j5.ext.v1.StringFieldOptions
+	11, // 8: j5.ext.v1.FieldOptions.integer:type_name -> j5.ext.v1.IntegerFieldOptions
+	12, // 9: j5.ext.v1.FieldOptions.float:type_name -> j5.ext.v1.FloatFieldOptions
+	13, // 10: j5.ext.v1.FieldOptions.boolean:type_name -> j5.ext.v1.BoolFieldOptions
+	14, // 11: j5.ext.v1.FieldOptions.bytes:type_name -> j5.ext.v1.BytesFieldOptions
+	15, // 12: j5.ext.v1.FieldOptions.decimal:type_name -> j5.ext.v1.DecimalFieldOptions
+	16, // 13: j5.ext.v1.FieldOptions.date:type_name -> j5.ext.v1.DateFieldOptions
+	17, // 14: j5.ext.v1.FieldOptions.timestamp:type_name -> j5.ext.v1.TimestampFieldOptions
+	18, // 15: j5.ext.v1.FieldOptions.uuid:type_name -> j5.ext.v1.UUIDFieldOptions
+	20, // 16: j5.ext.v1.message:extendee -> google.protobuf.MessageOptions
+	21, // 17: j5.ext.v1.oneof:extendee -> google.protobuf.OneofOptions
+	22, // 18: j5.ext.v1.method:extendee -> google.protobuf.MethodOptions
+	23, // 19: j5.ext.v1.field:extendee -> google.protobuf.FieldOptions
+	0,  // 20: j5.ext.v1.message:type_name -> j5.ext.v1.MessageOptions
+	1,  // 21: j5.ext.v1.oneof:type_name -> j5.ext.v1.OneofOptions
+	2,  // 22: j5.ext.v1.method:type_name -> j5.ext.v1.MethodOptions
+	3,  // 23: j5.ext.v1.field:type_name -> j5.ext.v1.FieldOptions
+	24, // [24:24] is the sub-list for method output_type
+	24, // [24:24] is the sub-list for method input_type
+	20, // [20:24] is the sub-list for extension type_name
+	16, // [16:20] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_j5_ext_v1_annotations_proto_init() }
@@ -624,7 +1338,7 @@ func file_j5_ext_v1_annotations_proto_init() {
 			}
 		}
 		file_j5_ext_v1_annotations_proto_msgTypes[4].Exporter = func(v any, i int) any {
-			switch v := v.(*StringFieldOptions); i {
+			switch v := v.(*MessageFieldOptions); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -636,7 +1350,163 @@ func file_j5_ext_v1_annotations_proto_init() {
 			}
 		}
 		file_j5_ext_v1_annotations_proto_msgTypes[5].Exporter = func(v any, i int) any {
-			switch v := v.(*MessageFieldOptions); i {
+			switch v := v.(*ObjectFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[6].Exporter = func(v any, i int) any {
+			switch v := v.(*EnumFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[7].Exporter = func(v any, i int) any {
+			switch v := v.(*OneofFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[8].Exporter = func(v any, i int) any {
+			switch v := v.(*MapFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[9].Exporter = func(v any, i int) any {
+			switch v := v.(*ArrayFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[10].Exporter = func(v any, i int) any {
+			switch v := v.(*StringFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[11].Exporter = func(v any, i int) any {
+			switch v := v.(*IntegerFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[12].Exporter = func(v any, i int) any {
+			switch v := v.(*FloatFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[13].Exporter = func(v any, i int) any {
+			switch v := v.(*BoolFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[14].Exporter = func(v any, i int) any {
+			switch v := v.(*BytesFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[15].Exporter = func(v any, i int) any {
+			switch v := v.(*DecimalFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[16].Exporter = func(v any, i int) any {
+			switch v := v.(*DateFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[17].Exporter = func(v any, i int) any {
+			switch v := v.(*TimestampFieldOptions); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_ext_v1_annotations_proto_msgTypes[18].Exporter = func(v any, i int) any {
+			switch v := v.(*UUIDFieldOptions); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -649,22 +1519,34 @@ func file_j5_ext_v1_annotations_proto_init() {
 		}
 	}
 	file_j5_ext_v1_annotations_proto_msgTypes[3].OneofWrappers = []any{
-		(*FieldOptions_String_)(nil),
 		(*FieldOptions_Message)(nil),
+		(*FieldOptions_Object)(nil),
+		(*FieldOptions_Enum)(nil),
+		(*FieldOptions_Oneof)(nil),
+		(*FieldOptions_Map)(nil),
+		(*FieldOptions_Array)(nil),
+		(*FieldOptions_String_)(nil),
+		(*FieldOptions_Integer)(nil),
+		(*FieldOptions_Float)(nil),
+		(*FieldOptions_Boolean)(nil),
+		(*FieldOptions_Bytes)(nil),
+		(*FieldOptions_Decimal)(nil),
+		(*FieldOptions_Date)(nil),
+		(*FieldOptions_Timestamp)(nil),
+		(*FieldOptions_Uuid)(nil),
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_j5_ext_v1_annotations_proto_rawDesc,
-			NumEnums:      1,
-			NumMessages:   6,
+			NumEnums:      0,
+			NumMessages:   19,
 			NumExtensions: 4,
 			NumServices:   0,
 		},
 		GoTypes:           file_j5_ext_v1_annotations_proto_goTypes,
 		DependencyIndexes: file_j5_ext_v1_annotations_proto_depIdxs,
-		EnumInfos:         file_j5_ext_v1_annotations_proto_enumTypes,
 		MessageInfos:      file_j5_ext_v1_annotations_proto_msgTypes,
 		ExtensionInfos:    file_j5_ext_v1_annotations_proto_extTypes,
 	}.Build()
