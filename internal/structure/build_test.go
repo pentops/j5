@@ -137,42 +137,38 @@ func testAPI() *schema_j5pb.API {
 					Name:         "Test",
 					HttpMethod:   schema_j5pb.HTTPMethod_HTTP_METHOD_GET,
 					HttpPath:     "/test/:pathField",
-					ResponseBody: &schema_j5pb.RootSchema{
-						Type: &schema_j5pb.RootSchema_Object{
-							Object: &schema_j5pb.Object{
-								Name: "TestResponse",
-								//Rules:            &schema_j5pb.ObjectRules{},
-								Properties: []*schema_j5pb.ObjectProperty{{
-									Name:        "testField",
-									Description: "",
-									Required:    false,
-									WriteOnly:   false,
-									Schema: &schema_j5pb.Field{
-										Type: &schema_j5pb.Field_String_{
-											String_: &schema_j5pb.StringField{},
-										},
-									},
-									ProtoField: []int32{1},
-								}, {
-									Name:        "msg",
-									Description: "",
-									Required:    false,
-									Schema: &schema_j5pb.Field{
-										Type: &schema_j5pb.Field_Object{
-											Object: &schema_j5pb.ObjectField{
-												Schema: &schema_j5pb.ObjectField_Ref{
-													Ref: &schema_j5pb.Ref{
-														Package: "test.v1",
-														Schema:  "Referenced",
-													},
-												},
+					ResponseBody: &schema_j5pb.Object{
+						Name: "TestResponse",
+						//Rules:            &schema_j5pb.ObjectRules{},
+						Properties: []*schema_j5pb.ObjectProperty{{
+							Name:        "testField",
+							Description: "",
+							Required:    false,
+							WriteOnly:   false,
+							Schema: &schema_j5pb.Field{
+								Type: &schema_j5pb.Field_String_{
+									String_: &schema_j5pb.StringField{},
+								},
+							},
+							ProtoField: []int32{1},
+						}, {
+							Name:        "msg",
+							Description: "",
+							Required:    false,
+							Schema: &schema_j5pb.Field{
+								Type: &schema_j5pb.Field_Object{
+									Object: &schema_j5pb.ObjectField{
+										Schema: &schema_j5pb.ObjectField_Ref{
+											Ref: &schema_j5pb.Ref{
+												Package: "test.v1",
+												Schema:  "Referenced",
 											},
 										},
 									},
-									ProtoField: []int32{2},
-								}},
+								},
 							},
-						},
+							ProtoField: []int32{2},
+						}},
 					},
 					Request: &schema_j5pb.Method_Request{
 						PathParameters: []*schema_j5pb.ObjectProperty{{

@@ -144,10 +144,14 @@ func buildEvents(refs *j5reflect.SchemaResolver, src protoreflect.ServiceDescrip
 		if err != nil {
 			return nil, fmt.Errorf("method %s: %w", method.FullName(), err)
 		}
+		objSchema, ok := schema.(*j5reflect.ObjectSchema)
+		if !ok {
+			return nil, fmt.Errorf("method %s: expected object schema", method.FullName())
+		}
 
 		eventSpec := &j5reflect.Event{
 			Name:   string(method.Name()),
-			Schema: schema,
+			Schema: objSchema,
 		}
 
 		events = append(events, eventSpec)

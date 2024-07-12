@@ -470,10 +470,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 				if schema == nil {
 					t.Fatalf("schema %q not linked", path)
 				}
-				schemaJ5, err := schema.ToJ5Root()
-				if err != nil {
-					t.Fatal(err.Error())
-				}
+				schemaJ5 := schema.ToJ5Root()
 
 				ddRef, err := jsontest.NewAsserter(schemaJ5)
 				if err != nil {

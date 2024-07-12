@@ -11,7 +11,7 @@ type RootSchema interface {
 	AsRef() *RefSchema
 	FullName() string
 	PackageName() string
-	ToJ5Root() (*schema_j5pb.RootSchema, error)
+	ToJ5Root() *schema_j5pb.RootSchema
 }
 
 type RefSchema struct {
@@ -52,7 +52,7 @@ type EnumSchema struct {
 	Options    []*schema_j5pb.Enum_Value
 }
 
-func (s *EnumSchema) ToJ5Root() (*schema_j5pb.RootSchema, error) {
+func (s *EnumSchema) ToJ5Root() *schema_j5pb.RootSchema {
 	return &schema_j5pb.RootSchema{
 		Type: &schema_j5pb.RootSchema_Enum{
 			Enum: &schema_j5pb.Enum{
@@ -62,7 +62,7 @@ func (s *EnumSchema) ToJ5Root() (*schema_j5pb.RootSchema, error) {
 				Prefix:      s.NamePrefix,
 			},
 		},
-	}, nil
+	}
 }
 
 type PropertySet []*ObjectProperty
@@ -81,24 +81,26 @@ type ObjectSchema struct {
 	Properties PropertySet
 }
 
-func (s *ObjectSchema) ToJ5Root() (*schema_j5pb.RootSchema, error) {
+func (s *ObjectSchema) ToJ5Object() *schema_j5pb.Object {
 	properties := make([]*schema_j5pb.ObjectProperty, 0, len(s.Properties))
 	for _, prop := range s.Properties {
-		property, err := prop.ToJ5Proto()
-		if err != nil {
-			return nil, fmt.Errorf("property %s: %w", prop.JSONName, err)
-		}
+		property := prop.ToJ5Proto()
 		properties = append(properties, property)
 	}
+	return &schema_j5pb.Object{
+		Description: s.Description,
+		Name:        s.Name,
+		Properties:  properties,
+	}
+}
+
+func (s *ObjectSchema) ToJ5Root() *schema_j5pb.RootSchema {
+	built := s.ToJ5Object()
 	return &schema_j5pb.RootSchema{
 		Type: &schema_j5pb.RootSchema_Object{
-			Object: &schema_j5pb.Object{
-				Description: s.Description,
-				Name:        s.Name,
-				Properties:  properties,
-			},
+			Object: built,
 		},
-	}, nil
+	}
 }
 
 type OneofSchema struct {
@@ -106,13 +108,10 @@ type OneofSchema struct {
 	Properties PropertySet
 }
 
-func (s *OneofSchema) ToJ5Root() (*schema_j5pb.RootSchema, error) {
+func (s *OneofSchema) ToJ5Root() *schema_j5pb.RootSchema {
 	properties := make([]*schema_j5pb.ObjectProperty, 0, len(s.Properties))
 	for _, prop := range s.Properties {
-		property, err := prop.ToJ5Proto()
-		if err != nil {
-			return nil, fmt.Errorf("property %s: %w", prop.JSONName, err)
-		}
+		property := prop.ToJ5Proto()
 		properties = append(properties, property)
 	}
 
@@ -124,7 +123,7 @@ func (s *OneofSchema) ToJ5Root() (*schema_j5pb.RootSchema, error) {
 				Properties:  properties,
 			},
 		},
-	}, nil
+	}
 }
 
 type ObjectProperty struct {
@@ -142,17 +141,13 @@ type ObjectProperty struct {
 	Description string
 }
 
-func (prop *ObjectProperty) ToJ5Proto() (*schema_j5pb.ObjectProperty, error) {
-	proto, err := prop.Schema.ToJ5Field()
-	if err != nil {
-		return nil, fmt.Errorf("property %s: %w", prop.JSONName, err)
-	}
+func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 	fieldPath := make([]int32, len(prop.ProtoField))
 	for idx, field := range prop.ProtoField {
 		fieldPath[idx] = int32(field)
 	}
 	return &schema_j5pb.ObjectProperty{
-		Schema:             proto,
+		Schema:             prop.Schema.ToJ5Field(),
 		Name:               prop.JSONName,
 		Required:           prop.Required,
 		ExplicitlyOptional: prop.ExplicitlyOptional,
@@ -160,6 +155,6 @@ func (prop *ObjectProperty) ToJ5Proto() (*schema_j5pb.ObjectProperty, error) {
 		WriteOnly:          prop.WriteOnly,
 		Description:        prop.Description,
 		ProtoField:         fieldPath,
-	}, nil
+	}
 
 }

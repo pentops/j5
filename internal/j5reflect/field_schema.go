@@ -1,14 +1,12 @@
 package j5reflect
 
 import (
-	"fmt"
-
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type FieldSchema interface {
-	ToJ5Field() (*schema_j5pb.Field, error)
+	ToJ5Field() *schema_j5pb.Field
 }
 
 type ScalarSchema struct {
@@ -20,20 +18,20 @@ type ScalarSchema struct {
 	WellKnownTypeName protoreflect.FullName
 }
 
-func (s *ScalarSchema) ToJ5Field() (*schema_j5pb.Field, error) {
-	return s.Proto, nil
+func (s *ScalarSchema) ToJ5Field() *schema_j5pb.Field {
+	return s.Proto
 }
 
 type AnyField struct {
 	Description *string
 }
 
-func (s *AnyField) ToJ5Field() (*schema_j5pb.Field, error) {
+func (s *AnyField) ToJ5Field() *schema_j5pb.Field {
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Any{
 			Any: &schema_j5pb.AnyField{},
 		},
-	}, nil
+	}
 }
 
 type EnumField struct {
@@ -45,7 +43,7 @@ func (s *EnumField) Schema() *EnumSchema {
 	return s.Ref.To.(*EnumSchema)
 }
 
-func (s *EnumField) ToJ5Field() (*schema_j5pb.Field, error) {
+func (s *EnumField) ToJ5Field() *schema_j5pb.Field {
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Enum{
 			Enum: &schema_j5pb.EnumField{
@@ -58,7 +56,7 @@ func (s *EnumField) ToJ5Field() (*schema_j5pb.Field, error) {
 				Rules: s.Rules,
 			},
 		},
-	}, nil
+	}
 }
 
 type ObjectField struct {
@@ -70,7 +68,7 @@ func (s *ObjectField) Schema() *ObjectSchema {
 	return s.Ref.To.(*ObjectSchema)
 }
 
-func (s *ObjectField) ToJ5Field() (*schema_j5pb.Field, error) {
+func (s *ObjectField) ToJ5Field() *schema_j5pb.Field {
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Object{
 			Object: &schema_j5pb.ObjectField{
@@ -83,7 +81,7 @@ func (s *ObjectField) ToJ5Field() (*schema_j5pb.Field, error) {
 				Rules: s.Rules,
 			},
 		},
-	}, nil
+	}
 }
 
 type OneofField struct {
@@ -95,7 +93,7 @@ func (s *OneofField) Schema() *OneofSchema {
 	return s.Ref.To.(*OneofSchema)
 }
 
-func (s *OneofField) ToJ5Field() (*schema_j5pb.Field, error) {
+func (s *OneofField) ToJ5Field() *schema_j5pb.Field {
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Oneof{
 			Oneof: &schema_j5pb.OneofField{
@@ -108,7 +106,7 @@ func (s *OneofField) ToJ5Field() (*schema_j5pb.Field, error) {
 				Rules: s.Rules,
 			},
 		},
-	}, nil
+	}
 }
 
 type MapField struct {
@@ -116,11 +114,8 @@ type MapField struct {
 	Rules  *schema_j5pb.MapField_Rules
 }
 
-func (s *MapField) ToJ5Field() (*schema_j5pb.Field, error) {
-	item, err := s.Schema.ToJ5Field()
-	if err != nil {
-		return nil, fmt.Errorf("map item: %w", err)
-	}
+func (s *MapField) ToJ5Field() *schema_j5pb.Field {
+	item := s.Schema.ToJ5Field()
 
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Map{
@@ -130,7 +125,7 @@ func (s *MapField) ToJ5Field() (*schema_j5pb.Field, error) {
 				Rules:      s.Rules,
 			},
 		},
-	}, nil
+	}
 }
 
 type ArrayField struct {
@@ -138,13 +133,8 @@ type ArrayField struct {
 	Rules  *schema_j5pb.ArrayField_Rules
 }
 
-func (s *ArrayField) ToJ5Field() (*schema_j5pb.Field, error) {
-
-	item, err := s.Schema.ToJ5Field()
-	if err != nil {
-		return nil, fmt.Errorf("array item: %w", err)
-	}
-
+func (s *ArrayField) ToJ5Field() *schema_j5pb.Field {
+	item := s.Schema.ToJ5Field()
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Array{
 			Array: &schema_j5pb.ArrayField{
@@ -152,5 +142,5 @@ func (s *ArrayField) ToJ5Field() (*schema_j5pb.Field, error) {
 				Rules: s.Rules,
 			},
 		},
-	}, nil
+	}
 }

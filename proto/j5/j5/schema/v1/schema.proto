@@ -6,7 +6,6 @@ option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
 
 message RootSchema {
   oneof type {
-    // Named Root Types
     Oneof oneof = 12;
     Object object = 21;
     Enum enum = 32;

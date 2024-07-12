@@ -87,13 +87,9 @@ func (pkg *Package) ToJ5Proto() (*schema_j5pb.Package, error) {
 	events := make([]*schema_j5pb.EventSpec, 0, len(pkg.Events))
 
 	for _, event := range pkg.Events {
-		asProto, err := event.Schema.ToJ5Root()
-		if err != nil {
-			return nil, fmt.Errorf("event schema %q: %w", event.Name, err)
-		}
 		events = append(events, &schema_j5pb.EventSpec{
 			Name:   event.Name,
-			Schema: asProto,
+			Schema: event.Schema.ToJ5Object(),
 		})
 	}
 
@@ -121,7 +117,7 @@ func (pkg *Package) ToJ5Proto() (*schema_j5pb.Package, error) {
 type Event struct {
 	Package *Package
 	Name    string
-	Schema  RootSchema
+	Schema  *ObjectSchema
 }
 
 type Service struct {
@@ -167,15 +163,7 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 		return nil, fmt.Errorf("request should be an object, got %T", mm.Request)
 	}
 
-	requestBody, err := requestSchema.ToJ5Root()
-	if err != nil {
-		return nil, err
-	}
-
-	requestBodyObject := requestBody.GetObject()
-	if requestBodyObject == nil {
-		return nil, fmt.Errorf("request body should be an object, got %T", requestBody)
-	}
+	requestBody := requestSchema.ToJ5Object()
 
 	pathParameterNames := map[string]struct{}{}
 	pathParts := strings.Split(mm.HTTPPath, "/")
@@ -190,7 +178,7 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 	pathProperties := make([]*schema_j5pb.ObjectProperty, 0)
 	bodyProperties := make([]*schema_j5pb.ObjectProperty, 0)
 
-	for _, prop := range requestBodyObject.Properties {
+	for _, prop := range requestBody.Properties {
 		_, isPath := pathParameterNames[prop.Name]
 		if isPath {
 			pathProperties = append(pathProperties, prop)
@@ -204,14 +192,10 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 	}
 
 	if mm.HasBody {
-		request.Body = &schema_j5pb.RootSchema{
-			Type: &schema_j5pb.RootSchema_Object{
-				Object: &schema_j5pb.Object{
-					Properties:  bodyProperties,
-					Name:        requestBodyObject.Name,
-					Description: requestBodyObject.Description,
-				},
-			},
+		request.Body = &schema_j5pb.Object{
+			Properties:  bodyProperties,
+			Name:        requestBody.Name,
+			Description: requestBody.Description,
 		}
 	} else {
 		request.QueryParameters = bodyProperties
@@ -222,10 +206,7 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 		return nil, fmt.Errorf("response schema was not an object: %T", mm.Response)
 	}
 
-	responseBody, err := responseSchema.ToJ5Root()
-	if err != nil {
-		return nil, err
-	}
+	responseBody := responseSchema.ToJ5Object()
 
 	return &schema_j5pb.Method{
 		FullGrpcName: fmt.Sprintf("/%s.%s/%s", mm.Service.Package.Name, mm.Service.Name, mm.GRPCMethodName),
@@ -257,12 +238,8 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 			return nil
 		}
 
-		schemaProto, err := schema.ToJ5Root()
-		if err != nil {
-			return fmt.Errorf("schema %s to j5 root: %w", schema.FullName(), err)
-		}
 		schemas[schema.FullName()] = &schemaRef{
-			schema:    schemaProto,
+			schema:    schema.ToJ5Root(),
 			inPackage: schema.PackageName(),
 		}
 		switch st := schema.(type) {
