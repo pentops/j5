@@ -76,7 +76,7 @@ func fromProtoPackage(protoPackage *schema_j5pb.Package) (*Package, error) {
 		Label: protoPackage.Label,
 		Name:  protoPackage.Name,
 
-		Introduction: protoPackage.Introduction,
+		Introduction: protoPackage.Prose,
 	}
 	out.Methods = make([]*Method, 0)
 	for _, protoService := range protoPackage.Services {
@@ -90,10 +90,7 @@ func fromProtoPackage(protoPackage *schema_j5pb.Package) (*Package, error) {
 	}
 	out.Events = make([]*EventSpec, len(protoPackage.Events))
 	for idx, protoEvent := range protoPackage.Events {
-		event, err := fromProtoEvent(protoEvent)
-		if err != nil {
-			return nil, err
-		}
+		event := fromProtoEvent(protoEvent)
 		out.Events[idx] = event
 	}
 	return out, nil
@@ -160,15 +157,14 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 	return out, nil
 }
 
-func fromProtoEvent(protoEvent *schema_j5pb.EventSpec) (*EventSpec, error) {
+func fromProtoEvent(protoEvent *schema_j5pb.EventSpec) *EventSpec {
+	ref := fmt.Sprintf("#/definitions/%s", protoEvent.Schema)
 	out := &EventSpec{
 		Name: protoEvent.Name,
+		Schema: &Schema{
+			Ref: &ref,
+		},
 	}
-	schema, err := convertObjectItem(protoEvent.Schema)
-	if err != nil {
-		return nil, err
-	}
-	out.Schema = schema
 
-	return out, nil
+	return out
 }

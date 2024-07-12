@@ -9,7 +9,8 @@ import (
 	"github.com/pentops/flowtest/jsontest"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/gen/test/foo/v1/foo_testpb"
+
+	"github.com/pentops/j5/gen/test/schema/v1/schema_testpb"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -199,7 +200,7 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 
 	ss := NewSchemaSet()
 
-	fooDesc := (&foo_testpb.PostFooRequest{}).ProtoReflect().Descriptor()
+	fooDesc := (&schema_testpb.FullSchema{}).ProtoReflect().Descriptor()
 
 	t.Log(protojson.Format(protodesc.ToDescriptorProto(fooDesc)))
 
@@ -243,6 +244,11 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 	assertProperty("mapStringString", map[string]interface{}{
 		"protoField":                   jsontest.Array[float64]{15},
 		"schema.map.itemSchema.string": map[string]interface{}{},
+	})
+
+	// flattenedMessage itself, and the 'flattened' key should not appear.
+	assertProperty("fieldFromFlattened", map[string]interface{}{
+		"protoField": jsontest.Array[float64]{18, 1},
 	})
 }
 

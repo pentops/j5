@@ -64,7 +64,7 @@ func (b *Builder) Generate(ctx context.Context, pc PluginContext, input Input, b
 	for _, plugin := range build.Plugins {
 		err := b.runPlugin(ctx, pc, input, plugin)
 		if err != nil {
-			return fmt.Errorf("input %s, plugin %s: %w", input.Name(), plugin.Name, err)
+			return fmt.Errorf("input %q, plugin %q: %w", input.Name(), plugin.Name, err)
 		}
 	}
 	return nil

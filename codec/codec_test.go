@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -17,7 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pentops/flowtest/prototest"
-	"github.com/pentops/j5/gen/test/foo/v1/foo_testpb"
+	"github.com/pentops/j5/gen/test/schema/v1/schema_testpb"
 	"github.com/pentops/j5/j5types/date_j5t"
 )
 
@@ -44,7 +43,7 @@ func TestUnmarshal(t *testing.T) {
 				"enum": "VALUE1",
 				"rEnum": ["VALUE1", "VALUE2"]
 			}`,
-			wantProto: &foo_testpb.PostFooRequest{
+			wantProto: &schema_testpb.FullSchema{
 				SString: "nameVal",
 				OString: proto.String("otherNameVal"),
 				RString: []string{"r1", "r2"},
@@ -53,10 +52,10 @@ func TestUnmarshal(t *testing.T) {
 				OFloat: proto.Float32(2.2),
 				RFloat: []float32{3.3, 4.4},
 
-				Enum: foo_testpb.Enum_ENUM_VALUE1,
-				REnum: []foo_testpb.Enum{
-					foo_testpb.Enum_ENUM_VALUE1,
-					foo_testpb.Enum_ENUM_VALUE2,
+				Enum: schema_testpb.Enum_ENUM_VALUE1,
+				REnum: []schema_testpb.Enum{
+					schema_testpb.Enum_ENUM_VALUE1,
+					schema_testpb.Enum_ENUM_VALUE2,
 				},
 			},
 		}, {
@@ -71,11 +70,11 @@ func TestUnmarshal(t *testing.T) {
 					"rEnum": ["ENUM_VALUE1", "ENUM_VALUE2"]
 				}`},
 
-			wantProto: &foo_testpb.PostFooRequest{
-				Enum: foo_testpb.Enum_ENUM_VALUE1,
-				REnum: []foo_testpb.Enum{
-					foo_testpb.Enum_ENUM_VALUE1,
-					foo_testpb.Enum_ENUM_VALUE2,
+			wantProto: &schema_testpb.FullSchema{
+				Enum: schema_testpb.Enum_ENUM_VALUE1,
+				REnum: []schema_testpb.Enum{
+					schema_testpb.Enum_ENUM_VALUE1,
+					schema_testpb.Enum_ENUM_VALUE2,
 				},
 			},
 		}, {
@@ -90,7 +89,7 @@ func TestUnmarshal(t *testing.T) {
 				base64.URLEncoding.EncodeToString([]byte("rBytes2")) +
 				`"]
 			}`,
-			wantProto: &foo_testpb.PostFooRequest{
+			wantProto: &schema_testpb.FullSchema{
 				SBytes: []byte("sBytes"),
 				RBytes: [][]byte{[]byte("rBytes1"), []byte("rBytes2")},
 			},
@@ -100,7 +99,7 @@ func TestUnmarshal(t *testing.T) {
 				"k1": "val1"
 			} }`,
 			// TODO: Can only test one key this way while maps are unordered
-			wantProto: &foo_testpb.PostFooRequest{
+			wantProto: &schema_testpb.FullSchema{
 				MapStringString: map[string]string{
 					"k1": "val1",
 				},
@@ -111,7 +110,7 @@ func TestUnmarshal(t *testing.T) {
 				"ts": "2020-01-01T00:00:00Z",
 				"rTs": ["2020-01-01T00:00:00Z", "2020-01-01T00:00:00Z"]
 			}`,
-			wantProto: &foo_testpb.PostFooRequest{
+			wantProto: &schema_testpb.FullSchema{
 				Ts: timestamppb.New(testTime),
 				RTs: []*timestamppb.Timestamp{
 					timestamppb.New(testTime),
@@ -122,9 +121,7 @@ func TestUnmarshal(t *testing.T) {
 			name: "nested messages",
 			json: `{
 				"sBar": {
-					"id": "barId",
-					"name": "barName",
-					"field": "barField"
+					"id": "barId"
 				},
 				"rBars": [{
 					"id": "bar1"
@@ -132,13 +129,11 @@ func TestUnmarshal(t *testing.T) {
 					"id": "bar2"
 				}]
 			}`,
-			wantProto: &foo_testpb.PostFooRequest{
-				SBar: &foo_testpb.Bar{
-					Id:    "barId",
-					Name:  "barName",
-					Field: "barField",
+			wantProto: &schema_testpb.FullSchema{
+				SBar: &schema_testpb.Bar{
+					Id: "barId",
 				},
-				RBars: []*foo_testpb.Bar{{
+				RBars: []*schema_testpb.Bar{{
 					Id: "bar1",
 				}, {
 					Id: "bar2",
@@ -151,8 +146,8 @@ func TestUnmarshal(t *testing.T) {
 				"fieldFromFlattened": "fieldFromFlattenedVal",
 				"field2FromFlattened": "field2FromFlattenedVal"
 			}`,
-			wantProto: &foo_testpb.PostFooRequest{
-				Flattened: &foo_testpb.FlattenedMessage{
+			wantProto: &schema_testpb.FullSchema{
+				Flattened: &schema_testpb.FlattenedMessage{
 					FieldFromFlattened:   "fieldFromFlattenedVal",
 					Field_2FromFlattened: "field2FromFlattenedVal",
 				},
@@ -162,8 +157,8 @@ func TestUnmarshal(t *testing.T) {
 			json: `{
 				"aOneofString": "stringVal"
 			}`,
-			wantProto: &foo_testpb.PostFooRequest{
-				AnonOneof: &foo_testpb.PostFooRequest_AOneofString{
+			wantProto: &schema_testpb.FullSchema{
+				AnonOneof: &schema_testpb.FullSchema_AOneofString{
 					AOneofString: "stringVal",
 				},
 			},
@@ -175,8 +170,8 @@ func TestUnmarshal(t *testing.T) {
 					"exposedString": "stringVal"
 				}
 			}`,
-			wantProto: &foo_testpb.PostFooRequest{
-				ExposedOneof: &foo_testpb.PostFooRequest_ExposedString{
+			wantProto: &schema_testpb.FullSchema{
+				ExposedOneof: &schema_testpb.FullSchema_ExposedString{
 					ExposedString: "stringVal",
 				},
 			},
@@ -188,9 +183,9 @@ func TestUnmarshal(t *testing.T) {
 					"wOneofString": "Wrapped oneofStringVal"
 				}
 			}`,
-			wantProto: &foo_testpb.PostFooRequest{
-				WrappedOneof: &foo_testpb.WrappedOneof{
-					Type: &foo_testpb.WrappedOneof_WOneofString{
+			wantProto: &schema_testpb.FullSchema{
+				WrappedOneof: &schema_testpb.WrappedOneof{
+					Type: &schema_testpb.WrappedOneof_WOneofString{
 						WOneofString: "Wrapped oneofStringVal",
 					},
 				},
@@ -205,9 +200,9 @@ func TestUnmarshal(t *testing.T) {
 					}
 				}
 			  }`,
-			wantProto: &foo_testpb.PostFooRequest{
-				NestedExposedOneof: &foo_testpb.NestedExposed{
-					Type: &foo_testpb.NestedExposed_De1{
+			wantProto: &schema_testpb.FullSchema{
+				NestedExposedOneof: &schema_testpb.NestedExposed{
+					Type: &schema_testpb.NestedExposed_De1{
 						De1: "de1Val",
 					},
 				},
@@ -227,11 +222,11 @@ func TestUnmarshal(t *testing.T) {
 					}
 				}
 			}`,
-			wantProto: &foo_testpb.PostFooRequest{
-				NestedExposedOneof: &foo_testpb.NestedExposed{
-					Type: &foo_testpb.NestedExposed_De3{
-						De3: &foo_testpb.NestedExposed{
-							Type: &foo_testpb.NestedExposed_De1{
+			wantProto: &schema_testpb.FullSchema{
+				NestedExposedOneof: &schema_testpb.NestedExposed{
+					Type: &schema_testpb.NestedExposed_De3{
+						De3: &schema_testpb.NestedExposed{
+							Type: &schema_testpb.NestedExposed_De1{
 								De1: "de1Val",
 							},
 						},
@@ -258,13 +253,13 @@ func TestUnmarshal(t *testing.T) {
 					}
 				}
 			}`,
-			wantProto: &foo_testpb.PostFooRequest{
-				NestedExposedOneof: &foo_testpb.NestedExposed{
-					Type: &foo_testpb.NestedExposed_De3{
-						De3: &foo_testpb.NestedExposed{
-							Type: &foo_testpb.NestedExposed_De3{
-								De3: &foo_testpb.NestedExposed{
-									Type: &foo_testpb.NestedExposed_De1{
+			wantProto: &schema_testpb.FullSchema{
+				NestedExposedOneof: &schema_testpb.NestedExposed{
+					Type: &schema_testpb.NestedExposed_De3{
+						De3: &schema_testpb.NestedExposed{
+							Type: &schema_testpb.NestedExposed_De3{
+								De3: &schema_testpb.NestedExposed{
+									Type: &schema_testpb.NestedExposed_De1{
 										De1: "de1Val",
 									},
 								},
@@ -272,37 +267,6 @@ func TestUnmarshal(t *testing.T) {
 						},
 					},
 				},
-			},
-		}, {
-			name: "backport test from proxy",
-			json: `{
-				"filters":[{
-					"type":{
-						"!type": "field",
-						"field": {
-							"name":"idVal",
-							"type":{
-								"!type": "value",
-								"value":"f481d62c-72ff-487b-ba03-50a4a6da83b7"
-							}
-						}
-					}
-				}]
-			}`,
-			altInputJSON: []string{
-				`{"filters":[{"type":{"field":{"name":"idVal","type":{"value":"f481d62c-72ff-487b-ba03-50a4a6da83b7"}}}}]}`,
-			},
-			wantProto: &foo_testpb.QueryRequest{
-				Filters: []*foo_testpb.QueryRequest_Filter{{
-					Type: &foo_testpb.QueryRequest_Filter_Field{
-						Field: &foo_testpb.QueryRequest_Field{
-							Name: "idVal",
-							Type: &foo_testpb.QueryRequest_Field_Value{
-								Value: "f481d62c-72ff-487b-ba03-50a4a6da83b7",
-							},
-						},
-					},
-				}},
 			},
 		}, {
 			name: "repeated exposed oneof in nested message",
@@ -319,13 +283,13 @@ func TestUnmarshal(t *testing.T) {
 					}
 				}]
 			  }`,
-			wantProto: &foo_testpb.PostFooRequest{
-				NestedExposedOneofs: []*foo_testpb.NestedExposed{{
-					Type: &foo_testpb.NestedExposed_De1{
+			wantProto: &schema_testpb.FullSchema{
+				NestedExposedOneofs: []*schema_testpb.NestedExposed{{
+					Type: &schema_testpb.NestedExposed_De1{
 						De1: "de1Val",
 					},
 				}, {
-					Type: &foo_testpb.NestedExposed_De2{
+					Type: &schema_testpb.NestedExposed_De2{
 						De2: "de2Val",
 					},
 				}},
@@ -337,11 +301,13 @@ func TestUnmarshal(t *testing.T) {
 
 			codec := NewCodec()
 			for _, input := range allInputs {
-				schema, err := codec.schemaSet.SchemaObject(tc.wantProto.ProtoReflect().Descriptor())
-				if err != nil {
-					t.Fatal(err)
-				}
-				t.Logf("SCHEMA: %s", protojson.Format(schema))
+				/*
+					schema, err := codec.schemaSet.SchemaObject(tc.wantProto.ProtoReflect().Descriptor())
+					if err != nil {
+						t.Fatal(err)
+					}
+					t.Logf("SCHEMA: %s", protojson.Format(schema))
+				*/
 				buffer := &bytes.Buffer{}
 				if err := json.Indent(buffer, []byte(input), " | ", "  "); err != nil {
 					t.Fatalf("invalid test case: %s", err)

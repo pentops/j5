@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package j5.schema.v1;
 
+import "buf/validate/validate.proto";
+
 option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
 
 message RootSchema {
@@ -32,6 +34,11 @@ message Field {
     IntegerField integer = 31;
     FloatField float = 33;
     BooleanField boolean = 34;
+    BytesField bytes = 35;
+    DecimalField decimal = 36;
+    DateField date = 37;
+    TimestampField timestamp = 38;
+    UUIDField uuid = 39;
   }
 }
 
@@ -52,7 +59,6 @@ message ObjectField {
 
   bool additional_properties = 4;
   Rules rules = 5;
-  optional string primary_key = 6;
 
   message Rules {
     optional uint64 min_properties = 1;
@@ -61,10 +67,15 @@ message ObjectField {
 }
 
 message Object {
-  string name = 1;
-  string description = 2;
+  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
 
-  repeated ObjectProperty properties = 3;
+  string description = 2; // brief text description, will not contain markdown.
+
+  // When the object is an entity type, the entity details are available in the
+  // entity set for the same package.
+  optional string entity = 3 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
+
+  repeated ObjectProperty properties = 4;
 }
 
 message OneofField {
@@ -186,6 +197,35 @@ message BooleanField {
   message Rules {
     optional bool const = 1;
   }
+}
+
+message BytesField {
+  Rules rules = 1;
+  message Rules {}
+}
+
+message DecimalField {
+  Rules rules = 1;
+
+  message Rules {}
+}
+
+message DateField {
+  Rules rules = 1;
+
+  message Rules {}
+}
+
+message TimestampField {
+  Rules rules = 1;
+
+  message Rules {}
+}
+
+message UUIDField {
+  Rules rules = 1;
+
+  message Rules {}
 }
 
 message ObjectProperty {

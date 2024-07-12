@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package j5.ext.v1;
+
+import "google/protobuf/descriptor.proto";
+
+option go_package = "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb";
+
+extend google.protobuf.MessageOptions {
+  PSMOptions psm = 555101;
+}
+
+message PSMOptions {
+  string name = 1;
+}
+
+extend google.protobuf.FieldOptions {
+  KeyFieldOptions keyfield = 555101;
+}
+
+message KeyFieldOptions {
+  // the field is the primary key of the state, or is one field in a multi-key
+  // primary key for the state object. This field must exist on both the event
+  // and the state
+  bool primary_key = 1;
+}
+
+extend google.protobuf.ServiceOptions {
+  StateQueryServiceOptions state_query = 555101;
+}
+
+message StateQueryServiceOptions {
+  string name = 1;
+}
+
+extend google.protobuf.MethodOptions {
+  StateQueryMethodOptions state_query_method = 555101;
+}
+
+message StateQueryMethodOptions {
+  bool get = 1;
+  bool list = 2;
+  bool list_events = 3;
+
+  // use name here instead of the service option to put multiple state query
+  // methods in one service
+  string name = 4;
+}

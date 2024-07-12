@@ -32,7 +32,7 @@ func ResolveProse(source *source_j5pb.SourceImage, api *schema_j5pb.API) error {
 			}
 			prose = removeMarkdownHeader(resolved)
 		}
-		pkg.Introduction = prose
+		pkg.Prose = prose
 	}
 	return nil
 }
