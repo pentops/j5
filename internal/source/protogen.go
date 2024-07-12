@@ -54,34 +54,27 @@ func (f mapSource) GetFile(filename string) (io.ReadCloser, error) {
 	return io.NopCloser(bytes.NewReader(content)), nil
 }
 
-func bundleProtoparse(ctx context.Context, bundle *bundle, files []string) (*descriptorpb.FileDescriptorSet, error) {
-	walkRoot, err := bundle.fs()
+func bundleProtoparse(ctx context.Context, rootBundle *bundle, files []string) (*descriptorpb.FileDescriptorSet, error) {
+	walkRoot, err := rootBundle.fs()
 	if err != nil {
 		return nil, err
 	}
+
 	allSources := []FileSource{
 		fsSource{
 			fs:   walkRoot,
-			name: bundle.debugName,
+			name: rootBundle.debugName,
 		},
 	}
 
-	bufCache, err := NewBufCache()
-	if err != nil {
-		return nil, err
-	}
+	depBundles := make([]*bundle, 0, len(rootBundle.refConfig.Deps))
 
-	bufDeps, err := bufCache.GetDeps(ctx, bundle.repo.repoRoot, bundle.dirInRepo)
-	if err != nil {
-		return nil, err
-	}
-	allSources = append(allSources, bufDeps...)
-
-	for _, localDep := range bundle.refConfig.Deps {
-		depBundle, ok := bundle.repo.bundles[localDep]
+	for _, localDep := range rootBundle.refConfig.Deps {
+		depBundle, ok := rootBundle.repo.bundles[localDep]
 		if !ok {
 			return nil, fmt.Errorf("unknown local dependency %q", localDep)
 		}
+		depBundles = append(depBundles, depBundle)
 
 		bundleFS, err := depBundle.fs()
 		if err != nil {
@@ -93,6 +86,20 @@ func bundleProtoparse(ctx context.Context, bundle *bundle, files []string) (*des
 			fs:   bundleFS,
 			name: depBundle.debugName,
 		})
+	}
+
+	bufCache, err := NewBufCache()
+	if err != nil {
+		return nil, err
+	}
+
+	bufDeps, err := bufCache.GetDeps(ctx, rootBundle.repo.repoRoot, rootBundle.dirInRepo)
+	if err != nil {
+		return nil, err
+	}
+	allSources = append(allSources, bufDeps...)
+
+	for _, depBundle := range depBundles {
 
 		bufDeps, err := bufCache.GetDeps(ctx, depBundle.repo.repoRoot, depBundle.dirInRepo)
 		if err != nil {
@@ -103,8 +110,9 @@ func bundleProtoparse(ctx context.Context, bundle *bundle, files []string) (*des
 	}
 
 	parser := protoparse.Parser{
-		ImportPaths:           []string{""},
-		IncludeSourceCodeInfo: true,
+		ImportPaths:                     []string{""},
+		IncludeSourceCodeInfo:           true,
+		InterpretOptionsInUnlinkedFiles: true,
 
 		WarningReporter: func(err reporter.ErrorWithPos) {
 			log.WithFields(ctx, map[string]interface{}{
