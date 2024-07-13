@@ -83,7 +83,7 @@ func TestStringSchemaTypes(t *testing.T) {
 			},
 		},
 		expected: map[string]interface{}{
-			"schema.string.format": "uuid",
+			"schema.key.format": "KEY_FORMAT_UUID",
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -436,6 +436,9 @@ func TestSchemaTypesComplex(t *testing.T) {
 					Name:   proto.String("TEST_ENUM_BAR"),
 					Number: proto.Int32(2),
 				}},
+				Options: extend(&descriptorpb.EnumOptions{}, ext_j5pb.E_Enum, &ext_j5pb.EnumOptions{
+					NoDefault: true,
+				}),
 			}},
 		},
 		expected: map[string]interface{}{

@@ -3,6 +3,7 @@ syntax = "proto3";
 package j5.schema.v1;
 
 import "buf/validate/validate.proto";
+import "j5/list/v1/annotations.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
 
@@ -38,7 +39,7 @@ message Field {
     DecimalField decimal = 36;
     DateField date = 37;
     TimestampField timestamp = 38;
-    UUIDField uuid = 39;
+    KeyField key = 39;
   }
 }
 
@@ -85,6 +86,7 @@ message OneofField {
   }
 
   Rules rules = 4;
+  j5.list.v1.OneofRules list_rules = 5;
   message Rules {}
 }
 
@@ -104,7 +106,12 @@ message EnumField {
   }
 
   Rules rules = 4;
-  message Rules {}
+  j5.list.v1.EnumRules list_rules = 5;
+
+  message Rules {
+    repeated string in = 1;
+    repeated string not_in = 2;
+  }
 }
 
 message Enum {
@@ -143,6 +150,7 @@ message MapField {
 message StringField {
   optional string format = 1;
   Rules rules = 3;
+  list.v1.OpenTextRules list_rules = 4;
 
   message Rules {
     optional string pattern = 1;
@@ -154,6 +162,7 @@ message StringField {
 message FloatField {
   Format format = 1;
   Rules rules = 2;
+  j5.list.v1.FloatRules list_rules = 3;
 
   enum Format {
     FORMAT_UNSPECIFIED = 0;
@@ -173,6 +182,7 @@ message FloatField {
 message IntegerField {
   Format format = 1;
   Rules rules = 2;
+  j5.list.v1.IntegerRules list_rules = 3;
 
   enum Format {
     FORMAT_UNSPECIFIED = 0;
@@ -193,6 +203,7 @@ message IntegerField {
 
 message BooleanField {
   Rules rules = 1;
+  j5.list.v1.BooleanRules list_rules = 2;
 
   message Rules {
     optional bool const = 1;
@@ -218,14 +229,22 @@ message DateField {
 
 message TimestampField {
   Rules rules = 1;
+  j5.list.v1.TimestampRules list_rules = 2;
 
   message Rules {}
 }
 
-message UUIDField {
+message KeyField {
   Rules rules = 1;
+  KeyFormat format = 2;
+  j5.list.v1.KeyRules list_rules = 3;
 
   message Rules {}
+}
+
+enum KeyFormat {
+  KEY_FORMAT_UNSPECIFIED = 0; // free text
+  KEY_FORMAT_UUID = 1;
 }
 
 message ObjectProperty {

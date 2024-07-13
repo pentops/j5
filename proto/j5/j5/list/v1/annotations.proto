@@ -23,28 +23,28 @@ extend google.protobuf.FieldOptions {
 }
 
 extend google.protobuf.OneofOptions {
-  optional OneofConstraint oneof = 86510002;
+  optional OneofRules oneof = 86510002;
 }
 
-message OneofConstraint {
+message OneofRules {
   FilteringConstraint filtering = 10;
 }
 
 message FieldConstraint {
   oneof type {
-    NumericRules double = 1;
-    NumericRules fixed32 = 2;
-    NumericRules fixed64 = 3;
-    NumericRules float = 4;
-    NumericRules int32 = 5;
-    NumericRules int64 = 6;
-    NumericRules sfixed32 = 7;
-    NumericRules sfixed64 = 8;
-    NumericRules sint32 = 9;
-    NumericRules sint64 = 10;
-    NumericRules uint32 = 11;
-    NumericRules uint64 = 12;
-    BoolRules bool = 13;
+    FloatRules double = 1;
+    IntegerRules fixed32 = 2;
+    IntegerRules fixed64 = 3;
+    FloatRules float = 4;
+    IntegerRules int32 = 5;
+    IntegerRules int64 = 6;
+    IntegerRules sfixed32 = 7;
+    IntegerRules sfixed64 = 8;
+    IntegerRules sint32 = 9;
+    IntegerRules sint64 = 10;
+    IntegerRules uint32 = 11;
+    IntegerRules uint64 = 12;
+    BooleanRules bool = 13;
     StringRules string = 14;
 
     EnumRules enum = 20;
@@ -69,12 +69,17 @@ message SearchingConstraint {
   string field_identifier = 2;
 }
 
-message NumericRules {
+message IntegerRules {
   FilteringConstraint filtering = 10;
   SortingConstraint sorting = 11;
 }
 
-message BoolRules {
+message FloatRules {
+  FilteringConstraint filtering = 10;
+  SortingConstraint sorting = 11;
+}
+
+message BooleanRules {
   FilteringConstraint filtering = 10;
 }
 
@@ -96,8 +101,8 @@ message DateRules {
 
 message ForeignKeyRules {
   oneof type {
-    UniqueStringRules unique_string = 1;
-    UuidRules uuid = 2;
+    KeyRules unique_string = 1;
+    KeyRules uuid = 2;
   }
 }
 
@@ -105,7 +110,7 @@ message UniqueStringRules {
   FilteringConstraint filtering = 10;
 }
 
-message UuidRules {
+message KeyRules {
   FilteringConstraint filtering = 10;
 }
 
