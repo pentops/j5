@@ -1,6 +1,7 @@
 package j5reflect
 
 import (
+	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -35,8 +36,9 @@ func (s *AnyField) ToJ5Field() *schema_j5pb.Field {
 }
 
 type EnumField struct {
-	Ref   *RefSchema
-	Rules *schema_j5pb.EnumField_Rules
+	Ref       *RefSchema
+	Rules     *schema_j5pb.EnumField_Rules
+	ListRules *list_j5pb.EnumRules
 }
 
 func (s *EnumField) Schema() *EnumSchema {

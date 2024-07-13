@@ -38,6 +38,15 @@ message MethodOptions {
   bool hidden = 2;
 }
 
+extend google.protobuf.EnumOptions {
+  EnumOptions enum = 555000;
+}
+
+message EnumOptions {
+  // bool inline = 1;
+  bool no_default = 2; // Disallows the default 0 value.
+}
+
 extend google.protobuf.FieldOptions {
   FieldOptions field = 555000;
 }

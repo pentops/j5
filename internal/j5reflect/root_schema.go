@@ -52,6 +52,15 @@ type EnumSchema struct {
 	Options    []*schema_j5pb.Enum_Value
 }
 
+func (s *EnumSchema) OptionByNumber(num int32) *schema_j5pb.Enum_Value {
+	for _, opt := range s.Options {
+		if opt.Number == num {
+			return opt
+		}
+	}
+	return nil
+}
+
 func (s *EnumSchema) ToJ5Root() *schema_j5pb.RootSchema {
 	return &schema_j5pb.RootSchema{
 		Type: &schema_j5pb.RootSchema_Enum{
@@ -64,8 +73,6 @@ func (s *EnumSchema) ToJ5Root() *schema_j5pb.RootSchema {
 		},
 	}
 }
-
-type PropertySet []*ObjectProperty
 
 func (ps PropertySet) ByJSONName(name string) *ObjectProperty {
 	for _, prop := range ps {
@@ -125,6 +132,8 @@ func (s *OneofSchema) ToJ5Root() *schema_j5pb.RootSchema {
 		},
 	}
 }
+
+type PropertySet []*ObjectProperty
 
 type ObjectProperty struct {
 	Schema FieldSchema

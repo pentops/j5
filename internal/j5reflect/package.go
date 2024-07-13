@@ -178,7 +178,20 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 	pathProperties := make([]*schema_j5pb.ObjectProperty, 0)
 	bodyProperties := make([]*schema_j5pb.ObjectProperty, 0)
 
+	isQueryRequest := false
+
 	for _, prop := range requestBody.Properties {
+		if prop.Name == "query" {
+			propObj := prop.Schema.GetObject()
+			if propObj != nil {
+				ref := propObj.GetRef()
+				if ref != nil {
+					if ref.Package == "j5.list.v1" && ref.Schema == "Query" {
+						isQueryRequest = true
+					}
+				}
+			}
+		}
 		_, isPath := pathParameterNames[prop.Name]
 		if isPath {
 			pathProperties = append(pathProperties, prop)
@@ -207,6 +220,14 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 	}
 
 	responseBody := responseSchema.ToJ5Object()
+
+	if isQueryRequest {
+		listRequest, err := buildListRequest(mm.Response)
+		if err != nil {
+			return nil, err
+		}
+		request.List = listRequest
+	}
 
 	return &schema_j5pb.Method{
 		FullGrpcName: fmt.Sprintf("/%s.%s/%s", mm.Service.Package.Name, mm.Service.Name, mm.GRPCMethodName),

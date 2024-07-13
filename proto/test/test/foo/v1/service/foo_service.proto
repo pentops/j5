@@ -6,6 +6,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
+import "j5/list/v1/annotations.proto";
 import "j5/list/v1/page.proto";
 import "j5/list/v1/query.proto";
 
@@ -76,4 +77,18 @@ message ListFoosRequest {
   j5.list.v1.QueryRequest query = 101;
 }
 
-message ListFoosResponse {}
+message ListFoosResponse {
+  repeated Foo foos = 1;
+}
+
+message Foo {
+  string id = 1;
+  string name = 2 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];
+
+  Bar bar = 3;
+}
+
+message Bar {
+  string id = 1 [(j5.list.v1.field).string.foreign_key.uuid.filtering.filterable = true];
+  string field = 2 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];
+}

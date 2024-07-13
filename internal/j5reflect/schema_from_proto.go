@@ -9,6 +9,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
+	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -399,22 +400,22 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 		},
 	}
 
-	// second _ prevents a panic when the exception is not set
-	constraint, _ := proto.GetExtension(src.Options(), validate.E_Field).(*validate.FieldConstraints)
-
-	if constraint != nil && constraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
-		if constraint.Required {
+	validateConstraint := proto.GetExtension(src.Options(), validate.E_Field).(*validate.FieldConstraints)
+	if validateConstraint != nil && validateConstraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
+		if validateConstraint.Required {
 			prop.Required = true
 		}
 
 		// constraint.IgnoreEmpty doesn't really apply
 
 		// if the constraint is repeated, unwrap it
-		repeatedConstraint, ok := constraint.Type.(*validate.FieldConstraints_Repeated)
+		repeatedConstraint, ok := validateConstraint.Type.(*validate.FieldConstraints_Repeated)
 		if ok {
-			constraint = repeatedConstraint.Repeated.Items
+			validateConstraint = repeatedConstraint.Repeated.Items
 		}
 	}
+
+	listConstraint := proto.GetExtension(src.Options(), list_j5pb.E_Field).(*list_j5pb.FieldConstraint)
 
 	if !prop.Required && src.HasOptionalKeyword() {
 		prop.ExplicitlyOptional = true
@@ -426,7 +427,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 	switch src.Kind() {
 	case protoreflect.BoolKind:
-		boolConstraint := constraint.GetBool()
+		boolConstraint := validateConstraint.GetBool()
 		boolItem := &schema_j5pb.BooleanField{}
 
 		if boolConstraint != nil {
@@ -442,21 +443,21 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
-		int32Constraint := constraint.GetInt32()
-		if int32Constraint != nil {
+
+		if constraint := validateConstraint.GetInt32(); constraint != nil {
 			integerRules = &schema_j5pb.IntegerField_Rules{}
-			if int32Constraint.Const != nil {
+			if constraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
 			}
-			if int32Constraint.In != nil {
+			if constraint.In != nil {
 				return nil, fmt.Errorf("'in' not supported")
 			}
-			if int32Constraint.NotIn != nil {
+			if constraint.NotIn != nil {
 				return nil, fmt.Errorf("'notIn' not supported")
 			}
 
-			if int32Constraint.LessThan != nil {
-				switch cType := int32Constraint.LessThan.(type) {
+			if constraint.LessThan != nil {
+				switch cType := constraint.LessThan.(type) {
 				case *validate.Int32Rules_Lt:
 					integerRules.Maximum = Ptr(int64(cType.Lt))
 					integerRules.ExclusiveMaximum = Ptr(true)
@@ -464,8 +465,8 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 					integerRules.Maximum = Ptr(int64(cType.Lte))
 				}
 			}
-			if int32Constraint.GreaterThan != nil {
-				switch cType := int32Constraint.GreaterThan.(type) {
+			if constraint.GreaterThan != nil {
+				switch cType := constraint.GreaterThan.(type) {
 				case *validate.Int32Rules_Gt:
 					integerRules.Minimum = Ptr(int64(cType.Gt))
 					integerRules.ExclusiveMinimum = Ptr(true)
@@ -473,19 +474,20 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 					integerRules.Minimum = Ptr(int64(cType.Gte))
 				}
 			}
-
 		}
+
 		schemaProto.Type = &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
-				Format: schema_j5pb.IntegerField_FORMAT_INT32,
-				Rules:  integerRules,
+				Format:    schema_j5pb.IntegerField_FORMAT_INT32,
+				Rules:     integerRules,
+				ListRules: listConstraint.GetInt32(),
 			},
 		}
 		return prop, nil
 
 	case protoreflect.Uint32Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
-		uint32Constraint := constraint.GetUint32()
+		uint32Constraint := validateConstraint.GetUint32()
 		if uint32Constraint != nil {
 			integerRules = &schema_j5pb.IntegerField_Rules{}
 			if uint32Constraint.Const != nil {
@@ -520,15 +522,16 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 		schemaProto.Type = &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
-				Format: schema_j5pb.IntegerField_FORMAT_UINT32,
-				Rules:  integerRules,
+				Format:    schema_j5pb.IntegerField_FORMAT_UINT32,
+				Rules:     integerRules,
+				ListRules: listConstraint.GetUint32(),
 			},
 		}
 		return prop, nil
 
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
-		int64Constraint := constraint.GetInt64()
+		int64Constraint := validateConstraint.GetInt64()
 		if int64Constraint != nil {
 			integerRules = &schema_j5pb.IntegerField_Rules{}
 			if int64Constraint.Const != nil {
@@ -563,15 +566,16 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 		schemaProto.Type = &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
-				Format: schema_j5pb.IntegerField_FORMAT_INT64,
-				Rules:  integerRules,
+				Format:    schema_j5pb.IntegerField_FORMAT_INT64,
+				Rules:     integerRules,
+				ListRules: listConstraint.GetInt64(),
 			},
 		}
 		return prop, nil
 
 	case protoreflect.FloatKind:
 		var numberRules *schema_j5pb.FloatField_Rules
-		floatConstraint := constraint.GetFloat()
+		floatConstraint := validateConstraint.GetFloat()
 		if floatConstraint != nil {
 			numberRules = &schema_j5pb.FloatField_Rules{}
 			if floatConstraint.Const != nil {
@@ -606,15 +610,16 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 		schemaProto.Type = &schema_j5pb.Field_Float{
 			Float: &schema_j5pb.FloatField{
-				Format: schema_j5pb.FloatField_FORMAT_FLOAT32,
-				Rules:  numberRules,
+				Format:    schema_j5pb.FloatField_FORMAT_FLOAT32,
+				Rules:     numberRules,
+				ListRules: listConstraint.GetFloat(),
 			},
 		}
 		return prop, nil
 
 	case protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind, protoreflect.DoubleKind:
 		var numberRules *schema_j5pb.FloatField_Rules
-		floatConstraint := constraint.GetDouble()
+		floatConstraint := validateConstraint.GetDouble()
 		if floatConstraint != nil {
 			numberRules = &schema_j5pb.FloatField_Rules{}
 			if floatConstraint.Const != nil {
@@ -649,18 +654,22 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 		schemaProto.Type = &schema_j5pb.Field_Float{
 			Float: &schema_j5pb.FloatField{
-				Format: schema_j5pb.FloatField_FORMAT_FLOAT64,
-				Rules:  numberRules,
+				Format:    schema_j5pb.FloatField_FORMAT_FLOAT64,
+				Rules:     numberRules,
+				ListRules: listConstraint.GetDouble(),
 			},
 		}
 		return prop, nil
 
 	case protoreflect.StringKind:
 		stringItem := &schema_j5pb.StringField{}
-		if constraint != nil && constraint.Type != nil {
-			stringConstraint, ok := constraint.Type.(*validate.FieldConstraints_String_)
+
+		var typeHint string
+
+		if validateConstraint != nil && validateConstraint.Type != nil {
+			stringConstraint, ok := validateConstraint.Type.(*validate.FieldConstraints_String_)
 			if !ok {
-				return nil, fmt.Errorf("wrong constraint type for string: %T", constraint.Type)
+				return nil, fmt.Errorf("wrong constraint type for string: %T", validateConstraint.Type)
 			}
 
 			stringItem.Rules = &schema_j5pb.StringField_Rules{}
@@ -684,6 +693,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			case *validate.StringRules_Uuid:
 				if wkt.Uuid {
 					stringItem.Format = Ptr("uuid")
+					typeHint = "uuid"
 				}
 			case *validate.StringRules_Email:
 				if wkt.Email {
@@ -717,18 +727,57 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 				return nil, fmt.Errorf("unknown string constraint: %T", constraint.WellKnown)
 
 			}
-
 		}
 
-		schemaProto.Type = &schema_j5pb.Field_String_{
-			String_: stringItem,
+		listRules := listConstraint.GetString_()
+
+		var fkRules *list_j5pb.KeyRules
+
+		if fk := listRules.GetForeignKey(); fk != nil {
+			switch fkt := fk.Type.(type) {
+			case *list_j5pb.ForeignKeyRules_UniqueString:
+				fkRules = fkt.UniqueString
+				if typeHint == "" {
+					typeHint = "natural_key"
+				} else if typeHint != "natural_key" {
+					return nil, fmt.Errorf("rules (%s) and list constraints (natural_key) do not match", typeHint)
+				}
+
+			case *list_j5pb.ForeignKeyRules_Uuid:
+				fkRules = fkt.Uuid
+				if typeHint == "" {
+					typeHint = "uuid"
+				} else if typeHint != "uuid" {
+					return nil, fmt.Errorf("rules (%s) and list constraints (uuid) do not match", typeHint)
+				}
+			}
+		}
+
+		if openText := listRules.GetOpenText(); openText != nil {
+			if typeHint != "" {
+				return nil, fmt.Errorf("open_text and rules (%s) do not match", typeHint)
+			}
+			stringItem.ListRules = openText
+		}
+
+		if typeHint == "uuid" {
+			schemaProto.Type = &schema_j5pb.Field_Key{
+				Key: &schema_j5pb.KeyField{
+					Format:    schema_j5pb.KeyFormat_UUID,
+					ListRules: fkRules,
+				},
+			}
+		} else {
+			schemaProto.Type = &schema_j5pb.Field_String_{
+				String_: stringItem,
+			}
 		}
 		return prop, nil
 
 	case protoreflect.BytesKind:
-		schemaProto.Type = &schema_j5pb.Field_String_{
-			String_: &schema_j5pb.StringField{
-				Format: Ptr("byte"),
+		schemaProto.Type = &schema_j5pb.Field_Bytes{
+			Bytes: &schema_j5pb.BytesField{
+				Rules: &schema_j5pb.BytesField_Rules{},
 			},
 		}
 		return prop, nil
@@ -737,8 +786,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 		protoName := src.Enum().FullName()
 		ref, ok := ss.refs[protoName]
 		if !ok {
-			enumConstraint := constraint.GetEnum()
-			built, err := buildEnum(src.Enum(), enumConstraint)
+			built, err := buildEnum(src.Enum())
 			if err != nil {
 				return nil, err
 			}
@@ -747,9 +795,39 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 			ss.refs[protoName] = ref
 		}
 
-		prop.Schema = &EnumField{
-			Ref: ref,
+		var rules *schema_j5pb.EnumField_Rules
+		if vc := validateConstraint.GetEnum(); vc != nil {
+			enumSchema := ref.To.(*EnumSchema)
+			rules = &schema_j5pb.EnumField_Rules{}
+			if vc.In != nil {
+				for _, num := range vc.In {
+					opt := enumSchema.OptionByNumber(num)
+					if opt == nil {
+						return nil, fmt.Errorf("enum value %d not found", num)
+					}
+					rules.In = append(rules.In, opt.Name)
+				}
+			}
+			if vc.NotIn != nil {
+				for _, num := range vc.NotIn {
+					opt := enumSchema.OptionByNumber(num)
+					if opt == nil {
+						if num == 0 {
+							continue // _UNSPECIFIED is being excluded already
+						}
+						return nil, fmt.Errorf("enum value %d not found", num)
+					}
+					rules.NotIn = append(rules.NotIn, opt.Name)
+				}
+
+			}
 		}
+		prop.Schema = &EnumField{
+			Ref:       ref,
+			ListRules: listConstraint.GetEnum(),
+			Rules:     rules,
+		}
+
 		return prop, nil
 
 	case protoreflect.MessageKind:
@@ -802,48 +880,15 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 }
 
-func buildEnum(enumDescriptor protoreflect.EnumDescriptor, constraint *validate.EnumRules) (*EnumSchema, error) {
+func buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*EnumSchema, error) {
 
-	specMap := map[int32]struct{}{}
-	var notIn bool
-	var isIn bool
-
-	if constraint != nil {
-		if constraint.NotIn != nil {
-			for _, notIn := range constraint.NotIn {
-				specMap[notIn] = struct{}{}
-			}
-			notIn = true
-
-		} else if constraint.In != nil {
-			for _, in := range constraint.In {
-				specMap[in] = struct{}{}
-			}
-			isIn = true
-		}
-	}
-
-	if notIn && isIn {
-		return nil, fmt.Errorf("enum cannot have both in and not_in constraints")
-	}
+	ext := proto.GetExtension(enumDescriptor.Options(), ext_j5pb.E_Enum).(*ext_j5pb.EnumOptions)
 
 	sourceValues := enumDescriptor.Values()
 	values := make([]*schema_j5pb.Enum_Value, 0, sourceValues.Len())
 	for ii := 0; ii < sourceValues.Len(); ii++ {
 		option := sourceValues.Get(ii)
 		number := int32(option.Number())
-
-		if notIn {
-			_, exclude := specMap[number]
-			if exclude {
-				continue
-			}
-		} else if isIn {
-			_, include := specMap[number]
-			if !include {
-				continue
-			}
-		}
 
 		values = append(values, &schema_j5pb.Enum_Value{
 			Name:        string(option.Name()),
@@ -864,6 +909,9 @@ func buildEnum(enumDescriptor protoreflect.EnumDescriptor, constraint *validate.
 		values[ii].Name = strings.TrimPrefix(values[ii].Name, trimPrefix)
 	}
 
+	if ext != nil && ext.NoDefault {
+		values = values[1:]
+	}
 	return &EnumSchema{
 		rootSchema: newBasePackage(enumDescriptor),
 		Options:    values,

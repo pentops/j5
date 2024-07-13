@@ -53,29 +53,33 @@ message Method {
     repeated ObjectProperty path_parameters = 2;
     repeated ObjectProperty query_parameters = 3;
 
-    repeated SearchField searchable_fields = 4;
-    repeated SortField sortable_fields = 5;
-    repeated FilterField filterable_fields = 6;
+    ListRequest list = 4;
+  }
+}
 
-    message SortField {
-      string name = 1;
-      optional Direction default_sort = 2;
+message ListRequest {
+  repeated SearchField searchable_fields = 1;
+  repeated SortField sortable_fields = 2;
+  repeated FilterField filterable_fields = 3;
 
-      enum Direction {
-        DIRECTION_UNSPECIFIED = 0;
-        DIRECTION_ASC = 1;
-        DIRECTION_DESC = 2;
-      }
+  message SortField {
+    string name = 1;
+    optional Direction default_sort = 2;
+
+    enum Direction {
+      DIRECTION_UNSPECIFIED = 0;
+      DIRECTION_ASC = 1;
+      DIRECTION_DESC = 2;
     }
+  }
 
-    message FilterField {
-      string name = 1;
-      repeated string default_filters = 2;
-    }
+  message FilterField {
+    string name = 1;
+    repeated string default_filters = 2;
+  }
 
-    message SearchField {
-      string name = 1;
-    }
+  message SearchField {
+    string name = 1;
   }
 }
 
