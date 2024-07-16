@@ -51,7 +51,7 @@ func (s *EnumField) ToJ5Field() *schema_j5pb.Field {
 			Enum: &schema_j5pb.EnumField{
 				Schema: &schema_j5pb.EnumField_Ref{
 					Ref: &schema_j5pb.Ref{
-						Package: s.Ref.Package,
+						Package: s.Ref.Package.Name,
 						Schema:  s.Ref.Schema,
 					},
 				},
@@ -76,7 +76,7 @@ func (s *ObjectField) ToJ5Field() *schema_j5pb.Field {
 			Object: &schema_j5pb.ObjectField{
 				Schema: &schema_j5pb.ObjectField_Ref{
 					Ref: &schema_j5pb.Ref{
-						Package: s.Ref.Package,
+						Package: s.Ref.Package.Name,
 						Schema:  s.Ref.Schema,
 					},
 				},
@@ -101,7 +101,7 @@ func (s *OneofField) ToJ5Field() *schema_j5pb.Field {
 			Oneof: &schema_j5pb.OneofField{
 				Schema: &schema_j5pb.OneofField_Ref{
 					Ref: &schema_j5pb.Ref{
-						Package: s.Ref.Package,
+						Package: s.Ref.Package.Name,
 						Schema:  s.Ref.Schema,
 					},
 				},

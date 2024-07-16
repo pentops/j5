@@ -11,37 +11,42 @@ type RootSchema interface {
 	AsRef() *RefSchema
 	FullName() string
 	PackageName() string
+	Package() *Package
 	ToJ5Root() *schema_j5pb.RootSchema
 }
 
 type RefSchema struct {
-	Package string
+	Package *Package
 	Schema  string
 	To      RootSchema
 }
 
 func (s *RefSchema) FullName() string {
-	return fmt.Sprintf("%s.%s", s.Package, s.Schema)
+	return fmt.Sprintf("%s.%s", s.Package.Name, s.Schema)
 }
 
 type rootSchema struct {
-	Description string
-	Package     string
-	Name        string
+	description string
+	pkg         *Package
+	name        string
 }
 
 func (s *rootSchema) FullName() string {
-	return fmt.Sprintf("%s.%s", s.Package, s.Name)
+	return fmt.Sprintf("%s.%s", s.pkg.Name, s.name)
 }
 
 func (s *rootSchema) PackageName() string {
-	return s.Package
+	return s.pkg.Name
+}
+
+func (s *rootSchema) Package() *Package {
+	return s.pkg
 }
 
 func (s *rootSchema) AsRef() *RefSchema {
 	return &RefSchema{
-		Package: s.Package,
-		Schema:  s.Name,
+		Package: s.pkg,
+		Schema:  s.name,
 	}
 }
 
@@ -65,8 +70,8 @@ func (s *EnumSchema) ToJ5Root() *schema_j5pb.RootSchema {
 	return &schema_j5pb.RootSchema{
 		Type: &schema_j5pb.RootSchema_Enum{
 			Enum: &schema_j5pb.Enum{
-				Name:        s.Name,
-				Description: s.Description,
+				Name:        s.name,
+				Description: s.description,
 				Options:     s.Options,
 				Prefix:      s.NamePrefix,
 			},
@@ -95,8 +100,8 @@ func (s *ObjectSchema) ToJ5Object() *schema_j5pb.Object {
 		properties = append(properties, property)
 	}
 	return &schema_j5pb.Object{
-		Description: s.Description,
-		Name:        s.Name,
+		Description: s.description,
+		Name:        s.name,
 		Properties:  properties,
 	}
 }
@@ -125,8 +130,8 @@ func (s *OneofSchema) ToJ5Root() *schema_j5pb.RootSchema {
 	return &schema_j5pb.RootSchema{
 		Type: &schema_j5pb.RootSchema_Oneof{
 			Oneof: &schema_j5pb.Oneof{
-				Description: s.Description,
-				Name:        s.Name,
+				Description: s.description,
+				Name:        s.name,
 				Properties:  properties,
 			},
 		},
@@ -136,6 +141,7 @@ func (s *OneofSchema) ToJ5Root() *schema_j5pb.RootSchema {
 type PropertySet []*ObjectProperty
 
 type ObjectProperty struct {
+	Parent RootSchema
 	Schema FieldSchema
 
 	ProtoField []protoreflect.FieldNumber

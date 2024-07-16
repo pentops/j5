@@ -9,7 +9,6 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/j5/internal/j5reflect"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -17,6 +16,47 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
+
+func TestPackageSplit(t *testing.T) {
+	for _, tc := range []struct {
+		input string
+		want  *packageID
+	}{{
+		input: "test.v1",
+		want: &packageID{
+			packageName: "test.v1",
+		},
+	}, {
+		input: "foo.bar.v1.service",
+		want: &packageID{
+			packageName: "foo.bar.v1",
+			subPackage:  proto.String("service"),
+		},
+	}, {
+		input: "test.v1.service",
+		want: &packageID{
+			packageName: "test.v1",
+			subPackage:  proto.String("service"),
+		},
+	},
+		{input: "bad"},
+		{input: "bad.package.service"},
+		{input: ""},
+		{input: "test.v1.v2"},
+	} {
+		t.Run(tc.input, func(t *testing.T) {
+			pkg, err := splitPackageParts(tc.input)
+			if tc.want == nil {
+				assert.Error(t, err)
+				return
+			}
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+			assert.Equal(t, tc.want, pkg)
+		})
+	}
+}
 
 func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constraints *validate.FieldConstraints) *descriptorpb.FieldDescriptorProto {
 	return fieldWithExtension(field, validate.E_Field, constraints)
@@ -42,13 +82,19 @@ func testImage() *source_j5pb.SourceImage {
 			Label: "Test",
 			Name:  "test.v1",
 		}},
+		Options: &config_j5pb.CodecOptions{
+			TrimSubPackages: []string{"service"},
+		},
 		File: []*descriptorpb.FileDescriptorProto{{
 			Syntax: proto.String("proto3"),
 			Options: &descriptorpb.FileOptions{
-				GoPackage: proto.String("github.com/pentops/j5/test_pb"),
+				GoPackage: proto.String("github.com/pentops/j5/test/v1/test_spb"),
 			},
-			Name:    proto.String("test.proto"),
-			Package: proto.String("test.v1"),
+			Name:    proto.String("test/v1/service/service.proto"),
+			Package: proto.String("test.v1.service"),
+			Dependency: []string{
+				"test/v1/test.proto",
+			},
 			Service: []*descriptorpb.ServiceDescriptorProto{{
 				Name: proto.String("TestService"),
 				Method: []*descriptorpb.MethodDescriptorProto{
@@ -85,7 +131,15 @@ func testImage() *source_j5pb.SourceImage {
 					Number:   proto.Int32(2),
 					TypeName: proto.String(".test.v1.Referenced"),
 				}},
-			}, {
+			}},
+		}, {
+			Syntax: proto.String("proto3"),
+			Options: &descriptorpb.FileOptions{
+				GoPackage: proto.String("github.com/pentops/j5/test/v1/test_pb"),
+			},
+			Name:    proto.String("test/v1/test.proto"),
+			Package: proto.String("test.v1"),
+			MessageType: []*descriptorpb.DescriptorProto{{
 				Name: proto.String("Referenced"),
 				Field: []*descriptorpb.FieldDescriptorProto{{
 					Name:   proto.String("field_1"),
@@ -112,11 +166,11 @@ func testImage() *source_j5pb.SourceImage {
 			SourceCodeInfo: &descriptorpb.SourceCodeInfo{
 				Location: []*descriptorpb.SourceCodeInfo_Location{{
 					LeadingComments: proto.String("Message Comment"),
-					Path:            []int32{pathMessage, 2}, // 4 = Message, 2 = Nested
+					Path:            []int32{pathMessage, 0}, // 4 = Message, 0 = 'Referenced'
 					Span:            []int32{1, 1, 1},        // Single line comment
 				}, {
 					LeadingComments: proto.String("Field Comment"),
-					Path:            []int32{pathMessage, 2, pathField, 0}, // 4 = Message, 2 = Nested, 1 = Field
+					Path:            []int32{pathMessage, 0, pathField, 0}, // 4 = Message, 0 = 'Rferenced', 1 = Field, 0
 					Span:            []int32{2, 1, 2},                      // Single line comment
 				}},
 			},
@@ -124,79 +178,95 @@ func testImage() *source_j5pb.SourceImage {
 	}
 }
 
-func testAPI() *schema_j5pb.API {
+func testAPI() *source_j5pb.API {
 
-	return &schema_j5pb.API{
-		Packages: []*schema_j5pb.Package{{
+	return &source_j5pb.API{
+		Packages: []*source_j5pb.Package{{
 			Label: "Test",
 			Name:  "test.v1",
-			Services: []*schema_j5pb.Service{{
-				Name: "TestService",
-				Methods: []*schema_j5pb.Method{{
-					FullGrpcName: "/test.v1.TestService/Test",
-					Name:         "Test",
-					HttpMethod:   schema_j5pb.HTTPMethod_HTTP_METHOD_GET,
-					HttpPath:     "/test/:pathField",
-					ResponseBody: &schema_j5pb.Object{
-						Name: "TestResponse",
-						//Rules:            &schema_j5pb.ObjectRules{},
-						Properties: []*schema_j5pb.ObjectProperty{{
-							Name:        "testField",
-							Description: "",
-							Required:    false,
-							WriteOnly:   false,
-							Schema: &schema_j5pb.Field{
-								Type: &schema_j5pb.Field_String_{
-									String_: &schema_j5pb.StringField{},
-								},
+			SubPackages: []*source_j5pb.SubPackage{{
+				Name: "service",
+
+				Services: []*source_j5pb.Service{{
+					Name: "TestService",
+					Methods: []*source_j5pb.Method{{
+						FullGrpcName:   "/test.v1.service.TestService/Test",
+						Name:           "Test",
+						HttpMethod:     schema_j5pb.HTTPMethod_HTTP_METHOD_GET,
+						HttpPath:       "/test/:pathField",
+						RequestSchema:  "TestRequest",
+						ResponseSchema: "TestResponse",
+					}},
+				}},
+				Schemas: map[string]*schema_j5pb.RootSchema{
+					"TestRequest": {
+						Type: &schema_j5pb.RootSchema_Object{
+							Object: &schema_j5pb.Object{
+								Name: "TestRequest",
+								Properties: []*schema_j5pb.ObjectProperty{{
+									Name:        "pathField",
+									Description: "",
+									Required:    true,
+									Schema: &schema_j5pb.Field{
+										Type: &schema_j5pb.Field_String_{
+											String_: &schema_j5pb.StringField{},
+										},
+									},
+									ProtoField: []int32{1},
+								}, {
+									Name:     "queryField",
+									Required: false,
+									Schema: &schema_j5pb.Field{
+										Type: &schema_j5pb.Field_String_{
+											String_: &schema_j5pb.StringField{},
+										},
+									},
+									ProtoField: []int32{2},
+								}},
 							},
-							ProtoField: []int32{1},
-						}, {
-							Name:        "msg",
-							Description: "",
-							Required:    false,
-							Schema: &schema_j5pb.Field{
-								Type: &schema_j5pb.Field_Object{
-									Object: &schema_j5pb.ObjectField{
-										Schema: &schema_j5pb.ObjectField_Ref{
-											Ref: &schema_j5pb.Ref{
-												Package: "test.v1",
-												Schema:  "Referenced",
+						},
+					},
+					"TestResponse": {
+						Type: &schema_j5pb.RootSchema_Object{
+							Object: &schema_j5pb.Object{
+								Name: "TestResponse",
+								//Rules:            &schema_j5pb.ObjectRules{},
+								Properties: []*schema_j5pb.ObjectProperty{{
+									Name:        "testField",
+									Description: "",
+									Required:    false,
+									WriteOnly:   false,
+									Schema: &schema_j5pb.Field{
+										Type: &schema_j5pb.Field_String_{
+											String_: &schema_j5pb.StringField{},
+										},
+									},
+									ProtoField: []int32{1},
+								}, {
+									Name:        "msg",
+									Description: "",
+									Required:    false,
+									Schema: &schema_j5pb.Field{
+										Type: &schema_j5pb.Field_Object{
+											Object: &schema_j5pb.ObjectField{
+												Schema: &schema_j5pb.ObjectField_Ref{
+													Ref: &schema_j5pb.Ref{
+														Package: "test.v1",
+														Schema:  "Referenced",
+													},
+												},
 											},
 										},
 									},
-								},
+									ProtoField: []int32{2},
+								}},
 							},
-							ProtoField: []int32{2},
-						}},
+						},
 					},
-					Request: &schema_j5pb.Method_Request{
-						PathParameters: []*schema_j5pb.ObjectProperty{{
-							Name:        "pathField",
-							Description: "",
-							Required:    true,
-							Schema: &schema_j5pb.Field{
-								Type: &schema_j5pb.Field_String_{
-									String_: &schema_j5pb.StringField{},
-								},
-							},
-							ProtoField: []int32{1},
-						}},
-						QueryParameters: []*schema_j5pb.ObjectProperty{{
-							Name:     "queryField",
-							Required: false,
-							Schema: &schema_j5pb.Field{
-								Type: &schema_j5pb.Field_String_{
-									String_: &schema_j5pb.StringField{},
-								},
-							},
-							ProtoField: []int32{2},
-						}},
-					},
-				}},
+				},
 			}},
 			Schemas: map[string]*schema_j5pb.RootSchema{
-				"test.v1.Referenced": {
+				"Referenced": {
 					Type: &schema_j5pb.RootSchema_Object{
 						Object: &schema_j5pb.Object{
 							Name:        "Referenced",
@@ -229,7 +299,7 @@ func testAPI() *schema_j5pb.API {
 						},
 					},
 				},
-				"test.v1.TestEnum": {
+				"TestEnum": {
 					Type: &schema_j5pb.RootSchema_Enum{
 						Enum: &schema_j5pb.Enum{
 							Name:   "TestEnum",
@@ -253,84 +323,94 @@ func TestBuildPath(t *testing.T) {
 
 	sourceImage := testImage()
 
-	apiReflection, err := ReflectFromSource(sourceImage)
+	apiSource, err := APIFromImage(sourceImage)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
 
 	t.Run("Reflect Direct", func(t *testing.T) {
-		if len(apiReflection.Packages) != 1 {
-			t.Fatalf("unexpected packages: %d", len(apiReflection.Packages))
+		if len(apiSource.Packages) != 1 {
+			t.Fatalf("unexpected packages: %d", len(apiSource.Packages))
 		}
-		pkg := apiReflection.Packages[0]
+		pkg := apiSource.Packages[0]
+		if len(pkg.SubPackages) != 1 {
+			t.Fatalf("unexpected subpackages: %d", len(pkg.SubPackages))
+		}
+		subPkg := pkg.SubPackages[0]
 		assert.Equal(t, "test.v1", pkg.Name)
-		if len(pkg.Services) != 1 {
-			t.Fatalf("unexpected services: %d", len(pkg.Services))
+		if len(subPkg.Services) != 1 {
+			t.Fatalf("unexpected services: %d", len(subPkg.Services))
 		}
-		service := pkg.Services[0]
+		service := subPkg.Services[0]
 		if len(service.Methods) != 1 {
 			t.Fatalf("unexpected methods: %d", len(service.Methods))
 		}
 		method := service.Methods[0]
+		assert.Equal(t, "Test", method.Name)
+		assert.Equal(t, "/test/:pathField", method.HttpPath)
 
-		resObject, ok := method.Response.(*j5reflect.ObjectSchema)
+		resSchema, ok := subPkg.Schemas["TestResponse"]
 		if !ok {
-			t.Fatalf("unexpected type: %T", resObject)
+			t.Fatalf("schema not found")
+		}
+		resAsObject, ok := resSchema.Type.(*schema_j5pb.RootSchema_Object)
+		if !ok {
+			t.Fatalf("unexpected type: %T", resSchema.Type)
 		}
 
+		resObject := resAsObject.Object
 		if len(resObject.Properties) != 2 {
 			t.Fatalf("unexpected properties: %d", len(resObject.Properties))
 		}
 
 		prop := resObject.Properties[1]
-		fieldSchema, ok := prop.Schema.(*j5reflect.ObjectField)
+		fieldSchema, ok := prop.Schema.Type.(*schema_j5pb.Field_Object)
 		if !ok {
 			t.Fatalf("unexpected type: %T", prop.Schema)
 		}
+		ref := fieldSchema.Object.GetRef()
+		if ref == nil {
+			t.Fatalf("no ref")
+		}
 
 		// The field is a ref, as all are in reflection.
-		assert.Equal(t, "test.v1", fieldSchema.Ref.Package)
-		assert.Equal(t, "Referenced", fieldSchema.Ref.Schema)
+		assert.Equal(t, "test.v1", ref.Package)
+		assert.Equal(t, "Referenced", ref.Schema)
 
 	})
-
-	apiDescriptor, err := apiReflection.ToJ5Proto()
-	if err != nil {
-		t.Fatal(err.Error())
-	}
 
 	t.Run("Source to Descriptor", func(t *testing.T) {
-		assert.Len(t, apiDescriptor.Packages, 1)
+		assert.Len(t, apiSource.Packages, 1)
 		want := testAPI()
-		want.Metadata = apiDescriptor.Metadata
-		assertEqualProto(t, want, apiDescriptor)
+		assertEqualProto(t, want, apiSource)
 	})
 
-	t.Run("Re-Convert", func(t *testing.T) {
+	/*
+		t.Run("Re-Convert", func(t *testing.T) {
 
-		reflectionFromBuilt, err := j5reflect.APIFromDesc(apiDescriptor)
-		if err != nil {
-			t.Fatal(err.Error())
-		}
-		assert.Len(t, reflectionFromBuilt.Packages, 1)
-		builtDescriptor, err := reflectionFromBuilt.ToJ5Proto()
-		if err != nil {
-			t.Fatal(err.Error())
-		}
-		assert.Len(t, builtDescriptor.Packages, 1)
-		builtDescriptor.Metadata = apiDescriptor.Metadata
+			reflectionFromBuilt, err := j5reflect.APIFromDesc(apiDescriptor)
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+			assert.Len(t, reflectionFromBuilt.Packages, 1)
+			builtDescriptor, err := reflectionFromBuilt.ToJ5Proto()
+			if err != nil {
+				t.Fatal(err.Error())
+			}
+			assert.Len(t, builtDescriptor.Packages, 1)
+			builtDescriptor.Metadata = apiDescriptor.Metadata
 
-		assertEqualProto(t, apiDescriptor, builtDescriptor)
+			assertEqualProto(t, apiDescriptor, builtDescriptor)
 
-	})
+		})*/
 
 	t.Run("Specific Cases", func(t *testing.T) {
 
 		// Packages are controlled by this package, should equal in full. Schema
 		// tests are in the jsonapi package.
-		schemas := apiDescriptor.Packages[0].Schemas
-		assert.Equal(t, "test.v1", apiDescriptor.Packages[0].Name)
+		assert.Equal(t, "test.v1", apiSource.Packages[0].Name)
 
+		schemas := apiSource.Packages[0].Schemas
 		for k := range schemas {
 			t.Logf("schema: %s", k)
 		}
@@ -340,9 +420,9 @@ func TestBuildPath(t *testing.T) {
 			t.Fatal("TestRequest should not be registered as a schema, but was")
 		}
 
-		refSchema, ok := schemas["test.v1.Referenced"]
+		refSchema, ok := schemas["Referenced"]
 		if !ok {
-			t.Fatal("schema 'test.v1.Referenced' not found")
+			t.Fatal("schema 'Referenced' not found")
 		}
 
 		asObject := refSchema.GetObject()
@@ -378,7 +458,7 @@ func TestBuildPath(t *testing.T) {
 			t.Fatalf("ref is %s", refStr)
 		}
 
-		schemaEnum, ok := schemas["test.v1.TestEnum"]
+		schemaEnum, ok := schemas["TestEnum"]
 		if !ok {
 			t.Fatalf("schema not found: '%s'", ref)
 		}

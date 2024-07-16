@@ -20,7 +20,7 @@ func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 
 	descriptor := msg.Descriptor()
 
-	schema, err := c.schemaSet.SchemaReflect(descriptor)
+	schema, err := c.schemaSet.SchemaFromReflect(descriptor)
 	if err != nil {
 		return fmt.Errorf("schema object: %w", err)
 	}

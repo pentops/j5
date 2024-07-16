@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+import "buf/validate/validate.proto";
+import "j5/schema/v1/document.proto";
+import "j5/schema/v1/schema.proto";
+
+option go_package = "github.com/pentops/j5/gen/j5/source/v1/source_j5pb";
+
+message API {
+  repeated Package packages = 1;
+}
+
+message Package {
+  string label = 1;
+
+  // name of the versioned parent package, e.g. "j5.source.v1"
+  string name = 2 [(buf.validate.field).string.pattern = "^([a-z0-9_]+\\.)v[0-9]+$"];
+
+  // markdown formatted prose
+  string prose = 3;
+
+  repeated SubPackage sub_packages = 4;
+  map<string, j5.schema.v1.RootSchema> schemas = 8;
+}
+
+message SubPackage {
+  string name = 1;
+  repeated Service services = 2;
+  repeated Topic topics = 3;
+  map<string, j5.schema.v1.RootSchema> schemas = 8;
+}
+
+message Service {
+  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
+
+  repeated Method methods = 3;
+}
+
+message Method {
+  string name = 2 [(buf.validate.field).string.pattern = "^[a-z][a-zA-Z0-9]*$"];
+  string full_grpc_name = 3;
+
+  j5.schema.v1.HTTPMethod http_method = 4 [(buf.validate.field).enum = {
+    not_in: 0
+    defined_only: true
+  }];
+
+  string http_path = 5 [(buf.validate.field).string.pattern = "^(\\/:?[a-z0-9_]+)+$"];
+  string request_schema = 6 [(buf.validate.field).required = true];
+  string response_schema = 7 [(buf.validate.field).required = true];
+}
+
+message Topic {
+  // name as specified in proto, e.g. "FooTopic"
+  string name = 1;
+
+  repeated TopicMessage messages = 3;
+}
+
+message TopicMessage {
+  string name = 1;
+  string full_grpc_name = 2;
+  string schema = 3;
+}

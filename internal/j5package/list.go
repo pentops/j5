@@ -1,4 +1,4 @@
-package j5reflect
+package j5package
 
 import (
 	"fmt"
@@ -6,18 +6,19 @@ import (
 
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/internal/j5reflect"
 )
 
-func buildListRequest(response RootSchema) (*schema_j5pb.ListRequest, error) {
-	responseObj, ok := response.(*ObjectSchema)
+func buildListRequest(response j5reflect.RootSchema) (*schema_j5pb.ListRequest, error) {
+	responseObj, ok := response.(*j5reflect.ObjectSchema)
 	if !ok {
 		return nil, fmt.Errorf("expected object schema, got %T", response)
 	}
 
-	var foundArray *ArrayField
+	var foundArray *j5reflect.ArrayField
 
 	for _, field := range responseObj.Properties {
-		asArray, ok := field.Schema.(*ArrayField)
+		asArray, ok := field.Schema.(*j5reflect.ArrayField)
 		if !ok {
 			continue
 		}
@@ -31,14 +32,14 @@ func buildListRequest(response RootSchema) (*schema_j5pb.ListRequest, error) {
 		return nil, fmt.Errorf("no array found in response")
 	}
 
-	rootSchema, ok := foundArray.Schema.(*ObjectField)
+	rootSchema, ok := foundArray.Schema.(*j5reflect.ObjectField)
 	if !ok {
 		return nil, fmt.Errorf("expected object schema, got %T", foundArray.Schema)
 	}
 
 	out := &schema_j5pb.ListRequest{}
 
-	addSearch := func(schema WalkProperty, searching *list_j5pb.SearchingConstraint) {
+	addSearch := func(schema j5reflect.WalkProperty, searching *list_j5pb.SearchingConstraint) {
 		if searching == nil {
 			fmt.Printf("no searching constraint for %s\n", schema.JSONName)
 			return
@@ -49,7 +50,7 @@ func buildListRequest(response RootSchema) (*schema_j5pb.ListRequest, error) {
 		})
 	}
 
-	addFilter := func(schema WalkProperty, filtering *list_j5pb.FilteringConstraint) {
+	addFilter := func(schema j5reflect.WalkProperty, filtering *list_j5pb.FilteringConstraint) {
 		if filtering == nil {
 			return
 		}
@@ -59,7 +60,7 @@ func buildListRequest(response RootSchema) (*schema_j5pb.ListRequest, error) {
 		})
 	}
 
-	addSort := func(schema WalkProperty, sorting *list_j5pb.SortingConstraint) {
+	addSort := func(schema j5reflect.WalkProperty, sorting *list_j5pb.SortingConstraint) {
 		if sorting == nil {
 			return
 		}
@@ -74,11 +75,11 @@ func buildListRequest(response RootSchema) (*schema_j5pb.ListRequest, error) {
 		})
 	}
 
-	if err := WalkSchemaFields(rootSchema.Schema(), func(schema WalkProperty) error {
+	if err := j5reflect.WalkSchemaFields(rootSchema.Schema(), func(schema j5reflect.WalkProperty) error {
 		fmt.Printf("schema: %s: %s\n", schema.JSONName, strings.Join(schema.Path, "."))
 
 		switch st := schema.Schema.(type) {
-		case *ScalarSchema:
+		case *j5reflect.ScalarSchema:
 			switch scalar := st.Proto.Type.(type) {
 			case *schema_j5pb.Field_Any:
 				// do nothing
