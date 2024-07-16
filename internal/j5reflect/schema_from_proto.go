@@ -16,8 +16,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
-func PackageSetFromFiles(descFiles *protoregistry.Files) (*PackageSet, error) {
-
+func SchemaSetFromFiles(descFiles *protoregistry.Files) (*SchemaSet, error) {
 	messages := make([]protoreflect.MessageDescriptor, 0)
 	enums := make([]protoreflect.EnumDescriptor, 0)
 
@@ -36,15 +35,15 @@ func PackageSetFromFiles(descFiles *protoregistry.Files) (*PackageSet, error) {
 		return true
 	})
 
-	pkgSet := NewPackageSet()
+	pkgSet := newSchemaSet()
 	for _, message := range messages {
-		_, err := pkgSet.SchemaFromReflect(message)
+		_, err := pkgSet.messageSchema(message)
 		if err != nil {
 			return nil, fmt.Errorf("package from reflect: %w", err)
 		}
 	}
 	for _, enum := range enums {
-		ref, didExist := pkgSet.newRefPlaceholder(enum)
+		ref, didExist := newRefPlaceholder(pkgSet, enum)
 		if didExist {
 			continue // was referenced by an earlier message
 		}
@@ -60,57 +59,9 @@ func PackageSetFromFiles(descFiles *protoregistry.Files) (*PackageSet, error) {
 	return pkgSet, nil
 }
 
-func (pkg *Package) schemaRootFromProto(descriptor protoreflect.Descriptor) rootSchema {
-	description := commentDescription(descriptor)
-	_, nameInPackage := splitDescriptorName(descriptor)
-	return rootSchema{
-		name:        nameInPackage,
-		pkg:         pkg,
-		description: description,
-	}
-}
-
-func (pkg *PackageSet) newRefPlaceholder(descriptor protoreflect.Descriptor) (*RefSchema, bool) {
-	packageName, nameInPackage := splitDescriptorName(descriptor)
-	refPackage := pkg.Package(packageName)
-	if existing, ok := refPackage.Schemas[nameInPackage]; ok {
-		return existing, true
-	}
-
-	refSchema := &RefSchema{
-		Package: refPackage,
-		Schema:  nameInPackage,
-	}
-	refPackage.Schemas[nameInPackage] = refSchema
-	return refSchema, false
-}
-
-func splitDescriptorName(descriptor protoreflect.Descriptor) (string, string) {
-	path := []string{}
-	current := descriptor
-	for {
-		path = append(path, string(current.Name()))
-		parent := current.Parent()
-		parentFile, ok := parent.(protoreflect.FileDescriptor)
-		if ok {
-			slices.Reverse(path)
-			return string(parentFile.Package()), strings.Join(path, "_")
-
-		}
-		current = current.Parent()
-	}
-}
-
-func jsonFieldName(s protoreflect.Name) string {
-	return strcase.ToLowerCamel(string(s))
-}
-
-// SchemaFromReflect is an ad-hoc entry into the schema set. The method will
-// recursively walk all referenced schemas and add them to the set. This should
-// not be used with schema sets built directly from source.
-func (ss *PackageSet) SchemaFromReflect(src protoreflect.MessageDescriptor) (RootSchema, error) {
+func (ps *SchemaSet) messageSchema(src protoreflect.MessageDescriptor) (RootSchema, error) {
 	packageName, nameInPackage := splitDescriptorName(src)
-	schemaPackage := ss.Package(packageName)
+	schemaPackage := ps.Package(packageName)
 	if built, ok := schemaPackage.Schemas[nameInPackage]; ok {
 		if built.To == nil {
 			// When building from reflection, the 'to' should be linked by the
@@ -137,6 +88,41 @@ func (ss *PackageSet) SchemaFromReflect(src protoreflect.MessageDescriptor) (Roo
 		return nil, err
 	}
 	return placeholder.To, nil
+}
+
+func (pkg *Package) schemaRootFromProto(descriptor protoreflect.Descriptor) rootSchema {
+	description := commentDescription(descriptor)
+	_, nameInPackage := splitDescriptorName(descriptor)
+	return rootSchema{
+		name:        nameInPackage,
+		pkg:         pkg,
+		description: description,
+	}
+}
+
+func newRefPlaceholder(ss RootSet, descriptor protoreflect.Descriptor) (*RefSchema, bool) {
+	packageName, nameInPackage := splitDescriptorName(descriptor)
+	return ss.refTo(packageName, nameInPackage)
+}
+
+func splitDescriptorName(descriptor protoreflect.Descriptor) (string, string) {
+	path := []string{}
+	current := descriptor
+	for {
+		path = append(path, string(current.Name()))
+		parent := current.Parent()
+		parentFile, ok := parent.(protoreflect.FileDescriptor)
+		if ok {
+			slices.Reverse(path)
+			return string(parentFile.Package()), strings.Join(path, "_")
+
+		}
+		current = current.Parent()
+	}
+}
+
+func jsonFieldName(s protoreflect.Name) string {
+	return strcase.ToLowerCamel(string(s))
 }
 
 func isOneofWrapper(src protoreflect.MessageDescriptor) bool {
@@ -234,7 +220,7 @@ func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*Obj
 			rootSchema: ss.schemaRootFromProto(oneof),
 			//oneofDescriptor: oneof,
 		}
-		refPlaceholder, didExist := ss.PackageSet.newRefPlaceholder(oneof)
+		refPlaceholder, didExist := newRefPlaceholder(ss.PackageSet, oneof)
 		if didExist {
 			return nil, fmt.Errorf("placeholder already exists for oneof wrapper %q", oneofName)
 		}
@@ -788,7 +774,7 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		return prop, nil
 
 	case protoreflect.EnumKind:
-		ref, didExist := pkg.PackageSet.newRefPlaceholder(src.Enum())
+		ref, didExist := newRefPlaceholder(pkg.PackageSet, src.Enum())
 		if !didExist {
 			built, err := pkg.buildEnum(src.Enum())
 			if err != nil {
@@ -844,7 +830,7 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		msg := src.Message()
 		isOneofWrapper := isOneofWrapper(msg)
 
-		ref, didExist := pkg.PackageSet.newRefPlaceholder(msg)
+		ref, didExist := newRefPlaceholder(pkg.PackageSet, msg)
 		if !didExist {
 			var err error
 			if isOneofWrapper {

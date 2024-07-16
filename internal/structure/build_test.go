@@ -6,6 +6,7 @@ import (
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"github.com/pentops/flowtest/prototest"
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -192,7 +193,7 @@ func testAPI() *source_j5pb.API {
 					Methods: []*source_j5pb.Method{{
 						FullGrpcName:   "/test.v1.service.TestService/Test",
 						Name:           "Test",
-						HttpMethod:     schema_j5pb.HTTPMethod_HTTP_METHOD_GET,
+						HttpMethod:     client_j5pb.HTTPMethod_HTTP_METHOD_GET,
 						HttpPath:       "/test/:pathField",
 						RequestSchema:  "TestRequest",
 						ResponseSchema: "TestResponse",

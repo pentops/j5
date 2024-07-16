@@ -3,11 +3,12 @@ package export
 import (
 	"fmt"
 
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 )
 
 // BuildSwagger converts the J5 Document to a Swagger Document
-func BuildSwagger(b *schema_j5pb.API) (*Document, error) {
+func BuildSwagger(b *client_j5pb.API) (*Document, error) {
 	doc := &Document{
 		OpenAPI: "3.0.0",
 		Components: Components{

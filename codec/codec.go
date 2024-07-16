@@ -6,12 +6,12 @@ import (
 )
 
 type Codec struct {
-	schemaSet *j5reflect.PackageSet
+	schemaSet *j5reflect.SchemaCache
 }
 
 func NewCodec() *Codec {
 	return &Codec{
-		schemaSet: j5reflect.NewPackageSet(),
+		schemaSet: j5reflect.NewSchemaCache(),
 	}
 }
 

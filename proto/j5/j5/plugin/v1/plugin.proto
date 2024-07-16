@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package j5.plugin.v1;
 
-import "j5/schema/v1/document.proto";
+import "j5/client/v1/client.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/plugin/v1/plugin_j5pb";
 
 message CodeGenerationRequest {
-  repeated j5.schema.v1.Package packages = 1;
+  repeated j5.client.v1.Package packages = 1;
   Config config = 2;
   map<string, string> options = 3;
 }

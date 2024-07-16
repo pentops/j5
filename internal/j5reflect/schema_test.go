@@ -19,7 +19,7 @@ import (
 )
 
 func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldConstraints) *jsontest.Asserter {
-	ss := NewPackageSet()
+	ss := NewSchemaCache()
 	proto := &descriptorpb.FileDescriptorProto{
 		Name:    proto.String("test.proto"),
 		Package: proto.String("test"),
@@ -30,7 +30,7 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 			},
 		}},
 	}
-	reflectRoot, err := ss.SchemaFromReflect(msgDesscriptorToReflection(t, proto))
+	reflectRoot, err := ss.Schema(msgDesscriptorToReflection(t, proto))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -199,13 +199,13 @@ func TestSchemaTypesSimple(t *testing.T) {
 
 func TestTestProtoSchemaTypes(t *testing.T) {
 
-	ss := NewPackageSet()
+	ss := NewSchemaCache()
 
 	fooDesc := (&schema_testpb.FullSchema{}).ProtoReflect().Descriptor()
 
 	t.Log(protojson.Format(protodesc.ToDescriptorProto(fooDesc)))
 
-	reflectRoot, err := ss.SchemaFromReflect(fooDesc)
+	reflectRoot, err := ss.Schema(fooDesc)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -456,8 +456,8 @@ func TestSchemaTypesComplex(t *testing.T) {
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			ss := NewPackageSet()
-			reflectRoot, err := ss.SchemaFromReflect(msgDesscriptorToReflection(t, tt.proto))
+			ss := NewSchemaCache()
+			reflectRoot, err := ss.Schema(msgDesscriptorToReflection(t, tt.proto))
 			if err != nil {
 				t.Fatal(err.Error())
 			}
@@ -474,7 +474,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 				dd.AssertEqual(t, path, expected)
 			}
 
-			testPkg := reflectRoot.Package().PackageSet.Package("test")
+			testPkg := ss.packages["test"]
 
 			for path, expectSet := range tt.expectedRefs {
 				ref, ok := testPkg.Schemas[path]

@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/internal/j5reflect"
 )
 
 type Options struct {
@@ -78,12 +78,13 @@ func (fw DirFileWriter) WriteFile(relPath string, data []byte) error {
 	return nil
 }
 
-func WriteGoCode(api *schema_j5pb.API, output FileWriter, options Options) error {
+func WriteGoCode(api *client_j5pb.API, output FileWriter, options Options) error {
 
-	reflect, err := j5reflect.APIFromDesc(api)
-	if err != nil {
-		return err
-	}
+	/*
+		reflect, err := j5reflect.APIFromDesc(api)
+		if err != nil {
+			return err
+		}*/
 	fileSet := NewFileSet(options.GoPackagePrefix)
 
 	bb := &builder{
@@ -91,11 +92,11 @@ func WriteGoCode(api *schema_j5pb.API, output FileWriter, options Options) error
 		options: options,
 	}
 
-	for _, j5Package := range reflect.Packages {
+	for _, j5Package := range api.Packages {
 		for _, service := range j5Package.Services {
 			for _, method := range service.Methods {
-				if err := bb.addMethod(j5Package.Name, method); err != nil {
-					return fmt.Errorf("%s.%s/%s: %w", service.Package.Name, service.Name, method.GRPCMethodName, err)
+				if err := bb.addMethod(j5Package.Name, service.Name, method); err != nil {
+					return fmt.Errorf("%s.%s/%s: %w", j5Package.Name, service.Name, method.Name, err)
 				}
 			}
 		}
@@ -104,9 +105,9 @@ func WriteGoCode(api *schema_j5pb.API, output FileWriter, options Options) error
 	return fileSet.WriteAll(output)
 }
 
-func (bb *builder) addMethod(grpcPackage string, operation *j5reflect.Method) error {
+func (bb *builder) addMethod(packageName string, serviceName string, operation *client_j5pb.Method) error {
 
-	gen, err := bb.fileForPackage(grpcPackage)
+	gen, err := bb.fileForPackage(packageName)
 	if err != nil {
 		return err
 	}
@@ -142,11 +143,11 @@ func (bb *builder) addMethod(grpcPackage string, operation *j5reflect.Method) er
 		}},
 	})
 
-	service := gen.Service(operation.Service.Name)
+	service := gen.Service(serviceName)
 
-	responseType := fmt.Sprintf("%sResponse", operation.GRPCMethodName)
+	responseType := fmt.Sprintf("%sResponse", operation.Name)
 
-	req, err := bb.prepareRequestObject(operation)
+	req, err := bb.prepareRequestObject(packageName, operation)
 	if err != nil {
 		return err
 	}
@@ -163,14 +164,14 @@ func (bb *builder) addMethod(grpcPackage string, operation *j5reflect.Method) er
 			}
 		}
 
-		if !operation.HasBody {
+		if operation.HttpMethod == client_j5pb.HTTPMethod_GET {
 			if err := bb.addQueryMethod(gen, req); err != nil {
 				return err
 			}
 		}
 
 		requestMethod := &Function{
-			Name: operation.GRPCMethodName,
+			Name: operation.Name,
 			Parameters: []*Parameter{{
 				Name: "ctx",
 				DataType: DataType{
@@ -204,7 +205,7 @@ func (bb *builder) addMethod(grpcPackage string, operation *j5reflect.Method) er
 		requestMethod.P("  )")
 
 		requestMethod.P("  resp := &", responseType, "{}")
-		requestMethod.P("  err := s.Request(ctx, \"", operation.HTTPMethod.ShortString(), "\", path, req, resp)")
+		requestMethod.P("  err := s.Request(ctx, \"", operation.HttpMethod.ShortString(), "\", path, req, resp)")
 		requestMethod.P("  if err != nil {")
 		requestMethod.P("    return nil, err")
 		requestMethod.P("  }")
@@ -228,16 +229,13 @@ func (bb *builder) addMethod(grpcPackage string, operation *j5reflect.Method) er
 
 		var pageResponseField *Field
 
-		responseSchema, ok := operation.Response.(*j5reflect.ObjectSchema)
-		if !ok {
-			return fmt.Errorf("response type %q is not an object", responseType)
-		}
+		responseSchema := operation.ResponseBody
 
 		sliceFields := make([]*Field, 0)
 		for _, property := range responseSchema.Properties {
-			field, err := bb.jsonField(property)
+			field, err := bb.jsonField(packageName, property)
 			if err != nil {
-				return fmt.Errorf("%s.ResponseBody: %w", operation.GRPCMethodName, err)
+				return fmt.Errorf("%s.ResponseBody: %w", operation.Name, err)
 			}
 			responseStruct.Fields = append(responseStruct.Fields, field)
 			if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageResponse" {
@@ -292,13 +290,10 @@ type builtRequest struct {
 	pathFields    []*Field
 }
 
-func (bb *builder) prepareRequestObject(operation *j5reflect.Method) (*builtRequest, error) {
-	requestType := fmt.Sprintf("%sRequest", operation.GRPCMethodName)
+func (bb *builder) prepareRequestObject(currentPackage string, operation *client_j5pb.Method) (*builtRequest, error) {
+	requestType := fmt.Sprintf("%sRequest", operation.Name)
 
-	requestSchema, ok := operation.Request.(*j5reflect.ObjectSchema)
-	if !ok {
-		return nil, fmt.Errorf("request type %q is not an object", requestType)
-	}
+	requestSchema := operation.Request.Body
 
 	requestStruct := &Struct{
 		Name: requestType,
@@ -311,21 +306,39 @@ func (bb *builder) prepareRequestObject(operation *j5reflect.Method) (*builtRequ
 	fields := map[string]*Field{}
 
 	for _, property := range requestSchema.Properties {
-		field, err := bb.jsonField(property)
+		field, err := bb.jsonField(currentPackage, property)
 		if err != nil {
 			return nil, err
 		}
-		fields[property.JSONName] = field
+		fields[property.Name] = field
 		requestStruct.Fields = append(requestStruct.Fields, field)
 
 		if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageRequest" {
 			req.pageRequestField = field
 		}
 	}
+	for _, property := range operation.Request.PathParameters {
+		field, err := bb.jsonField(currentPackage, property)
+		if err != nil {
+			return nil, err
+		}
+		field.Tags["json"] = "-"
+		field.Tags["path"] = field.Property.Name
+		fields[property.Name] = field
+		requestStruct.Fields = append(requestStruct.Fields, field)
+	}
+	for _, property := range operation.Request.QueryParameters {
+		field, err := bb.jsonField(currentPackage, property)
+		if err != nil {
+			return nil, err
+		}
+		field.Tags["json"] = "-"
+		field.Tags["query"] = field.Property.Name
+		fields[property.Name] = field
+		requestStruct.Fields = append(requestStruct.Fields, field)
+	}
 
-	pathParameterSet := map[string]struct{}{}
-
-	pathParts := strings.Split(operation.HTTPPath, "/")
+	pathParts := strings.Split(operation.HttpPath, "/")
 	for idx, part := range pathParts {
 		if len(part) == 0 || part[0] != ':' {
 			continue
@@ -337,24 +350,10 @@ func (bb *builder) prepareRequestObject(operation *j5reflect.Method) (*builtRequ
 			return nil, fmt.Errorf("path parameter %q not found in request object %s", name, requestType)
 		}
 
-		field.Tags["json"] = "-"
-		field.Tags["path"] = field.Property.JSONName
-
-		pathParameterSet[field.Name] = struct{}{}
 		pathParts[idx] = "%s"
 		req.pathFields = append(req.pathFields, field)
 	}
 	req.pathFmtString = strings.Join(pathParts, "/")
-
-	if !operation.HasBody {
-		for _, field := range requestStruct.Fields {
-			if _, ok := pathParameterSet[field.Name]; ok {
-				continue
-			}
-			field.Tags["json"] = "-"
-			field.Tags["query"] = field.Property.JSONName
-		}
-	}
 
 	return req, nil
 }
@@ -412,34 +411,30 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 			continue
 		}
 
-		switch fieldType := field.Property.Schema.(type) {
+		switch fieldType := field.Property.Schema.Type.(type) {
 
-		case *j5reflect.ScalarSchema:
+		case *schema_j5pb.Field_Boolean, *schema_j5pb.Field_String_:
 			accessor := "s." + field.Name
 			if !field.Property.Required {
 				accessor = "*s." + field.Name
 			}
 
-			switch fieldType.Proto.Type.(type) {
+			switch fieldType.(type) {
 			case *schema_j5pb.Field_String_:
 				// pass through
 			case *schema_j5pb.Field_Boolean:
 				accessor = "fmt.Sprintf(\"%v\", " + accessor + ")"
-
-			default:
-				return fmt.Errorf("unsupported scalar type %T", fieldType.Proto.Type)
-
 			}
 
 			if field.Property.Required {
-				queryMethod.P("  values.Set(\"", field.Property.JSONName, "\", ", accessor, ")")
+				queryMethod.P("  values.Set(\"", field.Property.Name, "\", ", accessor, ")")
 			} else {
 				queryMethod.P("  if s.", field.Name, " != nil {")
-				queryMethod.P("    values.Set(\"", field.Property.JSONName, "\", ", accessor, ")")
+				queryMethod.P("    values.Set(\"", field.Property.Name, "\", ", accessor, ")")
 				queryMethod.P("  }")
 			}
 
-		case *j5reflect.ObjectField, *j5reflect.OneofField:
+		case *schema_j5pb.Field_Object, *schema_j5pb.Field_Oneof:
 			// include as JSON
 			queryMethod.P("  if s.", field.Name, " != nil {")
 			queryMethod.P("    bb, err := ", DataType{GoPackage: "encoding/json", Name: "Marshal"}, "(s.", field.Name, ")")
@@ -449,18 +444,18 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 			queryMethod.P("    values.Set(\"", field.Name, "\", string(bb))")
 			queryMethod.P("  }")
 
-		case *j5reflect.EnumField:
+		case *schema_j5pb.Field_Enum:
 
 			if field.Property.Required {
-				queryMethod.P("  values.Set(\"", field.Property.JSONName, "\", s.", field.Name, ")")
+				queryMethod.P("  values.Set(\"", field.Property.Name, "\", s.", field.Name, ")")
 			} else {
 				queryMethod.P("  if s.", field.Name, " != nil {")
-				queryMethod.P("    values.Set(\"", field.Property.JSONName, "\", *s.", field.Name, ")")
+				queryMethod.P("    values.Set(\"", field.Property.Name, "\", *s.", field.Name, ")")
 				queryMethod.P("  }")
 			}
 
 		default:
-			queryMethod.P(" // Skipping query parameter ", field.Property.JSONName)
+			queryMethod.P(" // Skipping query parameter ", field.Property.Name)
 			//queryMethod.P("    values.Set(\"", parameter.Name, "\", fmt.Sprintf(\"%v\", *s.", GoName(parameter.Name), "))")
 			return fmt.Errorf("unsupported type for query %T", fieldType)
 

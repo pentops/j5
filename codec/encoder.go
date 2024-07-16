@@ -16,7 +16,7 @@ func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
 
 	descriptor := msg.Descriptor()
 
-	schema, err := c.schemaSet.SchemaReflect(descriptor)
+	schema, err := c.schemaSet.Schema(descriptor)
 	if err != nil {
 		return nil, fmt.Errorf("schema object: %w", err)
 	}
