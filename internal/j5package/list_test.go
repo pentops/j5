@@ -1,4 +1,4 @@
-package j5reflect
+package j5package
 
 import (
 	"testing"
@@ -9,17 +9,18 @@ import (
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/test/foo/v1/foo_testspb"
+	"github.com/pentops/j5/internal/j5reflect"
 )
 
 func TestTestListRequest(t *testing.T) {
 
-	ss := NewSchemaSet()
+	ss := j5reflect.NewPackageSet()
 
 	fooDesc := (&foo_testspb.ListFoosResponse{}).ProtoReflect().Descriptor()
 
 	t.Log(protojson.Format(protodesc.ToDescriptorProto(fooDesc)))
 
-	schemaItem, err := ss.SchemaReflect(fooDesc)
+	schemaItem, err := ss.SchemaFromReflect(fooDesc)
 	if err != nil {
 		t.Fatal(err.Error())
 	}

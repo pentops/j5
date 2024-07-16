@@ -13,10 +13,79 @@ import (
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
-func newBasePackage(descriptor protoreflect.Descriptor) rootSchema {
+func PackageSetFromFiles(descFiles *protoregistry.Files) (*PackageSet, error) {
+
+	messages := make([]protoreflect.MessageDescriptor, 0)
+	enums := make([]protoreflect.EnumDescriptor, 0)
+
+	descFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {
+		fileMessages := file.Messages()
+		for ii := 0; ii < fileMessages.Len(); ii++ {
+			message := fileMessages.Get(ii)
+			messages = append(messages, message)
+		}
+
+		fileEnums := file.Enums()
+		for ii := 0; ii < fileEnums.Len(); ii++ {
+			enum := fileEnums.Get(ii)
+			enums = append(enums, enum)
+		}
+		return true
+	})
+
+	pkgSet := NewPackageSet()
+	for _, message := range messages {
+		_, err := pkgSet.SchemaFromReflect(message)
+		if err != nil {
+			return nil, fmt.Errorf("package from reflect: %w", err)
+		}
+	}
+	for _, enum := range enums {
+		ref, didExist := pkgSet.newRefPlaceholder(enum)
+		if didExist {
+			continue // was referenced by an earlier message
+		}
+		packageName, _ := splitDescriptorName(enum)
+		pkg := pkgSet.Package(packageName)
+		built, err := pkg.buildEnum(enum)
+		if err != nil {
+			return nil, err
+		}
+		ref.To = built
+	}
+
+	return pkgSet, nil
+}
+
+func (pkg *Package) schemaRootFromProto(descriptor protoreflect.Descriptor) rootSchema {
 	description := commentDescription(descriptor)
+	_, nameInPackage := splitDescriptorName(descriptor)
+	return rootSchema{
+		name:        nameInPackage,
+		pkg:         pkg,
+		description: description,
+	}
+}
+
+func (pkg *PackageSet) newRefPlaceholder(descriptor protoreflect.Descriptor) (*RefSchema, bool) {
+	packageName, nameInPackage := splitDescriptorName(descriptor)
+	refPackage := pkg.Package(packageName)
+	if existing, ok := refPackage.Schemas[nameInPackage]; ok {
+		return existing, true
+	}
+
+	refSchema := &RefSchema{
+		Package: refPackage,
+		Schema:  nameInPackage,
+	}
+	refPackage.Schemas[nameInPackage] = refSchema
+	return refSchema, false
+}
+
+func splitDescriptorName(descriptor protoreflect.Descriptor) (string, string) {
 	path := []string{}
 	current := descriptor
 	for {
@@ -25,21 +94,10 @@ func newBasePackage(descriptor protoreflect.Descriptor) rootSchema {
 		parentFile, ok := parent.(protoreflect.FileDescriptor)
 		if ok {
 			slices.Reverse(path)
-			return rootSchema{
-				Name:        strings.Join(path, "_"),
-				Package:     string(parentFile.Package()),
-				Description: description,
-			}
+			return string(parentFile.Package()), strings.Join(path, "_")
+
 		}
 		current = current.Parent()
-	}
-}
-
-func newRefPlaceholder(descriptor protoreflect.Descriptor) *RefSchema {
-	base := newBasePackage(descriptor)
-	return &RefSchema{
-		Package: base.Package,
-		Schema:  base.Name,
 	}
 }
 
@@ -47,88 +105,33 @@ func jsonFieldName(s protoreflect.Name) string {
 	return strcase.ToLowerCamel(string(s))
 }
 
-type DescriptorResolver interface {
-	FindDescriptorByName(protoreflect.FullName) (protoreflect.Descriptor, error)
-}
-
-type SchemaResolver struct {
-	*SchemaSet
-	resolver DescriptorResolver
-}
-
-func NewSchemaResolver(resolver DescriptorResolver) *SchemaResolver {
-	return &SchemaResolver{
-		SchemaSet: NewSchemaSet(),
-		resolver:  resolver,
-	}
-}
-
-func (ss *SchemaResolver) SchemaByName(name protoreflect.FullName) (RootSchema, error) {
-	obj, ok := ss.refs[name]
-	if ok {
-		if obj.To == nil {
-			return nil, fmt.Errorf("unlinked ref: %s", name)
-		}
-		return obj.To, nil
-	}
-	descriptor, err := ss.resolver.FindDescriptorByName(name)
-	if err != nil {
-		return nil, err
-	}
-	msg, ok := descriptor.(protoreflect.MessageDescriptor)
-	if !ok {
-		return nil, fmt.Errorf("descriptor %s is not a message", name)
-	}
-	return ss.SchemaReflect(msg)
-}
-
-func (ss *SchemaResolver) SchemaByRef(ref *RefSchema) (RootSchema, error) {
-	return ss.SchemaByName(protoreflect.FullName(ref.FullName()))
-}
-
-type SchemaSet struct {
-	//schemas map[protoreflect.FullName]RootSchema
-	refs map[protoreflect.FullName]*RefSchema
-}
-
-func NewSchemaSet() *SchemaSet {
-	return &SchemaSet{
-		//schemas: make(map[protoreflect.FullName]RootSchema),
-		refs: make(map[protoreflect.FullName]*RefSchema),
-	}
-}
-
-func (ss *SchemaSet) SchemaObject(src protoreflect.MessageDescriptor) (*schema_j5pb.RootSchema, error) {
-	val, err := ss.SchemaReflect(src)
-	if err != nil {
-		return nil, err
-	}
-
-	return val.ToJ5Root(), nil
-}
-
-func (ss *SchemaSet) SchemaReflect(src protoreflect.MessageDescriptor) (RootSchema, error) {
-	name := src.FullName()
-	if built, ok := ss.refs[name]; ok {
+// SchemaFromReflect is an ad-hoc entry into the schema set. The method will
+// recursively walk all referenced schemas and add them to the set. This should
+// not be used with schema sets built directly from source.
+func (ss *PackageSet) SchemaFromReflect(src protoreflect.MessageDescriptor) (RootSchema, error) {
+	packageName, nameInPackage := splitDescriptorName(src)
+	schemaPackage := ss.Package(packageName)
+	if built, ok := schemaPackage.Schemas[nameInPackage]; ok {
 		if built.To == nil {
-			return nil, fmt.Errorf("unlinked ref: %s", name)
+			// When building from reflection, the 'to' should be linked by the
+			// caller which created the ref.
+			return nil, fmt.Errorf("unlinked ref: %s/%s", packageName, nameInPackage)
 		}
 		return built.To, nil
 	}
 
-	base := newBasePackage(src)
 	placeholder := &RefSchema{
-		Package: base.Package,
-		Schema:  base.Name,
+		Package: schemaPackage,
+		Schema:  nameInPackage,
 	}
-	ss.refs[name] = placeholder
+	schemaPackage.Schemas[nameInPackage] = placeholder
 
 	isOneofWrapper := isOneofWrapper(src)
 	var err error
 	if isOneofWrapper {
-		placeholder.To, err = ss.buildOneofSchema(src)
+		placeholder.To, err = schemaPackage.buildOneofSchema(src)
 	} else {
-		placeholder.To, err = ss.buildObjectSchema(src)
+		placeholder.To, err = schemaPackage.buildObjectSchema(src)
 	}
 	if err != nil {
 		return nil, err
@@ -162,7 +165,7 @@ func isOneofWrapper(src protoreflect.MessageDescriptor) bool {
 
 	ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
 	if ext != nil {
-		// even if it is mared to expose, still don't automatically make it a
+		// even if it is marked to expose, still don't automatically make it a
 		// oneof.
 		return false
 	}
@@ -180,32 +183,32 @@ func isOneofWrapper(src protoreflect.MessageDescriptor) bool {
 	return true
 }
 
-func (ss *SchemaSet) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*OneofSchema, error) {
+func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*OneofSchema, error) {
 	properties, err := ss.messageProperties(srcMsg)
 	if err != nil {
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
 	return &OneofSchema{
-		rootSchema: newBasePackage(srcMsg),
+		rootSchema: ss.schemaRootFromProto(srcMsg),
 		Properties: properties,
 		// TODO: Rules
 	}, nil
 }
 
-func (ss *SchemaSet) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*ObjectSchema, error) {
+func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*ObjectSchema, error) {
 	properties, err := ss.messageProperties(srcMsg)
 	if err != nil {
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
 	return &ObjectSchema{
-		rootSchema: newBasePackage(srcMsg),
+		rootSchema: ss.schemaRootFromProto(srcMsg),
 		Properties: properties,
 		// TODO: Rules
 	}, nil
 
 }
 
-func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*ObjectProperty, error) {
+func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*ObjectProperty, error) {
 
 	properties := make([]*ObjectProperty, 0, src.Fields().Len())
 
@@ -228,12 +231,14 @@ func (ss *SchemaSet) messageProperties(src protoreflect.MessageDescriptor) ([]*O
 
 		oneofName := string(oneof.Name())
 		oneofObject := &OneofSchema{
-			rootSchema: newBasePackage(oneof),
+			rootSchema: ss.schemaRootFromProto(oneof),
 			//oneofDescriptor: oneof,
 		}
-		refPlaceholder := newRefPlaceholder(oneof)
+		refPlaceholder, didExist := ss.PackageSet.newRefPlaceholder(oneof)
+		if didExist {
+			return nil, fmt.Errorf("placeholder already exists for oneof wrapper %q", oneofName)
+		}
 		refPlaceholder.To = oneofObject
-		ss.refs[protoreflect.FullName(refPlaceholder.FullName())] = refPlaceholder
 		prop := &ObjectProperty{
 			JSONName:    jsonFieldName(oneof.Name()),
 			Description: commentDescription(src),
@@ -387,7 +392,7 @@ var wellKnownStringPatterns = map[string]string{
 	`^\d(.?\d)?$`:         "number",
 }
 
-func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
+func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
 	schemaProto := &schema_j5pb.Field{}
 
 	prop := &ObjectProperty{
@@ -783,16 +788,13 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 		return prop, nil
 
 	case protoreflect.EnumKind:
-		protoName := src.Enum().FullName()
-		ref, ok := ss.refs[protoName]
-		if !ok {
-			built, err := buildEnum(src.Enum())
+		ref, didExist := pkg.PackageSet.newRefPlaceholder(src.Enum())
+		if !didExist {
+			built, err := pkg.buildEnum(src.Enum())
 			if err != nil {
 				return nil, err
 			}
-			ref = newRefPlaceholder(src.Enum())
 			ref.To = built
-			ss.refs[protoName] = ref
 		}
 
 		var rules *schema_j5pb.EnumField_Rules
@@ -842,16 +844,13 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 		msg := src.Message()
 		isOneofWrapper := isOneofWrapper(msg)
 
-		protoName := src.Message().FullName()
-		ref, ok := ss.refs[protoName]
-		if !ok {
-			ref = newRefPlaceholder(msg)
-			ss.refs[protoName] = ref
+		ref, didExist := pkg.PackageSet.newRefPlaceholder(msg)
+		if !didExist {
 			var err error
 			if isOneofWrapper {
-				ref.To, err = ss.buildOneofSchema(msg)
+				ref.To, err = pkg.buildOneofSchema(msg)
 			} else {
-				ref.To, err = ss.buildObjectSchema(msg)
+				ref.To, err = pkg.buildObjectSchema(msg)
 			}
 			if err != nil {
 				return nil, err
@@ -868,7 +867,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 		}
 		return prop, nil
 	default:
-		/* TODO:
+		/* Not Supported in J5:
 		Sfixed32Kind Kind = 15
 		Fixed32Kind  Kind = 7
 		Sfixed64Kind Kind = 16
@@ -880,7 +879,7 @@ func (ss *SchemaSet) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obj
 
 }
 
-func buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*EnumSchema, error) {
+func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*EnumSchema, error) {
 
 	ext := proto.GetExtension(enumDescriptor.Options(), ext_j5pb.E_Enum).(*ext_j5pb.EnumOptions)
 
@@ -913,7 +912,7 @@ func buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*EnumSchema, error) 
 		values = values[1:]
 	}
 	return &EnumSchema{
-		rootSchema: newBasePackage(enumDescriptor),
+		rootSchema: pkg.schemaRootFromProto(enumDescriptor),
 		Options:    values,
 		NamePrefix: trimPrefix,
 		//descriptor:  enumDescriptor,

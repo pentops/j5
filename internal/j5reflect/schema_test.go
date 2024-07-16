@@ -19,7 +19,7 @@ import (
 )
 
 func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldConstraints) *jsontest.Asserter {
-	ss := NewSchemaSet()
+	ss := NewPackageSet()
 	proto := &descriptorpb.FileDescriptorProto{
 		Name:    proto.String("test.proto"),
 		Package: proto.String("test"),
@@ -30,10 +30,11 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 			},
 		}},
 	}
-	schemaItem, err := ss.SchemaObject(msgDesscriptorToReflection(t, proto))
+	reflectRoot, err := ss.SchemaFromReflect(msgDesscriptorToReflection(t, proto))
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+	schemaItem := reflectRoot.ToJ5Root()
 	obj, ok := schemaItem.Type.(*schema_j5pb.RootSchema_Object)
 	if !ok {
 		t.Fatalf("expected object item, got %T", schemaItem.Type)
@@ -198,16 +199,18 @@ func TestSchemaTypesSimple(t *testing.T) {
 
 func TestTestProtoSchemaTypes(t *testing.T) {
 
-	ss := NewSchemaSet()
+	ss := NewPackageSet()
 
 	fooDesc := (&schema_testpb.FullSchema{}).ProtoReflect().Descriptor()
 
 	t.Log(protojson.Format(protodesc.ToDescriptorProto(fooDesc)))
 
-	schemaItem, err := ss.SchemaObject(fooDesc)
+	reflectRoot, err := ss.SchemaFromReflect(fooDesc)
 	if err != nil {
 		t.Fatal(err.Error())
 	}
+
+	schemaItem := reflectRoot.ToJ5Root()
 
 	obj := schemaItem.Type.(*schema_j5pb.RootSchema_Object)
 	assertProperty := func(name string, expected map[string]interface{}) {
@@ -355,7 +358,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 			"object.properties.0.protoField":               jsontest.NotSet{},
 		},
 		expectedRefs: map[string]map[string]interface{}{
-			"test.TestMessage_expose_me": {
+			"TestMessage_expose_me": {
 				"oneof.properties.0.name":       "testField",
 				"oneof.properties.0.protoField": jsontest.Array[float64]{1},
 			},
@@ -446,18 +449,19 @@ func TestSchemaTypesComplex(t *testing.T) {
 			"object.properties.0.schema.enum.ref.schema":  "TestEnum",
 		},
 		expectedRefs: map[string]map[string]interface{}{
-			"test.TestEnum": {
+			"TestEnum": {
 				"enum.options.0.name": "FOO",
 				"enum.options.1.name": "BAR",
 			},
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
-			ss := NewSchemaSet()
-			schemaItem, err := ss.SchemaObject(msgDesscriptorToReflection(t, tt.proto))
+			ss := NewPackageSet()
+			reflectRoot, err := ss.SchemaFromReflect(msgDesscriptorToReflection(t, tt.proto))
 			if err != nil {
 				t.Fatal(err.Error())
 			}
+			schemaItem := reflectRoot.ToJ5Root()
 
 			dd, err := jsontest.NewAsserter(schemaItem)
 			if err != nil {
@@ -470,8 +474,10 @@ func TestSchemaTypesComplex(t *testing.T) {
 				dd.AssertEqual(t, path, expected)
 			}
 
+			testPkg := reflectRoot.Package().PackageSet.Package("test")
+
 			for path, expectSet := range tt.expectedRefs {
-				ref, ok := ss.refs[protoreflect.FullName(path)]
+				ref, ok := testPkg.Schemas[path]
 				if !ok {
 					t.Fatalf("schema %q not found", path)
 				}
