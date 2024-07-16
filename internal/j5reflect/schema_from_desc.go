@@ -3,13 +3,15 @@ package j5reflect
 import (
 	"fmt"
 
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/patherr"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func PackageSetFromAPI(api *schema_j5pb.API) (*PackageSet, error) {
-	pkgSet := NewPackageSet()
+func PackageSetFromClientAPI(api *client_j5pb.API) (*SchemaSet, error) {
+	pkgSet := newSchemaSet()
 
 	for _, apiPackage := range api.Packages {
 		pkg := pkgSet.Package(apiPackage.Name)
@@ -39,22 +41,41 @@ func PackageSetFromAPI(api *schema_j5pb.API) (*PackageSet, error) {
 	return pkgSet, nil
 }
 
-func (pkg *PackageSet) refFromSchema(ref *schema_j5pb.Ref) *RefSchema {
-	refPackage := pkg.Package(ref.Package)
-	if existing, ok := refPackage.Schemas[ref.Schema]; ok {
-		return existing
+func PackageSetFromSourceAPI(api *source_j5pb.API) (*SchemaSet, error) {
+	pkgSet := newSchemaSet()
+
+	for _, apiPackage := range api.Packages {
+		pkg := pkgSet.Package(apiPackage.Name)
+
+		for name, schema := range apiPackage.Schemas {
+			refSchema := &RefSchema{
+				Package: pkg,
+				Schema:  name,
+			}
+			pkg.Schemas[name] = refSchema
+
+			to, err := pkg.buildRoot(schema)
+			if err != nil {
+				return nil, patherr.Wrap(err, "schema", name)
+			}
+
+			refSchema.To = to
+		}
 	}
 
-	refSchema := &RefSchema{
-		Package: refPackage,
-		Schema:  ref.Schema,
+	for _, pkg := range pkgSet.Packages {
+		if err := pkg.assertAllRefsLink(); err != nil {
+			return nil, patherr.Wrap(err, "package", pkg.Name)
+		}
 	}
-	refPackage.Schemas[ref.Schema] = refSchema
 
-	return refSchema
+	return pkgSet, nil
 }
 
-func (pkg *Package) AnonymousObjectFromSchema(schema *schema_j5pb.Object) (*ObjectSchema, error) {
+// AnonymousObjectFromSchema converts the schema object but does not add it to
+// the package set. This is used for dynamic request and reply entities.
+func (ps *SchemaSet) AnonymousObjectFromSchema(packageName string, schema *schema_j5pb.Object) (*ObjectSchema, error) {
+	pkg := ps.Package(packageName)
 	return pkg.objectSchemaFromDesc(schema)
 }
 
@@ -99,8 +120,9 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 				Rules: st.Object.Rules,
 			}, nil
 		case *schema_j5pb.ObjectField_Ref:
+			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
 			return &ObjectField{
-				Ref:   pkg.PackageSet.refFromSchema(inner.Ref),
+				Ref:   ref,
 				Rules: st.Object.Rules,
 			}, nil
 		default:
@@ -119,8 +141,9 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 				Rules: st.Oneof.Rules,
 			}, nil
 		case *schema_j5pb.OneofField_Ref:
+			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
 			return &OneofField{
-				Ref:   pkg.PackageSet.refFromSchema(inner.Ref),
+				Ref:   ref,
 				Rules: st.Oneof.Rules,
 			}, nil
 		default:
@@ -136,8 +159,9 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 				Rules: st.Enum.Rules,
 			}, nil
 		case *schema_j5pb.EnumField_Ref:
+			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
 			return &EnumField{
-				Ref:   pkg.PackageSet.refFromSchema(inner.Ref),
+				Ref:   ref,
 				Rules: st.Enum.Rules,
 			}, nil
 		default:

@@ -1,14 +1,15 @@
-package j5package
+package j5client
 
 import (
 	"fmt"
 
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5reflect"
 )
 
-func APIFromDesc(api *schema_j5pb.API) (*API, error) {
-	schemaSet, err := j5reflect.PackageSetFromAPI(api)
+func APIFromDesc(api *client_j5pb.API) (*API, error) {
+	schemaSet, err := j5reflect.PackageSetFromClientAPI(api)
 	if err != nil {
 		return nil, fmt.Errorf("package set from api: %w", err)
 	}
@@ -25,7 +26,7 @@ func APIFromDesc(api *schema_j5pb.API) (*API, error) {
 	return apiBase, nil
 }
 
-func apiBaseFromDesc(api *schema_j5pb.API) (*API, error) {
+func apiBaseFromDesc(api *client_j5pb.API) (*API, error) {
 	apiPkg := &API{
 		Packages: []*Package{},
 		Metadata: api.Metadata,
@@ -46,7 +47,7 @@ func apiBaseFromDesc(api *schema_j5pb.API) (*API, error) {
 	return apiPkg, nil
 }
 
-func serviceFromDesc(pkg *Package, src *schema_j5pb.Service) *Service {
+func serviceFromDesc(pkg *Package, src *client_j5pb.Service) *Service {
 	service := &Service{
 		Package: pkg,
 		Name:    src.Name,
@@ -60,13 +61,13 @@ func serviceFromDesc(pkg *Package, src *schema_j5pb.Service) *Service {
 	return service
 }
 
-func methodFromDesc(service *Service, src *schema_j5pb.Method) *Method {
+func methodFromDesc(service *Service, src *client_j5pb.Method) *Method {
 	return &Method{
 		Service:        service,
 		GRPCMethodName: src.Name,
 		HTTPPath:       src.HttpPath,
 		HTTPMethod:     src.HttpMethod,
-		HasBody:        src.HttpMethod != schema_j5pb.HTTPMethod_GET,
+		HasBody:        src.HttpMethod != client_j5pb.HTTPMethod_GET,
 		Request: &schemaPlaceholder{
 			source:      src.Request.Body,
 			packageName: service.Package.Name,
@@ -88,12 +89,12 @@ func (sr *schemaPlaceholder) FullName() string {
 	return fmt.Sprintf("%s/%s", sr.packageName, sr.source.Name)
 }
 
-func (sr *schemaPlaceholder) link(schemaSet *j5reflect.PackageSet) error {
+func (sr *schemaPlaceholder) link(linker schemaSource) error {
 	if sr.linked != nil {
 		return nil
 	}
 
-	linked, err := schemaSet.Package(sr.packageName).AnonymousObjectFromSchema(sr.source)
+	linked, err := linker.AnonymousObjectFromSchema(sr.packageName, sr.source)
 	if err != nil {
 		return fmt.Errorf("link %q: %w", sr.FullName(), err)
 	}

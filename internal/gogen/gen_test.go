@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,19 +28,19 @@ func (o TestOutput) WriteFile(name string, data []byte) error {
 
 func TestTestProtoGen(t *testing.T) {
 
-	api := &schema_j5pb.API{
-		Packages: []*schema_j5pb.Package{{
+	api := &client_j5pb.API{
+		Packages: []*client_j5pb.Package{{
 			Label: "package label",
 			Name:  "test.v1",
 			Prose: "FOOBAR",
-			Services: []*schema_j5pb.Service{{
+			Services: []*client_j5pb.Service{{
 				Name: "TestService",
-				Methods: []*schema_j5pb.Method{{
+				Methods: []*client_j5pb.Method{{
 					Name:         "PostFoo",
 					FullGrpcName: "test.v1.TestService/PostFoo",
-					HttpMethod:   schema_j5pb.HTTPMethod_GET,
+					HttpMethod:   client_j5pb.HTTPMethod_GET,
 					HttpPath:     "/test/v1/foo/:foo_id",
-					Request: &schema_j5pb.Method_Request{
+					Request: &client_j5pb.Method_Request{
 						PathParameters: []*schema_j5pb.ObjectProperty{{
 							Name: "foo_id",
 							Schema: &schema_j5pb.Field{

@@ -10,12 +10,7 @@ import (
 )
 
 func DescriptorFromSource(img *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
-	reflectAPI, err := structure.ReflectFromSource(img)
-	if err != nil {
-		return nil, err
-	}
-
-	descriptorAPI, err := reflectAPI.ToJ5Proto()
+	sourceAPI, err := structure.APIFromImage(img)
 	if err != nil {
 		return nil, err
 	}

@@ -1,9 +1,10 @@
-package j5package
+package j5client
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5reflect"
 	"github.com/pentops/j5/internal/patherr"
@@ -12,10 +13,14 @@ import (
 
 type API struct {
 	Packages []*Package
-	Metadata *schema_j5pb.Metadata
+	Metadata *client_j5pb.Metadata
 }
 
-func (api *API) linkSchemas(schemaSet *j5reflect.PackageSet) error {
+type schemaSource interface {
+	AnonymousObjectFromSchema(packageName string, schema *schema_j5pb.Object) (*j5reflect.ObjectSchema, error)
+}
+
+func (api *API) linkSchemas(schemaSet schemaSource) error {
 	for _, pkg := range api.Packages {
 		if err := pkg.linkSchemas(schemaSet); err != nil {
 			return patherr.Wrap(err, "packages", pkg.Name)
@@ -24,10 +29,10 @@ func (api *API) linkSchemas(schemaSet *j5reflect.PackageSet) error {
 	return nil
 }
 
-func (api *API) ToJ5Proto() (*schema_j5pb.API, error) {
+func (api *API) ToJ5Proto() (*client_j5pb.API, error) {
 	// preserves order
-	packages := make([]*schema_j5pb.Package, 0, len(api.Packages))
-	packageMap := map[string]*schema_j5pb.Package{}
+	packages := make([]*client_j5pb.Package, 0, len(api.Packages))
+	packageMap := map[string]*client_j5pb.Package{}
 
 	for _, pkg := range api.Packages {
 		apiPkg, err := pkg.ToJ5Proto()
@@ -50,7 +55,7 @@ func (api *API) ToJ5Proto() (*schema_j5pb.API, error) {
 			apiPkg.Schemas[schemaName] = schema.schema
 			continue
 		}
-		refPackage := &schema_j5pb.Package{
+		refPackage := &client_j5pb.Package{
 			Name: schema.inPackage,
 			Schemas: map[string]*schema_j5pb.RootSchema{
 				schemaName: schema.schema,
@@ -59,9 +64,9 @@ func (api *API) ToJ5Proto() (*schema_j5pb.API, error) {
 		packageMap[schema.inPackage] = refPackage
 		packages = append(packages, refPackage)
 	}
-	return &schema_j5pb.API{
+	return &client_j5pb.API{
 		Packages: packages,
-		Metadata: &schema_j5pb.Metadata{
+		Metadata: &client_j5pb.Metadata{
 			BuiltAt: timestamppb.Now(),
 		},
 	}, nil
@@ -74,7 +79,7 @@ type Package struct {
 	StateEntities []*StateEntity
 }
 
-func (pkg *Package) linkSchemas(schemaSet *j5reflect.PackageSet) error {
+func (pkg *Package) linkSchemas(schemaSet schemaSource) error {
 	for _, service := range pkg.Services {
 		if err := service.linkSchemas(schemaSet); err != nil {
 			return patherr.Wrap(err, "services", service.Name)
@@ -83,11 +88,11 @@ func (pkg *Package) linkSchemas(schemaSet *j5reflect.PackageSet) error {
 	return nil
 }
 
-func (pkg *Package) ToJ5Proto() (*schema_j5pb.Package, error) {
+func (pkg *Package) ToJ5Proto() (*client_j5pb.Package, error) {
 
-	services := make([]*schema_j5pb.Service, 0, len(pkg.Services))
+	services := make([]*client_j5pb.Service, 0, len(pkg.Services))
 	for _, service := range pkg.Services {
-		methods := make([]*schema_j5pb.Method, 0, len(service.Methods))
+		methods := make([]*client_j5pb.Method, 0, len(service.Methods))
 		for _, method := range service.Methods {
 			m, err := method.ToJ5Proto()
 			if err != nil {
@@ -97,13 +102,13 @@ func (pkg *Package) ToJ5Proto() (*schema_j5pb.Package, error) {
 			m.FullGrpcName = fmt.Sprintf("/%s.%s/%s", pkg.Name, service.Name, method.GRPCMethodName)
 			methods = append(methods, m)
 		}
-		services = append(services, &schema_j5pb.Service{
+		services = append(services, &client_j5pb.Service{
 			Name:    service.Name,
 			Methods: methods,
 		})
 	}
 
-	return &schema_j5pb.Package{
+	return &client_j5pb.Package{
 		Label:    pkg.Label,
 		Name:     pkg.Name,
 		Schemas:  map[string]*schema_j5pb.RootSchema{},
@@ -118,7 +123,7 @@ type Service struct {
 	Methods []*Method
 }
 
-func (ss *Service) linkSchemas(schemaSet *j5reflect.PackageSet) error {
+func (ss *Service) linkSchemas(schemaSet schemaSource) error {
 	for _, method := range ss.Methods {
 		if err := method.Request.link(schemaSet); err != nil {
 			return patherr.Wrap(err, "request", method.Request.FullName())
@@ -130,10 +135,10 @@ func (ss *Service) linkSchemas(schemaSet *j5reflect.PackageSet) error {
 	return nil
 }
 
-func (ss *Service) ToJ5Proto() (*schema_j5pb.Service, error) {
-	service := &schema_j5pb.Service{
+func (ss *Service) ToJ5Proto() (*client_j5pb.Service, error) {
+	service := &client_j5pb.Service{
 		Name:    ss.Name,
-		Methods: make([]*schema_j5pb.Method, len(ss.Methods)),
+		Methods: make([]*client_j5pb.Method, len(ss.Methods)),
 	}
 
 	for i, method := range ss.Methods {
@@ -150,13 +155,13 @@ func (ss *Service) ToJ5Proto() (*schema_j5pb.Service, error) {
 type SchemaLink interface {
 	FullName() string
 	Schema() *j5reflect.ObjectSchema
-	link(*j5reflect.PackageSet) error
+	link(schemaSource) error
 }
 
 type Method struct {
 	GRPCMethodName string
 	HTTPPath       string
-	HTTPMethod     schema_j5pb.HTTPMethod
+	HTTPMethod     client_j5pb.HTTPMethod
 
 	HasBody bool
 
@@ -166,7 +171,7 @@ type Method struct {
 	Service *Service
 }
 
-func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
+func (mm *Method) ToJ5Proto() (*client_j5pb.Method, error) {
 
 	requestSchema := mm.Request.Schema()
 	if requestSchema == nil {
@@ -210,7 +215,7 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 		}
 	}
 
-	request := &schema_j5pb.Method_Request{
+	request := &client_j5pb.Method_Request{
 		PathParameters: pathProperties,
 	}
 
@@ -239,7 +244,7 @@ func (mm *Method) ToJ5Proto() (*schema_j5pb.Method, error) {
 		request.List = listRequest
 	}
 
-	return &schema_j5pb.Method{
+	return &client_j5pb.Method{
 		FullGrpcName: fmt.Sprintf("/%s.%s/%s", mm.Service.Package.Name, mm.Service.Name, mm.GRPCMethodName),
 		Name:         mm.GRPCMethodName,
 		HttpMethod:   mm.HTTPMethod,
@@ -334,12 +339,13 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 		return nil
 	}
 
-	walkRootObject := func(schema *schemaPlaceholder) error {
-		if schema.linked == nil {
+	walkRootObject := func(schema SchemaLink) error {
+		linked := schema.Schema()
+		if linked == nil {
 			return fmt.Errorf("schema %q not linked", schema.FullName())
 		}
 
-		for _, prop := range schema.linked.Properties {
+		for _, prop := range linked.Properties {
 			if err := walkRefs(prop.Schema); err != nil {
 				return fmt.Errorf("walk root object: %w", err)
 			}

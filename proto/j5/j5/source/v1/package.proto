@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 import "buf/validate/validate.proto";
-import "j5/schema/v1/document.proto";
+import "j5/client/v1/client.proto";
 import "j5/schema/v1/schema.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/source/v1/source_j5pb";
@@ -40,7 +40,7 @@ message Method {
   string name = 2 [(buf.validate.field).string.pattern = "^[a-z][a-zA-Z0-9]*$"];
   string full_grpc_name = 3;
 
-  j5.schema.v1.HTTPMethod http_method = 4 [(buf.validate.field).enum = {
+  j5.client.v1.HTTPMethod http_method = 4 [(buf.validate.field).enum = {
     not_in: 0
     defined_only: true
   }];

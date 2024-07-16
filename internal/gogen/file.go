@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 )
 
 type StringGen struct {
@@ -219,7 +219,7 @@ type Field struct {
 	Name     string
 	DataType DataType
 	Tags     map[string]string
-	Property *j5reflect.ObjectProperty
+	Property *schema_j5pb.ObjectProperty
 }
 
 type DataType struct {

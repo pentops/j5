@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -55,7 +56,7 @@ func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 		return nil, err
 	}
 
-	packageSet, err := j5reflect.PackageSetFromFiles(descFiles)
+	packageSet, err := j5reflect.SchemaSetFromFiles(descFiles)
 	if err != nil {
 		return nil, fmt.Errorf("package set from files: %w", err)
 	}
@@ -309,23 +310,23 @@ func buildMethod(method protoreflect.MethodDescriptor) (*source_j5pb.Method, err
 
 	switch pt := httpOpt.Pattern.(type) {
 	case *annotations.HttpRule_Get:
-		builtMethod.HttpMethod = schema_j5pb.HTTPMethod_HTTP_METHOD_GET
+		builtMethod.HttpMethod = client_j5pb.HTTPMethod_HTTP_METHOD_GET
 		builtMethod.HttpPath = pt.Get
 
 	case *annotations.HttpRule_Post:
-		builtMethod.HttpMethod = schema_j5pb.HTTPMethod_HTTP_METHOD_POST
+		builtMethod.HttpMethod = client_j5pb.HTTPMethod_HTTP_METHOD_POST
 		builtMethod.HttpPath = pt.Post
 
 	case *annotations.HttpRule_Put:
-		builtMethod.HttpMethod = schema_j5pb.HTTPMethod_HTTP_METHOD_PUT
+		builtMethod.HttpMethod = client_j5pb.HTTPMethod_HTTP_METHOD_PUT
 		builtMethod.HttpPath = pt.Put
 
 	case *annotations.HttpRule_Delete:
-		builtMethod.HttpMethod = schema_j5pb.HTTPMethod_HTTP_METHOD_DELETE
+		builtMethod.HttpMethod = client_j5pb.HTTPMethod_HTTP_METHOD_DELETE
 		builtMethod.HttpPath = pt.Delete
 
 	case *annotations.HttpRule_Patch:
-		builtMethod.HttpMethod = schema_j5pb.HTTPMethod_HTTP_METHOD_PATCH
+		builtMethod.HttpMethod = client_j5pb.HTTPMethod_HTTP_METHOD_PATCH
 		builtMethod.HttpPath = pt.Patch
 
 	default:

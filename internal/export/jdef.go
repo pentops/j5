@@ -3,22 +3,21 @@ package export
 import (
 	"fmt"
 
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 )
 
 type API struct {
 	Packages []*Package            `json:"packages"`
 	Schemas  map[string]*Schema    `json:"definitions"`
-	Metadata *schema_j5pb.Metadata `json:"metadata"`
+	Metadata *client_j5pb.Metadata `json:"metadata"`
 }
 
 type Package struct {
 	Label string `json:"label"`
 	Name  string `json:"name"`
 
-	Introduction string       `json:"introduction,omitempty"`
-	Methods      []*Method    `json:"methods"`
-	Events       []*EventSpec `json:"events"`
+	Introduction string    `json:"introduction,omitempty"`
+	Methods      []*Method `json:"methods"`
 }
 
 type Method struct {
@@ -46,7 +45,7 @@ type JdefParameter struct {
 	Schema      Schema `json:"schema"`
 }
 
-func FromProto(protoSchema *schema_j5pb.API) (*API, error) {
+func FromProto(protoSchema *client_j5pb.API) (*API, error) {
 	out := &API{
 		Packages: make([]*Package, len(protoSchema.Packages)),
 		Schemas:  make(map[string]*Schema),
@@ -71,7 +70,7 @@ func FromProto(protoSchema *schema_j5pb.API) (*API, error) {
 	return out, nil
 }
 
-func fromProtoPackage(protoPackage *schema_j5pb.Package) (*Package, error) {
+func fromProtoPackage(protoPackage *client_j5pb.Package) (*Package, error) {
 	out := &Package{
 		Label: protoPackage.Label,
 		Name:  protoPackage.Name,
@@ -88,23 +87,38 @@ func fromProtoPackage(protoPackage *schema_j5pb.Package) (*Package, error) {
 			out.Methods = append(out.Methods, method)
 		}
 	}
-	out.Events = make([]*EventSpec, len(protoPackage.Events))
-	for idx, protoEvent := range protoPackage.Events {
-		event := fromProtoEvent(protoEvent)
-		out.Events[idx] = event
+	for _, entity := range protoPackage.StateEntities {
+		for _, service := range entity.CommandServices {
+			for _, method := range service.Methods {
+				m, err := fromProtoMethod(service, method)
+				if err != nil {
+					return nil, err
+				}
+				out.Methods = append(out.Methods, m)
+			}
+
+		}
+		for _, method := range entity.QueryService.Methods {
+			m, err := fromProtoMethod(entity.QueryService, method)
+			if err != nil {
+				return nil, err
+			}
+			out.Methods = append(out.Methods, m)
+		}
 	}
+
 	return out, nil
 }
 
-var methodShortString = map[schema_j5pb.HTTPMethod]string{
-	schema_j5pb.HTTPMethod_HTTP_METHOD_GET:    "get",
-	schema_j5pb.HTTPMethod_HTTP_METHOD_POST:   "post",
-	schema_j5pb.HTTPMethod_HTTP_METHOD_PUT:    "put",
-	schema_j5pb.HTTPMethod_HTTP_METHOD_DELETE: "delete",
-	schema_j5pb.HTTPMethod_HTTP_METHOD_PATCH:  "patch",
+var methodShortString = map[client_j5pb.HTTPMethod]string{
+	client_j5pb.HTTPMethod_HTTP_METHOD_GET:    "get",
+	client_j5pb.HTTPMethod_HTTP_METHOD_POST:   "post",
+	client_j5pb.HTTPMethod_HTTP_METHOD_PUT:    "put",
+	client_j5pb.HTTPMethod_HTTP_METHOD_DELETE: "delete",
+	client_j5pb.HTTPMethod_HTTP_METHOD_PATCH:  "patch",
 }
 
-func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb.Method) (*Method, error) {
+func fromProtoMethod(protoService *client_j5pb.Service, protoMethod *client_j5pb.Method) (*Method, error) {
 	out := &Method{
 		GrpcServiceName: protoService.Name,
 		GrpcMethodName:  protoMethod.Name,
@@ -155,16 +169,4 @@ func fromProtoMethod(protoService *schema_j5pb.Service, protoMethod *schema_j5pb
 	}
 	out.ResponseBody = responseSchema
 	return out, nil
-}
-
-func fromProtoEvent(protoEvent *schema_j5pb.EventSpec) *EventSpec {
-	ref := fmt.Sprintf("#/definitions/%s", protoEvent.Schema)
-	out := &EventSpec{
-		Name: protoEvent.Name,
-		Schema: &Schema{
-			Ref: &ref,
-		},
-	}
-
-	return out
 }

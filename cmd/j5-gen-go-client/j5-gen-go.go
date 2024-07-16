@@ -5,8 +5,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/plugin/v1/plugin_j5pb"
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/gogen"
 	"google.golang.org/protobuf/proto"
 )
@@ -48,7 +48,7 @@ func do() error {
 		resp: &plugin_j5pb.CodeGenerationResponse{},
 	}
 
-	api := &schema_j5pb.API{
+	api := &client_j5pb.API{
 		Packages: req.Packages,
 	}
 

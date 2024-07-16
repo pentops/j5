@@ -1,15 +1,16 @@
-package j5package
+package j5client
 
 import (
 	"fmt"
 	"strings"
 
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5reflect"
 )
 
-func buildListRequest(response j5reflect.RootSchema) (*schema_j5pb.ListRequest, error) {
+func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, error) {
 	responseObj, ok := response.(*j5reflect.ObjectSchema)
 	if !ok {
 		return nil, fmt.Errorf("expected object schema, got %T", response)
@@ -37,7 +38,7 @@ func buildListRequest(response j5reflect.RootSchema) (*schema_j5pb.ListRequest, 
 		return nil, fmt.Errorf("expected object schema, got %T", foundArray.Schema)
 	}
 
-	out := &schema_j5pb.ListRequest{}
+	out := &client_j5pb.ListRequest{}
 
 	addSearch := func(schema j5reflect.WalkProperty, searching *list_j5pb.SearchingConstraint) {
 		if searching == nil {
@@ -45,7 +46,7 @@ func buildListRequest(response j5reflect.RootSchema) (*schema_j5pb.ListRequest, 
 			return
 		}
 		fmt.Printf("searching constraint for %s: %v\n", schema.JSONName, searching)
-		out.SearchableFields = append(out.SearchableFields, &schema_j5pb.ListRequest_SearchField{
+		out.SearchableFields = append(out.SearchableFields, &client_j5pb.ListRequest_SearchField{
 			Name: strings.Join(schema.Path, "."),
 		})
 	}
@@ -54,7 +55,7 @@ func buildListRequest(response j5reflect.RootSchema) (*schema_j5pb.ListRequest, 
 		if filtering == nil {
 			return
 		}
-		out.FilterableFields = append(out.FilterableFields, &schema_j5pb.ListRequest_FilterField{
+		out.FilterableFields = append(out.FilterableFields, &client_j5pb.ListRequest_FilterField{
 			Name:           strings.Join(schema.Path, "."),
 			DefaultFilters: filtering.DefaultFilters,
 		})
@@ -64,12 +65,12 @@ func buildListRequest(response j5reflect.RootSchema) (*schema_j5pb.ListRequest, 
 		if sorting == nil {
 			return
 		}
-		var ds *schema_j5pb.ListRequest_SortField_Direction
+		var ds *client_j5pb.ListRequest_SortField_Direction
 		if sorting.DefaultSort {
-			direction := schema_j5pb.ListRequest_SortField_DIRECTION_ASC
+			direction := client_j5pb.ListRequest_SortField_DIRECTION_ASC
 			ds = &direction
 		}
-		out.SortableFields = append(out.SortableFields, &schema_j5pb.ListRequest_SortField{
+		out.SortableFields = append(out.SortableFields, &client_j5pb.ListRequest_SortField{
 			Name:        strings.Join(schema.Path, "."),
 			DefaultSort: ds,
 		})

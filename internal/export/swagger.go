@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 )
 
 type Document struct {
@@ -89,7 +89,7 @@ type SwaggerParameter struct {
 	Schema      *Schema `json:"schema"`
 }
 
-func (dd *Document) addService(service *schema_j5pb.Service) error {
+func (dd *Document) addService(service *client_j5pb.Service) error {
 	for _, method := range service.Methods {
 		err := dd.addMethod(service, method)
 		if err != nil {
@@ -99,7 +99,7 @@ func (dd *Document) addService(service *schema_j5pb.Service) error {
 	return nil
 }
 
-func (dd *Document) addMethod(service *schema_j5pb.Service, method *schema_j5pb.Method) error {
+func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.Method) error {
 
 	operation := &Operation{
 		OperationHeader: OperationHeader{

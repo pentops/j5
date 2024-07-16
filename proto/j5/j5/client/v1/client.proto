@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-package j5.schema.v1;
+package j5.client.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/schema/v1/schema.proto";
 
-option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
+option go_package = "github.com/pentops/j5/gen/j5/client/v1/client_j5pb";
 
 message API {
   repeated Package packages = 1;
@@ -26,7 +26,7 @@ message Package {
 
   repeated Service services = 5;
   repeated StateEntity state_entities = 6;
-  map<string, RootSchema> schemas = 8;
+  map<string, j5.schema.v1.RootSchema> schemas = 8;
 }
 
 message Service {
@@ -45,12 +45,12 @@ message Method {
 
   string http_path = 5 [(buf.validate.field).string.pattern = "^(\\/:?[a-z0-9_]+)+$"];
   Request request = 6 [(buf.validate.field).required = true];
-  Object response_body = 7 [(buf.validate.field).required = true];
+  j5.schema.v1.Object response_body = 7 [(buf.validate.field).required = true];
 
   message Request {
-    Object body = 1;
-    repeated ObjectProperty path_parameters = 2;
-    repeated ObjectProperty query_parameters = 3;
+    j5.schema.v1.Object body = 1;
+    repeated j5.schema.v1.ObjectProperty path_parameters = 2;
+    repeated j5.schema.v1.ObjectProperty query_parameters = 3;
 
     ListRequest list = 4;
   }

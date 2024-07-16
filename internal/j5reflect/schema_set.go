@@ -6,17 +6,36 @@ import (
 	"github.com/pentops/j5/internal/patherr"
 )
 
-type PackageSet struct {
+type RootSet interface {
+	refTo(pkg, schema string) (*RefSchema, bool)
+}
+
+type SchemaSet struct {
 	Packages map[string]*Package
 }
 
-func NewPackageSet() *PackageSet {
-	return &PackageSet{
+func newSchemaSet() *SchemaSet {
+	return &SchemaSet{
 		Packages: map[string]*Package{},
 	}
 }
 
-func (ps *PackageSet) Package(name string) *Package {
+func (ss *SchemaSet) refTo(pkg, schema string) (*RefSchema, bool) {
+	refPackage := ss.Package(pkg)
+	if existing, ok := refPackage.Schemas[schema]; ok {
+		return existing, true
+	}
+
+	refSchema := &RefSchema{
+		Package: refPackage,
+		Schema:  schema,
+	}
+	refPackage.Schemas[schema] = refSchema
+
+	return refSchema, false
+}
+
+func (ps *SchemaSet) Package(name string) *Package {
 	if pkg, ok := ps.Packages[name]; ok {
 		return pkg
 	}
@@ -32,7 +51,7 @@ func (ps *PackageSet) Package(name string) *Package {
 type Package struct {
 	Name       string
 	Schemas    map[string]*RefSchema
-	PackageSet *PackageSet
+	PackageSet RootSet
 }
 
 func (pkg *Package) assertAllRefsLink() error {

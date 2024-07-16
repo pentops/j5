@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/patherr"
 )
 
 type builder struct {
@@ -13,52 +13,80 @@ type builder struct {
 	//schemas SchemaResolver
 }
 
-func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error) {
+func (bb *builder) buildTypeName(currentPackage string, schema *schema_j5pb.Field) (*DataType, error) {
 
-	switch schemaType := schema.(type) {
+	switch schemaType := schema.Type.(type) {
 
-	case *j5reflect.ObjectField:
-		if err := bb.addObject(schemaType.Schema()); err != nil {
-			return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref.FullName(), err)
+	case *schema_j5pb.Field_Object:
+		var refPackage, refSchema string
+
+		switch linkType := schemaType.Object.Schema.(type) {
+		case *schema_j5pb.ObjectField_Ref:
+			refPackage = linkType.Ref.Package
+			refSchema = linkType.Ref.Schema
+		case *schema_j5pb.ObjectField_Object:
+			refPackage = currentPackage
+			refSchema = linkType.Object.Name
+
+			if err := bb.addObject(currentPackage, linkType.Object); err != nil {
+				return nil, fmt.Errorf("referencedType %q.%q: %w", refPackage, refSchema, err)
+			}
+		default:
+			return nil, fmt.Errorf("Unknown object ref type: %T\n", schema)
 		}
 
-		objectPackage, err := bb.options.ReferenceGoPackage(schemaType.Ref.Package)
+		objectPackage, err := bb.options.ReferenceGoPackage(refPackage)
 		if err != nil {
-			return nil, fmt.Errorf("referredType in %s: %w", schemaType.Ref.FullName(), err)
+			return nil, fmt.Errorf("referredType in %q.%q: %w", refPackage, refSchema, err)
 		}
 
 		return &DataType{
-			Name:      goTypeName(schemaType.Ref.Schema),
+			Name:      goTypeName(refSchema),
 			GoPackage: objectPackage,
-			J5Package: schemaType.Ref.Package,
+			J5Package: refPackage,
 			Pointer:   true,
 		}, nil
 
-	case *j5reflect.OneofField:
-		if err := bb.addOneofWrapper(schemaType.Schema()); err != nil {
-			return nil, fmt.Errorf("referencedType in %s: %w", schemaType.Ref.FullName(), err)
+	case *schema_j5pb.Field_Oneof:
+		var refPackage, refSchema string
+
+		switch linkType := schemaType.Oneof.Schema.(type) {
+		case *schema_j5pb.OneofField_Ref:
+			refPackage = linkType.Ref.Package
+			refSchema = linkType.Ref.Schema
+
+		case *schema_j5pb.OneofField_Oneof:
+			refPackage = currentPackage
+			refSchema = linkType.Oneof.Name
+
+			if err := bb.addOneofWrapper(currentPackage, linkType.Oneof); err != nil {
+				return nil, fmt.Errorf("referencedType %q.%q: %w", refPackage, refSchema, err)
+			}
+		default:
+			return nil, fmt.Errorf("Unknown object ref type: %T\n", schema)
 		}
 
-		objectPackage, err := bb.options.ReferenceGoPackage(schemaType.Ref.Package)
+		objectPackage, err := bb.options.ReferenceGoPackage(refPackage)
 		if err != nil {
-			return nil, fmt.Errorf("referredType in %s: %w", schemaType.Ref.FullName(), err)
+			return nil, fmt.Errorf("referredType in %q.%q: %w", refPackage, refSchema, err)
 		}
 
 		return &DataType{
-			Name:      goTypeName(schemaType.Ref.Schema),
+			Name:      goTypeName(refSchema),
 			GoPackage: objectPackage,
 			Pointer:   true,
-			J5Package: schemaType.Ref.Package,
+			J5Package: refPackage,
 		}, nil
 
-	case *j5reflect.EnumField:
+	case *schema_j5pb.Field_Enum:
+		// TODO: Something better.
 		return &DataType{
 			Name:    "string",
 			Pointer: false,
 		}, nil
 
-	case *j5reflect.ArrayField:
-		itemType, err := bb.buildTypeName(schemaType.Schema)
+	case *schema_j5pb.Field_Array:
+		itemType, err := bb.buildTypeName(currentPackage, schemaType.Array.Items)
 		if err != nil {
 			return nil, err
 		}
@@ -71,8 +99,8 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 			Slice:     true,
 		}, nil
 
-	case *j5reflect.MapField:
-		valueType, err := bb.buildTypeName(schemaType.Schema)
+	case *schema_j5pb.Field_Map:
+		valueType, err := bb.buildTypeName(currentPackage, schemaType.Map.ItemSchema)
 		if err != nil {
 			return nil, fmt.Errorf("map value: %w", err)
 		}
@@ -82,67 +110,59 @@ func (bb *builder) buildTypeName(schema j5reflect.FieldSchema) (*DataType, error
 			Pointer: false,
 		}, nil
 
-	case *j5reflect.AnyField:
+	case *schema_j5pb.Field_Any:
 		return &DataType{
 			Name:    "interface{}",
 			Pointer: false,
 		}, nil
 
-	case *j5reflect.ScalarSchema:
-		asProto := schemaType.Proto
-
-		switch schemaType := asProto.Type.(type) {
-		case *schema_j5pb.Field_String_:
-			item := schemaType.String_
-			if item.Format == nil {
-				return &DataType{
-					Name:    "string",
-					Pointer: false,
-				}, nil
-			}
-
-			switch *item.Format {
-			case "uuid", "date", "email", "uri":
-				return &DataType{
-					Name:    "string",
-					Pointer: false,
-				}, nil
-			case "date-time":
-				return &DataType{
-					Name:      "Time",
-					Pointer:   true,
-					GoPackage: "time",
-				}, nil
-			case "byte":
-				return &DataType{
-					Name:    "[]byte",
-					Pointer: false,
-				}, nil
-			default:
-				return nil, fmt.Errorf("Unknown string format: %s", *item.Format)
-			}
-
-		case *schema_j5pb.Field_Float:
+	case *schema_j5pb.Field_String_:
+		item := schemaType.String_
+		if item.Format == nil {
 			return &DataType{
-				Name:    goFloatTypes[schemaType.Float.Format],
+				Name:    "string",
 				Pointer: false,
 			}, nil
-
-		case *schema_j5pb.Field_Integer:
-			return &DataType{
-				Name:    goIntTypes[schemaType.Integer.Format],
-				Pointer: false,
-			}, nil
-
-		case *schema_j5pb.Field_Boolean:
-			return &DataType{
-				Name:    "bool",
-				Pointer: false,
-			}, nil
-
-		default:
-			return nil, fmt.Errorf("Unknown scalar type: %T", schemaType)
 		}
+
+		switch *item.Format {
+		case "uuid", "date", "email", "uri":
+			return &DataType{
+				Name:    "string",
+				Pointer: false,
+			}, nil
+		case "date-time":
+			return &DataType{
+				Name:      "Time",
+				Pointer:   true,
+				GoPackage: "time",
+			}, nil
+		case "byte":
+			return &DataType{
+				Name:    "[]byte",
+				Pointer: false,
+			}, nil
+		default:
+			return nil, fmt.Errorf("Unknown string format: %s", *item.Format)
+		}
+
+	case *schema_j5pb.Field_Float:
+		return &DataType{
+			Name:    goFloatTypes[schemaType.Float.Format],
+			Pointer: false,
+		}, nil
+
+	case *schema_j5pb.Field_Integer:
+		return &DataType{
+			Name:    goIntTypes[schemaType.Integer.Format],
+			Pointer: false,
+		}, nil
+
+	case *schema_j5pb.Field_Boolean:
+		return &DataType{
+			Name:    "bool",
+			Pointer: false,
+		}, nil
 
 	default:
 		return nil, fmt.Errorf("Unknown type for Go Gen: %T\n", schema)
@@ -162,18 +182,18 @@ var goIntTypes = map[schema_j5pb.IntegerField_Format]string{
 	schema_j5pb.IntegerField_FORMAT_UINT64: "uint64",
 }
 
-func (bb *builder) jsonField(property *j5reflect.ObjectProperty) (*Field, error) {
+func (bb *builder) jsonField(packageName string, property *schema_j5pb.ObjectProperty) (*Field, error) {
 
 	tags := map[string]string{}
 
-	tags["json"] = property.JSONName
+	tags["json"] = property.Name
 	if !property.Required {
 		tags["json"] += ",omitempty"
 	}
 
-	dataType, err := bb.buildTypeName(property.Schema)
+	dataType, err := bb.buildTypeName(packageName, property.Schema)
 	if err != nil {
-		return nil, fmt.Errorf("building field %s: %w", property.JSONName, err)
+		return nil, fmt.Errorf("building field %s: %w", property.Name, err)
 	}
 
 	if !dataType.Pointer && !dataType.Slice && property.ExplicitlyOptional {
@@ -181,7 +201,7 @@ func (bb *builder) jsonField(property *j5reflect.ObjectProperty) (*Field, error)
 	}
 
 	return &Field{
-		Name:     goTypeName(property.JSONName),
+		Name:     goTypeName(property.Name),
 		DataType: *dataType,
 		Tags:     tags,
 		Property: property,
@@ -189,8 +209,8 @@ func (bb *builder) jsonField(property *j5reflect.ObjectProperty) (*Field, error)
 
 }
 
-func (bb *builder) addObject(object *j5reflect.ObjectSchema) error {
-	gen, err := bb.fileForPackage(object.Package)
+func (bb *builder) addObject(packageName string, object *schema_j5pb.Object) error {
+	gen, err := bb.fileForPackage(packageName)
 	if err != nil {
 		return err
 	}
@@ -208,15 +228,15 @@ func (bb *builder) addObject(object *j5reflect.ObjectSchema) error {
 		Name: typeName,
 		Comment: fmt.Sprintf(
 			"Proto: %s",
-			object.FullName(),
+			object.Name,
 		),
 	}
 	gen.types[object.Name] = structType
 
 	for _, property := range object.Properties {
-		field, err := bb.jsonField(property)
+		field, err := bb.jsonField(packageName, property)
 		if err != nil {
-			return fmt.Errorf("object %s: %w", object.FullName(), err)
+			return patherr.Wrap(err, object.Name)
 		}
 		structType.Fields = append(structType.Fields, field)
 	}
@@ -224,8 +244,8 @@ func (bb *builder) addObject(object *j5reflect.ObjectSchema) error {
 	return nil
 }
 
-func (bb *builder) addOneofWrapper(wrapper *j5reflect.OneofSchema) error {
-	gen, err := bb.fileForPackage(wrapper.Package)
+func (bb *builder) addOneofWrapper(packageName string, wrapper *schema_j5pb.Oneof) error {
+	gen, err := bb.fileForPackage(packageName)
 	if err != nil {
 		return err
 	}
@@ -239,7 +259,7 @@ func (bb *builder) addOneofWrapper(wrapper *j5reflect.OneofSchema) error {
 	}
 
 	comment := fmt.Sprintf(
-		"Proto Message: %s", wrapper.FullName(),
+		"Proto Message: %s", wrapper.Name,
 	)
 
 	structType := &Struct{
@@ -277,14 +297,14 @@ func (bb *builder) addOneofWrapper(wrapper *j5reflect.OneofSchema) error {
 	})
 
 	for _, property := range wrapper.Properties {
-		field, err := bb.jsonField(property)
+		field, err := bb.jsonField(packageName, property)
 		if err != nil {
-			return fmt.Errorf("object %s: %w", wrapper.FullName(), err)
+			return fmt.Errorf("object %s: %w", wrapper.Name, err)
 		}
 		field.DataType.Pointer = true
 		structType.Fields = append(structType.Fields, field)
 		keyMethod.P("if s.", field.Name, " != nil {")
-		keyMethod.P("  return \"", property.JSONName, "\"")
+		keyMethod.P("  return \"", property.Name, "\"")
 		keyMethod.P("}")
 		valueMethod.P("if s.", field.Name, " != nil {")
 		valueMethod.P("  return s.", field.Name)
