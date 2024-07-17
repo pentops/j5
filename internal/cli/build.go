@@ -7,6 +7,7 @@ import (
 
 	"github.com/pentops/j5/builder"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/internal/j5client"
 	"github.com/pentops/j5/internal/j5reflect"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/j5/internal/structure"
@@ -35,25 +36,25 @@ func runVerify(ctx context.Context, cfg struct {
 			return err
 		}
 
-		reflectionAPI, err := structure.ReflectFromSource(image)
+		sourceAPI, err := structure.APIFromImage(image)
 		if err != nil {
 			return fmt.Errorf("ReflectFromSource: %w", err)
 		}
 
-		descriptorAPI, err := reflectionAPI.ToJ5Proto()
+		clientAPI, err := j5client.APIFromSource(sourceAPI)
 		if err != nil {
-			return fmt.Errorf("DescriptorFromReflection: %w", err)
+			return fmt.Errorf("APIFromSource: %w", err)
 		}
 
-		if err := structure.ResolveProse(image, descriptorAPI); err != nil {
+		if err := structure.ResolveProse(image, clientAPI); err != nil {
 			return fmt.Errorf("ResolveProse: %w", err)
 		}
 
-		_, err = j5reflect.APIFromDesc(descriptorAPI)
+		_, err = j5reflect.PackageSetFromSourceAPI(sourceAPI)
 		if err != nil {
 			return fmt.Errorf("building reflection from descriptor: %w", err)
 		}
-		for _, pkg := range descriptorAPI.Packages {
+		for _, pkg := range sourceAPI.Packages {
 			fmt.Printf("Package %s OK\n", pkg.Name)
 		}
 

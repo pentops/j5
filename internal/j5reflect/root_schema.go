@@ -93,6 +93,19 @@ type ObjectSchema struct {
 	Properties PropertySet
 }
 
+func (s *ObjectSchema) Clone() *ObjectSchema {
+	properties := make(PropertySet, len(s.Properties))
+	copy(properties, s.Properties)
+	return &ObjectSchema{
+		rootSchema: rootSchema{
+			description: s.description,
+			pkg:         s.pkg,
+			name:        s.name,
+		},
+		Properties: properties,
+	}
+}
+
 func (s *ObjectSchema) ToJ5Object() *schema_j5pb.Object {
 	properties := make([]*schema_j5pb.ObjectProperty, 0, len(s.Properties))
 	for _, prop := range s.Properties {

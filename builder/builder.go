@@ -9,12 +9,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/plugin/v1/plugin_j5pb"
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/source"
-	"github.com/pentops/j5/internal/structure"
 	"github.com/pentops/log.go/log"
 	"golang.org/x/mod/modfile"
 	"google.golang.org/protobuf/proto"
@@ -143,21 +142,16 @@ func (b *Builder) runPlugin(ctx context.Context, pc PluginContext, input Input, 
 		if err != nil {
 			return fmt.Errorf("source image: %w", err)
 		}
-		reflectionAPI, err := structure.ReflectFromSource(sourceImage)
+		clientAPI, err := DescriptorFromSource(sourceImage)
 		if err != nil {
 			return fmt.Errorf("ReflectFromSource: %w", err)
 		}
 
-		descriptorAPI, err := reflectionAPI.ToJ5Proto()
-		if err != nil {
-			return fmt.Errorf("DescriptorFromReflection: %w", err)
-		}
-
-		if len(descriptorAPI.Packages) == 0 {
+		if len(clientAPI.Packages) == 0 {
 			return fmt.Errorf("no packages found")
 		}
 
-		if err := b.runJ5ClientPlugin(ctx, pc, plugin, descriptorAPI); err != nil {
+		if err := b.runJ5ClientPlugin(ctx, pc, plugin, clientAPI); err != nil {
 			return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
 		}
 
@@ -225,7 +219,7 @@ func (b *Builder) runProtocPlugin(ctx context.Context, pc PluginContext, plugin 
 	return nil
 }
 
-func (b *Builder) runJ5ClientPlugin(ctx context.Context, pc PluginContext, plugin *config_j5pb.BuildPlugin, descriptorAPI *schema_j5pb.API) error {
+func (b *Builder) runJ5ClientPlugin(ctx context.Context, pc PluginContext, plugin *config_j5pb.BuildPlugin, descriptorAPI *client_j5pb.API) error {
 
 	start := time.Now()
 

@@ -10,9 +10,10 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/export"
+	"github.com/pentops/j5/internal/j5client"
 	"github.com/pentops/j5/internal/structure"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
@@ -47,18 +48,18 @@ func (cfg BuildConfig) sourceImage(ctx context.Context) (*source_j5pb.SourceImag
 	return image, nil
 }
 
-func (cfg BuildConfig) descriptorAPI(ctx context.Context) (*schema_j5pb.API, error) {
+func (cfg BuildConfig) descriptorAPI(ctx context.Context) (*client_j5pb.API, error) {
 	image, err := cfg.sourceImage(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	reflectionAPI, err := structure.ReflectFromSource(image)
+	reflectionAPI, err := structure.APIFromImage(image)
 	if err != nil {
 		return nil, fmt.Errorf("ReflectFromSource: %w", err)
 	}
 
-	descriptorAPI, err := reflectionAPI.ToJ5Proto()
+	descriptorAPI, err := j5client.APIFromSource(reflectionAPI)
 	if err != nil {
 		return nil, fmt.Errorf("DescriptorFromReflection: %w", err)
 	}

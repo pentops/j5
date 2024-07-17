@@ -20,6 +20,18 @@ func newSchemaSet() *SchemaSet {
 	}
 }
 
+func (ss *SchemaSet) SchemaByName(packageName, name string) (RootSchema, error) {
+	pkg, ok := ss.Packages[packageName]
+	if !ok {
+		return nil, fmt.Errorf("package %q not found", packageName)
+	}
+	ref, ok := pkg.Schemas[name]
+	if !ok {
+		return nil, fmt.Errorf("schema %q not found in package %q", name, packageName)
+	}
+	return ref.To, nil
+}
+
 func (ss *SchemaSet) refTo(pkg, schema string) (*RefSchema, bool) {
 	refPackage := ss.Package(pkg)
 	if existing, ok := refPackage.Schemas[schema]; ok {
