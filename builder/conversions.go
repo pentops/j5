@@ -3,27 +3,33 @@ package builder
 import (
 	"encoding/json"
 
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/export"
+	"github.com/pentops/j5/internal/j5client"
 	"github.com/pentops/j5/internal/structure"
 )
 
-func DescriptorFromSource(img *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
+func DescriptorFromSource(img *source_j5pb.SourceImage) (*client_j5pb.API, error) {
 	sourceAPI, err := structure.APIFromImage(img)
 	if err != nil {
 		return nil, err
 	}
 
-	err = structure.ResolveProse(img, descriptorAPI)
+	clientAPI, err := j5client.APIFromSource(sourceAPI)
 	if err != nil {
 		return nil, err
 	}
 
-	return descriptorAPI, nil
+	err = structure.ResolveProse(img, clientAPI)
+	if err != nil {
+		return nil, err
+	}
+
+	return clientAPI, nil
 }
 
-func SwaggerFromDescriptor(descriptorAPI *schema_j5pb.API) ([]byte, error) {
+func SwaggerFromDescriptor(descriptorAPI *client_j5pb.API) ([]byte, error) {
 	swaggerDoc, err := export.BuildSwagger(descriptorAPI)
 	if err != nil {
 		return nil, err
@@ -37,7 +43,7 @@ func SwaggerFromDescriptor(descriptorAPI *schema_j5pb.API) ([]byte, error) {
 	return asJson, nil
 }
 
-func JDefFromDescriptor(descriptorAPI *schema_j5pb.API) ([]byte, error) {
+func JDefFromDescriptor(descriptorAPI *client_j5pb.API) ([]byte, error) {
 	jDefJSON, err := export.FromProto(descriptorAPI)
 	if err != nil {
 		return nil, err

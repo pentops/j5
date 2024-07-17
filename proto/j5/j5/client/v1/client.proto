@@ -31,7 +31,7 @@ message Package {
 
 message Service {
   string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
-  repeated Method methods = 2;
+  repeated Method methods = 3;
 }
 
 message Method {
