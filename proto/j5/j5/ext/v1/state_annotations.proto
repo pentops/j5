@@ -11,7 +11,7 @@ extend google.protobuf.MessageOptions {
 }
 
 message PSMOptions {
-  string name = 1;
+  string entity_name = 1;
 }
 
 extend google.protobuf.FieldOptions {
@@ -23,13 +23,24 @@ message KeyFieldOptions {
   // primary key for the state object. This field must exist on both the event
   // and the state
   bool primary_key = 1;
+
+  ForeignKeyOptions foreign_key = 2;
+}
+
+message ForeignKeyOptions {
+  string full_entity_name = 1; // the package and name of the entity, e.g. "j5.ext.v1/user"
 }
 
 extend google.protobuf.ServiceOptions {
   StateQueryServiceOptions state_query = 555101;
+  StateCommandServiceOptions state_command = 555102;
 }
 
 message StateQueryServiceOptions {
+  string name = 1;
+}
+
+message StateCommandServiceOptions {
   string name = 1;
 }
 

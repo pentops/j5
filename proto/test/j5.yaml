@@ -1,5 +1,9 @@
 ---
 packages:
-  - name: test.bar.v1
   - name: test.foo.v1
-  - name: test.baz.v1
+
+
+
+options:
+  subPackages:
+    - name: "service"

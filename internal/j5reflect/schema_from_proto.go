@@ -11,16 +11,20 @@ import (
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/internal/patherr"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
-func SchemaSetFromFiles(descFiles *protoregistry.Files) (*SchemaSet, error) {
+func SchemaSetFromFiles(descFiles *protoregistry.Files, include func(protoreflect.FileDescriptor) bool) (*SchemaSet, error) {
 	messages := make([]protoreflect.MessageDescriptor, 0)
 	enums := make([]protoreflect.EnumDescriptor, 0)
 
 	descFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {
+		if !include(file) {
+			return true
+		}
 		fileMessages := file.Messages()
 		for ii := 0; ii < fileMessages.Len(); ii++ {
 			message := fileMessages.Get(ii)
@@ -42,6 +46,7 @@ func SchemaSetFromFiles(descFiles *protoregistry.Files) (*SchemaSet, error) {
 			return nil, fmt.Errorf("package from reflect: %w", err)
 		}
 	}
+
 	for _, enum := range enums {
 		ref, didExist := newRefPlaceholder(pkgSet, enum)
 		if didExist {
@@ -244,7 +249,7 @@ func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*Obj
 		if field.IsList() {
 			prop, err := ss.buildSchemaProperty(field)
 			if err != nil {
-				return nil, fmt.Errorf("list field %s: %w", field.Name(), err)
+				return nil, patherr.Wrap(err, string(field.Name()))
 			}
 			// TODO: Rules
 			prop.Schema = &ArrayField{
@@ -260,7 +265,7 @@ func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*Obj
 
 			valueProp, err := ss.buildSchemaProperty(field.MapValue())
 			if err != nil {
-				return nil, fmt.Errorf("map field %s: %w", field.Name(), err)
+				return nil, patherr.Wrap(err, string(field.Name()))
 			}
 
 			src := field
@@ -304,7 +309,7 @@ func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*Obj
 
 		prop, err := ss.buildSchemaProperty(field)
 		if err != nil {
-			return nil, fmt.Errorf("simple field %s: %w", field.Name(), err)
+			return nil, patherr.Wrap(err, string(field.Name()))
 		}
 
 		inOneof := field.ContainingOneof()

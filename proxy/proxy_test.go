@@ -21,12 +21,13 @@ import (
 
 func TestGetHandlerMapping(t *testing.T) {
 
-	serviceDesc := foo_testspb.File_test_foo_v1_service_foo_service_proto.Services().Get(0)
+	serviceDesc := foo_testspb.File_test_foo_v1_service_foo_service_proto.
+		Services().ByName("FooQueryService")
 
 	rr := NewRouter(codec.NewCodec())
 
 	method, err := rr.buildMethod(GRPCMethodConfig{
-		Method:  serviceDesc.Methods().Get(0),
+		Method:  serviceDesc.Methods().ByName("GetFoo"),
 		Invoker: nil,
 	})
 	if err != nil {
@@ -36,7 +37,7 @@ func TestGetHandlerMapping(t *testing.T) {
 	assert.Equal(t, "GET", method.HTTPMethod)
 
 	listMethod, err := rr.buildMethod(GRPCMethodConfig{
-		Method:  serviceDesc.Methods().Get(2),
+		Method:  serviceDesc.Methods().ByName("ListFoos"),
 		Invoker: nil,
 	})
 	if err != nil {
@@ -146,7 +147,9 @@ func TestGetHandlerMapping(t *testing.T) {
 
 func TestBodyHandlerMapping(t *testing.T) {
 
-	fd := foo_testspb.File_test_foo_v1_service_foo_service_proto.Services().Get(0).Methods().Get(1)
+	fd := foo_testspb.File_test_foo_v1_service_foo_service_proto.
+		Services().ByName("FooCommandService").
+		Methods().ByName("PostFoo")
 
 	rr := NewRouter(codec.NewCodec())
 	method, err := rr.buildMethod(GRPCMethodConfig{

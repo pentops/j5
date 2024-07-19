@@ -158,8 +158,13 @@ func (rr *Request) ToJ5Proto() *client_j5pb.Method_Request {
 		queryParameters = append(queryParameters, qp.ToJ5Proto())
 	}
 
+	var body *schema_j5pb.Object
+	if rr.Body != nil {
+		body = rr.Body.ToJ5Object()
+	}
+
 	return &client_j5pb.Method_Request{
-		Body:            rr.Body.ToJ5Object(),
+		Body:            body,
 		PathParameters:  pathParameters,
 		QueryParameters: queryParameters,
 	}

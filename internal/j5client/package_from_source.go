@@ -46,31 +46,45 @@ func (sb *sourceBuilder) apiBaseFromSource(api *source_j5pb.API) (*API, error) {
 		apiPkg.Packages = append(apiPkg.Packages, pkg)
 
 		for _, subPkg := range pkgSource.SubPackages {
+			sub := &subPackage{
+				Package: pkg,
+				Name:    subPkg.Name,
+			}
 			for _, serivceSrc := range subPkg.Services {
-				service, err := sb.serviceFromSource(pkg, serivceSrc)
+				service, err := sb.serviceFromSource(sub, serivceSrc)
 				if err != nil {
-					return nil, patherr.Wrap(err, "package", pkg.Name, "service", serivceSrc.Name)
+					return nil, patherr.Wrap(err, pkg.Name, serivceSrc.Name)
 				}
 				pkg.Services = append(pkg.Services, service)
 			}
+
 		}
 	}
 
 	return apiPkg, nil
 }
 
-func (sb *sourceBuilder) serviceFromSource(pkg *Package, src *source_j5pb.Service) (*Service, error) {
+type subPackage struct {
+	Package *Package
+	Name    string
+}
+
+func (sp *subPackage) FullName() string {
+	return fmt.Sprintf("%s.%s", sp.Package.Name, sp.Name)
+}
+
+func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *source_j5pb.Service) (*Service, error) {
 
 	service := &Service{
-		Package: pkg,
+		Package: pkg.Package,
 		Name:    src.Name,
 		Methods: make([]*Method, len(src.Methods)),
 	}
 
 	for idx, src := range src.Methods {
-		method, err := sb.methodFromSource(service, src)
+		method, err := sb.methodFromSource(pkg, service, src)
 		if err != nil {
-			return nil, patherr.Wrap(err, "method", src.Name)
+			return nil, patherr.Wrap(err, src.Name)
 		}
 		service.Methods[idx] = method
 	}
@@ -78,9 +92,9 @@ func (sb *sourceBuilder) serviceFromSource(pkg *Package, src *source_j5pb.Servic
 	return service, nil
 }
 
-func (sb *sourceBuilder) methodFromSource(service *Service, src *source_j5pb.Method) (*Method, error) {
+func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src *source_j5pb.Method) (*Method, error) {
 
-	requestSchema, err := sb.schemas.SchemaByName(service.Package.Name, src.RequestSchema)
+	requestSchema, err := sb.schemas.SchemaByName(pkg.FullName(), src.RequestSchema)
 	if err != nil {
 		return nil, patherr.Wrap(err, "request")
 	}
@@ -89,7 +103,7 @@ func (sb *sourceBuilder) methodFromSource(service *Service, src *source_j5pb.Met
 		return nil, fmt.Errorf("request schema is not an object")
 	}
 
-	response, err := sb.schemas.SchemaByName(service.Package.Name, src.ResponseSchema)
+	response, err := sb.schemas.SchemaByName(pkg.FullName(), src.ResponseSchema)
 	if err != nil {
 		return nil, patherr.Wrap(err, "response")
 	}
