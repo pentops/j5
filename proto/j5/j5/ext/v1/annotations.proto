@@ -8,6 +8,46 @@ import "j5/ext/v1/query_annotations.proto";
 option go_package = "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb";
 
 extend google.protobuf.MessageOptions {
+  PSMOptions psm = 555101;
+}
+
+message PSMOptions {
+  string entity_name = 1;
+}
+
+extend google.protobuf.FieldOptions {
+  KeyFieldOptions key = 555101;
+}
+
+message KeyFieldOptions {
+  // the field is the primary key of the state, or is one field in a multi-key
+  // primary key for the state object. This field must exist on both the event
+  // and the state
+  bool primary_key = 1;
+
+  string tenant_key = 2;
+}
+
+extend google.protobuf.ServiceOptions {
+  StateServiceOptions service = 555101;
+}
+
+message StateServiceOptions {
+  oneof type {
+    Query query = 1;
+    Command command = 2;
+  }
+
+  message Query {
+    string entity = 1;
+  }
+
+  message Command {
+    string entity = 1;
+  }
+}
+
+extend google.protobuf.MessageOptions {
   MessageOptions message = 555000;
 }
 
@@ -36,6 +76,14 @@ extend google.protobuf.MethodOptions {
 message MethodOptions {
   string label = 1;
   bool hidden = 2;
+
+  StateQueryMethodOptions state_query = 10;
+}
+
+message StateQueryMethodOptions {
+  bool get = 1;
+  bool list = 2;
+  bool list_events = 3;
 }
 
 extend google.protobuf.EnumOptions {

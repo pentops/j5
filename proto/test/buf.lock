@@ -14,5 +14,5 @@ deps:
   - remote: buf.build
     owner: pentops
     repository: j5
-    commit: bdcba12f52ef4f65893ea46762f7b1f1
-    digest: shake256:bf8fd8aeddb21ec46b316d329f4e84d15e954e5814a22063ec5d1cdca875b7973e81ed7475e1d718672da89b7639decb473237a09fb1e928036f8891819b70e7
+    commit: ef8af393782f482ead4cf93ab680abbc
+    digest: shake256:637601cfca5d51ed12a836a587f0c00ff3a5fccd8e25d9bc7be7914ff26bc4d128e3ffbeed3f7e8573a26016525258e41892b17a79d80f615474f2f53159d5aa

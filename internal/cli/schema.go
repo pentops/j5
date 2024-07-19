@@ -10,6 +10,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/pentops/j5/codec"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/export"
@@ -24,7 +25,8 @@ func schemaSet() *commander.CommandSet {
 	genGroup := commander.NewCommandSet()
 	genGroup.Add("image", commander.NewCommand(RunImage))
 	genGroup.Add("jdef", commander.NewCommand(RunJDef))
-	genGroup.Add("descriptor", commander.NewCommand(RunDescriptor))
+	genGroup.Add("source", commander.NewCommand(RunSource))
+	genGroup.Add("client", commander.NewCommand(RunDescriptor))
 	genGroup.Add("swagger", commander.NewCommand(RunSwagger))
 	return genGroup
 }
@@ -84,6 +86,25 @@ func RunImage(ctx context.Context, cfg BuildConfig) error {
 	return writeBytes(ctx, cfg.Output, bb)
 }
 
+func RunSource(ctx context.Context, cfg BuildConfig) error {
+	image, err := cfg.sourceImage(ctx)
+	if err != nil {
+		return err
+	}
+
+	sourceAPI, err := structure.APIFromImage(image)
+	if err != nil {
+		return err
+	}
+
+	bb, err := codec.NewCodec().ProtoToJSON(sourceAPI.ProtoReflect())
+	if err != nil {
+		return err
+	}
+
+	return writeBytes(ctx, cfg.Output, bb)
+}
+
 func RunDescriptor(ctx context.Context, cfg BuildConfig) error {
 
 	descriptorAPI, err := cfg.descriptorAPI(ctx)
@@ -91,7 +112,7 @@ func RunDescriptor(ctx context.Context, cfg BuildConfig) error {
 		return err
 	}
 
-	bb, err := protojson.Marshal(descriptorAPI)
+	bb, err := codec.NewCodec().ProtoToJSON(descriptorAPI.ProtoReflect())
 	if err != nil {
 		return err
 	}

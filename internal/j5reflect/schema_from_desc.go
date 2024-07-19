@@ -242,6 +242,12 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 			Kind:  floatKind,
 		}, nil
 
+	case *schema_j5pb.Field_Bytes:
+		return &ScalarSchema{
+			Proto: schema,
+			Kind:  protoreflect.BytesKind,
+		}, nil
+
 	case *schema_j5pb.Field_Any:
 		return &AnyField{}, nil
 

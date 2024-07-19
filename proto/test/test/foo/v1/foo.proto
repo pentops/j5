@@ -3,7 +3,6 @@ syntax = "proto3";
 package test.foo.v1;
 
 import "j5/ext/v1/annotations.proto";
-import "j5/ext/v1/state.proto";
 import "j5/list/v1/annotations.proto";
 
 option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testpb";

@@ -186,7 +186,7 @@ func (bb *packageSet) getSubPackage(packageID *packageID) (*source_j5pb.SubPacka
 	}
 
 	if _, ok := bb.subPackageNames[*packageID.subPackage]; !ok {
-		return nil, fmt.Errorf("unknown sub-package name %q", *packageID.subPackage)
+		return nil, fmt.Errorf("unknown sub-package name in %q %q", packageID.packageName, *packageID.subPackage)
 	}
 
 	parentPkg := bb.getPackage(packageID.packageName)
@@ -213,6 +213,13 @@ type packageID struct {
 
 var reVersion = regexp.MustCompile(`^v[0-9]+$`)
 
+func SplitPackageParts(packageName string) (string, *string, error) {
+	id, err := splitPackageParts(packageName)
+	if err != nil {
+		return "", nil, err
+	}
+	return id.packageName, id.subPackage, nil
+}
 func splitPackageParts(packageName string) (*packageID, error) {
 	packageParts := strings.Split(packageName, ".")
 	var idxOfVersion int = -1
@@ -331,7 +338,9 @@ func buildMethod(method protoreflect.MethodDescriptor) (*source_j5pb.Method, err
 	output := method.Output()
 	expectedOutputName := method.Name() + "Response"
 	if output.Name() != expectedOutputName {
-		return nil, fmt.Errorf("j5 service output message must be %q, got %q", expectedOutputName, output.Name())
+		if output.FullName() != "google.api.HttpBody" {
+			return nil, fmt.Errorf("j5 service output message must be %q, got %q", expectedOutputName, output.FullName())
+		}
 	}
 
 	methodOptions := method.Options().(*descriptorpb.MethodOptions)

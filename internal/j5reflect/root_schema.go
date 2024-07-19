@@ -10,6 +10,7 @@ import (
 type RootSchema interface {
 	AsRef() *RefSchema
 	FullName() string
+	Name() string
 	PackageName() string
 	Package() *Package
 	ToJ5Root() *schema_j5pb.RootSchema
@@ -33,6 +34,10 @@ type rootSchema struct {
 
 func (s *rootSchema) FullName() string {
 	return fmt.Sprintf("%s.%s", s.pkg.Name, s.name)
+}
+
+func (s *rootSchema) Name() string {
+	return s.name
 }
 
 func (s *rootSchema) PackageName() string {

@@ -74,26 +74,17 @@ func (sb *sourceBuilder) apiBaseFromSource(api *source_j5pb.API) (*API, error) {
 				if serviceSrc.Type != nil {
 					switch st := serviceSrc.Type.Type.(type) {
 					case *source_j5pb.ServiceType_StateEntityCommand_:
-						parts := strings.Split(st.StateEntityCommand.Entity, "/")
-						if len(parts) != 2 {
-							return nil, fmt.Errorf("invalid state entity name %q", st.StateEntityCommand.Entity)
+						entity, err := getEntity(sub, entities, st.StateEntityCommand.Entity)
+						if err != nil {
+							return nil, fmt.Errorf("state entity command: %w", err)
 						}
-						name := parts[1]
-						entity, ok := entities[name]
-						if !ok {
-							return nil, fmt.Errorf("unknown entity %q", st.StateEntityCommand.Entity)
-						}
+
 						entity.Commands = append(entity.Commands, service)
 						continue
 					case *source_j5pb.ServiceType_StateEntityQuery_:
-						parts := strings.Split(st.StateEntityQuery.Entity, "/")
-						if len(parts) != 2 {
-							return nil, fmt.Errorf("invalid state entity name %q", st.StateEntityQuery.Entity)
-						}
-						name := parts[1]
-						entity, ok := entities[name]
-						if !ok {
-							return nil, fmt.Errorf("unknown entity %q", st.StateEntityQuery.Entity)
+						entity, err := getEntity(sub, entities, st.StateEntityQuery.Entity)
+						if err != nil {
+							return nil, fmt.Errorf("state entity command: %w", err)
 						}
 						if entity.Query != nil {
 							return nil, fmt.Errorf("duplicate query service for entity %q", entity.Name)
@@ -110,6 +101,24 @@ func (sb *sourceBuilder) apiBaseFromSource(api *source_j5pb.API) (*API, error) {
 	}
 
 	return apiPkg, nil
+}
+
+func getEntity(inPackage *subPackage, entities map[string]*StateEntity, name string) (*StateEntity, error) {
+	parts := strings.Split(name, "/")
+	if len(parts) == 2 {
+		if parts[0] != inPackage.Package.Name {
+			return nil, fmt.Errorf("state entity %q not in package %q", name, inPackage.Package.Name)
+		}
+		name = parts[1]
+	} else if len(parts) != 1 {
+		return nil, fmt.Errorf("invalid state entity name %q", name)
+	}
+
+	entity, ok := entities[name]
+	if !ok {
+		return nil, fmt.Errorf("unknown entity %q", name)
+	}
+	return entity, nil
 }
 
 type subPackage struct {
@@ -161,12 +170,13 @@ func (sb *sourceBuilder) entitiesFromSource(pkg *Package, schemaPackage *j5refle
 		if entity.KeysSchema == nil {
 			return nil, fmt.Errorf("missing keys schema for entity %q", entity.Name)
 		}
-		if entity.StateSchema == nil {
-			return nil, fmt.Errorf("missing state schema for entity %q", entity.Name)
-		}
-		if entity.EventSchema == nil {
-			return nil, fmt.Errorf("missing event schema for entity %q", entity.Name)
-		}
+		//if entity.EventSchema == nil {
+		//		return nil, fmt.Errorf("missing event schema for entity %q", entity.Name)
+		//	}
+
+		//if entity.StateSchema == nil {
+		//	return nil, fmt.Errorf("missing state schema for entity %q", entity.Name)
+		//}
 	}
 	return found, nil
 }
@@ -201,22 +211,26 @@ func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src
 		return nil, fmt.Errorf("request schema is not an object")
 	}
 
-	response, err := sb.schemas.SchemaByName(pkg.FullName(), src.ResponseSchema)
-	if err != nil {
-		return nil, patherr.Wrap(err, "response")
-	}
-	responseObject, ok := response.(*j5reflect.ObjectSchema)
-	if !ok {
-		return nil, fmt.Errorf("response schema is not an object")
-	}
-
 	method := &Method{
 		Service:        service,
 		GRPCMethodName: src.Name,
 		HTTPPath:       src.HttpPath,
 		HTTPMethod:     src.HttpMethod,
 		HasBody:        src.HttpMethod != client_j5pb.HTTPMethod_GET,
-		ResponseBody:   responseObject,
+	}
+
+	if src.ResponseSchema == "HttpBody" {
+		method.RawResponse = true
+	} else {
+		response, err := sb.schemas.SchemaByName(pkg.FullName(), src.ResponseSchema)
+		if err != nil {
+			return nil, patherr.Wrap(err, "response")
+		}
+		responseObject, ok := response.(*j5reflect.ObjectSchema)
+		if !ok {
+			return nil, fmt.Errorf("response schema is not an object")
+		}
+		method.ResponseBody = responseObject
 	}
 
 	if err := method.fillRequest(requestObject); err != nil {
