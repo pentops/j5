@@ -2,10 +2,12 @@ package j5client
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/patherr"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -71,30 +73,58 @@ type Package struct {
 func (pkg *Package) ToJ5Proto() (*client_j5pb.Package, error) {
 
 	services := make([]*client_j5pb.Service, 0, len(pkg.Services))
-	for _, service := range pkg.Services {
-		methods := make([]*client_j5pb.Method, 0, len(service.Methods))
-		for _, method := range service.Methods {
-			m, err := method.ToJ5Proto()
-			if err != nil {
-				return nil, fmt.Errorf("method %s/%s: %w", service.Name, method.GRPCMethodName, err)
-			}
-			m.Name = method.GRPCMethodName
-			m.FullGrpcName = fmt.Sprintf("/%s.%s/%s", pkg.Name, service.Name, method.GRPCMethodName)
-			methods = append(methods, m)
+	for _, serviceSrc := range pkg.Services {
+		service, err := serviceSrc.ToJ5Proto()
+		if err != nil {
+			return nil, patherr.Wrap(err, "service", serviceSrc.Name)
 		}
-		services = append(services, &client_j5pb.Service{
-			Name:    service.Name,
-			Methods: methods,
-		})
+		services = append(services, service)
+	}
+
+	stateEntities := make([]*client_j5pb.StateEntity, 0, len(pkg.StateEntities))
+	for _, entitySrc := range pkg.StateEntities {
+		entity, err := entitySrc.ToJ5Proto()
+		if err != nil {
+			return nil, patherr.Wrap(err, "entity", entitySrc.Name)
+		}
+		stateEntities = append(stateEntities, entity)
+
 	}
 
 	return &client_j5pb.Package{
-		Label:    pkg.Label,
-		Name:     pkg.Name,
-		Schemas:  map[string]*schema_j5pb.RootSchema{},
-		Services: services,
+		Label:         pkg.Label,
+		Name:          pkg.Name,
+		Schemas:       map[string]*schema_j5pb.RootSchema{},
+		Services:      services,
+		StateEntities: stateEntities,
 	}, nil
 
+}
+
+func (pkg *Package) stateEntity(fullName string) (*StateEntity, error) {
+	parts := strings.Split(fullName, "/")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid state entity name %q", fullName)
+	}
+
+	if pkg.Name != parts[0] {
+		return nil, fmt.Errorf("state entity %q not in package %q", fullName, pkg.Name)
+	}
+
+	name := parts[1]
+
+	for _, entity := range pkg.StateEntities {
+		if entity.Name == name {
+			return entity, nil
+		}
+	}
+
+	entity := &StateEntity{
+		Package: pkg,
+		Name:    name,
+	}
+	pkg.StateEntities = append(pkg.StateEntities, entity)
+	return entity, nil
 }
 
 type Service struct {
@@ -183,9 +213,63 @@ func (mm *Method) ToJ5Proto() (*client_j5pb.Method, error) {
 }
 
 type StateEntity struct {
-	Package *Package // parent
+	Package  *Package // parent
+	Name     string
+	Commands []*Service
+	Query    *Service
+
+	KeysSchema  *j5reflect.ObjectSchema
+	StateSchema *j5reflect.ObjectSchema
+	EventSchema *j5reflect.ObjectSchema
+}
+
+func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
+
+	commands := make([]*client_j5pb.Service, 0, len(entity.Commands))
+	for _, command := range entity.Commands {
+		service, err := command.ToJ5Proto()
+		if err != nil {
+			return nil, patherr.Wrap(err, "command", command.Name)
+		}
+		commands = append(commands, service)
+	}
+
+	query := &client_j5pb.Service{}
+	if entity.Query != nil {
+		var err error
+		query, err = entity.Query.ToJ5Proto()
+		if err != nil {
+			return nil, fmt.Errorf("query %q: %w", entity.Query.Name, err)
+		}
+	}
+
+	primaryKeys := make([]string, 0)
+	for _, prop := range entity.KeysSchema.Properties {
+		scalar, ok := prop.Schema.(*j5reflect.ScalarSchema)
+		if !ok {
+			continue
+		}
+		keyField := scalar.Proto.GetKey()
+		if keyField == nil {
+			continue
+		}
+
+		if keyField.Primary {
+			primaryKeys = append(primaryKeys, prop.JSONName)
+		}
+	}
+
+	return &client_j5pb.StateEntity{
+		Name:       entity.Name,
+		SchemaName: entity.StateSchema.FullName(),
+		PrimaryKey: primaryKeys,
+
+		QueryService:    query,
+		CommandServices: commands,
+	}, nil
 
 }
+
 type StateEvent struct {
 	StateEntity *StateEntity // parent
 	Name        string

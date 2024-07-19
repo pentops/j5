@@ -74,9 +74,21 @@ message Object {
 
   // When the object is an entity type, the entity details are available in the
   // entity set for the same package.
-  optional string entity = 3 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
+  EntityObject entity = 3;
 
   repeated ObjectProperty properties = 4;
+}
+
+message EntityObject {
+  string entity = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
+  EntityPart part = 2;
+}
+
+enum EntityPart {
+  ENTITY_PART_UNSPECIFIED = 0;
+  ENTITY_PART_KEYS = 1;
+  ENTITY_PART_STATE = 2;
+  ENTITY_PART_EVENT = 3;
 }
 
 message OneofField {
@@ -238,6 +250,9 @@ message KeyField {
   Rules rules = 1;
   KeyFormat format = 2;
   j5.list.v1.KeyRules list_rules = 3;
+
+  bool primary = 4;
+  string entity = 5;
 
   message Rules {}
 }

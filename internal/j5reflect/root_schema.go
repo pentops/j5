@@ -90,6 +90,7 @@ func (ps PropertySet) ByJSONName(name string) *ObjectProperty {
 
 type ObjectSchema struct {
 	rootSchema
+	Entity     *schema_j5pb.EntityObject
 	Properties PropertySet
 }
 
@@ -116,6 +117,7 @@ func (s *ObjectSchema) ToJ5Object() *schema_j5pb.Object {
 		Description: s.description,
 		Name:        s.name,
 		Properties:  properties,
+		Entity:      s.Entity,
 	}
 }
 

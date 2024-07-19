@@ -2,7 +2,6 @@ version: v1
 name: buf.build/pentops/j5
 
 deps:
-  - buf.build/googleapis/googleapis
   - buf.build/bufbuild/protovalidate
 
 lint:

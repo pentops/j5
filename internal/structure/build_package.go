@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
+	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/j5reflect"
@@ -271,11 +272,44 @@ func buildEvents(src protoreflect.ServiceDescriptor) ([]*j5reflect.Event, error)
 }*/
 
 func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, error) {
+
 	methods := src.Methods()
 	service := &source_j5pb.Service{
 		Name:    string(src.Name()),
 		Methods: make([]*source_j5pb.Method, 0, methods.Len()),
 	}
+
+	stateExt, ok := proto.GetExtension(src.Options(), ext_j5pb.E_Service).(*ext_j5pb.StateServiceOptions)
+	if ok && stateExt != nil {
+		if stateExt.Type != nil {
+			switch set := stateExt.Type.(type) {
+			case *ext_j5pb.StateServiceOptions_Query_:
+				service.Type = &source_j5pb.ServiceType{
+					Type: &source_j5pb.ServiceType_StateEntityQuery_{
+						StateEntityQuery: &source_j5pb.ServiceType_StateEntityQuery{
+							Entity: set.Query.Entity,
+						},
+					},
+				}
+
+			case *ext_j5pb.StateServiceOptions_Command_:
+				service.Type = &source_j5pb.ServiceType{
+					Type: &source_j5pb.ServiceType_StateEntityCommand_{
+						StateEntityCommand: &source_j5pb.ServiceType_StateEntityCommand{
+							Entity: set.Command.Entity,
+						},
+					},
+				}
+
+			default:
+				return nil, fmt.Errorf("unsupported state service type %T", set)
+
+			}
+
+		}
+
+	}
+
 	for ii := 0; ii < methods.Len(); ii++ {
 		method := methods.Get(ii)
 		builtMethod, err := buildMethod(method)

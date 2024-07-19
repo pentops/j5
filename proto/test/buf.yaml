@@ -2,4 +2,5 @@ version: v1
 
 deps:
   - buf.build/googleapis/googleapis
+  - buf.build/bufbuild/protovalidate
   - buf.build/pentops/j5

@@ -145,7 +145,7 @@ func (pkg *Package) assertAllRefsLink() error {
 
 	for schemaName, ref := range pkg.Schemas {
 		if err := walkRootSchema(ref.To); err != nil {
-			return patherr.Wrap(err, schemaName)
+			return patherr.Wrap(err, "schemas", schemaName)
 		}
 	}
 

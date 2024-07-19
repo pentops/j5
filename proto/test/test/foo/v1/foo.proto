@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package test.foo.v1;
+
+import "j5/ext/v1/annotations.proto";
+import "j5/ext/v1/state.proto";
+import "j5/list/v1/annotations.proto";
+
+option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testpb";
+
+message FooKeys {
+  option (j5.ext.v1.psm).entity_name = "foo";
+
+  string foo_id = 1 [(j5.ext.v1.key).primary_key = true];
+}
+
+message FooState {
+  option (j5.ext.v1.psm).entity_name = "foo";
+  FooKeys keys = 1 [(j5.ext.v1.field).message.flatten = true];
+  string name = 2 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];
+  Bar bar = 3;
+}
+
+message Bar {
+  string id = 1 [(j5.list.v1.field).string.foreign_key.uuid.filtering.filterable = true];
+  string field = 2 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];
+}
+
+message FooEvent {
+  option (j5.ext.v1.psm).entity_name = "foo";
+}

@@ -193,7 +193,6 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FooCommandServiceClient interface {
-	// PostFoo Comment
 	PostFoo(ctx context.Context, in *PostFooRequest, opts ...grpc.CallOption) (*PostFooResponse, error)
 }
 
@@ -219,7 +218,6 @@ func (c *fooCommandServiceClient) PostFoo(ctx context.Context, in *PostFooReques
 // All implementations must embed UnimplementedFooCommandServiceServer
 // for forward compatibility
 type FooCommandServiceServer interface {
-	// PostFoo Comment
 	PostFoo(context.Context, *PostFooRequest) (*PostFooResponse, error)
 	mustEmbedUnimplementedFooCommandServiceServer()
 }
