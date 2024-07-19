@@ -2,12 +2,12 @@ package j5client
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5reflect"
 	"github.com/pentops/j5/internal/patherr"
+	"github.com/pentops/j5/internal/structure"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -33,6 +33,7 @@ func (api *API) ToJ5Proto() (*client_j5pb.API, error) {
 
 		packages = append(packages, apiPkg)
 		packageMap[pkg.Name] = apiPkg
+
 	}
 
 	referencedSchemas, err := collectPackageRefs(api)
@@ -40,8 +41,17 @@ func (api *API) ToJ5Proto() (*client_j5pb.API, error) {
 		return nil, fmt.Errorf("collecting package refs: %w", err)
 	}
 
-	for schemaName, schema := range referencedSchemas {
-		apiPkg, ok := packageMap[schema.inPackage]
+	for _, schema := range referencedSchemas {
+		pkg, subPkg, err := structure.SplitPackageParts(schema.inPackage)
+		if err != nil {
+			return nil, fmt.Errorf("splitting package %q: %w", schema.inPackage, err)
+		}
+		schemaName := schema.name
+		if subPkg != nil {
+			schemaName = fmt.Sprintf("%s.%s", *subPkg, schemaName)
+		}
+
+		apiPkg, ok := packageMap[pkg]
 		if ok {
 			apiPkg.Schemas[schemaName] = schema.schema
 			continue
@@ -52,7 +62,7 @@ func (api *API) ToJ5Proto() (*client_j5pb.API, error) {
 				schemaName: schema.schema,
 			},
 		}
-		packageMap[schema.inPackage] = refPackage
+		packageMap[pkg] = refPackage
 		packages = append(packages, refPackage)
 	}
 	return &client_j5pb.API{
@@ -101,32 +111,6 @@ func (pkg *Package) ToJ5Proto() (*client_j5pb.Package, error) {
 
 }
 
-func (pkg *Package) stateEntity(fullName string) (*StateEntity, error) {
-	parts := strings.Split(fullName, "/")
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid state entity name %q", fullName)
-	}
-
-	if pkg.Name != parts[0] {
-		return nil, fmt.Errorf("state entity %q not in package %q", fullName, pkg.Name)
-	}
-
-	name := parts[1]
-
-	for _, entity := range pkg.StateEntities {
-		if entity.Name == name {
-			return entity, nil
-		}
-	}
-
-	entity := &StateEntity{
-		Package: pkg,
-		Name:    name,
-	}
-	pkg.StateEntities = append(pkg.StateEntities, entity)
-	return entity, nil
-}
-
 type Service struct {
 	Package *Package
 	Name    string
@@ -154,19 +138,6 @@ type SchemaLink interface {
 	FullName() string
 	Schema() *j5reflect.ObjectSchema
 	link(schemaSource) error
-}
-
-type Method struct {
-	GRPCMethodName string
-	HTTPPath       string
-	HTTPMethod     client_j5pb.HTTPMethod
-
-	HasBody bool
-
-	Request      *Request
-	ResponseBody *j5reflect.ObjectSchema
-
-	Service *Service
 }
 
 type Request struct {
@@ -200,16 +171,33 @@ func (rr *Request) ToJ5Proto() *client_j5pb.Method_Request {
 	}
 }
 
+type Method struct {
+	GRPCMethodName string
+	HTTPPath       string
+	HTTPMethod     client_j5pb.HTTPMethod
+
+	HasBody bool
+
+	Request      *Request
+	ResponseBody *j5reflect.ObjectSchema
+	RawResponse  bool
+
+	Service *Service
+}
+
 func (mm *Method) ToJ5Proto() (*client_j5pb.Method, error) {
 
-	return &client_j5pb.Method{
+	out := &client_j5pb.Method{
 		FullGrpcName: fmt.Sprintf("/%s.%s/%s", mm.Service.Package.Name, mm.Service.Name, mm.GRPCMethodName),
 		Name:         mm.GRPCMethodName,
 		HttpMethod:   mm.HTTPMethod,
 		HttpPath:     mm.HTTPPath,
-		ResponseBody: mm.ResponseBody.ToJ5Object(),
 		Request:      mm.Request.ToJ5Proto(),
-	}, nil
+	}
+	if mm.ResponseBody != nil {
+		out.ResponseBody = mm.ResponseBody.ToJ5Object()
+	}
+	return out, nil
 }
 
 type StateEntity struct {
@@ -259,9 +247,13 @@ func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
 		}
 	}
 
+	schemaName := ""
+	if entity.StateSchema != nil {
+		schemaName = entity.StateSchema.FullName()
+	}
 	return &client_j5pb.StateEntity{
 		Name:       entity.Name,
-		SchemaName: entity.StateSchema.FullName(),
+		SchemaName: schemaName,
 		PrimaryKey: primaryKeys,
 
 		QueryService:    query,
@@ -279,6 +271,7 @@ type StateEvent struct {
 type schemaRef struct {
 	schema    *schema_j5pb.RootSchema
 	inPackage string
+	name      string
 }
 
 // collectPackageRefs walks the entire API, returning all schemas which are
@@ -297,6 +290,7 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 		schemas[schema.FullName()] = &schemaRef{
 			schema:    schema.ToJ5Root(),
 			inPackage: schema.PackageName(),
+			name:      schema.Name(),
 		}
 		switch st := schema.(type) {
 		case *j5reflect.ObjectSchema:
@@ -352,6 +346,9 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 	}
 
 	walkRootObject := func(schema *j5reflect.ObjectSchema) error {
+		if schema == nil {
+			return nil
+		}
 		for _, prop := range schema.Properties {
 			if err := walkRefs(prop.Schema); err != nil {
 				return fmt.Errorf("walk root object: %w", err)
