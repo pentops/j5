@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
-	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/j5reflect"
@@ -21,13 +20,9 @@ import (
 
 func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 
-	if image.Options == nil {
-		image.Options = &config_j5pb.CodecOptions{}
-	}
-
 	subPackageNames := make(map[string]struct{})
-	for _, subPackage := range image.Options.TrimSubPackages {
-		subPackageNames[subPackage] = struct{}{}
+	for _, subPackage := range image.Options.SubPackages {
+		subPackageNames[subPackage.Name] = struct{}{}
 	}
 
 	bb := packageSet{
@@ -51,12 +46,18 @@ func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 		return nil, err
 	}
 
-	api, err := buildBaseAPI(bb, descFiles)
-	if err != nil {
+	if err := bb.addStructure(descFiles); err != nil {
 		return nil, err
 	}
 
-	packageSet, err := j5reflect.SchemaSetFromFiles(descFiles)
+	packageSet, err := j5reflect.SchemaSetFromFiles(descFiles, func(f protoreflect.FileDescriptor) bool {
+		for _, pkg := range image.Packages {
+			if strings.HasPrefix(string(f.Package()), pkg.Name) {
+				return true
+			}
+		}
+		return false
+	})
 	if err != nil {
 		return nil, fmt.Errorf("package set from files: %w", err)
 	}
@@ -69,12 +70,19 @@ func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 		for name, schema := range schemaPkg.Schemas {
 			ss[name] = schema.To.ToJ5Root()
 		}
+
 	}
 
-	return api, nil
+	return bb.toAPI(), nil
 }
 
-func buildBaseAPI(b packageSet, descFiles *protoregistry.Files) (*source_j5pb.API, error) {
+func (b packageSet) toAPI() *source_j5pb.API {
+	return &source_j5pb.API{
+		Packages: b.packages,
+	}
+}
+
+func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 
 	services := make([]protoreflect.ServiceDescriptor, 0)
 
@@ -91,7 +99,7 @@ func buildBaseAPI(b packageSet, descFiles *protoregistry.Files) (*source_j5pb.AP
 	for _, service := range services {
 		packageID, err := splitPackageParts(string(service.ParentFile().Package()))
 		if err != nil {
-			return nil, err
+			return err
 		}
 		if !b.wantPackages[packageID.packageName] {
 			continue
@@ -99,14 +107,14 @@ func buildBaseAPI(b packageSet, descFiles *protoregistry.Files) (*source_j5pb.AP
 
 		pkg, err := b.getSubPackage(packageID)
 		if err != nil {
-			return nil, patherr.Wrap(err, "service", string(service.Name()))
+			return patherr.Wrap(err, "service", string(service.Name()))
 		}
 
 		name := string(service.Name())
 		if strings.HasSuffix(name, "Service") || strings.HasSuffix(name, "Sandbox") {
 			built, err := buildService(service)
 			if err != nil {
-				return nil, patherr.Wrap(err, "service", name)
+				return patherr.Wrap(err, "service", name)
 			}
 			pkg.Services = append(pkg.Services, built)
 		} else if strings.HasSuffix(name, "Events") {
@@ -114,17 +122,15 @@ func buildBaseAPI(b packageSet, descFiles *protoregistry.Files) (*source_j5pb.AP
 		} else if strings.HasSuffix(name, "Topic") {
 			built, err := buildTopic(service)
 			if err != nil {
-				return nil, patherr.Wrap(err, "topic", name)
+				return patherr.Wrap(err, "topic", name)
 			}
 			pkg.Topics = append(pkg.Topics, built)
 		} else {
-			return nil, fmt.Errorf("unsupported service name %q", name)
+			return fmt.Errorf("unsupported service name %q", name)
 		}
 	}
+	return nil
 
-	return &source_j5pb.API{
-		Packages: b.packages,
-	}, nil
 }
 
 type packageSet struct {

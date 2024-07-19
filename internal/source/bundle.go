@@ -144,9 +144,10 @@ func (ib imageBundle) Name() string {
 }
 
 func (ib imageBundle) J5Config() (*config_j5pb.BundleConfigFile, error) {
+
 	return &config_j5pb.BundleConfigFile{
 		Registry: ib.repo,
-		Options:  ib.source.Options,
+		Packages: ib.source.Packages,
 	}, nil
 }
 

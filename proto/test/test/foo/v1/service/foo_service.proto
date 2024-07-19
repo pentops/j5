@@ -1,7 +1,8 @@
 syntax = "proto3";
 
-package test.foo.v1;
+package test.foo.v1.service;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
@@ -12,21 +13,27 @@ import "j5/list/v1/query.proto";
 
 option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testspb";
 
-service FooService {
+service FooQueryService {
   rpc GetFoo(GetFooRequest) returns (GetFooResponse) {
     option (google.api.http) = {get: "/test/v1/foo/{id}"};
   }
 
+  rpc ListFoos(ListFoosRequest) returns (ListFoosResponse) {
+    option (google.api.http) = {get: "/test/v1/foos"};
+  }
+
+  rpc ListFooEvents(ListFooEventsRequest) returns (ListFooEventsResponse) {
+    option (google.api.http) = {get: "/test/v1/foo/{id}/events"};
+  }
+}
+
+service FooCommandService {
   // PostFoo Comment
   rpc PostFoo(PostFooRequest) returns (PostFooResponse) {
     option (google.api.http) = {
       post: "/test/v1/foo"
       body: "*"
     };
-  }
-
-  rpc ListFoos(ListFoosRequest) returns (ListFoosResponse) {
-    option (google.api.http) = {get: "/test/v1/foos"};
   }
 }
 
@@ -92,3 +99,15 @@ message Bar {
   string id = 1 [(j5.list.v1.field).string.foreign_key.uuid.filtering.filterable = true];
   string field = 2 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];
 }
+
+message ListFooEventsRequest {
+  string id = 1 [(buf.validate.field).string.uuid = true];
+  j5.list.v1.PageRequest page = 100;
+  j5.list.v1.QueryRequest query = 101;
+}
+
+message ListFooEventsResponse {
+  repeated FooEvent events = 1;
+}
+
+message FooEvent {}

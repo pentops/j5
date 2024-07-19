@@ -42,10 +42,8 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 
 	addSearch := func(schema j5reflect.WalkProperty, searching *list_j5pb.SearchingConstraint) {
 		if searching == nil {
-			fmt.Printf("no searching constraint for %s\n", schema.JSONName)
 			return
 		}
-		fmt.Printf("searching constraint for %s: %v\n", schema.JSONName, searching)
 		out.SearchableFields = append(out.SearchableFields, &client_j5pb.ListRequest_SearchField{
 			Name: strings.Join(schema.Path, "."),
 		})
@@ -77,7 +75,6 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 	}
 
 	if err := j5reflect.WalkSchemaFields(rootSchema.Schema(), func(schema j5reflect.WalkProperty) error {
-		fmt.Printf("schema: %s: %s\n", schema.JSONName, strings.Join(schema.Path, "."))
 
 		switch st := schema.Schema.(type) {
 		case *j5reflect.ScalarSchema:

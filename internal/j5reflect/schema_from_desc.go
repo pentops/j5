@@ -46,26 +46,22 @@ func PackageSetFromSourceAPI(api *source_j5pb.API) (*SchemaSet, error) {
 
 	for _, apiPackage := range api.Packages {
 		pkg := pkgSet.Package(apiPackage.Name)
+		if err := pkg.buildSchemas(apiPackage.Schemas); err != nil {
+			return nil, patherr.Wrap(err, pkg.Name)
+		}
 
-		for name, schema := range apiPackage.Schemas {
-			refSchema := &RefSchema{
-				Package: pkg,
-				Schema:  name,
-			}
-			pkg.Schemas[name] = refSchema
-
-			to, err := pkg.buildRoot(schema)
-			if err != nil {
-				return nil, patherr.Wrap(err, "schema", name)
+		for _, subPkg := range apiPackage.SubPackages {
+			pkg := pkgSet.Package(fmt.Sprintf("%s.%s", apiPackage.Name, subPkg.Name))
+			if err := pkg.buildSchemas(subPkg.Schemas); err != nil {
+				return nil, patherr.Wrap(err, pkg.Name)
 			}
 
-			refSchema.To = to
 		}
 	}
 
 	for _, pkg := range pkgSet.Packages {
 		if err := pkg.assertAllRefsLink(); err != nil {
-			return nil, patherr.Wrap(err, "package", pkg.Name)
+			return nil, fmt.Errorf("asserting links on package from source API: %w", patherr.Wrap(err, pkg.Name))
 		}
 	}
 
@@ -77,6 +73,26 @@ func PackageSetFromSourceAPI(api *source_j5pb.API) (*SchemaSet, error) {
 func (ps *SchemaSet) AnonymousObjectFromSchema(packageName string, schema *schema_j5pb.Object) (*ObjectSchema, error) {
 	pkg := ps.Package(packageName)
 	return pkg.objectSchemaFromDesc(schema)
+}
+
+func (pkg *Package) buildSchemas(src map[string]*schema_j5pb.RootSchema) error {
+	for name, schema := range src {
+		refSchema, _ := pkg.PackageSet.refTo(pkg.Name, name)
+		pkg.Schemas[name] = refSchema
+
+		if refSchema.To != nil {
+			return fmt.Errorf("schema %q already exists in package %q", name, pkg.Name)
+		}
+
+		to, err := pkg.buildRoot(schema)
+		if err != nil {
+			return patherr.Wrap(err, "schema", name)
+		}
+
+		refSchema.To = to
+	}
+
+	return nil
 }
 
 func (pkg *Package) buildRoot(schema *schema_j5pb.RootSchema) (RootSchema, error) {
@@ -195,6 +211,12 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 		}, nil
 
 	case *schema_j5pb.Field_String_:
+		return &ScalarSchema{
+			Proto: schema,
+			Kind:  protoreflect.StringKind,
+		}, nil
+
+	case *schema_j5pb.Field_Key:
 		return &ScalarSchema{
 			Proto: schema,
 			Kind:  protoreflect.StringKind,

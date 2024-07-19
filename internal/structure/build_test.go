@@ -83,8 +83,10 @@ func testImage() *source_j5pb.SourceImage {
 			Label: "Test",
 			Name:  "test.v1",
 		}},
-		Options: &config_j5pb.CodecOptions{
-			TrimSubPackages: []string{"service"},
+		Options: &config_j5pb.PackageOptions{
+			SubPackages: []*config_j5pb.SubPackageType{{
+				Name: "service",
+			}},
 		},
 		File: []*descriptorpb.FileDescriptorProto{{
 			Syntax: proto.String("proto3"),

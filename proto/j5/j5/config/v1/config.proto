@@ -16,14 +16,14 @@ message RepoConfigFile {
   RegistryConfig registry = 8;
   repeated PackageConfig packages = 9;
   repeated PublishConfig publish = 10;
-  CodecOptions options = 11;
+  PackageOptions options = 11;
 }
 
 message BundleConfigFile {
   RegistryConfig registry = 1;
   repeated PackageConfig packages = 2;
   repeated PublishConfig publish = 3;
-  CodecOptions options = 4;
+  PackageOptions options = 4;
 }
 
 message BundleReference {
@@ -38,8 +38,12 @@ message PackageConfig {
   string prose = 3;
 }
 
-message CodecOptions {
-  repeated string trim_sub_packages = 1;
+message PackageOptions {
+  repeated SubPackageType sub_packages = 1;
+}
+
+message SubPackageType {
+  string name = 1;
 }
 
 // When code is managed through git, configures mapping between git branches,
