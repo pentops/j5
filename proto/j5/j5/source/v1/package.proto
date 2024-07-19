@@ -34,6 +34,23 @@ message Service {
   string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
 
   repeated Method methods = 3;
+
+  ServiceType type = 4;
+}
+
+message ServiceType {
+  oneof type {
+    StateEntityQuery state_entity_query = 1;
+    StateEntityCommand state_entity_command = 2;
+  }
+
+  message StateEntityQuery {
+    string entity = 1;
+  }
+
+  message StateEntityCommand {
+    string entity = 1;
+  }
 }
 
 message Method {

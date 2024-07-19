@@ -191,11 +191,33 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*Ob
 	if err != nil {
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
-	return &ObjectSchema{
+	objectSchema := &ObjectSchema{
 		rootSchema: ss.schemaRootFromProto(srcMsg),
 		Properties: properties,
 		// TODO: Rules
-	}, nil
+	}
+
+	if psmExt, ok := proto.GetExtension(srcMsg.Options(), ext_j5pb.E_Psm).(*ext_j5pb.PSMOptions); ok && psmExt != nil {
+		var part schema_j5pb.EntityPart
+		msgName := string(srcMsg.Name())
+		if strings.HasSuffix(msgName, "Keys") {
+			part = schema_j5pb.EntityPart_KEYS
+		} else if strings.HasSuffix(msgName, "State") {
+			part = schema_j5pb.EntityPart_STATE
+		} else if strings.HasSuffix(msgName, "Event") {
+			part = schema_j5pb.EntityPart_EVENT
+		} else {
+			return nil, fmt.Errorf("unknown PSM type suffix for %q", msgName)
+		}
+
+		objectSchema.Entity = &schema_j5pb.EntityObject{
+			Entity: psmExt.EntityName,
+			Part:   part,
+		}
+
+	}
+
+	return objectSchema, nil
 
 }
 
@@ -753,17 +775,45 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			if typeHint != "" {
 				return nil, fmt.Errorf("open_text and rules (%s) do not match", typeHint)
 			}
+			typeHint = "open_text"
 			stringItem.ListRules = openText
 		}
 
-		if typeHint == "uuid" {
+		isPrimary := false
+
+		if psmKeyExt, ok := proto.GetExtension(src.Options(), ext_j5pb.E_Key).(*ext_j5pb.KeyFieldOptions); ok && psmKeyExt != nil {
+			if psmKeyExt.PrimaryKey {
+				if typeHint == "" {
+					typeHint = "uuid"
+				} else if typeHint != "uuid" {
+					return nil, fmt.Errorf("rules (%s) and key constraint do not match", typeHint)
+				}
+
+				isPrimary = true
+			}
+
+		}
+
+		switch typeHint {
+		case "uuid":
 			schemaProto.Type = &schema_j5pb.Field_Key{
 				Key: &schema_j5pb.KeyField{
 					Format:    schema_j5pb.KeyFormat_UUID,
 					ListRules: fkRules,
+					Primary:   isPrimary,
 				},
 			}
-		} else {
+
+		case "natural_key":
+			schemaProto.Type = &schema_j5pb.Field_Key{
+				Key: &schema_j5pb.KeyField{
+					Format:    schema_j5pb.KeyFormat_UNSPECIFIED,
+					ListRules: fkRules,
+				},
+			}
+
+		default:
+
 			schemaProto.Type = &schema_j5pb.Field_String_{
 				String_: stringItem,
 			}

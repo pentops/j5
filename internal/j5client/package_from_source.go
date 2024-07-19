@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/j5reflect"
 	"github.com/pentops/j5/internal/patherr"
@@ -45,16 +46,63 @@ func (sb *sourceBuilder) apiBaseFromSource(api *source_j5pb.API) (*API, error) {
 		}
 		apiPkg.Packages = append(apiPkg.Packages, pkg)
 
+		entities := map[string]*StateEntity{}
+		schemaPackage, ok := sb.schemas.Packages[pkg.Name]
+		if ok {
+			var err error
+			entities, err = sb.entitiesFromSource(pkg, schemaPackage)
+			if err != nil {
+				return nil, patherr.Wrap(err, pkg.Name)
+			}
+
+			for _, entity := range entities {
+				pkg.StateEntities = append(pkg.StateEntities, entity)
+			}
+		}
+
 		for _, subPkg := range pkgSource.SubPackages {
 			sub := &subPackage{
 				Package: pkg,
 				Name:    subPkg.Name,
 			}
-			for _, serivceSrc := range subPkg.Services {
-				service, err := sb.serviceFromSource(sub, serivceSrc)
+			for _, serviceSrc := range subPkg.Services {
+				service, err := sb.serviceFromSource(sub, serviceSrc)
 				if err != nil {
-					return nil, patherr.Wrap(err, pkg.Name, serivceSrc.Name)
+					return nil, patherr.Wrap(err, pkg.Name, serviceSrc.Name)
 				}
+
+				if serviceSrc.Type != nil {
+					switch st := serviceSrc.Type.Type.(type) {
+					case *source_j5pb.ServiceType_StateEntityCommand_:
+						parts := strings.Split(st.StateEntityCommand.Entity, "/")
+						if len(parts) != 2 {
+							return nil, fmt.Errorf("invalid state entity name %q", st.StateEntityCommand.Entity)
+						}
+						name := parts[1]
+						entity, ok := entities[name]
+						if !ok {
+							return nil, fmt.Errorf("unknown entity %q", st.StateEntityCommand.Entity)
+						}
+						entity.Commands = append(entity.Commands, service)
+						continue
+					case *source_j5pb.ServiceType_StateEntityQuery_:
+						parts := strings.Split(st.StateEntityQuery.Entity, "/")
+						if len(parts) != 2 {
+							return nil, fmt.Errorf("invalid state entity name %q", st.StateEntityQuery.Entity)
+						}
+						name := parts[1]
+						entity, ok := entities[name]
+						if !ok {
+							return nil, fmt.Errorf("unknown entity %q", st.StateEntityQuery.Entity)
+						}
+						if entity.Query != nil {
+							return nil, fmt.Errorf("duplicate query service for entity %q", entity.Name)
+						}
+						entity.Query = service
+						continue
+					}
+				}
+
 				pkg.Services = append(pkg.Services, service)
 			}
 
@@ -71,6 +119,56 @@ type subPackage struct {
 
 func (sp *subPackage) FullName() string {
 	return fmt.Sprintf("%s.%s", sp.Package.Name, sp.Name)
+}
+
+func (sb *sourceBuilder) entitiesFromSource(pkg *Package, schemaPackage *j5reflect.Package) (map[string]*StateEntity, error) {
+	found := map[string]*StateEntity{}
+
+	for _, schema := range schemaPackage.Schemas {
+		if schema.To == nil {
+			continue
+		}
+		obj, ok := schema.To.(*j5reflect.ObjectSchema)
+		if !ok {
+			continue
+		}
+		if obj.Entity == nil {
+			continue
+		}
+
+		entity, ok := found[obj.Entity.Entity]
+		if !ok {
+			entity = &StateEntity{
+				Package: pkg,
+				Name:    obj.Entity.Entity,
+			}
+			found[obj.Entity.Entity] = entity
+		}
+
+		switch obj.Entity.Part {
+		case schema_j5pb.EntityPart_KEYS:
+			entity.KeysSchema = obj
+		case schema_j5pb.EntityPart_STATE:
+			entity.StateSchema = obj
+		case schema_j5pb.EntityPart_EVENT:
+			entity.EventSchema = obj
+		default:
+			return nil, fmt.Errorf("unknown entity part %q", obj.Entity.Part)
+		}
+	}
+
+	for _, entity := range found {
+		if entity.KeysSchema == nil {
+			return nil, fmt.Errorf("missing keys schema for entity %q", entity.Name)
+		}
+		if entity.StateSchema == nil {
+			return nil, fmt.Errorf("missing state schema for entity %q", entity.Name)
+		}
+		if entity.EventSchema == nil {
+			return nil, fmt.Errorf("missing event schema for entity %q", entity.Name)
+		}
+	}
+	return found, nil
 }
 
 func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *source_j5pb.Service) (*Service, error) {

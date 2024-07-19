@@ -265,6 +265,7 @@ var intKinds = map[schema_j5pb.IntegerField_Format]protoreflect.Kind{
 func (pkg *Package) objectSchemaFromDesc(sch *schema_j5pb.Object) (*ObjectSchema, error) {
 	object := &ObjectSchema{
 		Properties: make([]*ObjectProperty, len(sch.Properties)),
+		Entity:     sch.Entity,
 		rootSchema: rootSchema{
 			description: sch.Description,
 			name:        sch.Name,
