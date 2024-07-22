@@ -168,6 +168,7 @@ func (rr *Request) ToJ5Proto() *client_j5pb.Method_Request {
 		Body:            body,
 		PathParameters:  pathParameters,
 		QueryParameters: queryParameters,
+		List:            rr.List,
 	}
 }
 

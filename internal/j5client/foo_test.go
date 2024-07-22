@@ -177,6 +177,16 @@ func wantAPI() *client_j5pb.API {
 				ProtoField: []int32{101},
 				Schema:     objectRef("j5.list.v1", "QueryRequest"),
 			}},
+			List: &client_j5pb.ListRequest{
+				SearchableFields: []*client_j5pb.ListRequest_SearchField{{
+					Name: "name",
+				}, {
+					Name: "bar.field",
+				}},
+				FilterableFields: []*client_j5pb.ListRequest_FilterField{{
+					Name: "bar.id",
+				}},
+			},
 		},
 		ResponseBody: &schema_j5pb.Object{
 			Name: "ListFoosResponse",
@@ -225,6 +235,9 @@ func wantAPI() *client_j5pb.API {
 					},
 				},
 			}},
+			List: &client_j5pb.ListRequest{
+				// empty object because it is a list, but no fields.
+			},
 		},
 		ResponseBody: &schema_j5pb.Object{
 			Name: "ListFooEventsResponse",
