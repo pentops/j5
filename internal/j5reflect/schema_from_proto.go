@@ -197,28 +197,54 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*Ob
 		// TODO: Rules
 	}
 
-	if psmExt, ok := proto.GetExtension(srcMsg.Options(), ext_j5pb.E_Psm).(*ext_j5pb.PSMOptions); ok && psmExt != nil {
-		var part schema_j5pb.EntityPart
-		msgName := string(srcMsg.Name())
-		if strings.HasSuffix(msgName, "Keys") {
-			part = schema_j5pb.EntityPart_KEYS
-		} else if strings.HasSuffix(msgName, "State") {
-			part = schema_j5pb.EntityPart_STATE
-		} else if strings.HasSuffix(msgName, "Event") {
-			part = schema_j5pb.EntityPart_EVENT
-		} else {
-			return nil, fmt.Errorf("unknown PSM type suffix for %q", msgName)
-		}
-
-		objectSchema.Entity = &schema_j5pb.EntityObject{
-			Entity: psmExt.EntityName,
-			Part:   part,
-		}
-
+	entity, err := findPSMOptions(srcMsg)
+	if err != nil {
+		return nil, fmt.Errorf("PSM options for %s: %w", srcMsg.FullName(), err)
+	}
+	if entity != nil {
+		objectSchema.Entity = entity
 	}
 
 	return objectSchema, nil
 
+}
+
+func findPSMOptions(srcMsg protoreflect.MessageDescriptor) (*schema_j5pb.EntityObject, error) {
+	psmExt := proto.GetExtension(srcMsg.Options(), ext_j5pb.E_Psm).(*ext_j5pb.PSMOptions)
+
+	if psmExt == nil {
+		// support 'legacy' model where only the Keys message has the extension.
+		keyField := srcMsg.Fields().ByName("keys")
+		if keyField == nil {
+			return nil, nil
+		}
+		msg := keyField.Message()
+		if msg == nil {
+			return nil, nil
+		}
+
+		psmExt = proto.GetExtension(msg.Options(), ext_j5pb.E_Psm).(*ext_j5pb.PSMOptions)
+	}
+
+	if psmExt == nil {
+		return nil, nil
+	}
+	var part schema_j5pb.EntityPart
+	msgName := string(srcMsg.Name())
+	if strings.HasSuffix(msgName, "Keys") {
+		part = schema_j5pb.EntityPart_KEYS
+	} else if strings.HasSuffix(msgName, "State") {
+		part = schema_j5pb.EntityPart_STATE
+	} else if strings.HasSuffix(msgName, "Event") {
+		part = schema_j5pb.EntityPart_EVENT
+	} else {
+		return nil, fmt.Errorf("unknown PSM type suffix for %q", msgName)
+	}
+
+	return &schema_j5pb.EntityObject{
+		Entity: psmExt.EntityName,
+		Part:   part,
+	}, nil
 }
 
 func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*ObjectProperty, error) {

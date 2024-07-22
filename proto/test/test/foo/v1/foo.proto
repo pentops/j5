@@ -14,7 +14,6 @@ message FooKeys {
 }
 
 message FooState {
-  option (j5.ext.v1.psm).entity_name = "foo";
   FooKeys keys = 1 [(j5.ext.v1.field).message.flatten = true];
   string name = 2 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];
   Bar bar = 3;
