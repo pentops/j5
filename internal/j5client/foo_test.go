@@ -296,10 +296,12 @@ func wantAPI() *client_j5pb.API {
 
 	return &client_j5pb.API{
 		Packages: []*client_j5pb.Package{{
-			Name:     "test.foo.v1",
+			Name: "test.foo.v1",
+
 			Services: []*client_j5pb.Service{},
 			StateEntities: []*client_j5pb.StateEntity{{
 				Name:         "foo",
+				FullName:     "test.foo.v1/foo",
 				SchemaName:   "test.foo.v1.FooState",
 				PrimaryKey:   []string{"fooId"},
 				QueryService: fooQueryService,
@@ -308,9 +310,11 @@ func wantAPI() *client_j5pb.API {
 				},
 				Events: []*client_j5pb.StateEvent{{
 					Name:        "created",
+					FullName:    "test.foo.v1/foo.created",
 					Description: "Comment on Created",
 				}, {
 					Name:        "updated",
+					FullName:    "test.foo.v1/foo.updated",
 					Description: "Comment on Updated",
 				}},
 			}},

@@ -275,12 +275,14 @@ func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
 
 		events = append(events, &client_j5pb.StateEvent{
 			Name:        prop.JSONName,
+			FullName:    fmt.Sprintf("%s/%s.%s", entity.Package.Name, entity.Name, prop.JSONName),
 			Description: desc,
 		})
 	}
 
 	return &client_j5pb.StateEntity{
 		Name:       entity.Name,
+		FullName:   fmt.Sprintf("%s/%s", entity.Package.Name, entity.Name),
 		SchemaName: entity.StateSchema.FullName(),
 		PrimaryKey: primaryKeys,
 
