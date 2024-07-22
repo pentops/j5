@@ -170,13 +170,14 @@ func (sb *sourceBuilder) entitiesFromSource(pkg *Package, schemaPackage *j5refle
 		if entity.KeysSchema == nil {
 			return nil, fmt.Errorf("missing keys schema for entity %q", entity.Name)
 		}
-		//if entity.EventSchema == nil {
-		//		return nil, fmt.Errorf("missing event schema for entity %q", entity.Name)
-		//	}
 
-		//if entity.StateSchema == nil {
-		//	return nil, fmt.Errorf("missing state schema for entity %q", entity.Name)
-		//}
+		if entity.EventSchema == nil {
+			return nil, fmt.Errorf("missing event schema for entity %q", entity.Name)
+		}
+
+		if entity.StateSchema == nil {
+			return nil, fmt.Errorf("missing state schema for entity %q", entity.Name)
+		}
 	}
 	return found, nil
 }
@@ -290,7 +291,7 @@ func (mm *Method) fillRequest(requestObject *j5reflect.ObjectSchema) error {
 	if isQueryRequest {
 		listRequest, err := buildListRequest(responseSchema)
 		if err != nil {
-			return err
+			return fmt.Errorf("build list request: %w", err)
 		}
 		request.List = listRequest
 	}

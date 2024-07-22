@@ -14,6 +14,7 @@ type RootSchema interface {
 	PackageName() string
 	Package() *Package
 	ToJ5Root() *schema_j5pb.RootSchema
+	Description() string
 }
 
 type RefSchema struct {
@@ -53,6 +54,10 @@ func (s *rootSchema) AsRef() *RefSchema {
 		Package: s.pkg,
 		Schema:  s.name,
 	}
+}
+
+func (s *rootSchema) Description() string {
+	return s.description
 }
 
 type EnumSchema struct {
