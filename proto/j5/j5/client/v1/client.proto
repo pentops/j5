@@ -94,22 +94,25 @@ enum HTTPMethod {
 message StateEntity {
   string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
 
+  string full_name = 2 [(buf.validate.field).required = true];
+
   // an entry in the current package's schema map
-  string schema_name = 2 [(buf.validate.field).required = true];
+  string schema_name = 3 [(buf.validate.field).required = true];
 
   // markdown formatted prose
-  string overview = 3;
+  string overview = 4;
 
-  repeated string primary_key = 4;
+  repeated string primary_key = 5;
 
-  Service query_service = 5;
+  Service query_service = 6;
 
-  repeated Service command_services = 6;
+  repeated Service command_services = 7;
 
-  repeated StateEvent events = 7;
+  repeated StateEvent events = 8;
 }
 
 message StateEvent {
   string name = 1 [(buf.validate.field).string.pattern = "^[a-z][a-z0-9_]+$"];
-  string description = 2;
+  string full_name = 2 [(buf.validate.field).required = true];
+  string description = 3;
 }
