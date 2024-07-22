@@ -7,8 +7,8 @@ import "google/protobuf/descriptor.proto";
 option go_package = "github.com/pentops/j5/gen/j5/list/v1/list_j5pb";
 
 extend google.protobuf.MessageOptions {
-  optional MessageConstraint message = 86510000;
-  optional ListRequestMessage list_request = 86510001;
+  optional MessageConstraint message = 85510000;
+  optional ListRequestMessage list_request = 85510001;
 }
 
 message MessageConstraint {}
@@ -19,11 +19,11 @@ message ListRequestMessage {
 }
 
 extend google.protobuf.FieldOptions {
-  optional FieldConstraint field = 86510001;
+  optional FieldConstraint field = 85510001;
 }
 
 extend google.protobuf.OneofOptions {
-  optional OneofRules oneof = 86510002;
+  optional OneofRules oneof = 85510002;
 }
 
 message OneofRules {

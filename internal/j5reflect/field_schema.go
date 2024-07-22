@@ -55,7 +55,8 @@ func (s *EnumField) ToJ5Field() *schema_j5pb.Field {
 						Schema:  s.Ref.Schema,
 					},
 				},
-				Rules: s.Rules,
+				Rules:     s.Rules,
+				ListRules: s.ListRules,
 			},
 		},
 	}
@@ -87,8 +88,9 @@ func (s *ObjectField) ToJ5Field() *schema_j5pb.Field {
 }
 
 type OneofField struct {
-	Ref   *RefSchema
-	Rules *schema_j5pb.OneofField_Rules
+	Ref       *RefSchema
+	Rules     *schema_j5pb.OneofField_Rules
+	ListRules *list_j5pb.OneofRules
 }
 
 func (s *OneofField) Schema() *OneofSchema {
@@ -105,7 +107,8 @@ func (s *OneofField) ToJ5Field() *schema_j5pb.Field {
 						Schema:  s.Ref.Schema,
 					},
 				},
-				Rules: s.Rules,
+				Rules:     s.Rules,
+				ListRules: s.ListRules,
 			},
 		},
 	}

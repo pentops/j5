@@ -258,13 +258,11 @@ func (mm *Method) fillRequest(requestObject *j5reflect.ObjectSchema) error {
 	isQueryRequest := false
 
 	for _, prop := range requestObject.Properties {
-		if prop.JSONName == "query" {
-			if propObj, ok := prop.Schema.(*j5reflect.ObjectField); ok {
-				ref := propObj.Schema().AsRef()
-				if ref != nil {
-					if ref.Package.Name == "j5.list.v1" && ref.Schema == "Query" {
-						isQueryRequest = true
-					}
+		if propObj, ok := prop.Schema.(*j5reflect.ObjectField); ok {
+			ref := propObj.Ref
+			if ref != nil {
+				if ref.Package.Name == "j5.list.v1" && ref.Schema == "QueryRequest" {
+					isQueryRequest = true
 				}
 			}
 		}

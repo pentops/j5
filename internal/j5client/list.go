@@ -11,6 +11,7 @@ import (
 )
 
 func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, error) {
+
 	responseObj, ok := response.(*j5reflect.ObjectSchema)
 	if !ok {
 		return nil, fmt.Errorf("expected object schema, got %T", response)
@@ -77,6 +78,11 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 	if err := j5reflect.WalkSchemaFields(rootSchema.Schema(), func(schema j5reflect.WalkProperty) error {
 
 		switch st := schema.Schema.(type) {
+		case *j5reflect.EnumField:
+			if st.ListRules != nil {
+				addFilter(schema, st.ListRules.Filtering)
+			}
+
 		case *j5reflect.ScalarSchema:
 			switch scalar := st.Proto.Type.(type) {
 			case *schema_j5pb.Field_Any:
@@ -98,11 +104,6 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 
 			case *schema_j5pb.Field_Decimal:
 				// do nothing
-
-			case *schema_j5pb.Field_Enum:
-				if scalar.Enum.ListRules != nil {
-					addFilter(schema, scalar.Enum.ListRules.Filtering)
-				}
 
 			case *schema_j5pb.Field_Float:
 				if scalar.Float.ListRules != nil {

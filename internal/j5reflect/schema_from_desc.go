@@ -177,8 +177,9 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 		case *schema_j5pb.EnumField_Ref:
 			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
 			return &EnumField{
-				Ref:   ref,
-				Rules: st.Enum.Rules,
+				Ref:       ref,
+				Rules:     st.Enum.Rules,
+				ListRules: st.Enum.ListRules,
 			}, nil
 		default:
 			return nil, fmt.Errorf("unsupported enum schema type %T", inner)
