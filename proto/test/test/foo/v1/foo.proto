@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package test.foo.v1;
 
+import "buf/validate/validate.proto";
 import "j5/ext/v1/annotations.proto";
 import "j5/list/v1/annotations.proto";
 
@@ -26,4 +27,25 @@ message Bar {
 
 message FooEvent {
   option (j5.ext.v1.psm).entity_name = "foo";
+  FooKeys keys = 1 [(j5.ext.v1.field).message.flatten = true];
+  FooEventType event = 2 [(buf.validate.field).required = true];
+}
+
+message FooEventType {
+  option (j5.ext.v1.message).is_oneof_wrapper = true;
+
+  oneof type {
+    Created created = 1;
+    Updated updated = 2;
+  }
+
+  // Comment on Created
+  message Created {
+    string field = 1;
+  }
+
+  // Comment on Updated
+  message Updated {
+    string field = 1;
+  }
 }

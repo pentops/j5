@@ -306,6 +306,13 @@ func wantAPI() *client_j5pb.API {
 				CommandServices: []*client_j5pb.Service{
 					fooCommandService,
 				},
+				Events: []*client_j5pb.StateEvent{{
+					Name:        "created",
+					Description: "Comment on Created",
+				}, {
+					Name:        "updated",
+					Description: "Comment on Updated",
+				}},
 			}},
 		}},
 	}

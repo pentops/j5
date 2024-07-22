@@ -248,17 +248,46 @@ func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
 		}
 	}
 
-	schemaName := ""
-	if entity.StateSchema != nil {
-		schemaName = entity.StateSchema.FullName()
+	var eventOneof *j5reflect.OneofSchema
+	for _, field := range entity.EventSchema.Properties {
+		if field.JSONName != "event" {
+			continue
+		}
+		oneofField, ok := field.Schema.(*j5reflect.OneofField)
+		if !ok {
+			return nil, fmt.Errorf("event field is not oneof")
+		}
+		eventOneof = oneofField.Schema()
+		break
 	}
+
+	if eventOneof == nil {
+		return nil, fmt.Errorf("missing event oneof")
+	}
+
+	events := make([]*client_j5pb.StateEvent, 0, len(eventOneof.Properties))
+	for _, prop := range eventOneof.Properties {
+		objectField, ok := prop.Schema.(*j5reflect.ObjectField)
+		if !ok {
+			return nil, fmt.Errorf("event property %q is not object", prop.JSONName)
+		}
+		desc := objectField.Schema().Description()
+
+		events = append(events, &client_j5pb.StateEvent{
+			Name:        prop.JSONName,
+			Description: desc,
+		})
+	}
+
 	return &client_j5pb.StateEntity{
 		Name:       entity.Name,
-		SchemaName: schemaName,
+		SchemaName: entity.StateSchema.FullName(),
 		PrimaryKey: primaryKeys,
 
 		QueryService:    query,
 		CommandServices: commands,
+
+		Events: events,
 	}, nil
 
 }
