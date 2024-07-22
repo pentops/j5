@@ -2,5 +2,5 @@
 
 package ext_j5pb
 
-type IsStateServiceOptions_Type = isStateServiceOptions_Type
+type IsServiceOptions_Type = isServiceOptions_Type
 type IsFieldOptions_Type = isFieldOptions_Type

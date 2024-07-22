@@ -291,24 +291,24 @@ func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, err
 		Methods: make([]*source_j5pb.Method, 0, methods.Len()),
 	}
 
-	stateExt, ok := proto.GetExtension(src.Options(), ext_j5pb.E_Service).(*ext_j5pb.StateServiceOptions)
+	stateExt, ok := proto.GetExtension(src.Options(), ext_j5pb.E_Service).(*ext_j5pb.ServiceOptions)
 	if ok && stateExt != nil {
 		if stateExt.Type != nil {
 			switch set := stateExt.Type.(type) {
-			case *ext_j5pb.StateServiceOptions_Query_:
+			case *ext_j5pb.ServiceOptions_StateQuery_:
 				service.Type = &source_j5pb.ServiceType{
 					Type: &source_j5pb.ServiceType_StateEntityQuery_{
 						StateEntityQuery: &source_j5pb.ServiceType_StateEntityQuery{
-							Entity: set.Query.Entity,
+							Entity: set.StateQuery.Entity,
 						},
 					},
 				}
 
-			case *ext_j5pb.StateServiceOptions_Command_:
+			case *ext_j5pb.ServiceOptions_StateCommand_:
 				service.Type = &source_j5pb.ServiceType{
 					Type: &source_j5pb.ServiceType_StateEntityCommand_{
 						StateEntityCommand: &source_j5pb.ServiceType_StateEntityCommand{
-							Entity: set.Command.Entity,
+							Entity: set.StateCommand.Entity,
 						},
 					},
 				}

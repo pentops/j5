@@ -29,20 +29,20 @@ message KeyFieldOptions {
 }
 
 extend google.protobuf.ServiceOptions {
-  StateServiceOptions service = 555101;
+  ServiceOptions service = 555101;
 }
 
-message StateServiceOptions {
+message ServiceOptions {
   oneof type {
-    Query query = 1;
-    Command command = 2;
+    StateQuery state_query = 1;
+    StateCommand state_command = 2;
   }
 
-  message Query {
+  message StateQuery {
     string entity = 1;
   }
 
-  message Command {
+  message StateCommand {
     string entity = 1;
   }
 }

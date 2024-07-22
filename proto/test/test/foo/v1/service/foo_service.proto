@@ -12,7 +12,7 @@ import "test/foo/v1/foo.proto";
 option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testspb";
 
 service FooQueryService {
-  option (j5.ext.v1.service).query.entity = "test.foo.v1/foo";
+  option (j5.ext.v1.service).state_query.entity = "test.foo.v1/foo";
 
   rpc GetFoo(GetFooRequest) returns (GetFooResponse) {
     option (google.api.http) = {get: "/test/v1/foo/{id}"};
@@ -28,7 +28,7 @@ service FooQueryService {
 }
 
 service FooCommandService {
-  option (j5.ext.v1.service).command = {entity: "test.foo.v1/foo"};
+  option (j5.ext.v1.service).state_command = {entity: "test.foo.v1/foo"};
 
   rpc PostFoo(PostFooRequest) returns (PostFooResponse) {
     option (google.api.http) = {
