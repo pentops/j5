@@ -1,6 +1,10 @@
 package j5reflect
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/pentops/j5/internal/patherr"
+)
 
 type WalkProperty struct {
 	*ObjectProperty
@@ -10,7 +14,11 @@ type WalkProperty struct {
 type WalkCallback func(schema WalkProperty) error
 
 func WalkSchemaFields(root RootSchema, callback WalkCallback) error {
-	return walkSchemaFields(root, callback, nil)
+	err := walkSchemaFields(root, callback, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func walkSchemaFields(root RootSchema, callback WalkCallback, path []string) error {
@@ -33,17 +41,17 @@ func walkSchemaFields(root RootSchema, callback WalkCallback, path []string) err
 			ObjectProperty: prop,
 			Path:           propPath,
 		}); err != nil {
-			return fmt.Errorf("callback: %w", err)
+			return patherr.New(err, root.FullName(), prop.JSONName)
 		}
 
 		switch st := prop.Schema.(type) {
 		case *ObjectField:
 			if err := walkSchemaFields(st.Ref.To, callback, propPath); err != nil {
-				return fmt.Errorf("walk object as field: %w", err)
+				return err // not wrapped, the path is already in the error above
 			}
 		case *OneofField:
 			if err := walkSchemaFields(st.Ref.To, callback, propPath); err != nil {
-				return fmt.Errorf("walk oneof as field: %w", err)
+				return err // not wrapped, the path is already in the error above
 			}
 		}
 	}
