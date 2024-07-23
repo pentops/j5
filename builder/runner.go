@@ -56,6 +56,8 @@ func (rr *Runner) Run(ctx context.Context, rc RunContext) error {
 	if err != nil {
 		return err
 	}
+	baseEnv := os.Environ()
+	envVars = append(baseEnv, envVars...)
 
 	if rc.Command.Docker == nil {
 		cmd := exec.CommandContext(ctx, rc.Command.Cmd, rc.Command.Args...)
@@ -63,7 +65,10 @@ func (rr *Runner) Run(ctx context.Context, rc RunContext) error {
 		cmd.Stdout = rc.StdOut
 		cmd.Stderr = rc.StdErr
 		cmd.Env = envVars
-		return cmd.Run()
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("running command %q: %w", rc.Command.Cmd, err)
+		}
+		return nil
 	}
 
 	err = rr.runDocker(ctx, rc)
