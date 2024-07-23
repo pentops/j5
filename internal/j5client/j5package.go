@@ -389,29 +389,53 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 		return nil
 	}
 
+	walkMethod := func(method *Method) error {
+		if method.Request.Body != nil {
+			if err := walkRootObject(method.Request.Body); err != nil {
+				return fmt.Errorf("request schema %q: %w", method.Request.Body.FullName(), err)
+			}
+		}
+
+		for _, prop := range method.Request.PathParameters {
+			if err := walkRefs(prop.Schema); err != nil {
+				return fmt.Errorf("path parameter %q: %w", prop.JSONName, err)
+			}
+		}
+
+		for _, prop := range method.Request.QueryParameters {
+			if err := walkRefs(prop.Schema); err != nil {
+				return fmt.Errorf("path parameter %q: %w", prop.JSONName, err)
+			}
+		}
+
+		if err := walkRootObject(method.ResponseBody); err != nil {
+			return fmt.Errorf("response schema %q: %w", method.ResponseBody.FullName(), err)
+		}
+
+		return nil
+	}
+
 	for _, pkg := range api.Packages {
+		for _, entity := range pkg.StateEntities {
+			for _, method := range entity.Query.Methods {
+				if err := walkMethod(method); err != nil {
+					return nil, err
+				}
+			}
+
+			for _, commandService := range entity.Commands {
+				for _, method := range commandService.Methods {
+					if err := walkMethod(method); err != nil {
+						return nil, err
+					}
+				}
+			}
+		}
+
 		for _, service := range pkg.Services {
 			for _, method := range service.Methods {
-				if method.Request.Body != nil {
-					if err := walkRootObject(method.Request.Body); err != nil {
-						return nil, fmt.Errorf("request schema %q: %w", method.Request.Body.FullName(), err)
-					}
-				}
-
-				for _, prop := range method.Request.PathParameters {
-					if err := walkRefs(prop.Schema); err != nil {
-						return nil, fmt.Errorf("path parameter %q: %w", prop.JSONName, err)
-					}
-				}
-
-				for _, prop := range method.Request.QueryParameters {
-					if err := walkRefs(prop.Schema); err != nil {
-						return nil, fmt.Errorf("path parameter %q: %w", prop.JSONName, err)
-					}
-				}
-
-				if err := walkRootObject(method.ResponseBody); err != nil {
-					return nil, fmt.Errorf("response schema %q: %w", method.ResponseBody.FullName(), err)
+				if err := walkMethod(method); err != nil {
+					return nil, err
 				}
 			}
 		}
