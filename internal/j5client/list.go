@@ -54,10 +54,12 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 		if filtering == nil {
 			return
 		}
-		out.FilterableFields = append(out.FilterableFields, &client_j5pb.ListRequest_FilterField{
+		filter := &client_j5pb.ListRequest_FilterField{
 			Name:           strings.Join(schema.Path, "."),
 			DefaultFilters: filtering.DefaultFilters,
-		})
+		}
+
+		out.FilterableFields = append(out.FilterableFields, filter)
 	}
 
 	addSort := func(schema j5reflect.WalkProperty, sorting *list_j5pb.SortingConstraint) {
@@ -80,7 +82,24 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 		switch st := schema.Schema.(type) {
 		case *j5reflect.EnumField:
 			if st.ListRules != nil {
-				addFilter(schema, st.ListRules.Filtering)
+				if st.ListRules.Filtering != nil {
+					filtering := st.ListRules.Filtering
+					enumSchema := st.Schema()
+					for idx, val := range filtering.DefaultFilters {
+						shortName := enumSchema.OptionByName(val)
+						if shortName == nil {
+							return fmt.Errorf("unknown enum value %q", val)
+						}
+						filtering.DefaultFilters[idx] = shortName.Name
+					}
+					filter := &client_j5pb.ListRequest_FilterField{
+						Name:           strings.Join(schema.Path, "."),
+						DefaultFilters: filtering.DefaultFilters,
+					}
+
+					out.FilterableFields = append(out.FilterableFields, filter)
+
+				}
 			}
 
 		case *j5reflect.ScalarSchema:

@@ -184,6 +184,9 @@ func wantAPI() *client_j5pb.API {
 					Name: "bar.field",
 				}},
 				FilterableFields: []*client_j5pb.ListRequest_FilterField{{
+					Name:           "status",
+					DefaultFilters: []string{"ACTIVE"},
+				}, {
 					Name: "bar.id",
 				}},
 			},

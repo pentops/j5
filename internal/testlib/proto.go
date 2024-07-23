@@ -21,34 +21,43 @@ func AssertEqualProto(t *testing.T, want, got proto.Message) {
 	lineA := 0
 	lineB := 0
 
-	wantLines := strings.Split(string(wantJSON), "\n")
-	gotLines := strings.Split(string(gotJSON), "\n")
+	linesA := strings.Split(string(wantJSON), "\n")
+	linesB := strings.Split(string(gotJSON), "\n")
 	for {
-		if lineA >= len(wantLines) || lineB >= len(gotLines) {
+		if lineA >= len(linesA) || lineB >= len(linesB) {
 			break
 		}
-		wantLine := string(wantLines[lineA])
-		gotLine := string(gotLines[lineB])
-		if wantLine != gotLine {
-			matched = false
-			t.Logf("    W: %s", wantLine)
-			t.Logf("    G: %s", gotLine)
-			t.Log(strings.Repeat(`/\`, 10))
-
-			break
-		} else {
+		wantLine := string(linesA[lineA])
+		gotLine := string(linesB[lineB])
+		if wantLine == gotLine {
 			t.Logf("   OK: %s", wantLine)
+			lineA++
+			lineB++
+			continue
 		}
-		lineA++
-		lineB++
-	}
-	if lineA < len(wantLines) {
+
 		matched = false
-		t.Logf("Remaining Want: \n%s", strings.Join(wantLines[lineA:], "  \n"))
+		t.Logf("    W: %s", wantLine)
+		t.Logf("    G: %s", gotLine)
+		t.Log(strings.Repeat(`/\`, 10))
+
+		if lineA+1 < len(linesA) && lineB+1 < len(linesB) {
+			if linesA[lineA+1] == linesB[lineB+1] {
+				lineA++
+				lineB++
+				continue
+			}
+		}
+		break
 	}
-	if lineB < len(gotLines) {
+
+	if lineA < len(linesA) {
 		matched = false
-		t.Logf("Remaining Got: \n%s", strings.Join(gotLines[lineB:], "  \n"))
+		t.Logf("Remaining Want: \n%s", strings.Join(linesA[lineA:], "  \n"))
+	}
+	if lineB < len(linesB) {
+		matched = false
+		t.Logf("Remaining Got: \n%s", strings.Join(linesB[lineB:], "  \n"))
 	}
 
 	if !matched {
