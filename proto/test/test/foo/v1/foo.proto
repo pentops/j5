@@ -16,8 +16,22 @@ message FooKeys {
 
 message FooState {
   FooKeys keys = 1 [(j5.ext.v1.field).message.flatten = true];
-  string name = 2 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];
-  Bar bar = 3;
+  FooStatus status = 2 [
+    (buf.validate.field).required = true,
+    (j5.list.v1.field).enum.filtering = {
+      filterable: true
+      default_filters: "FOO_STATUS_ACTIVE"
+    }
+  ];
+
+  string name = 3 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];
+  Bar bar = 4;
+}
+
+enum FooStatus {
+  FOO_STATUS_UNSPECIFIED = 0;
+  FOO_STATUS_ACTIVE = 1;
+  FOO_STATUS_INACTIVE = 2;
 }
 
 message Bar {

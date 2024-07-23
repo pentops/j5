@@ -2,6 +2,7 @@ package j5reflect
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -65,6 +66,16 @@ type EnumSchema struct {
 
 	NamePrefix string
 	Options    []*schema_j5pb.Enum_Value
+}
+
+func (s *EnumSchema) OptionByName(name string) *schema_j5pb.Enum_Value {
+	shortName := strings.TrimPrefix(name, s.NamePrefix)
+	for _, opt := range s.Options {
+		if opt.Name == shortName {
+			return opt
+		}
+	}
+	return nil
 }
 
 func (s *EnumSchema) OptionByNumber(num int32) *schema_j5pb.Enum_Value {
