@@ -417,9 +417,11 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 
 	for _, pkg := range api.Packages {
 		for _, entity := range pkg.StateEntities {
-			for _, method := range entity.Query.Methods {
-				if err := walkMethod(method); err != nil {
-					return nil, err
+			if entity.Query != nil {
+				for _, method := range entity.Query.Methods {
+					if err := walkMethod(method); err != nil {
+						return nil, err
+					}
 				}
 			}
 
