@@ -78,7 +78,6 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 	}
 
 	if err := j5reflect.WalkSchemaFields(rootSchema.Schema(), func(schema j5reflect.WalkProperty) error {
-
 		switch st := schema.Schema.(type) {
 		case *j5reflect.EnumField:
 			if st.ListRules != nil {

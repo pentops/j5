@@ -900,7 +900,7 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		return prop, nil
 
 	case protoreflect.MessageKind:
-		wktschema, ok := wktSchema(src.Message())
+		wktschema, ok := wktSchema(src.Message(), validateConstraint, listConstraint)
 		if ok {
 			prop.Schema = wktschema
 			return prop, nil
@@ -990,15 +990,18 @@ func Ptr[T any](val T) *T {
 	return &val
 }
 
-func wktSchema(src protoreflect.MessageDescriptor) (FieldSchema, bool) {
-	switch string(src.FullName()) {
+func wktSchema(src protoreflect.MessageDescriptor, validateConstraint *validate.FieldConstraints, listConstraint *list_j5pb.FieldConstraint) (FieldSchema, bool) {
+	fullName := src.FullName()
+
+	switch string(fullName) {
 	case "google.protobuf.Timestamp":
 		return &ScalarSchema{
-			WellKnownTypeName: src.FullName(),
+			WellKnownTypeName: fullName,
 			Proto: &schema_j5pb.Field{
-				Type: &schema_j5pb.Field_String_{
-					String_: &schema_j5pb.StringField{
-						Format: Ptr("date-time"),
+				Type: &schema_j5pb.Field_Timestamp{
+					Timestamp: &schema_j5pb.TimestampField{
+						//Rules: validateConstraint.GetTimestamp(),
+						ListRules: listConstraint.GetTimestamp(),
 					},
 				},
 			},
@@ -1006,7 +1009,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (FieldSchema, bool) {
 
 	case "google.protobuf.Duration":
 		return &ScalarSchema{
-			WellKnownTypeName: src.FullName(),
+			WellKnownTypeName: fullName,
 			Proto: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_String_{
 					String_: &schema_j5pb.StringField{
@@ -1018,7 +1021,7 @@ func wktSchema(src protoreflect.MessageDescriptor) (FieldSchema, bool) {
 
 	case "j5.types.date.v1.Date":
 		return &ScalarSchema{
-			WellKnownTypeName: src.FullName(),
+			WellKnownTypeName: fullName,
 			Proto: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_String_{
 					String_: &schema_j5pb.StringField{

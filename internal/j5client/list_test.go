@@ -31,14 +31,27 @@ func TestTestListRequest(t *testing.T) {
 	}
 
 	want := &client_j5pb.ListRequest{
-		SearchableFields: []*client_j5pb.ListRequest_SearchField{{
-			Name: "name",
-		}, {
-			Name: "bar.field",
+		SearchableFields: []*client_j5pb.ListRequest_SearchField{
+			{
+				Name: "name",
+			}, {
+				Name: "bar.field",
+			},
+		},
+		SortableFields: []*client_j5pb.ListRequest_SortField{{
+			Name: "createdAt",
 		}},
-		FilterableFields: []*client_j5pb.ListRequest_FilterField{{
-			Name: "bar.id",
-		}},
+		FilterableFields: []*client_j5pb.ListRequest_FilterField{
+			{
+				Name:           "status",
+				DefaultFilters: []string{"ACTIVE"},
+			},
+			{
+				Name: "bar.id",
+			}, {
+				Name: "createdAt",
+			},
+		},
 	}
 
 	if !proto.Equal(listRequest, want) {
