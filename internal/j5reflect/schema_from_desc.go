@@ -2,7 +2,6 @@ package j5reflect
 
 import (
 	"fmt"
-
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -203,6 +202,12 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 		return &MapField{
 			Rules:  st.Map.Rules,
 			Schema: valueSchema,
+		}, nil
+
+	case *schema_j5pb.Field_Timestamp:
+		return &ScalarSchema{
+			Proto: schema,
+			Kind:  protoreflect.MessageKind,
 		}, nil
 
 	case *schema_j5pb.Field_Boolean:

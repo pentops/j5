@@ -3,6 +3,7 @@ syntax = "proto3";
 package test.foo.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
 import "j5/list/v1/annotations.proto";
 
@@ -26,6 +27,10 @@ message FooState {
 
   string name = 3 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];
   Bar bar = 4;
+  google.protobuf.Timestamp created_at = 5 [(j5.list.v1.field).timestamp = {
+    filtering: {filterable: true}
+    sorting: {sortable: true}
+  }];
 }
 
 enum FooStatus {
