@@ -183,9 +183,14 @@ func wantAPI() *client_j5pb.API {
 				}, {
 					Name: "bar.field",
 				}},
+				SortableFields: []*client_j5pb.ListRequest_SortField{{
+					Name: "createdAt",
+				}},
 				FilterableFields: []*client_j5pb.ListRequest_FilterField{{
 					Name:           "status",
 					DefaultFilters: []string{"ACTIVE"},
+				}, {
+					Name: "createdAt",
 				}, {
 					Name: "bar.id",
 				}},
