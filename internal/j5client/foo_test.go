@@ -190,9 +190,9 @@ func wantAPI() *client_j5pb.API {
 					Name:           "status",
 					DefaultFilters: []string{"ACTIVE"},
 				}, {
-					Name: "createdAt",
-				}, {
 					Name: "bar.id",
+				}, {
+					Name: "createdAt",
 				}},
 			},
 		},

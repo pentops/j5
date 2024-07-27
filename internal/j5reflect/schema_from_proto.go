@@ -900,7 +900,7 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		return prop, nil
 
 	case protoreflect.MessageKind:
-		wktschema, ok := wktSchema(src.Message(), validateConstraint, listConstraint)
+		wktschema, ok := wktSchema(src.Message(), listConstraint)
 		if ok {
 			prop.Schema = wktschema
 			return prop, nil
@@ -990,7 +990,7 @@ func Ptr[T any](val T) *T {
 	return &val
 }
 
-func wktSchema(src protoreflect.MessageDescriptor, validateConstraint *validate.FieldConstraints, listConstraint *list_j5pb.FieldConstraint) (FieldSchema, bool) {
+func wktSchema(src protoreflect.MessageDescriptor, listConstraint *list_j5pb.FieldConstraint) (FieldSchema, bool) {
 	fullName := src.FullName()
 
 	switch string(fullName) {
@@ -1000,7 +1000,6 @@ func wktSchema(src protoreflect.MessageDescriptor, validateConstraint *validate.
 			Proto: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Timestamp{
 					Timestamp: &schema_j5pb.TimestampField{
-						//Rules: validateConstraint.GetTimestamp(),
 						ListRules: listConstraint.GetTimestamp(),
 					},
 				},
