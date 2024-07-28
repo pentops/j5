@@ -107,7 +107,10 @@ func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_R
 
 	res, err := src.HTTPClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetching registry input: %w", err)
+		return nil, fmt.Errorf("fetching registry input: %q %w", imageURL, err)
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("fetching registry input: %q %s", imageURL, res.Status)
 	}
 	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)
