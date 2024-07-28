@@ -87,6 +87,7 @@ func NewFileSet(prefix string) *FileSet {
 
 func (fileSet *FileSet) WriteAll(output FileWriter) error {
 	for fullPackageName, file := range fileSet.files {
+		file.addCombinedClient()
 		log.Printf("Writing %s", fullPackageName)
 		bb, err := file.ExportBytes()
 		if err != nil {
@@ -161,6 +162,46 @@ func NewFile(importPath string, packageName string) *GeneratedFile {
 type PackagedIdentity interface {
 	PackageName() string
 	Identity() string
+}
+
+func (gen *GeneratedFile) addCombinedClient() {
+	if len(gen.services) == 0 {
+		return
+	}
+
+	constructor := &Function{
+		Name: "NewCombinedClient",
+		Parameters: []*Parameter{{
+			Name: "requester",
+			DataType: DataType{
+				Name: "Requester",
+			},
+		}},
+		Returns: []*Parameter{{
+			DataType: DataType{
+				Name:    "CombinedClient",
+				Pointer: true,
+			},
+		}},
+		StringGen: gen.ChildGen(),
+	}
+
+	combined := &Struct{
+		Name:         "CombinedClient",
+		Constructors: []*Function{constructor},
+	}
+
+	constructor.P("  return &CombinedClient{")
+	for _, service := range gen.services {
+		combined.Fields = append(combined.Fields, &Field{
+			//Name:     service.Name,
+			DataType: DataType{Name: service.Name, Pointer: true},
+		})
+		constructor.P("  ", service.Name, ": New", service.Name, "(requester),")
+	}
+	constructor.P("  }")
+
+	gen.types["CombinedClient"] = combined
 }
 
 func (gen *GeneratedFile) Service(serviceName string) *Struct {

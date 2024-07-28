@@ -9,6 +9,7 @@ import (
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/internal/patherr"
 )
 
 type Options struct {
@@ -93,16 +94,76 @@ func WriteGoCode(api *client_j5pb.API, output FileWriter, options Options) error
 	}
 
 	for _, j5Package := range api.Packages {
-		for _, service := range j5Package.Services {
-			for _, method := range service.Methods {
-				if err := bb.addMethod(j5Package.Name, service.Name, method); err != nil {
-					return fmt.Errorf("%s.%s/%s: %w", j5Package.Name, service.Name, method.Name, err)
-				}
-			}
+		if err := bb.addPackage(j5Package); err != nil {
+			return patherr.Wrap(err, j5Package.Name)
 		}
 	}
 
 	return fileSet.WriteAll(output)
+}
+
+func (bb *builder) addPackage(j5Package *client_j5pb.Package) error {
+
+	for _, service := range j5Package.Services {
+		if err := bb.addService(j5Package, service); err != nil {
+			return patherr.Wrap(err, "service", service.Name)
+
+		}
+	}
+	for _, entity := range j5Package.StateEntities {
+		if err := bb.addEntity(j5Package, entity); err != nil {
+			return patherr.Wrap(err, "entity", entity.Name)
+		}
+	}
+
+	for name, schema := range j5Package.Schemas {
+		switch schemaType := schema.Type.(type) {
+		case *schema_j5pb.RootSchema_Enum:
+			// nothing to do
+		case *schema_j5pb.RootSchema_Object:
+			if err := bb.addObject(j5Package.Name, schemaType.Object); err != nil {
+				return patherr.Wrap(err, "schemas", name)
+			}
+
+		case *schema_j5pb.RootSchema_Oneof:
+			if err := bb.addOneofWrapper(j5Package.Name, schemaType.Oneof); err != nil {
+				return patherr.Wrap(err, "schemas", name)
+			}
+		default:
+			return fmt.Errorf("unknown schema type %T", schemaType)
+
+		}
+	}
+
+	return nil
+
+}
+
+func (bb *builder) addEntity(j5Package *client_j5pb.Package, entity *client_j5pb.StateEntity) error {
+	if entity.QueryService != nil {
+		if err := bb.addService(j5Package, entity.QueryService); err != nil {
+			return err
+		}
+	}
+
+	for _, command := range entity.CommandServices {
+		if err := bb.addService(j5Package, command); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (bb *builder) addService(j5Package *client_j5pb.Package, service *client_j5pb.Service) error {
+
+	for _, method := range service.Methods {
+		if err := bb.addMethod(j5Package.Name, service.Name, method); err != nil {
+			return patherr.Wrap(err, method.Name)
+		}
+	}
+
+	return nil
 }
 
 func (bb *builder) addMethod(packageName string, serviceName string, operation *client_j5pb.Method) error {
@@ -239,7 +300,7 @@ func (bb *builder) addMethod(packageName string, serviceName string, operation *
 					return fmt.Errorf("%s.ResponseBody: %w", operation.Name, err)
 				}
 				responseStruct.Fields = append(responseStruct.Fields, field)
-				if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageResponse" {
+				if field.DataType.J5Package == J5ListPackage && field.DataType.Name == J5PageResponse {
 					pageResponseField = field
 				} else if field.DataType.Slice {
 					sliceFields = append(sliceFields, field)
@@ -292,6 +353,12 @@ type builtRequest struct {
 	pathFields    []*Field
 }
 
+const (
+	J5ListPackage  = "j5.list.v1"
+	J5PageRequest  = "PageRequest"
+	J5PageResponse = "PageResponse"
+)
+
 func (bb *builder) prepareRequestObject(currentPackage string, operation *client_j5pb.Method) (*builtRequest, error) {
 	requestType := fmt.Sprintf("%sRequest", operation.Name)
 
@@ -314,9 +381,6 @@ func (bb *builder) prepareRequestObject(currentPackage string, operation *client
 			fields[property.Name] = field
 			requestStruct.Fields = append(requestStruct.Fields, field)
 
-			if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageRequest" {
-				req.pageRequestField = field
-			}
 		}
 	}
 	for _, property := range operation.Request.PathParameters {
@@ -338,6 +402,12 @@ func (bb *builder) prepareRequestObject(currentPackage string, operation *client
 		field.Tags["query"] = field.Property.Name
 		fields[property.Name] = field
 		requestStruct.Fields = append(requestStruct.Fields, field)
+	}
+
+	for _, field := range fields {
+		if field.DataType.J5Package == J5ListPackage && field.DataType.Name == J5PageRequest {
+			req.pageRequestField = field
+		}
 	}
 
 	pathParts := strings.Split(operation.HttpPath, "/")
@@ -363,7 +433,7 @@ func (bb *builder) prepareRequestObject(currentPackage string, operation *client
 func (bb *builder) addPaginationMethod(gen *GeneratedFile, req *builtRequest) error {
 
 	field := req.pageRequestField
-	if field.DataType.J5Package != "psm.list.v1" || field.DataType.Name != "PageRequest" {
+	if field.DataType.J5Package != J5ListPackage || field.DataType.Name != "PageRequest" {
 		return fmt.Errorf("invalid page request field %q %q", field.DataType.J5Package, field.DataType.Name)
 	}
 
