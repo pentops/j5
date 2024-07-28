@@ -146,6 +146,32 @@ func (bb *builder) buildTypeName(currentPackage string, schema *schema_j5pb.Fiel
 			return nil, fmt.Errorf("Unknown string format: %s", *item.Format)
 		}
 
+	case *schema_j5pb.Field_Bytes:
+		return &DataType{
+			Name:    "[]byte",
+			Pointer: false,
+		}, nil
+
+	case *schema_j5pb.Field_Date:
+		return &DataType{
+			Name:    "string",
+			Pointer: false,
+		}, nil
+
+	case *schema_j5pb.Field_Timestamp:
+		return &DataType{
+			Name:      "Time",
+			Pointer:   true,
+			GoPackage: "time",
+		}, nil
+
+	case *schema_j5pb.Field_Key:
+		// TODO: Constrain UUID?
+		return &DataType{
+			Name:    "string",
+			Pointer: false,
+		}, nil
+
 	case *schema_j5pb.Field_Float:
 		return &DataType{
 			Name:    goFloatTypes[schemaType.Float.Format],
@@ -165,7 +191,7 @@ func (bb *builder) buildTypeName(currentPackage string, schema *schema_j5pb.Fiel
 		}, nil
 
 	default:
-		return nil, fmt.Errorf("Unknown type for Go Gen: %T\n", schema)
+		return nil, fmt.Errorf("Unknown type for Go Gen: %T\n", schemaType)
 	}
 
 }
