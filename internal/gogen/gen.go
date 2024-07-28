@@ -229,19 +229,21 @@ func (bb *builder) addMethod(packageName string, serviceName string, operation *
 
 		var pageResponseField *Field
 
-		responseSchema := operation.ResponseBody
-
 		sliceFields := make([]*Field, 0)
-		for _, property := range responseSchema.Properties {
-			field, err := bb.jsonField(packageName, property)
-			if err != nil {
-				return fmt.Errorf("%s.ResponseBody: %w", operation.Name, err)
-			}
-			responseStruct.Fields = append(responseStruct.Fields, field)
-			if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageResponse" {
-				pageResponseField = field
-			} else if field.DataType.Slice {
-				sliceFields = append(sliceFields, field)
+		responseSchema := operation.ResponseBody
+		if responseSchema != nil {
+
+			for _, property := range responseSchema.Properties {
+				field, err := bb.jsonField(packageName, property)
+				if err != nil {
+					return fmt.Errorf("%s.ResponseBody: %w", operation.Name, err)
+				}
+				responseStruct.Fields = append(responseStruct.Fields, field)
+				if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageResponse" {
+					pageResponseField = field
+				} else if field.DataType.Slice {
+					sliceFields = append(sliceFields, field)
+				}
 			}
 		}
 
@@ -293,8 +295,6 @@ type builtRequest struct {
 func (bb *builder) prepareRequestObject(currentPackage string, operation *client_j5pb.Method) (*builtRequest, error) {
 	requestType := fmt.Sprintf("%sRequest", operation.Name)
 
-	requestSchema := operation.Request.Body
-
 	requestStruct := &Struct{
 		Name: requestType,
 	}
@@ -305,16 +305,18 @@ func (bb *builder) prepareRequestObject(currentPackage string, operation *client
 
 	fields := map[string]*Field{}
 
-	for _, property := range requestSchema.Properties {
-		field, err := bb.jsonField(currentPackage, property)
-		if err != nil {
-			return nil, err
-		}
-		fields[property.Name] = field
-		requestStruct.Fields = append(requestStruct.Fields, field)
+	if operation.Request.Body != nil {
+		for _, property := range operation.Request.Body.Properties {
+			field, err := bb.jsonField(currentPackage, property)
+			if err != nil {
+				return nil, err
+			}
+			fields[property.Name] = field
+			requestStruct.Fields = append(requestStruct.Fields, field)
 
-		if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageRequest" {
-			req.pageRequestField = field
+			if field.DataType.J5Package == "psm.list.v1" && field.DataType.Name == "PageRequest" {
+				req.pageRequestField = field
+			}
 		}
 	}
 	for _, property := range operation.Request.PathParameters {
@@ -413,17 +415,21 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 
 		switch fieldType := field.Property.Schema.Type.(type) {
 
-		case *schema_j5pb.Field_Boolean, *schema_j5pb.Field_String_:
+		case *schema_j5pb.Field_Boolean,
+			*schema_j5pb.Field_String_,
+			*schema_j5pb.Field_Key,
+			*schema_j5pb.Field_Timestamp:
 			accessor := "s." + field.Name
 			if !field.Property.Required {
 				accessor = "*s." + field.Name
 			}
 
 			switch fieldType.(type) {
-			case *schema_j5pb.Field_String_:
-				// pass through
 			case *schema_j5pb.Field_Boolean:
 				accessor = "fmt.Sprintf(\"%v\", " + accessor + ")"
+			case *schema_j5pb.Field_Timestamp:
+				accessor = accessor + ".String()"
+
 			}
 
 			if field.Property.Required {
@@ -434,7 +440,7 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 				queryMethod.P("  }")
 			}
 
-		case *schema_j5pb.Field_Object, *schema_j5pb.Field_Oneof:
+		case *schema_j5pb.Field_Object, *schema_j5pb.Field_Oneof, *schema_j5pb.Field_Map, *schema_j5pb.Field_Array:
 			// include as JSON
 			queryMethod.P("  if s.", field.Name, " != nil {")
 			queryMethod.P("    bb, err := ", DataType{GoPackage: "encoding/json", Name: "Marshal"}, "(s.", field.Name, ")")

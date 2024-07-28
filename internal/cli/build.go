@@ -126,10 +126,12 @@ func runGeneratePlugins(ctx context.Context, bb *builder.Builder, src *source.So
 				return err
 			}
 			err = bb.Generate(ctx, pc, input, generator)
+			errOut.flush()
 			if err != nil {
 				return err
 			}
 		}
+
 		errOut.flush()
 
 	}
