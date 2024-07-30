@@ -259,11 +259,34 @@ func (bb *builder) addMethod(packageName string, serviceName string, operation *
 			StringGen: gen.ChildGen(),
 		}
 
-		requestMethod.P("  path := ", DataType{GoPackage: "fmt", Name: "Sprintf"}, "(\"", req.pathFmtString, "\", ")
-		for _, param := range req.pathFields {
-			requestMethod.P("   req.", param.Name, ", ")
+		requestMethod.P("  pathParts := make([]string, ", len(req.path), ")")
+		for idx, param := range req.path {
+			if param.Field == nil {
+				requestMethod.P("  pathParts[", idx, "] = ", quoteString(param.String))
+				continue
+			}
+
+			switch fieldType := param.Field.Property.Schema.Type.(type) {
+			case *schema_j5pb.Field_String_, *schema_j5pb.Field_Key:
+
+			default:
+				// Only string-like is supported for now
+				return fmt.Errorf("unsupported path parameter type %T", fieldType)
+			}
+
+			if param.Field.DataType.Pointer {
+				requestMethod.P("  if req.", param.Field.Name, " == nil || *req.", param.Field.Name, " == \"\" {")
+				requestMethod.P("    return nil, ", requestMethod.ImportPath("errors"), ".New(", quoteString(fmt.Sprintf("required field %q not set", param.Field.Name)), ")")
+				requestMethod.P("  }")
+				requestMethod.P("  pathParts[", idx, "] = *req.", param.Field.Name)
+			} else {
+				requestMethod.P("  if req.", param.Field.Name, " == \"\" {")
+				requestMethod.P("    return nil, ", requestMethod.ImportPath("errors"), ".New(", quoteString(fmt.Sprintf("required field %q not set", param.Field.Name)), ")")
+				requestMethod.P("  }")
+				requestMethod.P("  pathParts[", idx, "] = req.", param.Field.Name)
+			}
 		}
-		requestMethod.P("  )")
+		requestMethod.P("  path := ", requestMethod.ImportPath("strings"), ".Join(pathParts, \"/\")")
 
 		requestMethod.P("  resp := &", responseType, "{}")
 		requestMethod.P("  err := s.Request(ctx, \"", operation.HttpMethod.ShortString(), "\", path, req, resp)")
@@ -348,9 +371,12 @@ func (bb *builder) addMethod(packageName string, serviceName string, operation *
 type builtRequest struct {
 	Request          *Struct
 	pageRequestField *Field
+	path             []PathPart
+}
 
-	pathFmtString string
-	pathFields    []*Field
+type PathPart struct {
+	String string // the string name, being :field or just a plain string when field is nil
+	Field  *Field
 }
 
 const (
@@ -411,7 +437,10 @@ func (bb *builder) prepareRequestObject(currentPackage string, operation *client
 	}
 
 	pathParts := strings.Split(operation.HttpPath, "/")
+	req.path = make([]PathPart, len(pathParts))
 	for idx, part := range pathParts {
+		part := part
+		req.path[idx].String = part
 		if len(part) == 0 || part[0] != ':' {
 			continue
 		}
@@ -422,10 +451,8 @@ func (bb *builder) prepareRequestObject(currentPackage string, operation *client
 			return nil, fmt.Errorf("path parameter %q not found in request object %s", name, requestType)
 		}
 
-		pathParts[idx] = "%s"
-		req.pathFields = append(req.pathFields, field)
+		req.path[idx].Field = field
 	}
-	req.pathFmtString = strings.Join(pathParts, "/")
 
 	return req, nil
 }
@@ -496,7 +523,7 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 
 			switch fieldType.(type) {
 			case *schema_j5pb.Field_Boolean:
-				accessor = "fmt.Sprintf(\"%v\", " + accessor + ")"
+				accessor = queryMethod.ImportPath("fmt") + ".Sprintf(\"%v\", " + accessor + ")"
 			case *schema_j5pb.Field_Timestamp:
 				accessor = accessor + ".String()"
 

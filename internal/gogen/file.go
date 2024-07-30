@@ -12,6 +12,10 @@ import (
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 )
 
+func quoteString(s string) string {
+	return fmt.Sprintf("%q", s)
+}
+
 type StringGen struct {
 	imports   map[string]string
 	buf       *bytes.Buffer
