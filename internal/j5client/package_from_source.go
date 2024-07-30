@@ -269,6 +269,7 @@ func (mm *Method) fillRequest(requestObject *j5reflect.ObjectSchema) error {
 		}
 		_, isPath := pathParameterNames[prop.JSONName]
 		if isPath {
+			prop.Required = true
 			pathProperties = append(pathProperties, prop)
 		} else {
 			bodyProperties = append(bodyProperties, prop)
