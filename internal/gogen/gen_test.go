@@ -42,7 +42,8 @@ func TestTestProtoGen(t *testing.T) {
 					HttpPath:     "/test/v1/foo/:foo_id",
 					Request: &client_j5pb.Method_Request{
 						PathParameters: []*schema_j5pb.ObjectProperty{{
-							Name: "foo_id",
+							Name:     "foo_id",
+							Required: true,
 							Schema: &schema_j5pb.Field{
 								Type: &schema_j5pb.Field_String_{
 									String_: &schema_j5pb.StringField{},

@@ -94,6 +94,7 @@ func wantAPI() *client_j5pb.API {
 			PathParameters: []*schema_j5pb.ObjectProperty{{
 				Name:       "id",
 				ProtoField: []int32{1},
+				Required:   true,
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_String_{
 						String_: &schema_j5pb.StringField{},
@@ -210,6 +211,7 @@ func wantAPI() *client_j5pb.API {
 			PathParameters: []*schema_j5pb.ObjectProperty{{
 				Name:       "id",
 				ProtoField: []int32{1},
+				Required:   true,
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Key{
 						Key: &schema_j5pb.KeyField{
