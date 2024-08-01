@@ -120,19 +120,16 @@ func runGeneratePlugins(ctx context.Context, bb *builder.Builder, src *source.So
 			ErrOut:    errOut,
 		}
 
-		for _, inputDef := range generator.Inputs {
-			input, err := src.GetInput(ctx, inputDef)
-			if err != nil {
-				return err
-			}
-			err = bb.Generate(ctx, pc, input, generator)
-			errOut.flush()
-			if err != nil {
-				return err
-			}
+		input, err := src.CombinedInput(ctx, generator.Inputs)
+		if err != nil {
+			return err
 		}
 
+		err = bb.Generate(ctx, pc, input, generator)
 		errOut.flush()
+		if err != nil {
+			return err
+		}
 
 	}
 

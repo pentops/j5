@@ -225,12 +225,6 @@ func (bb *builder) addMethod(packageName string, serviceName string, operation *
 			}
 		}
 
-		if operation.HttpMethod == client_j5pb.HTTPMethod_GET {
-			if err := bb.addQueryMethod(gen, req); err != nil {
-				return err
-			}
-		}
-
 		requestMethod := &Function{
 			Name: operation.Name,
 			Parameters: []*Parameter{{
@@ -288,6 +282,16 @@ func (bb *builder) addMethod(packageName string, serviceName string, operation *
 		}
 		requestMethod.P("  path := ", requestMethod.ImportPath("strings"), ".Join(pathParts, \"/\")")
 
+		if operation.HttpMethod == client_j5pb.HTTPMethod_GET {
+			if err := bb.addQueryMethod(gen, req); err != nil {
+				return err
+			}
+			requestMethod.P("  if query, err := req.QueryParameters(); err != nil {")
+			requestMethod.P("    return nil, err")
+			requestMethod.P("  } else if len(query) > 0 {")
+			requestMethod.P("    path += \"?\" + query.Encode()")
+			requestMethod.P("  }")
+		}
 		requestMethod.P("  resp := &", responseType, "{}")
 		requestMethod.P("  err := s.Request(ctx, \"", operation.HttpMethod.ShortString(), "\", path, req, resp)")
 		requestMethod.P("  if err != nil {")

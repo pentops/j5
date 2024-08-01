@@ -134,6 +134,32 @@ func (b *bundle) CommitInfo(context.Context) (*source_j5pb.CommitInfo, error) {
 	return b.repo.commitInfo, nil
 }*/
 
+type combinedBundle struct {
+	source *source_j5pb.SourceImage
+}
+
+func (cb combinedBundle) Name() string {
+	return "combined"
+}
+
+func (cb combinedBundle) J5Config() (*config_j5pb.BundleConfigFile, error) {
+	return nil, nil
+}
+
+func (cb combinedBundle) ProtoCodeGeneratorRequest(ctx context.Context) (*pluginpb.CodeGeneratorRequest, error) {
+	return &pluginpb.CodeGeneratorRequest{
+		ProtoFile: cb.source.File,
+	}, nil
+}
+
+func (cb combinedBundle) SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error) {
+	return cb.source, nil
+}
+
+func (cb combinedBundle) CommitInfo(context.Context) (*source_j5pb.CommitInfo, error) {
+	return nil, nil
+}
+
 type imageBundle struct {
 	source *source_j5pb.SourceImage
 	repo   *config_j5pb.RegistryConfig

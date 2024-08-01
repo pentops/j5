@@ -2,6 +2,8 @@ package source
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/fs"
@@ -13,6 +15,7 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type Source struct {
@@ -49,6 +52,76 @@ func (src Source) AllBundles() []Input {
 		out = append(out, bundle)
 	}
 	return out
+}
+
+func (src *Source) CombinedInput(ctx context.Context, inputs []*config_j5pb.Input) (Input, error) {
+	if len(inputs) == 0 {
+		return nil, fmt.Errorf("no inputs")
+	}
+	if len(inputs) == 1 {
+		return src.GetInput(ctx, inputs[0])
+	}
+
+	allFiles := map[string]string{}
+	fullImage := &source_j5pb.SourceImage{
+		Options: &config_j5pb.PackageOptions{},
+	}
+	for _, input := range inputs {
+		bundle, err := src.GetInput(ctx, input)
+		if err != nil {
+			return nil, fmt.Errorf("input %v: %w", input, err)
+		}
+		img, err := bundle.SourceImage(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("input %v: %w", input, err)
+		}
+
+		for _, file := range img.File {
+			hash, err := hashFile(file)
+			if err != nil {
+				return nil, fmt.Errorf("file %q: %w", *file.Name, err)
+			}
+			if existing, ok := allFiles[*file.Name]; ok {
+				if existing != hash {
+					return nil, fmt.Errorf("file %q has conflicting content", *file.Name)
+				}
+			} else {
+				allFiles[*file.Name] = hash
+				fullImage.File = append(fullImage.File, file)
+			}
+		}
+
+		for _, subPkg := range img.Options.SubPackages {
+			found := false
+			for _, existing := range fullImage.Options.SubPackages {
+				if existing.Name == subPkg.Name {
+					// no config other than name for now.
+					found = true
+					break
+				}
+			}
+			if !found {
+				fullImage.Options.SubPackages = append(fullImage.Options.SubPackages, subPkg)
+			}
+		}
+
+		fullImage.Packages = append(fullImage.Packages, img.Packages...)
+	}
+
+	return &combinedBundle{
+		source: fullImage,
+	}, nil
+}
+
+func hashFile(file *descriptorpb.FileDescriptorProto) (string, error) {
+	sh := sha256.New()
+	fileContent, err := proto.Marshal(file)
+	if err != nil {
+		return "", err
+	}
+	sh.Write(fileContent)
+	return base64.StdEncoding.EncodeToString(sh.Sum(nil)), nil
+
 }
 
 func (src *Source) GetInput(ctx context.Context, input *config_j5pb.Input) (Input, error) {
@@ -109,13 +182,13 @@ func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_R
 	if err != nil {
 		return nil, fmt.Errorf("fetching registry input: %q %w", imageURL, err)
 	}
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetching registry input: %q %s", imageURL, res.Status)
-	}
 	defer res.Body.Close()
 	data, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("reading registry input: %w", err)
+	}
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("fetching registry input: %q %s %q", imageURL, res.Status, string(data))
 	}
 
 	apiDef := &source_j5pb.SourceImage{}
