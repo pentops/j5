@@ -7,13 +7,12 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"path/filepath"
-	"strings"
 
 	"github.com/bufbuild/protocompile"
 	"github.com/bufbuild/protocompile/reporter"
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/desc/protoparse"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -147,40 +146,25 @@ func bundleProtoparse(ctx context.Context, rootBundle *bundle, files []string) (
 
 func codeGeneratorRequestFromSource(ctx context.Context, bundle *bundle) (*pluginpb.CodeGeneratorRequest, error) {
 
-	out := &pluginpb.CodeGeneratorRequest{
-		CompilerVersion: nil,
-	}
-
-	walkRoot, err := bundle.fs()
+	img, err := readImageFromDir(ctx, bundle)
 	if err != nil {
 		return nil, err
+	}
+
+	return codeGeneratorRequestFromImage(img)
+
+}
+
+func codeGeneratorRequestFromImage(img *source_j5pb.SourceImage) (*pluginpb.CodeGeneratorRequest, error) {
+
+	out := &pluginpb.CodeGeneratorRequest{
+		CompilerVersion: nil,
+		FileToGenerate:  img.SourceFilenames,
 	}
 
 	includeFiles := map[string]bool{}
-	err = fs.WalkDir(walkRoot, ".", func(path string, info fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		ext := strings.ToLower(filepath.Ext(path))
-
-		switch ext {
-		case ".proto":
-			out.FileToGenerate = append(out.FileToGenerate, path)
-			includeFiles[path] = true
-			return nil
-		}
-
-		return nil
-	})
-	if err != nil {
-
-		return nil, err
-	}
-
-	realDesc, err := bundleProtoparse(ctx, bundle, out.FileToGenerate)
-	if err != nil {
-		return nil, err
+	for _, file := range img.File {
+		includeFiles[*file.Name] = true
 	}
 
 	// Prepare the files for the generator.
@@ -197,7 +181,7 @@ func codeGeneratorRequestFromSource(ctx context.Context, bundle *bundle) (*plugi
 	var addFile func(file *descriptorpb.FileDescriptorProto) error
 
 	requireFile := func(name string) error {
-		for _, f := range realDesc.File {
+		for _, f := range img.File {
 			if *f.Name == name {
 				return addFile(f)
 			}
@@ -232,7 +216,7 @@ func codeGeneratorRequestFromSource(ctx context.Context, bundle *bundle) (*plugi
 		return nil
 	}
 
-	for _, file := range realDesc.File {
+	for _, file := range img.File {
 		if err := addFile(file); err != nil {
 			return nil, err
 		}

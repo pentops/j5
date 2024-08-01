@@ -60,22 +60,16 @@ type Dest interface {
 }
 
 func (b *Builder) Generate(ctx context.Context, pc PluginContext, input Input, build *config_j5pb.GenerateConfig) error {
-	for _, plugin := range build.Plugins {
-		err := b.runPlugin(ctx, pc, input, plugin)
-		if err != nil {
-			return fmt.Errorf("input %q, plugin %q: %w", input.Name(), plugin.Name, err)
-		}
-	}
-	return nil
+
+	return b.runPlugins(ctx, pc, input, build.Plugins)
+
 }
 
 func (b *Builder) Publish(ctx context.Context, pc PluginContext, input Input, build *config_j5pb.PublishConfig) error {
 
-	for _, plugin := range build.Plugins {
-		err := b.runPlugin(ctx, pc, input, plugin)
-		if err != nil {
-			return fmt.Errorf("plugin %s: %w", plugin.Name, err)
-		}
+	err := b.runPlugins(ctx, pc, input, build.Plugins)
+	if err != nil {
+		return err
 	}
 
 	if build.OutputFormat != nil {
@@ -122,19 +116,30 @@ func buildGomodFile(pkg *config_j5pb.OutputType_GoProxy) ([]byte, error) {
 	return mm.Format()
 }
 
-func (b *Builder) runPlugin(ctx context.Context, pc PluginContext, input Input, plugin *config_j5pb.BuildPlugin) error {
-	ctx = log.WithField(ctx, "plugin", plugin.Name)
-	log.Info(ctx, "Running Plugin")
+func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input Input, plugins []*config_j5pb.BuildPlugin) error {
 
-	switch plugin.Type {
+	if len(plugins) == 0 {
+		return fmt.Errorf("no plugins")
+	}
+
+	pluginType := plugins[0].Type
+
+	switch pluginType {
 	case config_j5pb.Plugin_PLUGIN_PROTO:
 		protoBuildRequest, err := input.ProtoCodeGeneratorRequest(ctx)
 		if err != nil {
 			return fmt.Errorf("ProtoCodeGeneratorRequest: %w", err)
 		}
 
-		if err := b.runProtocPlugin(ctx, pc, plugin, protoBuildRequest); err != nil {
-			return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
+		for _, plugin := range plugins {
+			ctx = log.WithField(ctx, "plugin", plugin.Name)
+			log.Info(ctx, "Running Plugin")
+			if plugin.Type != config_j5pb.Plugin_PLUGIN_PROTO {
+				return fmt.Errorf("plugin type mismatch: %s", plugin.Type)
+			}
+			if err := b.runProtocPlugin(ctx, pc, plugin, protoBuildRequest); err != nil {
+				return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
+			}
 		}
 
 	case config_j5pb.Plugin_J5_CLIENT:
@@ -151,12 +156,19 @@ func (b *Builder) runPlugin(ctx context.Context, pc PluginContext, input Input, 
 			return fmt.Errorf("no packages found")
 		}
 
-		if err := b.runJ5ClientPlugin(ctx, pc, plugin, clientAPI); err != nil {
-			return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
+		for _, plugin := range plugins {
+			ctx = log.WithField(ctx, "plugin", plugin.Name)
+			log.Info(ctx, "Running Plugin")
+			if plugin.Type != config_j5pb.Plugin_PLUGIN_J5_CLIENT {
+				return fmt.Errorf("plugin type mismatch: %s", plugin.Type)
+			}
+			if err := b.runJ5ClientPlugin(ctx, pc, plugin, clientAPI); err != nil {
+				return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
+			}
 		}
 
 	default:
-		return fmt.Errorf("unsupported plugin type: %s", plugin.Type)
+		return fmt.Errorf("unsupported plugin type: %s", pluginType)
 	}
 
 	return nil

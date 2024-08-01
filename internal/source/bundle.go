@@ -129,11 +129,6 @@ func (b *bundle) SourceImage(ctx context.Context) (*source_j5pb.SourceImage, err
 	return img, nil
 }
 
-/*
-func (b *bundle) CommitInfo(context.Context) (*source_j5pb.CommitInfo, error) {
-	return b.repo.commitInfo, nil
-}*/
-
 type combinedBundle struct {
 	source *source_j5pb.SourceImage
 }
@@ -147,9 +142,7 @@ func (cb combinedBundle) J5Config() (*config_j5pb.BundleConfigFile, error) {
 }
 
 func (cb combinedBundle) ProtoCodeGeneratorRequest(ctx context.Context) (*pluginpb.CodeGeneratorRequest, error) {
-	return &pluginpb.CodeGeneratorRequest{
-		ProtoFile: cb.source.File,
-	}, nil
+	return codeGeneratorRequestFromImage(cb.source)
 }
 
 func (cb combinedBundle) SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error) {
@@ -178,9 +171,7 @@ func (ib imageBundle) J5Config() (*config_j5pb.BundleConfigFile, error) {
 }
 
 func (ib imageBundle) ProtoCodeGeneratorRequest(ctx context.Context) (*pluginpb.CodeGeneratorRequest, error) {
-	return &pluginpb.CodeGeneratorRequest{
-		ProtoFile: ib.source.File,
-	}, nil
+	return codeGeneratorRequestFromImage(ib.source)
 }
 
 func (ib imageBundle) SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error) {
