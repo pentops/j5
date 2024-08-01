@@ -2,6 +2,11 @@
 
 package foo_testpb
 
+import (
+	driver "database/sql/driver"
+	fmt "fmt"
+)
+
 // FooEventType is a oneof wrapper
 type FooEventTypeKey string
 
@@ -51,3 +56,53 @@ func (x *FooEventType_Updated) TypeKey() FooEventTypeKey {
 }
 
 type IsFooEventType_Type = isFooEventType_Type
+
+// FooStatus
+const (
+	FooStatus_UNSPECIFIED FooStatus = 0
+	FooStatus_ACTIVE      FooStatus = 1
+	FooStatus_INACTIVE    FooStatus = 2
+)
+
+var (
+	FooStatus_name_short = map[int32]string{
+		0: "UNSPECIFIED",
+		1: "ACTIVE",
+		2: "INACTIVE",
+	}
+	FooStatus_value_short = map[string]int32{
+		"UNSPECIFIED": 0,
+		"ACTIVE":      1,
+		"INACTIVE":    2,
+	}
+	FooStatus_value_either = map[string]int32{
+		"UNSPECIFIED":            0,
+		"FOO_STATUS_UNSPECIFIED": 0,
+		"ACTIVE":                 1,
+		"FOO_STATUS_ACTIVE":      1,
+		"INACTIVE":               2,
+		"FOO_STATUS_INACTIVE":    2,
+	}
+)
+
+// ShortString returns the un-prefixed string representation of the enum value
+func (x FooStatus) ShortString() string {
+	return FooStatus_name_short[int32(x)]
+}
+func (x FooStatus) Value() (driver.Value, error) {
+	return []uint8(x.ShortString()), nil
+}
+func (x *FooStatus) Scan(value interface{}) error {
+	var strVal string
+	switch vt := value.(type) {
+	case []uint8:
+		strVal = string(vt)
+	case string:
+		strVal = vt
+	default:
+		return fmt.Errorf("invalid type %T", value)
+	}
+	val := FooStatus_value_either[strVal]
+	*x = FooStatus(val)
+	return nil
+}

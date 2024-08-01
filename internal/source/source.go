@@ -76,6 +76,12 @@ func (src *Source) CombinedInput(ctx context.Context, inputs []*config_j5pb.Inpu
 			return nil, fmt.Errorf("input %v: %w", input, err)
 		}
 
+		wantFiles := map[string]struct{}{}
+		for _, file := range img.SourceFilenames {
+			wantFiles[file] = struct{}{}
+		}
+
+		fmt.Printf("input %q: %d files\n", bundle.Name(), len(img.File))
 		for _, file := range img.File {
 			hash, err := hashFile(file)
 			if err != nil {
@@ -88,20 +94,25 @@ func (src *Source) CombinedInput(ctx context.Context, inputs []*config_j5pb.Inpu
 			} else {
 				allFiles[*file.Name] = hash
 				fullImage.File = append(fullImage.File, file)
+				if _, ok := wantFiles[*file.Name]; ok {
+					fullImage.SourceFilenames = append(fullImage.SourceFilenames, *file.Name)
+				}
 			}
 		}
 
-		for _, subPkg := range img.Options.SubPackages {
-			found := false
-			for _, existing := range fullImage.Options.SubPackages {
-				if existing.Name == subPkg.Name {
-					// no config other than name for now.
-					found = true
-					break
+		if img.Options != nil {
+			for _, subPkg := range img.Options.SubPackages {
+				found := false
+				for _, existing := range fullImage.Options.SubPackages {
+					if existing.Name == subPkg.Name {
+						// no config other than name for now.
+						found = true
+						break
+					}
 				}
-			}
-			if !found {
-				fullImage.Options.SubPackages = append(fullImage.Options.SubPackages, subPkg)
+				if !found {
+					fullImage.Options.SubPackages = append(fullImage.Options.SubPackages, subPkg)
+				}
 			}
 		}
 
@@ -167,11 +178,12 @@ func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_R
 	if input.Organization == "" {
 		return nil, fmt.Errorf("registry input organization not set")
 	}
-	if input.Version == "" {
-		input.Version = "main"
+	version := "main"
+	if input.Version != nil {
+		version = *input.Version
 	}
 
-	imageURL := fmt.Sprintf("%s/registry/v1/%s/%s/%s/image.bin", src.remoteRegistry, input.Organization, input.Name, input.Version)
+	imageURL := fmt.Sprintf("%s/registry/v1/%s/%s/%s/image.bin", src.remoteRegistry, input.Organization, input.Name, version)
 	req, err := http.NewRequest("GET", imageURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating registry input request: %w", err)

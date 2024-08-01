@@ -8,7 +8,10 @@ plugins:
     out: .
     opt: paths=import,module=github.com/pentops/j5
 
+  - local: protoc-gen-go-sugar # github.com/pentops/protoc-gen-go-sugar
+    out: .
+    opt: paths=import,module=github.com/pentops/j5
+
 inputs:
   - directory: proto/j5
-  - directory: proto/private
   - directory: proto/test
