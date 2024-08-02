@@ -197,6 +197,7 @@ func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_R
 	if err != nil {
 		return nil, fmt.Errorf("creating registry input request: %w", err)
 	}
+	req.Header.Set("Authorization", "Bearer "+os.Getenv("J5_REGISTRY_TOKEN"))
 	req = req.WithContext(ctx)
 
 	res, err := src.HTTPClient.Do(req)
