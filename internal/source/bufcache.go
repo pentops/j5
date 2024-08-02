@@ -5,13 +5,13 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -26,19 +26,24 @@ type BufLockFile struct {
 	Deps    []*BufLockFileDependency `yaml:"deps"`
 }
 
-type BufLockFileDependency struct {
-	Remote     string `yaml:"remote"`
+type BufDep struct {
 	Owner      string `yaml:"owner"`
 	Repository string `yaml:"repository"`
 	Commit     string `yaml:"commit"`
-	Digest     string `yaml:"digest"`
-	Name       string `yaml:"name"`
+}
+
+type BufLockFileDependency struct {
+	BufDep
+	Remote string `yaml:"remote"`
+	Digest string `yaml:"digest"`
+	Name   string `yaml:"name"`
 }
 
 type BufCache struct {
-	root        string
-	client      registry_spb.DownloadServiceClient
-	memoryCache map[string]FileSource
+	root          string
+	client        registry_spb.DownloadServiceClient
+	versionClient registry_spb.RepositoryCommitServiceClient
+	memoryCache   map[string]FileSource
 }
 
 func NewBufCache() (*BufCache, error) {
@@ -53,15 +58,16 @@ func NewBufCache() (*BufCache, error) {
 		return nil, err
 	}
 	registryClient := registry_spb.NewDownloadServiceClient(bufClient)
-
+	versionClient := registry_spb.NewRepositoryCommitServiceClient(bufClient)
 	return &BufCache{
-		root:        root,
-		client:      registryClient,
-		memoryCache: map[string]FileSource{},
+		root:          root,
+		client:        registryClient,
+		versionClient: versionClient,
+		memoryCache:   map[string]FileSource{},
 	}, nil
 }
 
-func (bc *BufCache) getDep(ctx context.Context, depSpec *BufLockFileDependency) (FileSource, error) {
+func (bc *BufCache) getDep(ctx context.Context, depSpec BufDep) (FileSource, error) {
 	key := fmt.Sprintf("%s/%s:%s", depSpec.Owner, depSpec.Repository, depSpec.Commit)
 	if cached, ok := bc.memoryCache[key]; ok {
 		return cached, nil
@@ -74,15 +80,24 @@ func (bc *BufCache) getDep(ctx context.Context, depSpec *BufLockFileDependency) 
 	return files, nil
 }
 
-func (bc *BufCache) fetchDep(ctx context.Context, dep *BufLockFileDependency) (FileSource, error) {
-
-	if fsCached, err := bc.tryV3FSDep(ctx, dep); err == nil {
-		return fsCached, nil
-	} else if !errors.Is(err, os.ErrNotExist) {
-		return nil, err
+func (bc *BufCache) FetchInput(ctx context.Context, dep *config_j5pb.Input_BufRegistry) (FileSource, error) {
+	var version string
+	if dep.Version != nil {
+		version = *dep.Version
+	} else if dep.Reference != nil {
+		version = *dep.Reference
 	}
 
-	if fsCached, err := bc.tryV2FSDep(ctx, dep); err == nil {
+	return bc.getDep(ctx, BufDep{
+		Commit:     version,
+		Owner:      dep.Owner,
+		Repository: dep.Name,
+	})
+}
+
+func (bc *BufCache) fetchDep(ctx context.Context, dep BufDep) (FileSource, error) {
+
+	if fsCached, err := bc.tryV3FSDep(ctx, dep); err == nil {
 		return fsCached, nil
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return nil, err
@@ -169,7 +184,7 @@ func (bc *BufCache) GetDeps(ctx context.Context, root fs.FS, subDir string) ([]F
 
 	allDeps := make([]FileSource, 0, len(bufLockFile.Deps))
 	for _, dep := range bufLockFile.Deps {
-		files, err := bc.getDep(ctx, dep)
+		files, err := bc.getDep(ctx, dep.BufDep)
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +196,7 @@ func (bc *BufCache) GetDeps(ctx context.Context, root fs.FS, subDir string) ([]F
 
 }
 
-func (bc *BufCache) tryV3FSDep(ctx context.Context, dep *BufLockFileDependency) (FileSource, error) {
+func (bc *BufCache) tryV3FSDep(ctx context.Context, dep BufDep) (FileSource, error) {
 	ctx = log.WithFields(ctx, map[string]interface{}{
 		"owner":      dep.Owner,
 		"repository": dep.Repository,
@@ -199,64 +214,5 @@ func (bc *BufCache) tryV3FSDep(ctx context.Context, dep *BufLockFileDependency) 
 	return fsSource{
 		fs:   os.DirFS(v3Dep),
 		name: fmt.Sprintf("bufv3:%s/%s/%s", dep.Owner, dep.Repository, dep.Commit),
-	}, nil
-}
-
-type bufv2Dep struct {
-	root  string
-	files map[string]string
-}
-
-func (bd bufv2Dep) GetFile(filename string) (io.ReadCloser, error) {
-	if f, ok := bd.files[filename]; ok {
-		return os.Open(filepath.Join(bd.root, f))
-	}
-	return nil, os.ErrNotExist
-}
-
-func (bd bufv2Dep) Name() string {
-	return "bufv2:" + bd.root
-}
-
-func (bc *BufCache) tryV2FSDep(ctx context.Context, dep *BufLockFileDependency) (FileSource, error) {
-
-	contentStr := dep.Digest
-	hdr, rem := contentStr[9:11], contentStr[11:]
-
-	indexPath := filepath.Join("v2", "module", "buf.build", bc.root, dep.Owner, dep.Repository, "blobs", hdr, rem)
-	indexContent, err := os.ReadFile(indexPath)
-	if err != nil {
-		return nil, err
-	}
-
-	log.WithField(ctx, "v2Path", indexPath).Debug("found v2 dep")
-
-	lines := strings.Split(string(indexContent), "\n")
-	files := map[string]string{}
-
-	for _, line := range lines {
-		if line == "" {
-			continue
-		}
-		header, fDir, fPath, filename := line[:8], line[9:11], line[11:137], line[139:]
-
-		if header != "shake256" {
-			return nil, fmt.Errorf("invalid cache entry")
-		}
-
-		if !strings.HasSuffix(filename, ".proto") {
-			continue
-		}
-
-		if _, ok := files[filename]; ok {
-			return nil, fmt.Errorf("duplicate file %s", filename)
-		}
-		files[filename] = filepath.Join(fDir, fPath)
-
-	}
-
-	return bufv2Dep{
-		root:  filepath.Join(bc.root, dep.Owner, dep.Repository, "blobs"),
-		files: files,
 	}, nil
 }

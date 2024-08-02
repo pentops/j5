@@ -26,7 +26,6 @@ message RepoConfigFile {
 message BundleReference {
   string name = 1;
   string dir = 2;
-  repeated string deps = 3;
 }
 
 // When code is managed through git, configures mapping between git branches,

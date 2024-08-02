@@ -9,6 +9,12 @@ message LockFile {
   repeated PluginLock plugins = 2;
 }
 
-message InputLock {}
+message InputLock {
+  string name = 1;
+  string version = 2;
+}
 
-message PluginLock {}
+message PluginLock {
+  string name = 1;
+  string version = 2;
+}

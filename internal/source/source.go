@@ -4,14 +4,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/bufbuild/protoyaml-go"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/protobuf/proto"
@@ -19,35 +19,147 @@ import (
 )
 
 type Source struct {
-	thisRepo       *repo
+	thisRepo *repo
+
+	bufCache *BufCache
+
 	remoteRegistry string
 	HTTPClient     *http.Client
+
+	lockWriter *lockWriter
+	locks      *config_j5pb.LockFile
+
+	j5Cache *j5Cache
 }
 
-func ReadLocalSource(ctx context.Context, root fs.FS) (*Source, error) {
-	thisRepo, err := newRepo(".", root)
+type lockWriter struct {
+	filename string
+}
+
+func (lw *lockWriter) write(lock *config_j5pb.LockFile) error {
+	data, err := protoyaml.MarshalOptions{}.Marshal(lock)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(lw.filename, data, 0666)
+}
+
+func NewSource(ctx context.Context, rootDir string) (*Source, error) {
+	fsRoot := os.DirFS(rootDir)
+	fsSource, err := NewFSSource(ctx, fsRoot)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Source{
-		thisRepo:       thisRepo,
-		remoteRegistry: os.Getenv("J5_REGISTRY"),
-		HTTPClient:     &http.Client{},
-	}, nil
+	fsSource.lockWriter = &lockWriter{
+		filename: filepath.Join(rootDir, "j5-lock.yaml"),
+	}
+
+	if fsSource.locks == nil {
+		fsSource.locks = &config_j5pb.LockFile{}
+	}
+
+	fsSource.j5Cache, err = newJ5Cache()
+	if err != nil {
+		return nil, err
+	}
+	return fsSource, nil
 }
 
-func (src Source) J5Config() *config_j5pb.RepoConfigFile {
+func NewFSSource(ctx context.Context, root fs.FS) (*Source, error) {
+
+	bufCache, err := NewBufCache()
+	if err != nil {
+		return nil, err
+	}
+
+	src := &Source{
+		remoteRegistry: os.Getenv("J5_REGISTRY"),
+		HTTPClient:     http.DefaultClient,
+		bufCache:       bufCache,
+	}
+
+	thisRepo, err := src.newRepo(".", root)
+	if err != nil {
+		return nil, err
+	}
+	src.thisRepo = thisRepo
+
+	lock, err := readLockFile(root, "j5-lock.yaml")
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("reading lock file: %w", err)
+		}
+	} else {
+		src.locks = lock
+	}
+
+	return src, nil
+}
+
+type repo struct {
+	repoRoot fs.FS
+	bundles  map[string]*bundleSource
+	config   *config_j5pb.RepoConfigFile
+}
+
+func (src *Source) newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
+
+	config, err := readDirConfigs(repoRoot)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := resolveConfigReferences(config); err != nil {
+		return nil, fmt.Errorf("resolving config references: %w", err)
+	}
+
+	thisRepo := &repo{
+		config: config,
+		//commitInfo: commitInfo,
+		repoRoot: repoRoot,
+		bundles:  map[string]*bundleSource{},
+	}
+
+	for _, refConfig := range config.Bundles {
+		thisRepo.bundles[refConfig.Name] = &bundleSource{
+			rootSource: src,
+			debugName:  fmt.Sprintf("%s/%s", debugName, refConfig.Dir),
+			repo:       thisRepo,
+			dirInRepo:  refConfig.Dir,
+			refConfig:  refConfig,
+		}
+	}
+
+	if len(config.Packages) > 0 || len(config.Publish) > 0 || config.Registry != nil {
+		// Inline Bundle
+		thisRepo.bundles[""] = &bundleSource{
+			debugName:  debugName,
+			repo:       thisRepo,
+			rootSource: src,
+			dirInRepo:  "",
+			refConfig: &config_j5pb.BundleReference{
+				Name: "",
+				Dir:  "",
+			},
+			config: &config_j5pb.BundleConfigFile{
+				Registry: config.Registry,
+				Publish:  config.Publish,
+				Packages: config.Packages,
+				Options:  config.Options,
+			},
+		}
+	}
+
+	return thisRepo, nil
+
+}
+func (src Source) RepoConfig() *config_j5pb.RepoConfigFile {
 	return src.thisRepo.config
 }
 
-/*
-func (src Source) CommitInfo(context.Context) (*source_j5pb.CommitInfo, error) {
-	return src.thisRepo.commitInfo, nil
-}*/
-
-func (src Source) AllBundles() []Input {
-	out := make([]Input, 0, len(src.thisRepo.bundles))
+func (src Source) AllBundles() []BundleSource {
+	out := make([]BundleSource, 0, len(src.thisRepo.bundles))
 	for _, bundle := range src.thisRepo.bundles {
 		out = append(out, bundle)
 	}
@@ -81,7 +193,6 @@ func (src *Source) CombinedInput(ctx context.Context, inputs []*config_j5pb.Inpu
 			wantFiles[file] = struct{}{}
 		}
 
-		fmt.Printf("input %q: %d files\n", bundle.Name(), len(img.File))
 		for _, file := range img.File {
 			hash, err := hashFile(file)
 			if err != nil {
@@ -119,8 +230,9 @@ func (src *Source) CombinedInput(ctx context.Context, inputs []*config_j5pb.Inpu
 		fullImage.Packages = append(fullImage.Packages, img.Packages...)
 	}
 
-	return &combinedBundle{
+	return &imageBundle{
 		source: fullImage,
+		name:   "combined",
 	}, nil
 }
 
@@ -134,116 +246,7 @@ func hashFile(file *descriptorpb.FileDescriptorProto) (string, error) {
 	return base64.StdEncoding.EncodeToString(sh.Sum(nil)), nil
 
 }
-
-func (src *Source) GetInput(ctx context.Context, input *config_j5pb.Input) (Input, error) {
-	switch st := input.Type.(type) {
-	case *config_j5pb.Input_Local:
-		bundle, ok := src.thisRepo.bundles[st.Local]
-		if !ok {
-			return nil, fmt.Errorf("bundle %q not found", st.Local)
-		}
-		return bundle, nil
-
-	case *config_j5pb.Input_Repo_:
-		var err error
-		repoRoot, debugName, err := anyRoot(st.Repo.Root, st.Repo.Dir)
-		if err != nil {
-			return nil, fmt.Errorf("resolving repo root: %w", err)
-		}
-		repo, err := newRepo(debugName, repoRoot)
-		if err != nil {
-			return nil, fmt.Errorf("input %s: %w", st.Repo.Root, err)
-		}
-		bundle, ok := repo.bundles[st.Repo.Bundle]
-		if !ok {
-			return nil, fmt.Errorf("bundle %q not found in repo %q", st.Repo.Bundle, st.Repo.Root)
-		}
-		return bundle, nil
-
-	case *config_j5pb.Input_Registry_:
-		return src.registryInput(ctx, st.Registry)
-
-	default:
-		return nil, fmt.Errorf("unsupported source type %T", input.Type)
-	}
-}
-
-func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_Registry) (Input, error) {
-	if src.remoteRegistry == "" {
-		return nil, fmt.Errorf("remote registry not set ($J5_REGISTRY)")
-	}
-	if input.Name == "" {
-		return nil, fmt.Errorf("registry input name not set")
-	}
-	if input.Organization == "" {
-		return nil, fmt.Errorf("registry input organization not set")
-	}
-	version := "main"
-	if input.Version != nil {
-		version = *input.Version
-	}
-
-	imageURL := fmt.Sprintf("%s/registry/v1/%s/%s/%s/image.bin", src.remoteRegistry, input.Organization, input.Name, version)
-	req, err := http.NewRequest("GET", imageURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating registry input request: %w", err)
-	}
-	req = req.WithContext(ctx)
-
-	res, err := src.HTTPClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("fetching registry input: %q %w", imageURL, err)
-	}
-	defer res.Body.Close()
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading registry input: %w", err)
-	}
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetching registry input: %q %s %q", imageURL, res.Status, string(data))
-	}
-
-	apiDef := &source_j5pb.SourceImage{}
-	if err := proto.Unmarshal(data, apiDef); err != nil {
-		return nil, fmt.Errorf("unmarshalling registry input %s: %w", imageURL, err)
-	}
-
-	return &imageBundle{
-		source: apiDef,
-		repo: &config_j5pb.RegistryConfig{
-			Organization: input.Organization,
-			Name:         input.Name,
-		},
-	}, nil
-}
-
-func anyRoot(name, subdir string) (fs.FS, string, error) {
-
-	if strings.HasPrefix(name, "file://") {
-		fullPath := strings.TrimPrefix(name, "file://")
-		absPath, err := filepath.Abs(fullPath)
-		if err != nil {
-			return nil, "", fmt.Errorf("resolving absolute path: %w", err)
-		}
-
-		if subdir != "" {
-			absPath = filepath.Join(absPath, subdir)
-		}
-
-		workDir, err := os.Getwd()
-		if err == nil {
-			relPath, err := filepath.Rel(workDir, absPath)
-			if err == nil {
-				absPath = relPath
-			}
-		}
-		return os.DirFS(absPath), absPath, nil
-	}
-
-	return nil, "", fmt.Errorf("unsupported scheme %q", name)
-}
-
-func (src *Source) NamedInput(name string) (Input, error) {
+func (src *Source) BundleSource(name string) (BundleSource, error) {
 	if name != "" {
 		if bundle, ok := src.thisRepo.bundles[name]; ok {
 			return bundle, nil

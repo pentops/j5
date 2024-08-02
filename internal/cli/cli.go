@@ -11,7 +11,6 @@ import (
 
 	"github.com/pentops/j5/builder"
 	"github.com/pentops/j5/internal/source"
-	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
 )
 
@@ -37,6 +36,7 @@ func CommandSet() *commander.CommandSet {
 	cmdGroup.Add("generate", commander.NewCommand(runGenerate))
 	cmdGroup.Add("publish", commander.NewCommand(runPublish))
 	cmdGroup.Add("verify", commander.NewCommand(runVerify))
+	cmdGroup.Add("latest-deps", commander.NewCommand(runLatestDeps))
 
 	return cmdGroup
 }
@@ -46,21 +46,32 @@ func runVersion(ctx context.Context, cfg struct{}) error {
 	return nil
 }
 
+func runLatestDeps(ctx context.Context, cfg struct {
+	SourceConfig
+}) error {
+	src, err := cfg.GetSource(ctx)
+	if err != nil {
+		return err
+	}
+
+	return src.UpdateLocks(ctx)
+}
+
 type SourceConfig struct {
 	Source string `flag:"src" default:"." description:"Source directory containing j5.yaml and buf.lock.yaml"`
 	Bundle string `flag:"bundle" default:"" description:"When the bundle j5.yaml is in a subdirectory"`
 }
 
 func (cfg SourceConfig) GetSource(ctx context.Context) (*source.Source, error) {
-	return source.ReadLocalSource(ctx, os.DirFS(cfg.Source))
+	return source.NewSource(ctx, cfg.Source)
 }
 
-func (cfg SourceConfig) GetInput(ctx context.Context) (source.Input, error) {
+func (cfg SourceConfig) GetInput(ctx context.Context) (source.BundleSource, error) {
 	source, err := cfg.GetSource(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return source.NamedInput(cfg.Bundle)
+	return source.BundleSource(cfg.Bundle)
 }
 
 type lineWriter struct {
@@ -124,7 +135,6 @@ func (local *LocalFS) Sub(subPath string) Dest {
 
 func (local *LocalFS) PutFile(ctx context.Context, subPath string, body io.Reader) error {
 	key := filepath.Join(local.root, subPath)
-	log.WithField(ctx, "filename", key).Debug("writing file")
 	err := os.MkdirAll(filepath.Dir(key), 0755)
 	if err != nil {
 		return err
