@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/genproto/googleapis/api/annotations"
+	"google.golang.org/genproto/googleapis/api/httpbody"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -213,6 +214,10 @@ func (mm *grpcMethod) mapRequest(r *http.Request) (protoreflect.Message, error) 
 	reqVars := mux.Vars(r)
 	for key, provided := range reqVars {
 		fd := mm.Input.Fields().ByName(protoreflect.Name(key))
+		if fd == nil {
+			// This should not occur, but logging it to the user to help debug.
+			return nil, status.Error(codes.Internal, fmt.Sprintf("unknown path parameter %q", key))
+		}
 		if err := setFieldFromString(mm.Codec, inputMessage, fd, provided); err != nil {
 			return nil, err
 		}
@@ -279,14 +284,23 @@ func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	bytesOut, err := mm.Codec.ProtoToJSON(outputMessage)
-	if err != nil {
-		doError(ctx, w, err)
-		return
-	}
-
 	headerOut := w.Header()
-	headerOut.Set("Content-Type", "application/json")
+
+	var bytesOut []byte
+
+	if mm.Output.FullName() == "google.api.HttpBody" {
+		httpBody := outputMessage.Interface().(*httpbody.HttpBody)
+		headerOut.Set("Content-Type", httpBody.ContentType)
+		bytesOut = httpBody.Data
+	} else {
+		bytesOut, err = mm.Codec.ProtoToJSON(outputMessage)
+		if err != nil {
+			doError(ctx, w, err)
+			return
+		}
+
+		headerOut.Set("Content-Type", "application/json")
+	}
 
 	for key, vals := range responseHeader {
 		key = strings.ToLower(key)
@@ -294,7 +308,7 @@ func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		for _, val := range vals {
-			w.Header().Add(key, val)
+			headerOut.Add(key, val)
 		}
 	}
 
