@@ -2,6 +2,16 @@
 packages:
   - name: test.foo.v1
 
+dependencies:
+  - local: j5
+
+  - bufRegistry:
+      owner: bufbuild
+      name: protovalidate
+
+  - bufRegistry:
+      owner: googleapis
+      name: googleapis
 
 options:
   subPackages:
