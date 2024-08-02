@@ -45,6 +45,8 @@ message ServiceOptions {
   message StateCommand {
     string entity = 1;
   }
+
+  AuthMethodOptions default_auth = 10;
 }
 
 extend google.protobuf.MessageOptions {
@@ -78,12 +80,28 @@ message MethodOptions {
   bool hidden = 2;
 
   StateQueryMethodOptions state_query = 10;
+  AuthMethodOptions auth = 20;
 }
 
 message StateQueryMethodOptions {
   bool get = 1;
   bool list = 2;
   bool list_events = 3;
+}
+
+message AuthMethodOptions {
+  oneof auth_method {
+    AuthMethodJWTBearer jwt_bearer = 10;
+    AuthMethodNone none = 11;
+  }
+}
+
+message AuthMethodNone {
+  repeated string pass_through_headers = 1;
+}
+
+message AuthMethodJWTBearer {
+  repeated string required_scopes = 1;
 }
 
 extend google.protobuf.EnumOptions {
