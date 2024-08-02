@@ -18,7 +18,7 @@ func runVerify(ctx context.Context, cfg struct {
 	Dir string `flag:"dir" default:"." description:"Directory with j5.yaml root"`
 }) error {
 
-	src, err := source.ReadLocalSource(ctx, os.DirFS(cfg.Dir))
+	src, err := source.NewSource(ctx, cfg.Dir)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func runGenerate(ctx context.Context, cfg struct {
 	Dir string `flag:"dir" default:"." description:"Directory with j5.yaml generate configured"`
 }) error {
 
-	src, err := source.ReadLocalSource(ctx, os.DirFS(cfg.Dir))
+	src, err := source.NewSource(ctx, cfg.Dir)
 	if err != nil {
 		return err
 	}
@@ -104,7 +104,7 @@ func runGenerate(ctx context.Context, cfg struct {
 }
 
 func runGeneratePlugins(ctx context.Context, bb *builder.Builder, src *source.Source, out Dest) error {
-	j5Config := src.J5Config()
+	j5Config := src.RepoConfig()
 	for _, generator := range j5Config.Generate {
 		errOut := &lineWriter{
 			writeLine: func(line string) {

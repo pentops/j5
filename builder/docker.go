@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
@@ -75,11 +76,15 @@ func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
 
 	defer hj.Close()
 
-	log.Debug(ctx, "ContainerStart")
+	t0 := time.Now()
+
+	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("ContainerStart")
 
 	if err := dw.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
 		return err
 	}
+
+	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("ContainerStarted")
 
 	chOut := make(chan error)
 	go func() {
@@ -98,7 +103,7 @@ func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
 		return fmt.Errorf("output copy error: %w", err)
 	}
 
-	log.Debug(ctx, "ContainerWait")
+	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("ContainerWait")
 
 	statusCh, errCh := dw.client.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
 
@@ -108,14 +113,13 @@ func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
 			return err
 		}
 	case st := <-statusCh:
-		log.WithField(ctx, "exitStatus", st).Debug("container exited")
 		if st.StatusCode != 0 {
 			return fmt.Errorf("non-zero exit code: %d", st.StatusCode)
 		}
 
 	}
 
-	log.Debug(ctx, "Builder Done")
+	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("ContainerDone")
 
 	return nil
 }

@@ -16,16 +16,17 @@ import (
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/log.go/log"
 	"golang.org/x/mod/modfile"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
 func NewFSInput(ctx context.Context, fs fs.FS, bundleName string) (Input, error) {
-	src, err := source.ReadLocalSource(ctx, fs)
+	src, err := source.NewFSSource(ctx, fs)
 	if err != nil {
 		return nil, err
 	}
-	return src.NamedInput(bundleName)
+	return src.BundleSource(bundleName)
 }
 
 type PipeRunner interface {
@@ -38,7 +39,6 @@ type Builder struct {
 
 type Input interface {
 	Name() string
-	J5Config() (*config_j5pb.BundleConfigFile, error)
 	ProtoCodeGeneratorRequest(ctx context.Context) (*pluginpb.CodeGeneratorRequest, error)
 	SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error)
 }
@@ -131,16 +131,22 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input Input,
 			return fmt.Errorf("ProtoCodeGeneratorRequest: %w", err)
 		}
 
+		errGroup, ctx := errgroup.WithContext(ctx)
 		for _, plugin := range plugins {
-			ctx = log.WithField(ctx, "plugin", plugin.Name)
-			log.Info(ctx, "Running Plugin")
-			if plugin.Type != config_j5pb.Plugin_PLUGIN_PROTO {
-				return fmt.Errorf("plugin type mismatch: %s", plugin.Type)
-			}
-			if err := b.runProtocPlugin(ctx, pc, plugin, protoBuildRequest); err != nil {
-				return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
-			}
+			plugin := plugin
+			errGroup.Go(func() error {
+				ctx = log.WithField(ctx, "plugin", plugin.Name)
+				log.Info(ctx, "Running Plugin")
+				if plugin.Type != config_j5pb.Plugin_PLUGIN_PROTO {
+					return fmt.Errorf("plugin type mismatch: %s", plugin.Type)
+				}
+				if err := b.runProtocPlugin(ctx, pc, plugin, protoBuildRequest); err != nil {
+					return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
+				}
+				return nil
+			})
 		}
+		return errGroup.Wait()
 
 	case config_j5pb.Plugin_J5_CLIENT:
 		sourceImage, err := input.SourceImage(ctx)
@@ -156,22 +162,27 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input Input,
 			return fmt.Errorf("no packages found")
 		}
 
+		errGroup, ctx := errgroup.WithContext(ctx)
 		for _, plugin := range plugins {
-			ctx = log.WithField(ctx, "plugin", plugin.Name)
-			log.Info(ctx, "Running Plugin")
-			if plugin.Type != config_j5pb.Plugin_PLUGIN_J5_CLIENT {
-				return fmt.Errorf("plugin type mismatch: %s", plugin.Type)
-			}
-			if err := b.runJ5ClientPlugin(ctx, pc, plugin, clientAPI); err != nil {
-				return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
-			}
+			plugin := plugin
+			errGroup.Go(func() error {
+				ctx = log.WithField(ctx, "plugin", plugin.Name)
+				log.Info(ctx, "Running Plugin")
+				if plugin.Type != config_j5pb.Plugin_PLUGIN_J5_CLIENT {
+					return fmt.Errorf("plugin type mismatch: %s", plugin.Type)
+				}
+				if err := b.runJ5ClientPlugin(ctx, pc, plugin, clientAPI); err != nil {
+					return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
+				}
+				return nil
+			})
 		}
+		return errGroup.Wait()
 
 	default:
 		return fmt.Errorf("unsupported plugin type: %s", pluginType)
 	}
 
-	return nil
 }
 
 func (b *Builder) runProtocPlugin(ctx context.Context, pc PluginContext, plugin *config_j5pb.BuildPlugin, sourceProto *pluginpb.CodeGeneratorRequest) error {

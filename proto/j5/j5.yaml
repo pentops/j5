@@ -12,9 +12,9 @@ packages:
 options:
   subPackages: []
 
-  #dependencies:
-  #- bufRegistry:
-  #    organization: bufbuild
-  #    name: protovalidate
+dependencies:
+  - bufRegistry:
+      owner: bufbuild
+      name: protovalidate
 
 

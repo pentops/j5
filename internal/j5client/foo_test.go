@@ -16,12 +16,12 @@ func TestFooSchema(t *testing.T) {
 
 	ctx := context.Background()
 	rootFS := os.DirFS("../../")
-	thisRoot, err := source.ReadLocalSource(ctx, rootFS)
+	thisRoot, err := source.NewFSSource(ctx, rootFS)
 	if err != nil {
 		t.Fatalf("ReadLocalSource: %v", err)
 	}
 
-	input, err := thisRoot.NamedInput("test")
+	input, err := thisRoot.BundleSource("test")
 	if err != nil {
 		t.Fatalf("NamedInput: %v", err)
 	}
