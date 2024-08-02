@@ -21,7 +21,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-func NewFSInput(ctx context.Context, fs fs.FS, bundleName string) (Input, error) {
+func NewFSInput(ctx context.Context, fs fs.FS, bundleName string) (BundleSource, error) {
 	src, err := source.NewFSSource(ctx, fs)
 	if err != nil {
 		return nil, err
@@ -41,6 +41,11 @@ type Input interface {
 	Name() string
 	ProtoCodeGeneratorRequest(ctx context.Context) (*pluginpb.CodeGeneratorRequest, error)
 	SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error)
+}
+
+type BundleSource interface {
+	Input
+	J5Config() (*config_j5pb.BundleConfigFile, error)
 }
 
 func NewBuilder(runner PipeRunner) *Builder {

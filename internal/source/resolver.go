@@ -162,11 +162,11 @@ func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_R
 	if input.Name == "" {
 		return nil, fmt.Errorf("registry input name not set")
 	}
-	if input.Organization == "" {
+	if input.Owner == "" {
 		return nil, fmt.Errorf("registry input organization not set")
 	}
 
-	name := fmt.Sprintf("registry/v1/%s/%s", input.Organization, input.Name)
+	name := fmt.Sprintf("registry/v1/%s/%s", input.Owner, input.Name)
 	ctx = log.WithField(ctx, "bundle", name)
 	var version string
 	if input.Version == nil {
@@ -184,7 +184,11 @@ func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_R
 		}
 	}
 	if version == "" {
-		version = "latest"
+		if input.Reference != nil {
+			version = *input.Reference
+		} else {
+			version = "main"
+		}
 	}
 	log.Debug(ctx, "cache miss")
 
@@ -214,7 +218,7 @@ func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_R
 	}
 
 	return &imageBundle{
-		name:    fmt.Sprintf("%s/%s", input.Organization, input.Name),
+		name:    name,
 		version: version,
 		source:  apiDef,
 	}, nil
