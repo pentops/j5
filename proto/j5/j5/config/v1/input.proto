@@ -19,9 +19,10 @@ message Input {
   }
 
   message Registry {
-    string organization = 1;
+    string owner = 1;
     string name = 2;
     optional string version = 3;
+    optional string reference = 4;
   }
 
   message BufRegistry {

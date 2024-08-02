@@ -183,6 +183,9 @@ func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_R
 			return cached, nil
 		}
 	}
+	if version == "" {
+		version = "latest"
+	}
 	log.Debug(ctx, "cache miss")
 
 	imageURL := fmt.Sprintf("%s/%s/%s/image.bin", src.remoteRegistry, name, version)
