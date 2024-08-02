@@ -13,11 +13,6 @@ packages:
 options:
   subPackages: []
 
-dependencies:
-  - bufRegistry:
-      owner: bufbuild
-      name: protovalidate
-
 registry:
   organization: pentops
   name: j5
