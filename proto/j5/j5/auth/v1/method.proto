@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package j5.auth.v1;
+
+option go_package = "github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb";
+
+message MethodAuthType {
+  oneof type {
+    None none = 10;
+    JWTBearer jwt_bearer = 11;
+    Custom custom = 12;
+  }
+
+  message None {}
+
+  message JWTBearer {
+    //repeated string required_scopes = 1;
+  }
+
+  message Custom {
+    repeated string pass_through_headers = 1;
+  }
+}

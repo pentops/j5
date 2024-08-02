@@ -291,10 +291,9 @@ func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, err
 		Methods: make([]*source_j5pb.Method, 0, methods.Len()),
 	}
 
-	stateExt, ok := proto.GetExtension(src.Options(), ext_j5pb.E_Service).(*ext_j5pb.ServiceOptions)
-	if ok && stateExt != nil {
-		if stateExt.Type != nil {
-			switch set := stateExt.Type.(type) {
+	if serviceExt := proto.GetExtension(src.Options(), ext_j5pb.E_Service).(*ext_j5pb.ServiceOptions); serviceExt != nil {
+		if serviceExt.Type != nil {
+			switch set := serviceExt.Type.(type) {
 			case *ext_j5pb.ServiceOptions_StateQuery_:
 				service.Type = &source_j5pb.ServiceType{
 					Type: &source_j5pb.ServiceType_StateEntityQuery_{
@@ -320,6 +319,7 @@ func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, err
 
 		}
 
+		service.DefaultAuth = serviceExt.DefaultAuth
 	}
 
 	for ii := 0; ii < methods.Len(); ii++ {
@@ -348,8 +348,7 @@ func buildMethod(method protoreflect.MethodDescriptor) (*source_j5pb.Method, err
 		}
 	}
 
-	methodOptions := method.Options().(*descriptorpb.MethodOptions)
-	httpOpt := proto.GetExtension(methodOptions, annotations.E_Http).(*annotations.HttpRule)
+	httpOpt := proto.GetExtension(method.Options(), annotations.E_Http).(*annotations.HttpRule)
 
 	if httpOpt == nil {
 		return nil, fmt.Errorf("missing http rule")
@@ -407,6 +406,10 @@ func buildMethod(method protoreflect.MethodDescriptor) (*source_j5pb.Method, err
 
 	}
 	builtMethod.HttpPath = strings.Join(pathParts, "/")
+
+	if ext := proto.GetExtension(method.Options(), ext_j5pb.E_Method).(*ext_j5pb.MethodOptions); ext != nil {
+		builtMethod.Auth = ext.Auth
+	}
 
 	return builtMethod, nil
 }

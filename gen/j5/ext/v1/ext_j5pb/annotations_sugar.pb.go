@@ -3,5 +3,4 @@
 package ext_j5pb
 
 type IsServiceOptions_Type = isServiceOptions_Type
-type IsAuthMethodOptions_AuthMethod = isAuthMethodOptions_AuthMethod
 type IsFieldOptions_Type = isFieldOptions_Type

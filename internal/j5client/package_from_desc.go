@@ -120,6 +120,7 @@ func (db *descBuilder) methodFromDesc(service *Service, src *client_j5pb.Method)
 		HasBody:        src.HttpMethod != client_j5pb.HTTPMethod_GET,
 		Request:        request,
 		ResponseBody:   response,
+		Auth:           src.Auth,
 	}, nil
 }
 

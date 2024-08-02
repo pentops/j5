@@ -13,6 +13,7 @@ option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testspb";
 
 service FooQueryService {
   option (j5.ext.v1.service).state_query.entity = "test.foo.v1/foo";
+  option (j5.ext.v1.service).default_auth.jwt_bearer = {};
 
   rpc GetFoo(GetFooRequest) returns (GetFooResponse) {
     option (google.api.http) = {get: "/test/v1/foo/{id}"};

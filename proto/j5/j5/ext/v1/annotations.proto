@@ -3,6 +3,7 @@ syntax = "proto3";
 package j5.ext.v1;
 
 import "google/protobuf/descriptor.proto";
+import "j5/auth/v1/method.proto";
 import "j5/ext/v1/query_annotations.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb";
@@ -46,7 +47,7 @@ message ServiceOptions {
     string entity = 1;
   }
 
-  AuthMethodOptions default_auth = 10;
+  j5.auth.v1.MethodAuthType default_auth = 10;
 }
 
 extend google.protobuf.MessageOptions {
@@ -80,28 +81,13 @@ message MethodOptions {
   bool hidden = 2;
 
   StateQueryMethodOptions state_query = 10;
-  AuthMethodOptions auth = 20;
+  j5.auth.v1.MethodAuthType auth = 20;
 }
 
 message StateQueryMethodOptions {
   bool get = 1;
   bool list = 2;
   bool list_events = 3;
-}
-
-message AuthMethodOptions {
-  oneof auth_method {
-    AuthMethodJWTBearer jwt_bearer = 10;
-    AuthMethodNone none = 11;
-  }
-}
-
-message AuthMethodNone {
-  repeated string pass_through_headers = 1;
-}
-
-message AuthMethodJWTBearer {
-  repeated string required_scopes = 1;
 }
 
 extend google.protobuf.EnumOptions {

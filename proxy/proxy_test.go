@@ -13,6 +13,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/pentops/j5/codec"
+	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/test/foo/v1/foo_testspb"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc"
@@ -26,20 +27,14 @@ func TestGetHandlerMapping(t *testing.T) {
 
 	rr := NewRouter(codec.NewCodec())
 
-	method, err := rr.buildMethod(GRPCMethodConfig{
-		Method:  serviceDesc.Methods().ByName("GetFoo"),
-		Invoker: nil,
-	})
+	method, err := rr.buildMethod(serviceDesc.Methods().ByName("GetFoo"), nil, &auth_j5pb.MethodAuthType_None{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, "/test/v1/foo/{id}", method.HTTPPath)
 	assert.Equal(t, "GET", method.HTTPMethod)
 
-	listMethod, err := rr.buildMethod(GRPCMethodConfig{
-		Method:  serviceDesc.Methods().ByName("ListFoos"),
-		Invoker: nil,
-	})
+	listMethod, err := rr.buildMethod(serviceDesc.Methods().ByName("ListFoos"), nil, &auth_j5pb.MethodAuthType_None{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -152,10 +147,7 @@ func TestBodyHandlerMapping(t *testing.T) {
 		Methods().ByName("PostFoo")
 
 	rr := NewRouter(codec.NewCodec())
-	method, err := rr.buildMethod(GRPCMethodConfig{
-		Method:  fd,
-		Invoker: nil,
-	})
+	method, err := rr.buildMethod(fd, nil, &auth_j5pb.MethodAuthType_None{})
 	if err != nil {
 		t.Fatal(err)
 	}
