@@ -185,9 +185,10 @@ func (sb *sourceBuilder) entitiesFromSource(pkg *Package, schemaPackage *j5refle
 func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *source_j5pb.Service) (*Service, error) {
 
 	service := &Service{
-		Package: pkg.Package,
-		Name:    src.Name,
-		Methods: make([]*Method, len(src.Methods)),
+		Package:     pkg.Package,
+		Name:        src.Name,
+		Methods:     make([]*Method, len(src.Methods)),
+		defaultAuth: src.DefaultAuth,
 	}
 
 	for idx, src := range src.Methods {
@@ -218,6 +219,12 @@ func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src
 		HTTPPath:       src.HttpPath,
 		HTTPMethod:     src.HttpMethod,
 		HasBody:        src.HttpMethod != client_j5pb.HTTPMethod_GET,
+	}
+
+	if src.Auth != nil {
+		method.Auth = src.Auth
+	} else if service.defaultAuth != nil {
+		method.Auth = service.defaultAuth
 	}
 
 	if src.ResponseSchema == "HttpBody" {

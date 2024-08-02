@@ -1,6 +1,9 @@
 syntax = "proto3";
 
+package j5.source.v1;
+
 import "buf/validate/validate.proto";
+import "j5/auth/v1/method.proto";
 import "j5/client/v1/client.proto";
 import "j5/schema/v1/schema.proto";
 
@@ -36,6 +39,8 @@ message Service {
   repeated Method methods = 3;
 
   ServiceType type = 4;
+
+  j5.auth.v1.MethodAuthType default_auth = 5;
 }
 
 message ServiceType {
@@ -65,6 +70,7 @@ message Method {
   string http_path = 5 [(buf.validate.field).string.pattern = "^(\\/:?[a-z0-9_]+)+$"];
   string request_schema = 6 [(buf.validate.field).required = true];
   string response_schema = 7 [(buf.validate.field).required = true];
+  j5.auth.v1.MethodAuthType auth = 8;
 }
 
 message Topic {

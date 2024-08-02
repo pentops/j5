@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"maps"
 	"net/http"
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
+	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/api/httpbody"
@@ -51,6 +54,7 @@ type Router struct {
 	ForwardResponseHeaders map[string]bool
 	ForwardRequestHeaders  map[string]bool
 	Codec                  Codec
+	globalAuth             AuthHeaders
 
 	middleware []func(http.Handler) http.Handler
 }
@@ -76,6 +80,10 @@ func NewRouter(codec Codec) *Router {
 		},
 		Codec: codec,
 	}
+}
+
+func (rr *Router) SetGlobalAuth(auth AuthHeaders) {
+	rr.globalAuth = auth
 }
 
 func (rr *Router) AddMiddleware(middleware func(http.Handler) http.Handler) {
@@ -124,23 +132,42 @@ type GRPCMethodConfig struct {
 	Method      protoreflect.MethodDescriptor
 }
 
-func (rr *Router) RegisterGRPCMethod(ctx context.Context, config GRPCMethodConfig) error {
-	handler, err := rr.buildMethod(config)
-	if err != nil {
-		return err
+func (rr *Router) RegisterGRPCService(ctx context.Context, sd protoreflect.ServiceDescriptor, invoker Invoker) error {
+
+	var defaultAuth auth_j5pb.IsMethodAuthTypeWrappedType = &auth_j5pb.MethodAuthType_None{}
+	if rr.globalAuth != nil {
+		defaultAuth = &auth_j5pb.MethodAuthType_JWTBearer{}
 	}
-	rr.router.Methods(handler.HTTPMethod).Path(handler.HTTPPath).Handler(handler)
-	log.WithFields(ctx, map[string]interface{}{
-		"method": handler.HTTPMethod,
-		"path":   handler.HTTPPath,
-		"grpc":   handler.FullName,
-	}).Info("Registered HTTP Method")
+
+	serviceExt := proto.GetExtension(sd.Options(), ext_j5pb.E_Service).(*ext_j5pb.ServiceOptions)
+	if serviceExt != nil {
+		if serviceExt.DefaultAuth != nil {
+			defaultAuth = serviceExt.DefaultAuth.Get()
+		}
+	}
+
+	methods := sd.Methods()
+	for ii := 0; ii < methods.Len(); ii++ {
+		method := methods.Get(ii)
+		if err := rr.registerMethod(ctx, method, invoker, defaultAuth); err != nil {
+			return fmt.Errorf("failed to register grpc method: %w", err)
+		}
+	}
+
 	return nil
 }
 
-func (rr *Router) buildMethod(config GRPCMethodConfig) (*grpcMethod, error) {
-	serviceName := config.Method.Parent().(protoreflect.ServiceDescriptor).FullName()
-	methodOptions := config.Method.Options().(*descriptorpb.MethodOptions)
+func (rr *Router) buildMethod(md protoreflect.MethodDescriptor, conn Invoker, auth auth_j5pb.IsMethodAuthTypeWrappedType) (*grpcMethod, error) {
+
+	methodOptions := md.Options().(*descriptorpb.MethodOptions)
+
+	if j5Method := proto.GetExtension(methodOptions, ext_j5pb.E_Method).(*ext_j5pb.MethodOptions); j5Method != nil {
+		if j5Method.Auth != nil {
+			auth = j5Method.Auth.Get()
+		}
+	}
+
+	serviceName := md.Parent().(protoreflect.ServiceDescriptor).FullName()
 	httpOpt := proto.GetExtension(methodOptions, annotations.E_Http).(*annotations.HttpRule)
 
 	var httpMethod string
@@ -169,19 +196,56 @@ func (rr *Router) buildMethod(config GRPCMethodConfig) (*grpcMethod, error) {
 
 	handler := &grpcMethod{
 		// the 'FullName' method of MethodDescriptor returns this in the wrong format, i.e. all dots.
-		FullName:               fmt.Sprintf("/%s/%s", serviceName, config.Method.Name()),
-		Input:                  config.Method.Input(),
-		Output:                 config.Method.Output(),
-		Invoker:                config.Invoker,
+		FullName:               fmt.Sprintf("/%s/%s", serviceName, md.Name()),
+		Input:                  md.Input(),
+		Output:                 md.Output(),
+		Invoker:                conn,
 		HTTPMethod:             httpMethod,
 		HTTPPath:               httpPath,
-		ForwardResponseHeaders: rr.ForwardResponseHeaders,
+		ForwardResponseHeaders: maps.Clone(rr.ForwardResponseHeaders),
 		ForwardRequestHeaders:  rr.ForwardRequestHeaders,
 		Codec:                  rr.Codec,
-		authHeaders:            config.AuthHeaders,
+		authHeaders:            nil, // Set in a bit
+	}
+
+	switch authType := auth.(type) {
+	case *auth_j5pb.MethodAuthType_None:
+
+	case *auth_j5pb.MethodAuthType_JWTBearer:
+		if rr.globalAuth == nil {
+			return nil, fmt.Errorf("auth method specified as JWT, no JWKS configured")
+		}
+		handler.authHeaders = rr.globalAuth
+
+	case *auth_j5pb.MethodAuthType_Custom:
+		if rr.globalAuth != nil {
+			handler.authHeaders = rr.globalAuth
+		}
+
+		for _, custom := range authType.PassThroughHeaders {
+			handler.ForwardRequestHeaders[custom] = true
+		}
+
+	default:
+		return nil, fmt.Errorf("auth method not supported (%d)", auth)
 	}
 
 	return handler, nil
+}
+
+func (rr *Router) registerMethod(ctx context.Context, md protoreflect.MethodDescriptor, conn Invoker, auth auth_j5pb.IsMethodAuthTypeWrappedType) error {
+	handler, err := rr.buildMethod(md, conn, auth)
+	if err != nil {
+		return err
+	}
+
+	rr.router.Methods(handler.HTTPMethod).Path(handler.HTTPPath).Handler(handler)
+	log.WithFields(ctx, map[string]interface{}{
+		"method": handler.HTTPMethod,
+		"path":   handler.HTTPPath,
+		"grpc":   handler.FullName,
+	}).Info("Registered HTTP Method")
+	return nil
 
 }
 

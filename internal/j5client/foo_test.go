@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/source"
@@ -85,8 +86,15 @@ func wantAPI() *client_j5pb.API {
 		}
 	}
 
+	auth := &auth_j5pb.MethodAuthType{
+		Type: &auth_j5pb.MethodAuthType_JwtBearer{
+			JwtBearer: &auth_j5pb.MethodAuthType_JWTBearer{},
+		},
+	}
+
 	getFoo := &client_j5pb.Method{
 		Name:         "GetFoo",
+		Auth:         auth,
 		FullGrpcName: "/test.foo.v1.FooQueryService/GetFoo",
 		HttpMethod:   client_j5pb.HTTPMethod_GET,
 		HttpPath:     "/test/v1/foo/:id",
@@ -164,6 +172,7 @@ func wantAPI() *client_j5pb.API {
 
 	listFoos := &client_j5pb.Method{
 		Name:         "ListFoos",
+		Auth:         auth,
 		FullGrpcName: "/test.foo.v1.FooQueryService/ListFoos",
 		HttpMethod:   client_j5pb.HTTPMethod_GET,
 
@@ -209,6 +218,7 @@ func wantAPI() *client_j5pb.API {
 
 	listFooEvents := &client_j5pb.Method{
 		Name:         "ListFooEvents",
+		Auth:         auth,
 		FullGrpcName: "/test.foo.v1.FooQueryService/ListFooEvents",
 		HttpMethod:   client_j5pb.HTTPMethod_GET,
 		HttpPath:     "/test/v1/foo/:id/events",

@@ -3,6 +3,7 @@ package j5client
 import (
 	"fmt"
 
+	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5reflect"
@@ -112,9 +113,10 @@ func (pkg *Package) ToJ5Proto() (*client_j5pb.Package, error) {
 }
 
 type Service struct {
-	Package *Package
-	Name    string
-	Methods []*Method
+	Package     *Package
+	Name        string
+	Methods     []*Method
+	defaultAuth *auth_j5pb.MethodAuthType
 }
 
 func (ss *Service) ToJ5Proto() (*client_j5pb.Service, error) {
@@ -182,6 +184,7 @@ type Method struct {
 	Request      *Request
 	ResponseBody *j5reflect.ObjectSchema
 	RawResponse  bool
+	Auth         *auth_j5pb.MethodAuthType
 
 	Service *Service
 }
@@ -194,6 +197,7 @@ func (mm *Method) ToJ5Proto() (*client_j5pb.Method, error) {
 		HttpMethod:   mm.HTTPMethod,
 		HttpPath:     mm.HTTPPath,
 		Request:      mm.Request.ToJ5Proto(),
+		Auth:         mm.Auth,
 	}
 	if mm.ResponseBody != nil {
 		out.ResponseBody = mm.ResponseBody.ToJ5Object()
