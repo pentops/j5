@@ -27,6 +27,9 @@ func TestGetHandlerMapping(t *testing.T) {
 		Services().ByName("FooQueryService")
 
 	rr := NewRouter(codec.NewCodec())
+	rr.globalAuth = AuthHeadersFunc(func(ctx context.Context, req *http.Request) (map[string]string, error) {
+		return map[string]string{}, nil
+	})
 
 	method, err := rr.buildMethod(serviceDesc.Methods().ByName("GetFoo"), nil, &auth_j5pb.MethodAuthType_None{})
 	if err != nil {
@@ -260,6 +263,14 @@ type MockInvoker struct {
 	SendResponse []byte
 }
 
+func (m *MockInvoker) SetResponse(t testing.TB, msg proto.Message) {
+	dd, err := proto.Marshal(msg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	m.SendResponse = dd
+}
+
 func (m *MockInvoker) Invoke(ctx context.Context, method string, req, res interface{}, opts ...grpc.CallOption) error {
 	protoReq, ok := req.(proto.Message)
 	if !ok {
@@ -310,5 +321,67 @@ func TestRawBodyHandler(t *testing.T) {
 	if rec.Code != 200 {
 		t.Fatalf("expected status code 200, got %d", rec.Code)
 	}
+
+}
+
+func TestAuthMethods(t *testing.T) {
+
+	services := foo_testspb.File_test_foo_v1_service_foo_service_proto.
+		Services()
+
+	authHeaders := map[string]string{}
+
+	called := false
+	rr := NewRouter(codec.NewCodec())
+	rr.globalAuth = AuthHeadersFunc(func(ctx context.Context, req *http.Request) (map[string]string, error) {
+		called = true
+		return authHeaders, nil
+	})
+
+	bodyData, err := proto.Marshal(&httpbody.HttpBody{
+		ContentType: "application/octet-stream",
+		Data:        []byte("foobar"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoker := &MockInvoker{
+		SendResponse: bodyData,
+	}
+	for idx := 0; idx < services.Len(); idx++ {
+		sd := services.Get(idx)
+		if err := rr.RegisterGRPCService(context.Background(), sd, invoker); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	t.Run("Basic No Auth OK", func(t *testing.T) {
+		called = false
+		invoker.SetResponse(t, &foo_testspb.GetFooResponse{})
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/test/v1/foo/idVal", nil)
+		rr.ServeHTTP(rec, req)
+		if rec.Code != 200 {
+			t.Fatalf("expected status code 200, got %d", rec.Code)
+		}
+		if called {
+			t.Fatal("expected no auth headers call")
+		}
+	})
+
+	t.Run("Basic No Auth OK", func(t *testing.T) {
+		called = false
+		invoker.SetResponse(t, &foo_testspb.GetFooResponse{})
+		rec := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/test/v1/foos", nil)
+		rr.ServeHTTP(rec, req)
+		if rec.Code != 200 {
+			t.Fatalf("expected status code 200, got %d", rec.Code)
+		}
+		if !called {
+			t.Fatal("expected auth headers call")
+		}
+
+	})
 
 }
