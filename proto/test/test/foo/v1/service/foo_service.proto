@@ -4,6 +4,7 @@ package test.foo.v1.service;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
+import "google/api/httpbody.proto";
 import "j5/ext/v1/annotations.proto";
 import "j5/list/v1/page.proto";
 import "j5/list/v1/query.proto";
@@ -36,6 +37,12 @@ service FooCommandService {
       post: "/test/v1/foo"
       body: "*"
     };
+  }
+}
+
+service FooDownloadService {
+  rpc DownloadRaw(DownloadRawRequest) returns (google.api.HttpBody) {
+    option (google.api.http) = {get: "/test/v1/foo/{id}/raw"};
   }
 }
 
@@ -83,4 +90,8 @@ message ListFooEventsRequest {
 
 message ListFooEventsResponse {
   repeated test.foo.v1.FooEvent events = 1;
+}
+
+message DownloadRawRequest {
+  string id = 1;
 }

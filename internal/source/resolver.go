@@ -85,23 +85,24 @@ func (src *Source) UpdateLocks(ctx context.Context) error {
 
 	lockFile := &config_j5pb.LockFile{}
 	for _, bundle := range src.thisRepo.bundles {
-		var lock *config_j5pb.InputLock
+
 		cfg, err := bundle.J5Config()
 		if err != nil {
 			return err
 		}
 		for _, dep := range cfg.Dependencies {
+
+			var lock *config_j5pb.InputLock
+
 			switch st := dep.Type.(type) {
-			/*
-				case *config_j5pb.Input_Registry_:
-					regDep := proto.Clone(st.Registry).(*config_j5pb.Input_Registry)
-					regDep.Version = nil
-					bundle, err := src.registryLatest(ctx, regDep)
-					if err != nil {
-						return err
-					}
-					bundleDep = bundle
-			*/
+			case *config_j5pb.Input_Registry_:
+				regDep := proto.Clone(st.Registry).(*config_j5pb.Input_Registry)
+				regDep.Version = nil
+				bundle, err := src.registryLatest(ctx, regDep)
+				if err != nil {
+					return err
+				}
+				lock = bundle
 			case *config_j5pb.Input_BufRegistry_:
 				regDep := proto.Clone(st.BufRegistry).(*config_j5pb.Input_BufRegistry)
 				regDep.Version = nil
@@ -111,16 +112,25 @@ func (src *Source) UpdateLocks(ctx context.Context) error {
 				}
 				lock = bundle
 			}
-		}
-		if lock == nil {
-			continue
-		}
 
-		if lock.Version == "" {
-			return fmt.Errorf("no version for %s", lock.Name)
-		}
+			if lock == nil {
+				continue
+			}
 
-		lockFile.Inputs = append(lockFile.Inputs, lock)
+			ctx = log.WithFields(ctx, map[string]interface{}{
+				"bundle":      bundle.Name,
+				"dependency":  lock.Name,
+				"lockVersion": lock.Version,
+			})
+
+			if lock.Version == "" {
+				return fmt.Errorf("no version for %s", lock.Name)
+			}
+
+			log.Info(ctx, "adding lock")
+
+			lockFile.Inputs = append(lockFile.Inputs, lock)
+		}
 	}
 
 	src.locks = lockFile
@@ -152,6 +162,28 @@ func (src *Source) getCachedInput(ctx context.Context, name, version string) (*i
 		name:    name,
 		version: version,
 	}, true
+}
+
+func (src *Source) registryLatest(ctx context.Context, input *config_j5pb.Input_Registry) (*config_j5pb.InputLock, error) {
+
+	input = proto.Clone(input).(*config_j5pb.Input_Registry)
+	input.Version = nil
+
+	bundle, err := src.registryInput(ctx, input)
+	if err != nil {
+		return nil, err
+	}
+
+	if src.j5Cache != nil && bundle.version != "" {
+		if err := src.j5Cache.put(ctx, bundle.name, bundle.version, bundle.source); err != nil {
+			log.WithError(ctx, err).Error("failed to cache input")
+		}
+	}
+
+	return &config_j5pb.InputLock{
+		Name:    bundle.name,
+		Version: bundle.version,
+	}, nil
 }
 
 func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_Registry) (*imageBundle, error) {
