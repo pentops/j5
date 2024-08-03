@@ -314,11 +314,40 @@ func wantAPI() *client_j5pb.API {
 		},
 	}
 
+	downloadFoo := &client_j5pb.Method{
+		Name:         "DownloadRaw",
+		FullGrpcName: "/test.foo.v1.FooDownloadService/DownloadRaw",
+		HttpMethod:   client_j5pb.HTTPMethod_GET,
+		HttpPath:     "/test/v1/foo/:id/raw",
+		Request: &client_j5pb.Method_Request{
+			PathParameters: []*schema_j5pb.ObjectProperty{{
+				Name:       "id",
+				ProtoField: []int32{1},
+				Required:   true,
+				Schema: &schema_j5pb.Field{
+					Type: &schema_j5pb.Field_String_{
+						String_: &schema_j5pb.StringField{},
+					},
+				},
+			}},
+		},
+		ResponseBody: nil,
+	}
+
+	fooDownloadService := &client_j5pb.Service{
+		Name: "FooDownloadService",
+		Methods: []*client_j5pb.Method{
+			downloadFoo,
+		},
+	}
+
 	return &client_j5pb.API{
 		Packages: []*client_j5pb.Package{{
 			Name: "test.foo.v1",
 
-			Services: []*client_j5pb.Service{},
+			Services: []*client_j5pb.Service{
+				fooDownloadService,
+			},
 			StateEntities: []*client_j5pb.StateEntity{{
 				Name:         "foo",
 				FullName:     "test.foo.v1/foo",

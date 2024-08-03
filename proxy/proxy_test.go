@@ -16,6 +16,7 @@ import (
 	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/test/foo/v1/foo_testspb"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/genproto/googleapis/api/httpbody"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
 )
@@ -281,4 +282,33 @@ func (m *MockInvoker) Invoke(ctx context.Context, method string, req, res interf
 	}
 
 	return nil
+}
+
+func TestRawBodyHandler(t *testing.T) {
+	fd := foo_testspb.File_test_foo_v1_service_foo_service_proto.
+		Services().ByName("FooDownloadService")
+
+	rr := NewRouter(codec.NewCodec())
+
+	bodyData, err := proto.Marshal(&httpbody.HttpBody{
+		ContentType: "application/octet-stream",
+		Data:        []byte("foobar"),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	invoker := &MockInvoker{
+		SendResponse: bodyData,
+	}
+	if err := rr.RegisterGRPCService(context.Background(), fd, invoker); err != nil {
+		t.Fatal(err)
+	}
+
+	rec := httptest.NewRecorder()
+	rr.ServeHTTP(rec, httptest.NewRequest("GET", "/test/v1/foo/id/raw", nil))
+
+	if rec.Code != 200 {
+		t.Fatalf("expected status code 200, got %d", rec.Code)
+	}
+
 }

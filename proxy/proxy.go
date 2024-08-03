@@ -311,7 +311,16 @@ func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	outputMessage := dynamicpb.NewMessage(mm.Output)
+	var outputMessage proto.Message
+	var httpBodyOutput *httpbody.HttpBody
+	var dynamicOutput *dynamicpb.Message
+	if mm.Output.FullName() == "google.api.HttpBody" {
+		httpBodyOutput = &httpbody.HttpBody{}
+		outputMessage = httpBodyOutput
+	} else {
+		outputMessage = dynamicpb.NewMessage(mm.Output)
+		dynamicOutput = outputMessage.(*dynamicpb.Message)
+	}
 
 	md := map[string]string{}
 	for key, v := range r.Header {
@@ -344,6 +353,7 @@ func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = mm.Invoker.Invoke(ctx, mm.FullName, inputMessage, outputMessage, grpc.Header(&responseHeader))
 	if err != nil {
+		log.WithError(ctx, err).Error("Failed to invoke")
 		doUserError(ctx, w, err)
 		return
 	}
@@ -352,13 +362,13 @@ func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	var bytesOut []byte
 
-	if mm.Output.FullName() == "google.api.HttpBody" {
-		httpBody := outputMessage.Interface().(*httpbody.HttpBody)
-		headerOut.Set("Content-Type", httpBody.ContentType)
-		bytesOut = httpBody.Data
+	if httpBodyOutput != nil {
+		headerOut.Set("Content-Type", httpBodyOutput.ContentType)
+		bytesOut = httpBodyOutput.Data
 	} else {
-		bytesOut, err = mm.Codec.ProtoToJSON(outputMessage)
+		bytesOut, err = mm.Codec.ProtoToJSON(dynamicOutput)
 		if err != nil {
+			log.WithError(ctx, err).Error("Failed to marshal response")
 			doError(ctx, w, err)
 			return
 		}
