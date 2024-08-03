@@ -18,6 +18,7 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/log.go/log"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -208,7 +209,18 @@ func (src *Source) bundleProtoparse(ctx context.Context, rootBundle *bundleSourc
 		}
 
 		for _, file := range img.File {
-			fileMap[*file.Name] = file
+			existing, ok := fileMap[*file.Name]
+			if !ok {
+				fileMap[*file.Name] = file
+				continue
+			}
+
+			if proto.Equal(existing, file) {
+				continue
+			}
+
+			// we have a conflict
+			return nil, fmt.Errorf("file %q has conflicting content", *file.Name)
 		}
 
 	}

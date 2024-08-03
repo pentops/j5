@@ -143,6 +143,10 @@ func (rr *Router) RegisterGRPCService(ctx context.Context, sd protoreflect.Servi
 	if serviceExt != nil {
 		if serviceExt.DefaultAuth != nil {
 			defaultAuth = serviceExt.DefaultAuth.Get()
+			log.WithFields(ctx, map[string]interface{}{
+				"authMethod": defaultAuth.TypeKey(),
+				"service":    sd.FullName(),
+			}).Debug("Service Default Auth")
 		}
 	}
 
@@ -210,17 +214,22 @@ func (rr *Router) buildMethod(md protoreflect.MethodDescriptor, conn Invoker, au
 
 	switch authType := auth.(type) {
 	case *auth_j5pb.MethodAuthType_None:
+		if rr.globalAuth != nil {
+			handler.authHeaders = rr.globalAuth
+			handler.authMethodName = "global default"
+		} else {
+			handler.authMethodName = "none"
+		}
 
 	case *auth_j5pb.MethodAuthType_JWTBearer:
 		if rr.globalAuth == nil {
 			return nil, fmt.Errorf("auth method specified as JWT, no JWKS configured")
 		}
 		handler.authHeaders = rr.globalAuth
+		handler.authMethodName = "jwt-bearer"
 
 	case *auth_j5pb.MethodAuthType_Custom:
-		if rr.globalAuth != nil {
-			handler.authHeaders = rr.globalAuth
-		}
+		handler.authMethodName = fmt.Sprintf("custom, headers: %s", strings.Join(authType.PassThroughHeaders, ", "))
 
 		for _, custom := range authType.PassThroughHeaders {
 			handler.ForwardRequestHeaders[custom] = true
@@ -241,9 +250,10 @@ func (rr *Router) registerMethod(ctx context.Context, md protoreflect.MethodDesc
 
 	rr.router.Methods(handler.HTTPMethod).Path(handler.HTTPPath).Handler(handler)
 	log.WithFields(ctx, map[string]interface{}{
-		"method": handler.HTTPMethod,
-		"path":   handler.HTTPPath,
-		"grpc":   handler.FullName,
+		"method":     handler.HTTPMethod,
+		"path":       handler.HTTPPath,
+		"grpc":       handler.FullName,
+		"authMethod": handler.authMethodName,
 	}).Info("Registered HTTP Method")
 	return nil
 
@@ -260,6 +270,7 @@ type grpcMethod struct {
 	ForwardRequestHeaders  map[string]bool
 	Codec                  Codec
 	authHeaders            AuthHeaders
+	authMethodName         string
 }
 
 func (mm *grpcMethod) mapRequest(r *http.Request) (protoreflect.Message, error) {

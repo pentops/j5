@@ -75,7 +75,7 @@ func (rc *registryClient) input(ctx context.Context, owner, repoName, version st
 
 	return &imageBundle{
 		name:    fullName,
-		version: version,
+		version: apiDef.GetVersion(),
 		source:  apiDef,
 	}, nil
 }
