@@ -86,15 +86,20 @@ func wantAPI() *client_j5pb.API {
 		}
 	}
 
-	auth := &auth_j5pb.MethodAuthType{
+	authJWT := &auth_j5pb.MethodAuthType{
 		Type: &auth_j5pb.MethodAuthType_JwtBearer{
 			JwtBearer: &auth_j5pb.MethodAuthType_JWTBearer{},
+		},
+	}
+	authNone := &auth_j5pb.MethodAuthType{
+		Type: &auth_j5pb.MethodAuthType_None_{
+			None: &auth_j5pb.MethodAuthType_None{},
 		},
 	}
 
 	getFoo := &client_j5pb.Method{
 		Name:         "GetFoo",
-		Auth:         auth,
+		Auth:         authNone,
 		FullGrpcName: "/test.foo.v1.FooQueryService/GetFoo",
 		HttpMethod:   client_j5pb.HTTPMethod_GET,
 		HttpPath:     "/test/v1/foo/:id",
@@ -172,7 +177,7 @@ func wantAPI() *client_j5pb.API {
 
 	listFoos := &client_j5pb.Method{
 		Name:         "ListFoos",
-		Auth:         auth,
+		Auth:         authJWT,
 		FullGrpcName: "/test.foo.v1.FooQueryService/ListFoos",
 		HttpMethod:   client_j5pb.HTTPMethod_GET,
 
@@ -218,7 +223,7 @@ func wantAPI() *client_j5pb.API {
 
 	listFooEvents := &client_j5pb.Method{
 		Name:         "ListFooEvents",
-		Auth:         auth,
+		Auth:         authNone,
 		FullGrpcName: "/test.foo.v1.FooQueryService/ListFooEvents",
 		HttpMethod:   client_j5pb.HTTPMethod_GET,
 		HttpPath:     "/test/v1/foo/:id/events",
@@ -280,6 +285,7 @@ func wantAPI() *client_j5pb.API {
 
 	postFoo := &client_j5pb.Method{
 		Name:         "PostFoo",
+		Auth:         authJWT,
 		FullGrpcName: "/test.foo.v1.FooCommandService/PostFoo",
 		HttpMethod:   client_j5pb.HTTPMethod_POST,
 		HttpPath:     "/test/v1/foo",

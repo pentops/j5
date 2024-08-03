@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	"github.com/docker/docker/client"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
@@ -15,8 +16,10 @@ import (
 
 type Runner struct {
 	pulledImages map[string]bool
-	client       *client.Client
-	auth         []*config_j5pb.DockerRegistryAuth
+	pullLock     sync.Mutex
+
+	client *client.Client
+	auth   []*config_j5pb.DockerRegistryAuth
 
 	DockerOverride map[string]string // map[cmd]localCommand
 }

@@ -124,14 +124,25 @@ func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
 	return nil
 }
 
-func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
+func (dw *Runner) markPull(img string) bool {
+	dw.pullLock.Lock()
+	defer dw.pullLock.Unlock()
+
 	// skip if pulled...
 	if dw.pulledImages[img] {
-		return nil
+		return true
 	}
 
 	// only pull once for all plugins
 	dw.pulledImages[img] = true
+	return false
+}
+func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
+
+	alreadyPulled := dw.markPull(img)
+	if alreadyPulled {
+		return nil
+	}
 
 	images, err := dw.client.ImageList(ctx, image.ListOptions{
 		Filters: filters.NewArgs(filters.Arg("reference", img)),

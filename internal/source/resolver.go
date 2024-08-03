@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,8 +22,6 @@ import (
 )
 
 func (src *Source) GetInput(ctx context.Context, input *config_j5pb.Input) (Input, error) {
-
-	var cachableInput *imageBundle
 
 	switch st := input.Type.(type) {
 	case *config_j5pb.Input_Local:
@@ -51,30 +48,83 @@ func (src *Source) GetInput(ctx context.Context, input *config_j5pb.Input) (Inpu
 		return bundle, nil
 
 	case *config_j5pb.Input_Registry_:
-		bundle, err := src.registryInput(ctx, st.Registry)
-		if err != nil {
-			return nil, fmt.Errorf("registry input %s: %w", st.Registry.Name, err)
-		}
-		cachableInput = bundle
+		return src.cacheDance(ctx, cacheSpec{
+			repoType:  "registry",
+			owner:     st.Registry.Owner,
+			repoName:  st.Registry.Name,
+			version:   st.Registry.Version,
+			reference: coalesce(st.Registry.Reference, ptr("main")),
+		}, src.regClient.input)
+		//func(ctx context.Context, version string) (*imageBundle, error) {
+	//		return src.regClient.input(ctx, st.Registry.Owner, st.Registry.Name, version)
+	//	})
 
 	case *config_j5pb.Input_BufRegistry_:
-		bundle, err := src.bufRegistryInput(ctx, st.BufRegistry)
-		if err != nil {
-			return nil, fmt.Errorf("buf registry input %s: %w", st.BufRegistry.Name, err)
-		}
-		cachableInput = bundle
+		return src.cacheDance(ctx, cacheSpec{
+			repoType:  "buf",
+			owner:     st.BufRegistry.Owner,
+			repoName:  st.BufRegistry.Name,
+			version:   st.BufRegistry.Version,
+			reference: st.BufRegistry.Reference,
+		}, src.bufRegistryInput)
 
 	default:
 		return nil, fmt.Errorf("unsupported source type %T", input.Type)
 	}
 
-	if src.j5Cache != nil && cachableInput.version != "" {
-		if err := src.j5Cache.put(ctx, cachableInput.name, cachableInput.version, cachableInput.source); err != nil {
+}
+
+type cacheSpec struct {
+	repoType  string
+	owner     string
+	repoName  string
+	version   *string
+	reference *string
+}
+
+func (src *Source) cacheDance(ctx context.Context, spec cacheSpec, callback func(ctx context.Context, owner string, name string, version string) (*imageBundle, error)) (*imageBundle, error) {
+
+	fullName := fmt.Sprintf("%s/%s/%s", spec.repoType, spec.owner, spec.repoName)
+	ctx = log.WithField(ctx, "bundle", fullName)
+	var version *string
+	if spec.version != nil {
+		version = ptr(*spec.version)
+	} else if lockVersion := src.getInputLockVersion(fullName); lockVersion != nil {
+		log.WithField(ctx, "lockVersion", *lockVersion).Debug("using lock version")
+		version = ptr(*lockVersion)
+	}
+
+	ctx = log.WithField(ctx, "version", version)
+	// only use cache if version is explicit, otherwise needs to pull latest
+	if version != nil {
+		if cached, ok := src.getCachedInput(ctx, fullName, *version); ok {
+			log.Debug(ctx, "using cached input")
+			return cached, nil
+		}
+	}
+	if version == nil {
+		if spec.reference != nil {
+			version = ptr(*spec.reference)
+		} else {
+			version = ptr("main")
+		}
+	}
+
+	ctx = log.WithField(ctx, "depVersion", *version)
+	log.Debug(ctx, "cache miss")
+
+	bundle, err := callback(ctx, spec.owner, spec.repoName, *version)
+	if err != nil {
+		return nil, err
+	}
+
+	if src.j5Cache != nil && bundle.version != "" {
+		if err := src.j5Cache.put(ctx, fullName, bundle.version, bundle.source); err != nil {
 			log.WithError(ctx, err).Error("failed to cache input")
 		}
 	}
 
-	return cachableInput, nil
+	return bundle, nil
 }
 
 func (src *Source) UpdateLocks(ctx context.Context) error {
@@ -137,16 +187,29 @@ func (src *Source) UpdateLocks(ctx context.Context) error {
 	return src.lockWriter.write(src.locks)
 }
 
-func (src *Source) getInputLockVersion(name string) string {
+func (src *Source) getInputLockVersion(name string) *string {
 	if src.locks == nil {
-		return ""
+		return nil
 	}
 	for _, dep := range src.locks.Inputs {
 		if dep.Name == name {
-			return dep.Version
+			return ptr(dep.Version)
 		}
 	}
-	return ""
+	return nil
+}
+
+func ptr[T any](v T) *T {
+	return &v
+}
+
+func coalesce[T any](vals ...*T) *T {
+	for _, val := range vals {
+		if val != nil {
+			return val
+		}
+	}
+	return nil
 }
 
 func (src *Source) getCachedInput(ctx context.Context, name, version string) (*imageBundle, bool) {
@@ -166,10 +229,11 @@ func (src *Source) getCachedInput(ctx context.Context, name, version string) (*i
 
 func (src *Source) registryLatest(ctx context.Context, input *config_j5pb.Input_Registry) (*config_j5pb.InputLock, error) {
 
-	input = proto.Clone(input).(*config_j5pb.Input_Registry)
-	input.Version = nil
-
-	bundle, err := src.registryInput(ctx, input)
+	version := "main"
+	if input.Reference != nil {
+		version = *input.Reference
+	}
+	bundle, err := src.regClient.input(ctx, input.Owner, input.Name, version)
 	if err != nil {
 		return nil, err
 	}
@@ -183,77 +247,6 @@ func (src *Source) registryLatest(ctx context.Context, input *config_j5pb.Input_
 	return &config_j5pb.InputLock{
 		Name:    bundle.name,
 		Version: bundle.version,
-	}, nil
-}
-
-func (src *Source) registryInput(ctx context.Context, input *config_j5pb.Input_Registry) (*imageBundle, error) {
-
-	if src.remoteRegistry == "" {
-		return nil, fmt.Errorf("remote registry not set ($J5_REGISTRY)")
-	}
-	if input.Name == "" {
-		return nil, fmt.Errorf("registry input name not set")
-	}
-	if input.Owner == "" {
-		return nil, fmt.Errorf("registry input organization not set")
-	}
-
-	name := fmt.Sprintf("registry/v1/%s/%s", input.Owner, input.Name)
-	ctx = log.WithField(ctx, "bundle", name)
-	var version string
-	if input.Version == nil {
-		version = src.getInputLockVersion(name)
-		log.WithField(ctx, "version", version).Debug("using lock version")
-	} else {
-		version = *input.Version
-	}
-
-	ctx = log.WithField(ctx, "version", version)
-	if version != "" {
-		if cached, ok := src.getCachedInput(ctx, name, version); ok {
-			log.Debug(ctx, "using cached input")
-			return cached, nil
-		}
-	}
-	if version == "" {
-		if input.Reference != nil {
-			version = *input.Reference
-		} else {
-			version = "main"
-		}
-	}
-	log.Debug(ctx, "cache miss")
-
-	imageURL := fmt.Sprintf("%s/%s/%s/image.bin", src.remoteRegistry, name, version)
-	req, err := http.NewRequest("GET", imageURL, nil)
-	if err != nil {
-		return nil, fmt.Errorf("creating registry input request: %w", err)
-	}
-	req.Header.Set("Authorization", "Bearer "+os.Getenv("J5_REGISTRY_TOKEN"))
-	req = req.WithContext(ctx)
-
-	res, err := src.HTTPClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("fetching registry input: %q %w", imageURL, err)
-	}
-	defer res.Body.Close()
-	data, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, fmt.Errorf("reading registry input: %w", err)
-	}
-	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("fetching registry input: %q %s %q", imageURL, res.Status, string(data))
-	}
-
-	apiDef := &source_j5pb.SourceImage{}
-	if err := proto.Unmarshal(data, apiDef); err != nil {
-		return nil, fmt.Errorf("unmarshalling registry input %s: %w", imageURL, err)
-	}
-
-	return &imageBundle{
-		name:    name,
-		version: version,
-		source:  apiDef,
 	}, nil
 }
 
@@ -279,33 +272,11 @@ func (src *Source) bufRegistryLatest(ctx context.Context, input *config_j5pb.Inp
 
 }
 
-func (src *Source) bufRegistryInput(ctx context.Context, input *config_j5pb.Input_BufRegistry) (*imageBundle, error) {
-
-	name := fmt.Sprintf("buf/%s/%s", input.Owner, input.Name)
-	ctx = log.WithField(ctx, "bundle", name)
-	var version string
-	if input.Version != nil {
-		version = *input.Version
-	} else {
-		version = src.getInputLockVersion(name)
-		log.WithField(ctx, "version", version).Debug("using lock version")
-		if version == "" && input.Reference != nil {
-			version = *input.Reference
-		}
-	}
-	ctx = log.WithField(ctx, "version", version)
-
-	if version != "" {
-		if cached, ok := src.getCachedInput(ctx, name, version); ok {
-			log.Debug(ctx, "using cached input")
-			return cached, nil
-		}
-	}
-	log.Debug(ctx, "cache miss")
+func (src *Source) bufRegistryInput(ctx context.Context, owner, name, version string) (*imageBundle, error) {
 
 	downloadRes, err := src.bufCache.client.Download(ctx, &registry_pb.DownloadRequest{
-		Owner:      input.Owner,
-		Repository: input.Name,
+		Owner:      owner,
+		Repository: name,
 		Reference:  version,
 	})
 	if err != nil {
@@ -356,7 +327,7 @@ func (src *Source) bufRegistryInput(ctx context.Context, input *config_j5pb.Inpu
 			fmt.Printf("PANIC: %s\n", panicErr.Stack)
 		}
 
-		return nil, fmt.Errorf("parsing buf input %q: %w", name, err)
+		return nil, fmt.Errorf("parsing buf input %q/%q: %w", owner, name, err)
 	}
 
 	realDesc := desc.ToFileDescriptorSet(customDesc...)
@@ -368,7 +339,7 @@ func (src *Source) bufRegistryInput(ctx context.Context, input *config_j5pb.Inpu
 
 	return &imageBundle{
 		source:  img,
-		name:    name,
+		name:    fmt.Sprintf("buf/%s/%s", owner, name),
 		version: version,
 	}, nil
 

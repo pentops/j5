@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"net/http"
 	"os"
 	"path/filepath"
 
@@ -23,8 +22,7 @@ type Source struct {
 
 	bufCache *BufCache
 
-	remoteRegistry string
-	HTTPClient     *http.Client
+	regClient *registryClient
 
 	lockWriter *lockWriter
 	locks      *config_j5pb.LockFile
@@ -73,10 +71,11 @@ func NewFSSource(ctx context.Context, root fs.FS) (*Source, error) {
 		return nil, err
 	}
 
+	regClient := envRegistryClient()
+
 	src := &Source{
-		remoteRegistry: os.Getenv("J5_REGISTRY"),
-		HTTPClient:     http.DefaultClient,
-		bufCache:       bufCache,
+		regClient: regClient,
+		bufCache:  bufCache,
 	}
 
 	thisRepo, err := src.newRepo(".", root)

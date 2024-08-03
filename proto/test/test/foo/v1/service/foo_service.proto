@@ -14,13 +14,14 @@ option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testspb";
 
 service FooQueryService {
   option (j5.ext.v1.service).state_query.entity = "test.foo.v1/foo";
-  option (j5.ext.v1.service).default_auth.jwt_bearer = {};
+  option (j5.ext.v1.service).default_auth.none = {};
 
   rpc GetFoo(GetFooRequest) returns (GetFooResponse) {
     option (google.api.http) = {get: "/test/v1/foo/{id}"};
   }
 
   rpc ListFoos(ListFoosRequest) returns (ListFoosResponse) {
+    option (j5.ext.v1.method).auth.jwt_bearer = {};
     option (google.api.http) = {get: "/test/v1/foos"};
   }
 
@@ -31,6 +32,7 @@ service FooQueryService {
 
 service FooCommandService {
   option (j5.ext.v1.service).state_command = {entity: "test.foo.v1/foo"};
+  option (j5.ext.v1.service).default_auth.jwt_bearer = {};
 
   rpc PostFoo(PostFooRequest) returns (PostFooResponse) {
     option (google.api.http) = {
