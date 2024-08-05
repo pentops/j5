@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pentops/j5/builder"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/builder"
 	"github.com/pentops/j5/internal/j5client"
 	"github.com/pentops/j5/internal/j5reflect"
 	"github.com/pentops/j5/internal/structure"
