@@ -12,7 +12,9 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/plugin/v1/plugin_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/j5client"
 	"github.com/pentops/j5/internal/source"
+	"github.com/pentops/j5/internal/structure"
 	"github.com/pentops/log.go/log"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/sync/errgroup"
@@ -130,9 +132,15 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input *sourc
 		return errGroup.Wait()
 
 	case config_j5pb.Plugin_J5_CLIENT:
-		clientAPI, err := DescriptorFromSource(input)
+
+		sourceAPI, err := structure.APIFromImage(input)
 		if err != nil {
-			return fmt.Errorf("ReflectFromSource: %w", err)
+			return err
+		}
+
+		clientAPI, err := j5client.APIFromSource(sourceAPI)
+		if err != nil {
+			return err
 		}
 
 		if len(clientAPI.Packages) == 0 {

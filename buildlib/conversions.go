@@ -1,4 +1,4 @@
-package builder
+package buildlib
 
 import (
 	"encoding/json"
