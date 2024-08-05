@@ -18,25 +18,41 @@ type registryClient struct {
 	client *http.Client
 }
 
-func envRegistryClient() *registryClient {
-	addr := os.Getenv("J5_REGISTRY")
-	if addr == "" {
-		return nil
-	}
+func NewRegistryClient(remote string, authToken string) (*registryClient, error) {
+
 	auth := ""
-	token := os.Getenv("J5_REGISTRY_TOKEN")
-	if token != "" {
-		auth = fmt.Sprintf("Bearer %s", token)
+	if authToken != "" {
+		auth = fmt.Sprintf("Bearer %s", authToken)
 	}
 
 	return &registryClient{
-		remote: addr,
+		remote: remote,
 		auth:   auth,
 		client: http.DefaultClient,
-	}
+	}, nil
 }
 
-func (rc *registryClient) input(ctx context.Context, owner, repoName, version string) (*imageBundle, error) {
+func envRegistryClient() (*registryClient, error) {
+	addr := os.Getenv("J5_REGISTRY")
+	token := os.Getenv("J5_REGISTRY_TOKEN")
+	return NewRegistryClient(addr, token)
+}
+
+func (rc *registryClient) LatestImage(ctx context.Context, owner, repoName string, reference *string) (*source_j5pb.SourceImage, error) {
+	if rc == nil {
+		return nil, fmt.Errorf("registry client not set")
+	}
+
+	branch := "main"
+	if reference != nil {
+		branch = *reference
+	}
+
+	// registry returns the canonical version in the image
+	return rc.GetImage(ctx, owner, repoName, branch)
+}
+
+func (rc *registryClient) GetImage(ctx context.Context, owner, repoName, version string) (*source_j5pb.SourceImage, error) {
 	if rc == nil {
 		return nil, fmt.Errorf("registry client not set")
 	}
@@ -73,9 +89,5 @@ func (rc *registryClient) input(ctx context.Context, owner, repoName, version st
 		return nil, fmt.Errorf("unmarshalling registry input %s: %w", imageURL, err)
 	}
 
-	return &imageBundle{
-		name:    fullName,
-		version: apiDef.GetVersion(),
-		source:  apiDef,
-	}, nil
+	return apiDef, nil
 }

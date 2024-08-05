@@ -1,7 +1,6 @@
 package source
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -9,18 +8,7 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-func codeGeneratorRequestFromSource(ctx context.Context, bundle *bundleSource) (*pluginpb.CodeGeneratorRequest, error) {
-
-	img, err := bundle.rootSource.readImageFromDir(ctx, bundle)
-	if err != nil {
-		return nil, err
-	}
-
-	return codeGeneratorRequestFromImage(img)
-
-}
-
-func codeGeneratorRequestFromImage(img *source_j5pb.SourceImage) (*pluginpb.CodeGeneratorRequest, error) {
+func CodeGeneratorRequestFromImage(img *source_j5pb.SourceImage) (*pluginpb.CodeGeneratorRequest, error) {
 
 	out := &pluginpb.CodeGeneratorRequest{
 		CompilerVersion: nil,

@@ -9,7 +9,10 @@ import (
 
 	"runtime/debug"
 
+	"github.com/bufbuild/protoyaml-go"
 	"github.com/pentops/j5/builder"
+	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/runner/commander"
 )
@@ -54,24 +57,55 @@ func runLatestDeps(ctx context.Context, cfg struct {
 		return err
 	}
 
-	return src.UpdateLocks(ctx)
+	allDeps, err := src.ListAllDependencies()
+	if err != nil {
+		return err
+	}
+
+	resolver, err := source.NewEnvResolver()
+	if err != nil {
+		return err
+	}
+
+	newLockFile, err := resolver.LatestLocks(ctx, allDeps)
+	if err != nil {
+		return err
+	}
+
+	data, err := protoyaml.MarshalOptions{}.Marshal(newLockFile)
+	if err != nil {
+		return err
+	}
+	return cfg.WriteFile("j5-lock.yaml", data)
 }
 
 type SourceConfig struct {
-	Source string `flag:"src" default:"." description:"Source directory containing j5.yaml and buf.lock.yaml"`
+	Source string `flag:"dir" default:"." description:"Source / working directory containing j5.yaml and buf.lock.yaml"`
 	Bundle string `flag:"bundle" default:"" description:"When the bundle j5.yaml is in a subdirectory"`
 }
 
-func (cfg SourceConfig) GetSource(ctx context.Context) (*source.Source, error) {
-	return source.NewSource(ctx, cfg.Source)
+func (cfg SourceConfig) WriteFile(filename string, data []byte) error {
+	return os.WriteFile(filepath.Join(cfg.Source, filename), data, 0644)
 }
 
-func (cfg SourceConfig) GetInput(ctx context.Context) (source.BundleSource, error) {
-	source, err := cfg.GetSource(ctx)
+func (cfg SourceConfig) GetSource(ctx context.Context) (*source.Source, error) {
+
+	resolver, err := source.NewEnvResolver()
 	if err != nil {
 		return nil, err
 	}
-	return source.BundleSource(cfg.Bundle)
+
+	fsRoot := os.DirFS(cfg.Source)
+	return source.NewFSSource(ctx, fsRoot, resolver)
+}
+
+func (cfg SourceConfig) GetBundleImage(ctx context.Context) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {
+	source, err := cfg.GetSource(ctx)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return source.BundleImageSource(ctx, cfg.Bundle)
 }
 
 type lineWriter struct {

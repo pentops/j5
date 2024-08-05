@@ -214,12 +214,7 @@ func (rr *Router) buildMethod(md protoreflect.MethodDescriptor, conn Invoker, au
 
 	switch authType := auth.(type) {
 	case *auth_j5pb.MethodAuthType_None:
-		if rr.globalAuth != nil {
-			handler.authHeaders = rr.globalAuth
-			handler.authMethodName = "global default"
-		} else {
-			handler.authMethodName = "none"
-		}
+		handler.authMethodName = "none"
 
 	case *auth_j5pb.MethodAuthType_JWTBearer:
 		if rr.globalAuth == nil {

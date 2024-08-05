@@ -17,19 +17,19 @@ func TestFooSchema(t *testing.T) {
 
 	ctx := context.Background()
 	rootFS := os.DirFS("../../")
-	thisRoot, err := source.NewFSSource(ctx, rootFS)
+	envResolver, err := source.NewEnvResolver()
+	if err != nil {
+		t.Fatalf("NewEnvResolver: %v", err)
+	}
+
+	thisRoot, err := source.NewFSSource(ctx, rootFS, envResolver)
 	if err != nil {
 		t.Fatalf("ReadLocalSource: %v", err)
 	}
 
-	input, err := thisRoot.BundleSource("test")
+	srcImg, _, err := thisRoot.BundleImageSource(ctx, "test")
 	if err != nil {
 		t.Fatalf("NamedInput: %v", err)
-	}
-
-	srcImg, err := input.SourceImage(ctx)
-	if err != nil {
-		t.Fatalf("SourceImage: %v", err)
 	}
 
 	sourceAPI, err := structure.APIFromImage(srcImg)

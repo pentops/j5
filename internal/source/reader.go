@@ -1,7 +1,6 @@
 package source
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -84,20 +83,54 @@ func readLockFile(root fs.FS, filename string) (*config_j5pb.LockFile, error) {
 	return lockFile, nil
 }
 
-func (src *Source) readImageFromDir(ctx context.Context, bundle *bundleSource) (*source_j5pb.SourceImage, error) {
-	_, err := bundle.J5Config()
+func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver InputSource) (*source_j5pb.SourceImage, error) {
+	j5Config, err := bundle.J5Config()
 	if err != nil {
 		return nil, err
 	}
 
-	bundleRoot, err := bundle.fs()
+	dependencies := make([]*source_j5pb.SourceImage, 0, len(j5Config.Dependencies))
+	for _, dep := range j5Config.Dependencies {
+		img, err := resolver.GetSourceImage(ctx, dep)
+		if err != nil {
+			return nil, err
+		}
+		dependencies = append(dependencies, img)
+	}
+
+	img, err := readImageFromDir(ctx, bundle.fs, dependencies)
 	if err != nil {
 		return nil, err
+	}
+
+	img.Packages = bundle.config.Packages
+	img.Options = bundle.config.Options
+	return img, nil
+}
+
+func readImageFromDir(ctx context.Context, bundleRoot fs.FS, dependencies []*source_j5pb.SourceImage) (*source_j5pb.SourceImage, error) {
+
+	fileMap := map[string]*descriptorpb.FileDescriptorProto{}
+	for _, img := range dependencies {
+		for _, file := range img.File {
+			existing, ok := fileMap[*file.Name]
+			if !ok {
+				fileMap[*file.Name] = file
+				continue
+			}
+
+			if proto.Equal(existing, file) {
+				continue
+			}
+
+			// we have a conflict
+			return nil, fmt.Errorf("file %q has conflicting content", *file.Name)
+		}
 	}
 
 	proseFiles := []*source_j5pb.ProseFile{}
 	filenames := []string{}
-	err = fs.WalkDir(bundleRoot, ".", func(path string, info fs.DirEntry, err error) error {
+	err := fs.WalkDir(bundleRoot, ".", func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -128,103 +161,6 @@ func (src *Source) readImageFromDir(ctx context.Context, bundle *bundleSource) (
 		return nil, err
 	}
 
-	realDesc, err := src.bundleProtoparse(ctx, bundle, filenames)
-	if err != nil {
-		return nil, err
-	}
-
-	return &source_j5pb.SourceImage{
-		File:            realDesc.File,
-		Packages:        bundle.config.Packages,
-		Options:         bundle.config.Options,
-		Prose:           proseFiles,
-		SourceFilenames: filenames,
-	}, nil
-
-}
-
-type FileSource interface {
-	GetFile(filename string) (io.ReadCloser, error)
-	Name() string
-}
-
-type fsSource struct {
-	fs   fs.FS
-	name string
-}
-
-func (f fsSource) Name() string {
-	return f.name
-}
-
-func (f fsSource) GetFile(filename string) (io.ReadCloser, error) {
-	return f.fs.Open(filename)
-}
-
-type mapSource struct {
-	files map[string][]byte
-	name  string
-}
-
-func (f mapSource) Name() string {
-	return f.name
-}
-
-func (f mapSource) GetFile(filename string) (io.ReadCloser, error) {
-	content, ok := f.files[filename]
-	if !ok {
-		return nil, fs.ErrNotExist
-	}
-	return io.NopCloser(bytes.NewReader(content)), nil
-}
-
-func (src *Source) bundleProtoparse(ctx context.Context, rootBundle *bundleSource, files []string) (*descriptorpb.FileDescriptorSet, error) {
-	walkRoot, err := rootBundle.fs()
-	if err != nil {
-		return nil, err
-	}
-
-	allSources := []FileSource{
-		fsSource{
-			fs:   walkRoot,
-			name: rootBundle.debugName,
-		},
-	}
-	fileMap := map[string]*descriptorpb.FileDescriptorProto{}
-
-	j5Config, err := rootBundle.J5Config()
-	if err != nil {
-		return nil, err
-	}
-
-	for _, dep := range j5Config.Dependencies {
-		depInput, err := src.GetInput(ctx, dep)
-		if err != nil {
-			return nil, err
-		}
-
-		img, err := depInput.SourceImage(ctx)
-		if err != nil {
-			return nil, err
-		}
-
-		for _, file := range img.File {
-			existing, ok := fileMap[*file.Name]
-			if !ok {
-				fileMap[*file.Name] = file
-				continue
-			}
-
-			if proto.Equal(existing, file) {
-				continue
-			}
-
-			// we have a conflict
-			return nil, fmt.Errorf("file %q has conflicting content", *file.Name)
-		}
-
-	}
-
 	parser := protoparse.Parser{
 		ImportPaths:                     []string{""},
 		IncludeSourceCodeInfo:           true,
@@ -244,17 +180,11 @@ func (src *Source) bundleProtoparse(ctx context.Context, rootBundle *bundleSourc
 			return file, nil
 		},
 		Accessor: func(filename string) (io.ReadCloser, error) {
-			for _, src := range allSources {
-				content, err := src.GetFile(filename)
-				if err == nil {
-					return content, nil
-				}
-			}
-			return nil, fs.ErrNotExist
+			return bundleRoot.Open(filename)
 		},
 	}
 
-	customDesc, err := parser.ParseFiles(files...)
+	customDesc, err := parser.ParseFiles(filenames...)
 	if err != nil {
 		panicErr := protocompile.PanicError{}
 		if errors.As(err, &panicErr) {
@@ -265,5 +195,10 @@ func (src *Source) bundleProtoparse(ctx context.Context, rootBundle *bundleSourc
 	}
 
 	realDesc := desc.ToFileDescriptorSet(customDesc...)
-	return realDesc, nil
+
+	return &source_j5pb.SourceImage{
+		File:            realDesc.File,
+		Prose:           proseFiles,
+		SourceFilenames: filenames,
+	}, nil
 }

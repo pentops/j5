@@ -7,75 +7,64 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
-	"path/filepath"
 
-	"github.com/bufbuild/protoyaml-go"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
+// A repo has:
+// - Config, with:
+//   - Generate
+//   - Plugins
+// - Bundles, with:
+//   - Dependencies
+//   - Publish
+// - Lock File
+
+// Registry codebase uses builder.RunPublishBuild
+// Builder's two build methods take:
+//   - SourceImage.
+//   - GenerateConfig or PublishConfig
+//     Both of which take a list of plugins.
+//     Publish also contains output format / destination.
+
+// Build:
+// - Fetch Repo
+// - Parse Config
+// - Identify one or more Bundles as input
+// - Get a SourceImage for each bundle
+//   - Resolve Dependencies
+//   - Proto Parse -> Source Image
+// - Merge SourceImages
+// - Run Plugins
+// - (Format Output)
+// - Write / Upload Output
+
+// We need:
+// A set of bundles, accessing the code and config
+// A dependency resolver to download the SourceImage for dependencies
+// Config manager for the plugins
+
+// RemoteResolver fetches, locks and caches dependencies from buf and j5
+type RemoteResolver interface {
+	GetRemoteDependency(ctx context.Context, input *config_j5pb.Input, locks *config_j5pb.LockFile) (*source_j5pb.SourceImage, error)
+	LatestLocks(ctx context.Context, deps []*config_j5pb.Input) (*config_j5pb.LockFile, error)
+}
+
+type InputSource interface {
+	GetSourceImage(ctx context.Context, input *config_j5pb.Input) (*source_j5pb.SourceImage, error)
+}
+
 type Source struct {
 	thisRepo *repo
-
-	bufCache *BufCache
-
-	regClient *registryClient
-
-	lockWriter *lockWriter
-	locks      *config_j5pb.LockFile
-
-	j5Cache *j5Cache
+	resolver RemoteResolver
 }
 
-type lockWriter struct {
-	filename string
-}
-
-func (lw *lockWriter) write(lock *config_j5pb.LockFile) error {
-	data, err := protoyaml.MarshalOptions{}.Marshal(lock)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(lw.filename, data, 0666)
-}
-
-func NewSource(ctx context.Context, rootDir string) (*Source, error) {
-	fsRoot := os.DirFS(rootDir)
-	fsSource, err := NewFSSource(ctx, fsRoot)
-	if err != nil {
-		return nil, err
-	}
-
-	fsSource.lockWriter = &lockWriter{
-		filename: filepath.Join(rootDir, "j5-lock.yaml"),
-	}
-
-	if fsSource.locks == nil {
-		fsSource.locks = &config_j5pb.LockFile{}
-	}
-
-	fsSource.j5Cache, err = newJ5Cache()
-	if err != nil {
-		return nil, err
-	}
-	return fsSource, nil
-}
-
-func NewFSSource(ctx context.Context, root fs.FS) (*Source, error) {
-
-	bufCache, err := NewBufCache()
-	if err != nil {
-		return nil, err
-	}
-
-	regClient := envRegistryClient()
-
+func NewFSSource(ctx context.Context, root fs.FS, resolver RemoteResolver) (*Source, error) {
 	src := &Source{
-		regClient: regClient,
-		bufCache:  bufCache,
+		resolver: resolver,
 	}
 
 	thisRepo, err := src.newRepo(".", root)
@@ -84,22 +73,38 @@ func NewFSSource(ctx context.Context, root fs.FS) (*Source, error) {
 	}
 	src.thisRepo = thisRepo
 
-	lock, err := readLockFile(root, "j5-lock.yaml")
-	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("reading lock file: %w", err)
+	return src, nil
+}
+
+func (src *Source) ListAllDependencies() ([]*config_j5pb.Input, error) {
+	allDeps := []*config_j5pb.Input{}
+	for _, bundle := range src.thisRepo.bundles {
+		cfg, err := bundle.J5Config()
+		if err != nil {
+			return nil, fmt.Errorf("bundle %q: %w", bundle.Name(), err)
 		}
-	} else {
-		src.locks = lock
+		allDeps = append(allDeps, cfg.Dependencies...)
+	}
+	return allDeps, nil
+}
+
+func (src *Source) GetSourceImage(ctx context.Context, input *config_j5pb.Input) (*source_j5pb.SourceImage, error) {
+	if local, ok := input.Type.(*config_j5pb.Input_Local); ok {
+		bundle, ok := src.thisRepo.bundles[local.Local]
+		if !ok {
+			return nil, fmt.Errorf("bundle %q not found", local.Local)
+		}
+		return bundle.SourceImage(ctx, src)
 	}
 
-	return src, nil
+	return src.resolver.GetRemoteDependency(ctx, input, src.thisRepo.lockFile)
 }
 
 type repo struct {
 	repoRoot fs.FS
 	bundles  map[string]*bundleSource
 	config   *config_j5pb.RepoConfigFile
+	lockFile *config_j5pb.LockFile
 }
 
 func (src *Source) newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
@@ -113,30 +118,43 @@ func (src *Source) newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
 		return nil, fmt.Errorf("resolving config references: %w", err)
 	}
 
+	lockFile, err := readLockFile(repoRoot, "j5-lock.yaml")
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("reading lock file: %w", err)
+		}
+		lockFile = &config_j5pb.LockFile{}
+	}
+
 	thisRepo := &repo{
-		config: config,
-		//commitInfo: commitInfo,
+		config:   config,
 		repoRoot: repoRoot,
+		lockFile: lockFile,
 		bundles:  map[string]*bundleSource{},
 	}
 
 	for _, refConfig := range config.Bundles {
+		bundleRoot := repoRoot
+		if refConfig.Dir != "" {
+			bundleRoot, err = fs.Sub(bundleRoot, refConfig.Dir)
+			if err != nil {
+				return nil, fmt.Errorf("subdir %q: %w", refConfig.Dir, err)
+			}
+		}
+
 		thisRepo.bundles[refConfig.Name] = &bundleSource{
-			rootSource: src,
-			debugName:  fmt.Sprintf("%s/%s", debugName, refConfig.Dir),
-			repo:       thisRepo,
-			dirInRepo:  refConfig.Dir,
-			refConfig:  refConfig,
+			debugName: fmt.Sprintf("%s/%s", debugName, refConfig.Dir),
+			fs:        bundleRoot,
+			dirInRepo: refConfig.Dir,
+			refConfig: refConfig,
 		}
 	}
 
 	if len(config.Packages) > 0 || len(config.Publish) > 0 || config.Registry != nil {
 		// Inline Bundle
 		thisRepo.bundles[""] = &bundleSource{
-			debugName:  debugName,
-			repo:       thisRepo,
-			rootSource: src,
-			dirInRepo:  "",
+			debugName: debugName,
+			fs:        repoRoot,
 			refConfig: &config_j5pb.BundleReference{
 				Name: "",
 				Dir:  "",
@@ -151,26 +169,26 @@ func (src *Source) newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
 	}
 
 	return thisRepo, nil
-
 }
+
 func (src Source) RepoConfig() *config_j5pb.RepoConfigFile {
 	return src.thisRepo.config
 }
 
-func (src Source) AllBundles() []BundleSource {
-	out := make([]BundleSource, 0, len(src.thisRepo.bundles))
+func (src Source) AllBundles() []*bundleSource {
+	out := make([]*bundleSource, 0, len(src.thisRepo.bundles))
 	for _, bundle := range src.thisRepo.bundles {
 		out = append(out, bundle)
 	}
 	return out
 }
 
-func (src *Source) CombinedInput(ctx context.Context, inputs []*config_j5pb.Input) (Input, error) {
+func (src *Source) CombinedSourceImage(ctx context.Context, inputs []*config_j5pb.Input) (*source_j5pb.SourceImage, error) {
 	if len(inputs) == 0 {
 		return nil, fmt.Errorf("no inputs")
 	}
 	if len(inputs) == 1 {
-		return src.GetInput(ctx, inputs[0])
+		return src.GetSourceImage(ctx, inputs[0])
 	}
 
 	allFiles := map[string]string{}
@@ -178,11 +196,7 @@ func (src *Source) CombinedInput(ctx context.Context, inputs []*config_j5pb.Inpu
 		Options: &config_j5pb.PackageOptions{},
 	}
 	for _, input := range inputs {
-		bundle, err := src.GetInput(ctx, input)
-		if err != nil {
-			return nil, fmt.Errorf("input %v: %w", input, err)
-		}
-		img, err := bundle.SourceImage(ctx)
+		img, err := src.GetSourceImage(ctx, input)
 		if err != nil {
 			return nil, fmt.Errorf("input %v: %w", input, err)
 		}
@@ -229,10 +243,7 @@ func (src *Source) CombinedInput(ctx context.Context, inputs []*config_j5pb.Inpu
 		fullImage.Packages = append(fullImage.Packages, img.Packages...)
 	}
 
-	return &imageBundle{
-		source: fullImage,
-		name:   "combined",
-	}, nil
+	return fullImage, nil
 }
 
 func hashFile(file *descriptorpb.FileDescriptorProto) (string, error) {
@@ -245,7 +256,26 @@ func hashFile(file *descriptorpb.FileDescriptorProto) (string, error) {
 	return base64.StdEncoding.EncodeToString(sh.Sum(nil)), nil
 
 }
-func (src *Source) BundleSource(name string) (BundleSource, error) {
+func (src *Source) BundleImageSource(ctx context.Context, name string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {
+	bundleSource, err := src.BundleSource(name)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	img, err := bundleSource.SourceImage(ctx, src)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cfg, err := bundleSource.J5Config()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return img, cfg, nil
+}
+
+func (src *Source) BundleSource(name string) (*bundleSource, error) {
 	if name != "" {
 		if bundle, ok := src.thisRepo.bundles[name]; ok {
 			return bundle, nil

@@ -365,7 +365,7 @@ func TestAuthMethods(t *testing.T) {
 			t.Fatalf("expected status code 200, got %d", rec.Code)
 		}
 		if called {
-			t.Fatal("expected no auth headers call")
+			t.Fatal("get foo called auth headers func")
 		}
 	})
 

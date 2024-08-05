@@ -12,7 +12,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/pentops/j5/codec"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
-	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/export"
 	"github.com/pentops/j5/internal/j5client"
 	"github.com/pentops/j5/internal/structure"
@@ -36,22 +35,8 @@ type BuildConfig struct {
 	Output string `flag:"output" default:"-" description:"Destination to push image to. - for stdout, s3://bucket/prefix, otherwise a file"`
 }
 
-func (cfg BuildConfig) sourceImage(ctx context.Context) (*source_j5pb.SourceImage, error) {
-	source, err := cfg.GetInput(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("getSource: %w", err)
-	}
-
-	image, err := source.SourceImage(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("SourceImage: %w", err)
-	}
-
-	return image, nil
-}
-
 func (cfg BuildConfig) descriptorAPI(ctx context.Context) (*client_j5pb.API, error) {
-	image, err := cfg.sourceImage(ctx)
+	image, _, err := cfg.GetBundleImage(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +59,7 @@ func (cfg BuildConfig) descriptorAPI(ctx context.Context) (*client_j5pb.API, err
 }
 
 func RunImage(ctx context.Context, cfg BuildConfig) error {
-	image, err := cfg.sourceImage(ctx)
+	image, _, err := cfg.GetBundleImage(ctx)
 	if err != nil {
 		return err
 	}
@@ -87,7 +72,7 @@ func RunImage(ctx context.Context, cfg BuildConfig) error {
 }
 
 func RunSource(ctx context.Context, cfg BuildConfig) error {
-	image, err := cfg.sourceImage(ctx)
+	image, _, err := cfg.GetBundleImage(ctx)
 	if err != nil {
 		return err
 	}
