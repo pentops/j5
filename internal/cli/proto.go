@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -24,12 +25,12 @@ func runProtoRequest(ctx context.Context, cfg struct {
 	Command string `flag:"command" default:"" description:"Pipe the output to a builder command and print files"`
 }) error {
 
-	src, err := cfg.GetInput(ctx)
+	img, _, err := cfg.GetBundleImage(ctx)
 	if err != nil {
 		return err
 	}
 
-	protoBuildRequest, err := src.ProtoCodeGeneratorRequest(ctx)
+	protoBuildRequest, err := source.CodeGeneratorRequestFromImage(img)
 	if err != nil {
 		return err
 	}

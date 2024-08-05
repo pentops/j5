@@ -7,18 +7,18 @@ import (
 
 	"github.com/pentops/j5/builder"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/j5client"
 	"github.com/pentops/j5/internal/j5reflect"
-	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/j5/internal/structure"
 	"github.com/pentops/log.go/log"
 )
 
 func runVerify(ctx context.Context, cfg struct {
-	Dir string `flag:"dir" default:"." description:"Directory with j5.yaml root"`
+	SourceConfig
 }) error {
 
-	src, err := source.NewSource(ctx, cfg.Dir)
+	src, err := cfg.GetSource(ctx)
 	if err != nil {
 		return err
 	}
@@ -31,12 +31,17 @@ func runVerify(ctx context.Context, cfg struct {
 
 	for _, bundle := range src.AllBundles() {
 
-		image, err := bundle.SourceImage(ctx)
+		img, err := bundle.SourceImage(ctx, src)
 		if err != nil {
 			return err
 		}
 
-		sourceAPI, err := structure.APIFromImage(image)
+		bundleConfig, err := bundle.J5Config()
+		if err != nil {
+			return err
+		}
+
+		sourceAPI, err := structure.APIFromImage(img)
 		if err != nil {
 			return fmt.Errorf("ReflectFromSource: %w", err)
 		}
@@ -46,7 +51,7 @@ func runVerify(ctx context.Context, cfg struct {
 			return fmt.Errorf("APIFromSource: %w", err)
 		}
 
-		if err := structure.ResolveProse(image, clientAPI); err != nil {
+		if err := structure.ResolveProse(img, clientAPI); err != nil {
 			return fmt.Errorf("ResolveProse: %w", err)
 		}
 
@@ -58,34 +63,38 @@ func runVerify(ctx context.Context, cfg struct {
 			fmt.Printf("Package %s OK\n", pkg.Name)
 		}
 
-		bundleConfig, err := bundle.J5Config()
-		if err != nil {
-			return err
-		}
-
 		for _, publish := range bundleConfig.Publish {
-			if err := bb.Publish(ctx, builder.PluginContext{
+			if err := bb.RunPublishBuild(ctx, builder.PluginContext{
 				Variables: map[string]string{},
 				ErrOut:    os.Stderr,
 				Dest:      NewDiscardFS(),
-			}, bundle, publish); err != nil {
+			}, img, publish); err != nil {
 				return err
 			}
 		}
 	}
 
-	if err := runGeneratePlugins(ctx, bb, src, NewDiscardFS()); err != nil {
-		return err
-	}
+	outRoot := NewDiscardFS()
 
+	j5Config := src.RepoConfig()
+	for _, generator := range j5Config.Generate {
+		img, err := src.CombinedSourceImage(ctx, generator.Inputs)
+		if err != nil {
+			return err
+		}
+		if err := runGeneratePlugin(ctx, bb, img, generator, outRoot); err != nil {
+			return err
+
+		}
+	}
 	return nil
 }
 
 func runGenerate(ctx context.Context, cfg struct {
-	Dir string `flag:"dir" default:"." description:"Directory with j5.yaml generate configured"`
+	SourceConfig
 }) error {
 
-	src, err := source.NewSource(ctx, cfg.Dir)
+	src, err := cfg.GetSource(ctx)
 	if err != nil {
 		return err
 	}
@@ -96,41 +105,45 @@ func runGenerate(ctx context.Context, cfg struct {
 	}
 	bb := builder.NewBuilder(dockerWrapper)
 
-	outRoot, err := NewLocalFS(cfg.Dir)
+	outRoot, err := NewLocalFS(cfg.Source)
 	if err != nil {
 		return err
 	}
-	return runGeneratePlugins(ctx, bb, src, outRoot)
-}
 
-func runGeneratePlugins(ctx context.Context, bb *builder.Builder, src *source.Source, out Dest) error {
 	j5Config := src.RepoConfig()
 	for _, generator := range j5Config.Generate {
-		errOut := &lineWriter{
-			writeLine: func(line string) {
-				log.WithField(ctx, "generator", generator.Name).Info(line)
-			},
-		}
-
-		dest := out.Sub(generator.Output)
-
-		pc := builder.PluginContext{
-			Variables: map[string]string{},
-			Dest:      dest,
-			ErrOut:    errOut,
-		}
-
-		input, err := src.CombinedInput(ctx, generator.Inputs)
+		img, err := src.CombinedSourceImage(ctx, generator.Inputs)
 		if err != nil {
 			return err
 		}
-
-		err = bb.Generate(ctx, pc, input, generator)
-		errOut.flush()
-		if err != nil {
+		if err := runGeneratePlugin(ctx, bb, img, generator, outRoot); err != nil {
 			return err
-		}
 
+		}
+	}
+	return nil
+}
+
+func runGeneratePlugin(ctx context.Context, bb *builder.Builder, img *source_j5pb.SourceImage, generator *config_j5pb.GenerateConfig, out Dest) error {
+
+	errOut := &lineWriter{
+		writeLine: func(line string) {
+			log.WithField(ctx, "generator", generator.Name).Info(line)
+		},
+	}
+
+	dest := out.Sub(generator.Output)
+
+	pc := builder.PluginContext{
+		Variables: map[string]string{},
+		Dest:      dest,
+		ErrOut:    errOut,
+	}
+
+	err := bb.RunGenerateBuild(ctx, pc, img, generator)
+	errOut.flush()
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -142,12 +155,7 @@ func runPublish(ctx context.Context, cfg struct {
 	Publish string `flag:"publish" optional:"true" description:"Name of the 'publish' to run (required when more than one exists)"`
 }) error {
 
-	input, err := cfg.GetInput(ctx)
-	if err != nil {
-		return err
-	}
-
-	inputConfig, err := input.J5Config()
+	img, inputConfig, err := cfg.GetBundleImage(ctx)
 	if err != nil {
 		return err
 	}
@@ -186,5 +194,6 @@ func runPublish(ctx context.Context, cfg struct {
 		Dest:      outRoot,
 		ErrOut:    os.Stderr,
 	}
-	return bb.Publish(ctx, pc, input, publish)
+
+	return bb.RunPublishBuild(ctx, pc, img, publish)
 }

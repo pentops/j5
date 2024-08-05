@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/fs"
 	"strings"
 	"time"
 
@@ -21,33 +20,6 @@ import (
 	"google.golang.org/protobuf/types/pluginpb"
 )
 
-func NewFSInput(ctx context.Context, fs fs.FS, bundleName string) (BundleSource, error) {
-	src, err := source.NewFSSource(ctx, fs)
-	if err != nil {
-		return nil, err
-	}
-	return src.BundleSource(bundleName)
-}
-
-type PipeRunner interface {
-	Run(ctx context.Context, rc RunContext) error
-}
-
-type Builder struct {
-	runner PipeRunner
-}
-
-type Input interface {
-	Name() string
-	ProtoCodeGeneratorRequest(ctx context.Context) (*pluginpb.CodeGeneratorRequest, error)
-	SourceImage(ctx context.Context) (*source_j5pb.SourceImage, error)
-}
-
-type BundleSource interface {
-	Input
-	J5Config() (*config_j5pb.BundleConfigFile, error)
-}
-
 func NewBuilder(runner PipeRunner) *Builder {
 	return &Builder{
 		runner: runner,
@@ -60,18 +32,22 @@ type PluginContext struct {
 	Dest      Dest
 }
 
+type PipeRunner interface {
+	Run(ctx context.Context, rc RunContext) error
+}
+type Builder struct {
+	runner PipeRunner
+}
+
 type Dest interface {
 	PutFile(ctx context.Context, path string, body io.Reader) error
 }
 
-func (b *Builder) Generate(ctx context.Context, pc PluginContext, input Input, build *config_j5pb.GenerateConfig) error {
-
+func (b *Builder) RunGenerateBuild(ctx context.Context, pc PluginContext, input *source_j5pb.SourceImage, build *config_j5pb.GenerateConfig) error {
 	return b.runPlugins(ctx, pc, input, build.Plugins)
-
 }
 
-func (b *Builder) Publish(ctx context.Context, pc PluginContext, input Input, build *config_j5pb.PublishConfig) error {
-
+func (b *Builder) RunPublishBuild(ctx context.Context, pc PluginContext, input *source_j5pb.SourceImage, build *config_j5pb.PublishConfig) error {
 	err := b.runPlugins(ctx, pc, input, build.Plugins)
 	if err != nil {
 		return err
@@ -121,7 +97,7 @@ func buildGomodFile(pkg *config_j5pb.OutputType_GoProxy) ([]byte, error) {
 	return mm.Format()
 }
 
-func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input Input, plugins []*config_j5pb.BuildPlugin) error {
+func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input *source_j5pb.SourceImage, plugins []*config_j5pb.BuildPlugin) error {
 
 	if len(plugins) == 0 {
 		return fmt.Errorf("no plugins")
@@ -131,9 +107,9 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input Input,
 
 	switch pluginType {
 	case config_j5pb.Plugin_PLUGIN_PROTO:
-		protoBuildRequest, err := input.ProtoCodeGeneratorRequest(ctx)
+		protoBuildRequest, err := source.CodeGeneratorRequestFromImage(input)
 		if err != nil {
-			return fmt.Errorf("ProtoCodeGeneratorRequest: %w", err)
+			return fmt.Errorf("CodeGeneratorRequestFromImage: %w", err)
 		}
 
 		errGroup, ctx := errgroup.WithContext(ctx)
@@ -146,7 +122,7 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input Input,
 					return fmt.Errorf("plugin type mismatch: %s", plugin.Type)
 				}
 				if err := b.runProtocPlugin(ctx, pc, plugin, protoBuildRequest); err != nil {
-					return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
+					return fmt.Errorf("plugin %s: %w", plugin.Name, err)
 				}
 				return nil
 			})
@@ -154,11 +130,7 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input Input,
 		return errGroup.Wait()
 
 	case config_j5pb.Plugin_J5_CLIENT:
-		sourceImage, err := input.SourceImage(ctx)
-		if err != nil {
-			return fmt.Errorf("source image: %w", err)
-		}
-		clientAPI, err := DescriptorFromSource(sourceImage)
+		clientAPI, err := DescriptorFromSource(input)
 		if err != nil {
 			return fmt.Errorf("ReflectFromSource: %w", err)
 		}
@@ -177,7 +149,7 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input Input,
 					return fmt.Errorf("plugin type mismatch: %s", plugin.Type)
 				}
 				if err := b.runJ5ClientPlugin(ctx, pc, plugin, clientAPI); err != nil {
-					return fmt.Errorf("plugin %s for input %s: %w", plugin.Name, input.Name(), err)
+					return fmt.Errorf("plugin %s: %w", plugin.Name, err)
 				}
 				return nil
 			})
