@@ -223,6 +223,10 @@ func (rr *Router) buildMethod(md protoreflect.MethodDescriptor, conn Invoker, au
 		handler.authHeaders = rr.globalAuth
 		handler.authMethodName = "jwt-bearer"
 
+	case *auth_j5pb.MethodAuthType_Cookie:
+		handler.authMethodName = "cookie"
+		handler.ForwardRequestHeaders["cookie"] = true
+
 	case *auth_j5pb.MethodAuthType_Custom:
 		handler.authMethodName = fmt.Sprintf("custom, headers: %s", strings.Join(authType.PassThroughHeaders, ", "))
 
