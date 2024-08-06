@@ -9,6 +9,7 @@ const (
 	MethodAuth_None      MethodAuthTypeKey = "none"
 	MethodAuth_JwtBearer MethodAuthTypeKey = "jwtBearer"
 	MethodAuth_Custom    MethodAuthTypeKey = "custom"
+	MethodAuth_Cookie    MethodAuthTypeKey = "cookie"
 )
 
 func (x *MethodAuthType) TypeKey() (MethodAuthTypeKey, bool) {
@@ -19,6 +20,8 @@ func (x *MethodAuthType) TypeKey() (MethodAuthTypeKey, bool) {
 		return MethodAuth_JwtBearer, true
 	case *MethodAuthType_Custom_:
 		return MethodAuth_Custom, true
+	case *MethodAuthType_Cookie_:
+		return MethodAuth_Cookie, true
 	default:
 		return "", false
 	}
@@ -36,6 +39,8 @@ func (x *MethodAuthType) Set(val IsMethodAuthTypeWrappedType) {
 		x.Type = &MethodAuthType_JwtBearer{JwtBearer: v}
 	case *MethodAuthType_Custom:
 		x.Type = &MethodAuthType_Custom_{Custom: v}
+	case *MethodAuthType_Cookie:
+		x.Type = &MethodAuthType_Cookie_{Cookie: v}
 	}
 }
 func (x *MethodAuthType) Get() IsMethodAuthTypeWrappedType {
@@ -46,6 +51,8 @@ func (x *MethodAuthType) Get() IsMethodAuthTypeWrappedType {
 		return v.JwtBearer
 	case *MethodAuthType_Custom_:
 		return v.Custom
+	case *MethodAuthType_Cookie_:
+		return v.Cookie
 	default:
 		return nil
 	}
@@ -58,6 +65,9 @@ func (x *MethodAuthType_JWTBearer) TypeKey() MethodAuthTypeKey {
 }
 func (x *MethodAuthType_Custom) TypeKey() MethodAuthTypeKey {
 	return MethodAuth_Custom
+}
+func (x *MethodAuthType_Cookie) TypeKey() MethodAuthTypeKey {
+	return MethodAuth_Cookie
 }
 
 type IsMethodAuthType_Type = isMethodAuthType_Type
