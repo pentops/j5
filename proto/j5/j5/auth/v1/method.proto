@@ -9,6 +9,7 @@ message MethodAuthType {
     None none = 10;
     JWTBearer jwt_bearer = 11;
     Custom custom = 12;
+    Cookie cookie = 13;
   }
 
   message None {}
@@ -16,6 +17,8 @@ message MethodAuthType {
   message JWTBearer {
     //repeated string required_scopes = 1;
   }
+
+  message Cookie {}
 
   message Custom {
     repeated string pass_through_headers = 1;

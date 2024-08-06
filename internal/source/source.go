@@ -160,10 +160,11 @@ func (src *Source) newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
 				Dir:  "",
 			},
 			config: &config_j5pb.BundleConfigFile{
-				Registry: config.Registry,
-				Publish:  config.Publish,
-				Packages: config.Packages,
-				Options:  config.Options,
+				Registry:     config.Registry,
+				Publish:      config.Publish,
+				Packages:     config.Packages,
+				Options:      config.Options,
+				Dependencies: config.Dependencies,
 			},
 		}
 	}

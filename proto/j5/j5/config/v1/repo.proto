@@ -21,6 +21,7 @@ message RepoConfigFile {
   repeated PackageConfig packages = 9;
   repeated PublishConfig publish = 10;
   PackageOptions options = 11;
+  repeated Input dependencies = 12;
 }
 
 message BundleReference {
