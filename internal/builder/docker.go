@@ -175,7 +175,7 @@ func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
 	}
 
 	if registryAuth != nil {
-		pullOptions.PrivilegeFunc = func() (string, error) {
+		pullOptions.PrivilegeFunc = func(ctx context.Context) (string, error) {
 			var authConfig *basicAuth
 
 			switch authType := registryAuth.Auth.(type) {
@@ -251,7 +251,7 @@ func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
 		// The ECS registry seems to return the 'wrong' status code for PrivilegeFunc errors.
 		// This is a workaround.
 		if strings.Contains(err.Error(), "no basic auth credentials") {
-			token, err := pullOptions.PrivilegeFunc()
+			token, err := pullOptions.PrivilegeFunc(ctx)
 			if err != nil {
 				return fmt.Errorf("image pull: %w", err)
 			}
