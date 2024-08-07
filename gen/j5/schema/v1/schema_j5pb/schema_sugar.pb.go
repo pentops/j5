@@ -72,22 +72,27 @@ func (x *EntityPart) Scan(value interface{}) error {
 const (
 	KeyFormat_UNSPECIFIED KeyFormat = 0
 	KeyFormat_UUID        KeyFormat = 1
+	KeyFormat_NATURAL_KEY KeyFormat = 2
 )
 
 var (
 	KeyFormat_name_short = map[int32]string{
 		0: "UNSPECIFIED",
 		1: "UUID",
+		2: "NATURAL_KEY",
 	}
 	KeyFormat_value_short = map[string]int32{
 		"UNSPECIFIED": 0,
 		"UUID":        1,
+		"NATURAL_KEY": 2,
 	}
 	KeyFormat_value_either = map[string]int32{
 		"UNSPECIFIED":            0,
 		"KEY_FORMAT_UNSPECIFIED": 0,
 		"UUID":                   1,
 		"KEY_FORMAT_UUID":        1,
+		"NATURAL_KEY":            2,
+		"KEY_FORMAT_NATURAL_KEY": 2,
 	}
 )
 

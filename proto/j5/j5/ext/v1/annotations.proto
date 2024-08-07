@@ -103,6 +103,9 @@ extend google.protobuf.FieldOptions {
   FieldOptions field = 555000;
 }
 
+// Field Type matching j5.schema.v1.Field types, these indicate the type more
+// directly, and will eventually hold all of the options from the other
+// annotation libraries (validate and list)
 message FieldOptions {
   oneof type {
     MessageFieldOptions message = 1;
@@ -117,12 +120,12 @@ message FieldOptions {
     StringFieldOptions string = 30;
     IntegerFieldOptions integer = 31;
     FloatFieldOptions float = 32;
-    BoolFieldOptions boolean = 33;
+    BooleanFieldOptions boolean = 33;
     BytesFieldOptions bytes = 34;
     DecimalFieldOptions decimal = 35;
     DateFieldOptions date = 36;
     TimestampFieldOptions timestamp = 37;
-    UUIDFieldOptions uuid = 38;
+    KeyTypeFieldOptions key = 38;
   }
 }
 
@@ -148,7 +151,7 @@ message IntegerFieldOptions {}
 
 message FloatFieldOptions {}
 
-message BoolFieldOptions {}
+message BooleanFieldOptions {}
 
 message BytesFieldOptions {}
 
@@ -158,4 +161,4 @@ message DateFieldOptions {}
 
 message TimestampFieldOptions {}
 
-message UUIDFieldOptions {}
+message KeyTypeFieldOptions {}

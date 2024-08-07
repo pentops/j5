@@ -258,8 +258,9 @@ message KeyField {
 }
 
 enum KeyFormat {
-  KEY_FORMAT_UNSPECIFIED = 0; // free text
+  KEY_FORMAT_UNSPECIFIED = 0; // free text natural key
   KEY_FORMAT_UUID = 1;
+  KEY_FORMAT_NATURAL_KEY = 2; // Format specified by an external system
 }
 
 message ObjectProperty {
