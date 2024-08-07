@@ -329,32 +329,6 @@ func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*Obj
 			continue
 		}
 
-		fieldOptions := proto.GetExtension(field.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
-		if fieldOptions != nil {
-			if msgOptions := fieldOptions.GetMessage(); msgOptions != nil {
-				if field.Kind() != protoreflect.MessageKind {
-					return nil, fmt.Errorf("field %s is not a message but has a message annotation", field.Name())
-				}
-
-				if msgOptions.Flatten {
-					// skips the schema set, this is used just to get the
-					// fields.
-					subMessage, err := ss.messageProperties(field.Message())
-					if err != nil {
-						return nil, fmt.Errorf("building field %s: %w", field.FullName(), err)
-					}
-					// inline the properties of the sub-message directly into
-					// this message
-					for _, property := range subMessage {
-
-						property.ProtoField = append([]protoreflect.FieldNumber{field.Number()}, property.ProtoField...)
-						properties = append(properties, property)
-					}
-					continue
-				}
-			}
-		}
-
 		prop, err := ss.buildSchemaProperty(field)
 		if err != nil {
 			return nil, patherr.Wrap(err, string(field.Name()))
@@ -464,6 +438,8 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 	if !prop.Required && src.HasOptionalKeyword() {
 		prop.ExplicitlyOptional = true
 	}
+
+	fieldOptions := proto.GetExtension(src.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
 
 	// TODO: Validation / Rules
 	// TODO: Map
@@ -900,6 +876,19 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		return prop, nil
 
 	case protoreflect.MessageKind:
+
+		flatten := false
+		if fieldOptions != nil {
+			if msgOptions := fieldOptions.GetMessage(); msgOptions != nil {
+				if src.Kind() != protoreflect.MessageKind {
+					return nil, fmt.Errorf("field %s is not a message but has a message annotation", src.Name())
+				}
+
+				if msgOptions.Flatten {
+					flatten = true
+				}
+			}
+		}
 		wktschema, ok := wktSchema(src.Message(), listConstraint)
 		if ok {
 			prop.Schema = wktschema
@@ -918,6 +907,7 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 				ref.To, err = pkg.buildOneofSchema(msg)
 			} else {
 				ref.To, err = pkg.buildObjectSchema(msg)
+
 			}
 			if err != nil {
 				return nil, err
@@ -929,7 +919,8 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			}
 		} else {
 			prop.Schema = &ObjectField{
-				Ref: ref,
+				Ref:     ref,
+				Flatten: flatten,
 			}
 		}
 		return prop, nil

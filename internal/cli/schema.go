@@ -25,7 +25,7 @@ func schemaSet() *commander.CommandSet {
 	genGroup.Add("image", commander.NewCommand(RunImage))
 	genGroup.Add("jdef", commander.NewCommand(RunJDef))
 	genGroup.Add("source", commander.NewCommand(RunSource))
-	genGroup.Add("client", commander.NewCommand(RunDescriptor))
+	genGroup.Add("client", commander.NewCommand(RunClient))
 	genGroup.Add("swagger", commander.NewCommand(RunSwagger))
 	return genGroup
 }
@@ -90,7 +90,7 @@ func RunSource(ctx context.Context, cfg BuildConfig) error {
 	return writeBytes(ctx, cfg.Output, bb)
 }
 
-func RunDescriptor(ctx context.Context, cfg BuildConfig) error {
+func RunClient(ctx context.Context, cfg BuildConfig) error {
 
 	descriptorAPI, err := cfg.descriptorAPI(ctx)
 	if err != nil {

@@ -41,5 +41,8 @@ func (b *bundleSource) SourceImage(ctx context.Context, resolver InputSource) (*
 		return nil, fmt.Errorf("reading source image for %s: %w", b.debugName, err)
 	}
 
+	if img.SourceName == "" {
+		img.SourceName = b.debugName
+	}
 	return img, nil
 }

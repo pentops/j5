@@ -156,7 +156,7 @@ func (enc *encoder) encodeOneofBody(properties []fieldSpec) error {
 
 func (enc *encoder) encodeObject(schema *j5reflect.ObjectSchema, msg protoreflect.Message) error {
 
-	fields, err := collectProperties(schema.Properties, msg)
+	fields, err := collectProperties(schema.ClientProperties(), msg)
 	if err != nil {
 		return err
 	}

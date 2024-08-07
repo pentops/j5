@@ -15,6 +15,7 @@ type RootSchema interface {
 	PackageName() string
 	Package() *Package
 	ToJ5Root() *schema_j5pb.RootSchema
+	ToJ5ClientRoot() *schema_j5pb.RootSchema
 	Description() string
 }
 
@@ -39,6 +40,9 @@ func (s *rootSchema) FullName() string {
 }
 
 func (s *rootSchema) Name() string {
+	if s == nil {
+		return "<nil>"
+	}
 	return s.name
 }
 
@@ -100,6 +104,10 @@ func (s *EnumSchema) ToJ5Root() *schema_j5pb.RootSchema {
 	}
 }
 
+func (s *EnumSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
+	return s.ToJ5Root()
+}
+
 func (ps PropertySet) ByJSONName(name string) *ObjectProperty {
 	for _, prop := range ps {
 		if prop.JSONName == name {
@@ -142,6 +150,46 @@ func (s *ObjectSchema) ToJ5Object() *schema_j5pb.Object {
 	}
 }
 
+func (s *ObjectSchema) ClientProperties() []*ObjectProperty {
+	properties := make([]*ObjectProperty, 0, len(s.Properties))
+	for _, prop := range s.Properties {
+		switch propType := prop.Schema.(type) {
+		case *ObjectField:
+			if propType.Flatten {
+
+				children := propType.Schema().ClientProperties()
+				for _, child := range children {
+					child := child.nestedClone(prop.ProtoField)
+					properties = append(properties, child)
+				}
+
+				continue
+			}
+		}
+		properties = append(properties, prop)
+	}
+	return properties
+}
+
+func (s *ObjectSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
+	clientProperties := s.ClientProperties()
+	properties := make([]*schema_j5pb.ObjectProperty, 0, len(clientProperties))
+	for _, prop := range s.Properties {
+		property := prop.ToJ5Proto()
+		properties = append(properties, property)
+	}
+	return &schema_j5pb.RootSchema{
+		Type: &schema_j5pb.RootSchema_Object{
+			Object: &schema_j5pb.Object{
+				Description: s.description,
+				Name:        s.name,
+				Properties:  properties,
+				Entity:      s.Entity,
+			},
+		},
+	}
+}
+
 func (s *ObjectSchema) ToJ5Root() *schema_j5pb.RootSchema {
 	built := s.ToJ5Object()
 	return &schema_j5pb.RootSchema{
@@ -172,6 +220,10 @@ func (s *OneofSchema) ToJ5Root() *schema_j5pb.RootSchema {
 			},
 		},
 	}
+}
+
+func (s *OneofSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
+	return s.ToJ5Root()
 }
 
 type PropertySet []*ObjectProperty
@@ -208,4 +260,19 @@ func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 		ProtoField:         fieldPath,
 	}
 
+}
+
+func (prop *ObjectProperty) nestedClone(inParent []protoreflect.FieldNumber) *ObjectProperty {
+	protoField := append(inParent, prop.ProtoField...)
+	return &ObjectProperty{
+		Parent:             prop.Parent,
+		Schema:             prop.Schema,
+		ProtoField:         protoField,
+		JSONName:           prop.JSONName,
+		Required:           prop.Required,
+		ReadOnly:           prop.ReadOnly,
+		WriteOnly:          prop.WriteOnly,
+		ExplicitlyOptional: prop.ExplicitlyOptional,
+		Description:        prop.Description,
+	}
 }

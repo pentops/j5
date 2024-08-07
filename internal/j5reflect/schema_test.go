@@ -249,9 +249,9 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 		"schema.map.itemSchema.string": map[string]interface{}{},
 	})
 
-	// flattenedMessage itself, and the 'flattened' key should not appear.
-	assertProperty("fieldFromFlattened", map[string]interface{}{
-		"protoField": jsontest.Array[float64]{18, 1},
+	assertProperty("flattened", map[string]interface{}{
+		"protoField":            jsontest.Array[float64]{18},
+		"schema.object.flatten": true,
 	})
 }
 
@@ -324,10 +324,9 @@ func TestSchemaTypesComplex(t *testing.T) {
 			}},
 		},
 		expected: map[string]interface{}{
-			"object.name":                       "TestMessage",
-			"object.properties.0.name":          "childField",
-			"object.properties.0.protoField":    jsontest.Array[float64]{1, 1},
-			"object.properties.0.schema.string": map[string]interface{}{},
+			"object.name":                               "TestMessage",
+			"object.properties.0.name":                  "testField",
+			"object.properties.0.schema.object.flatten": true,
 		},
 	}, {
 		name: "exposedOneof",

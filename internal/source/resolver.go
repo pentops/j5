@@ -121,6 +121,9 @@ func (rr *Resolver) cacheDance(ctx context.Context, spec cacheSpec, source Regis
 	if err != nil {
 		return nil, err
 	}
+	if img.SourceName == "" {
+		img.SourceName = fullName
+	}
 
 	if rr.j5Cache != nil && img.Version != nil {
 		if err := rr.j5Cache.put(ctx, fullName, *img.Version, img); err != nil {
@@ -232,6 +235,9 @@ func (src *Resolver) getCachedInput(ctx context.Context, name, version string) (
 	image, ok := src.j5Cache.tryGet(ctx, name, version)
 	if !ok {
 		return nil, false
+	}
+	if image.SourceName == "" {
+		image.SourceName = name
 	}
 	return image, true
 }

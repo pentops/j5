@@ -98,6 +98,7 @@ func (sb *sourceBuilder) apiBaseFromSource(api *source_j5pb.API) (*API, error) {
 			}
 
 		}
+
 	}
 
 	return apiPkg, nil
@@ -167,19 +168,25 @@ func (sb *sourceBuilder) entitiesFromSource(pkg *Package, schemaPackage *j5refle
 	}
 
 	for _, entity := range found {
-		if entity.KeysSchema == nil {
-			return nil, fmt.Errorf("missing keys schema for entity %q", entity.Name)
+		if entity.KeysSchema == nil || entity.EventSchema == nil || entity.StateSchema == nil {
+			return nil, fmt.Errorf(
+				"missing schema for entity %q: Keys: %v Event %v State %v",
+				entity.Name,
+				schemaDescForEntity(entity.KeysSchema),
+				schemaDescForEntity(entity.EventSchema),
+				schemaDescForEntity(entity.StateSchema),
+			)
 		}
 
-		if entity.EventSchema == nil {
-			return nil, fmt.Errorf("missing event schema for entity %q", entity.Name)
-		}
-
-		if entity.StateSchema == nil {
-			return nil, fmt.Errorf("missing state schema for entity %q", entity.Name)
-		}
 	}
 	return found, nil
+}
+
+func schemaDescForEntity(schema *j5reflect.ObjectSchema) string {
+	if schema == nil {
+		return "<missing>"
+	}
+	return schema.FullName()
 }
 
 func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *source_j5pb.Service) (*Service, error) {

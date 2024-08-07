@@ -18,6 +18,7 @@ message SourceImage {
   j5.config.v1.PackageOptions options = 4;
 
   repeated string source_filenames = 6;
+  string source_name = 8;
   optional string version = 7;
 }
 
