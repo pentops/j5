@@ -61,6 +61,10 @@ message ObjectField {
   bool additional_properties = 4;
   Rules rules = 5;
 
+  // When true, the fields of the child message are flattened into the parent
+  // message in JSON encoding and client schemas.
+  bool flatten = 6;
+
   message Rules {
     optional uint64 min_properties = 1;
     optional uint64 max_properties = 2;

@@ -22,6 +22,7 @@ type schemaSource interface {
 }
 
 func (api *API) ToJ5Proto() (*client_j5pb.API, error) {
+
 	// preserves order
 	packages := make([]*client_j5pb.Package, 0, len(api.Packages))
 	packageMap := map[string]*client_j5pb.Package{}
@@ -310,7 +311,7 @@ type schemaRef struct {
 	name      string
 }
 
-// collectPackageRefs walks the entire API, returning all schemas which are
+// collectPackageRefs walks the entire API, returning all client schemas which are
 // accessible via a method, event etc.
 func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 	// map[
@@ -324,7 +325,7 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 		}
 
 		schemas[schema.FullName()] = &schemaRef{
-			schema:    schema.ToJ5Root(),
+			schema:    schema.ToJ5ClientRoot(),
 			inPackage: schema.PackageName(),
 			name:      schema.Name(),
 		}

@@ -108,14 +108,32 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 	return img, nil
 }
 
+func strVal(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
 func readImageFromDir(ctx context.Context, bundleRoot fs.FS, dependencies []*source_j5pb.SourceImage) (*source_j5pb.SourceImage, error) {
 
 	fileMap := map[string]*descriptorpb.FileDescriptorProto{}
+	depMap := map[string]*descriptorpb.FileDescriptorProto{}
+	fileSourceMap := map[string]*source_j5pb.SourceImage{}
 	for _, img := range dependencies {
+		isSource := map[string]bool{}
+		for _, file := range img.SourceFilenames {
+			isSource[file] = true
+		}
+
 		for _, file := range img.File {
+			if !isSource[*file.Name] {
+				depMap[*file.Name] = file
+				continue
+			}
 			existing, ok := fileMap[*file.Name]
 			if !ok {
 				fileMap[*file.Name] = file
+				fileSourceMap[*file.Name] = img
 				continue
 			}
 
@@ -123,8 +141,11 @@ func readImageFromDir(ctx context.Context, bundleRoot fs.FS, dependencies []*sou
 				continue
 			}
 
-			// we have a conflict
-			return nil, fmt.Errorf("file %q has conflicting content", *file.Name)
+			a := fileSourceMap[*file.Name]
+			aName := fmt.Sprintf("%s:%s", a.SourceName, strVal(a.Version))
+			bName := fmt.Sprintf("%s:%s", img.SourceName, strVal(img.Version))
+
+			return nil, fmt.Errorf("file %q has conflicting content in %s and %s", *file.Name, aName, bName)
 		}
 	}
 
@@ -173,11 +194,13 @@ func readImageFromDir(ctx context.Context, bundleRoot fs.FS, dependencies []*sou
 		},
 
 		LookupImportProto: func(filename string) (*descriptorpb.FileDescriptorProto, error) {
-			file, ok := fileMap[filename]
-			if !ok {
-				return nil, fmt.Errorf("could not find file %q", filename)
+			if file, ok := fileMap[filename]; ok {
+				return file, nil
 			}
-			return file, nil
+			if file, ok := depMap[filename]; ok {
+				return file, nil
+			}
+			return nil, fmt.Errorf("could not find file %q", filename)
 		},
 		Accessor: func(filename string) (io.ReadCloser, error) {
 			return bundleRoot.Open(filename)

@@ -63,8 +63,9 @@ func (s *EnumField) ToJ5Field() *schema_j5pb.Field {
 }
 
 type ObjectField struct {
-	Ref   *RefSchema
-	Rules *schema_j5pb.ObjectField_Rules
+	Ref     *RefSchema
+	Flatten bool
+	Rules   *schema_j5pb.ObjectField_Rules
 }
 
 func (s *ObjectField) Schema() *ObjectSchema {
@@ -81,7 +82,8 @@ func (s *ObjectField) ToJ5Field() *schema_j5pb.Field {
 						Schema:  s.Ref.Schema,
 					},
 				},
-				Rules: s.Rules,
+				Flatten: s.Flatten,
+				Rules:   s.Rules,
 			},
 		},
 	}

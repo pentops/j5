@@ -175,7 +175,7 @@ func passUpError(field string, err error) error {
 func (dec *decoder) decodeObject(object *j5reflect.ObjectSchema, msg protoreflect.Message) error {
 
 	fieldMap := map[string]*j5reflect.ObjectProperty{}
-	for _, prop := range object.Properties {
+	for _, prop := range object.ClientProperties() {
 		fieldMap[prop.JSONName] = prop
 	}
 
@@ -209,7 +209,7 @@ func (dec *decoder) decodeObject(object *j5reflect.ObjectSchema, msg protoreflec
 			protoFieldNumber, protoFieldPath = protoFieldPath[0], protoFieldPath[1:]
 			protoField = settingMessage.Descriptor().Fields().ByNumber(protoFieldNumber)
 			if protoField == nil {
-				return fmt.Errorf("no such field %d", protoFieldNumber)
+				return fmt.Errorf("no such field %d in msg %s", protoFieldNumber, settingMessage.Descriptor().FullName())
 			}
 			if len(protoFieldPath) == 0 {
 				break

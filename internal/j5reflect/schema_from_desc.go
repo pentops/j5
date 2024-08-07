@@ -2,6 +2,7 @@ package j5reflect
 
 import (
 	"fmt"
+
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -131,8 +132,9 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 				return nil, err
 			}
 			return &ObjectField{
-				Ref:   item.AsRef(),
-				Rules: st.Object.Rules,
+				Ref:     item.AsRef(),
+				Rules:   st.Object.Rules,
+				Flatten: st.Object.Flatten,
 			}, nil
 		case *schema_j5pb.ObjectField_Ref:
 			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
