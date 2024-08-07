@@ -32,7 +32,7 @@ jobs:
                 "file": .
               }) ' \
           | awk '{print "images="$1}' \
-          | >> "$GITHUB_OUTPUT"
+          >> "$GITHUB_OUTPUT"
 
   push_to_registries:
     needs: define-matrix
