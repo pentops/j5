@@ -226,8 +226,14 @@ func (bb *builder) jsonField(packageName string, property *schema_j5pb.ObjectPro
 		dataType.Pointer = true
 	}
 
+	name := goTypeName(property.Name)
+	if obj := property.Schema.GetObject(); obj != nil && obj.Flatten {
+		name = ""
+		delete(tags, "json")
+	}
+
 	return &Field{
-		Name:     goTypeName(property.Name),
+		Name:     name,
 		DataType: *dataType,
 		Tags:     tags,
 		Property: property,
