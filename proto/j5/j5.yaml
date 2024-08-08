@@ -12,7 +12,14 @@ packages:
 options:
   subPackages: []
 
-dependencies: []
+dependencies:
+  - bufRegistry:
+      owner: bufbuild
+      name: protovalidate
+
+  - bufRegistry:
+      owner: googleapis
+      name: googleapis
 
 registry:
   owner: pentops
