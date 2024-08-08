@@ -7,14 +7,12 @@ packages:
   - name: j5.config.v1
   - name: j5.schema.v1
   - name: j5.types.v1
+  - name: psm.state.v1
 
 options:
   subPackages: []
 
-dependencies:
-  - bufRegistry:
-      owner: bufbuild
-      name: protovalidate
+dependencies: []
 
 registry:
   owner: pentops
