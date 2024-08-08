@@ -43,19 +43,19 @@ func runVerify(ctx context.Context, cfg struct {
 
 		sourceAPI, err := structure.APIFromImage(img)
 		if err != nil {
-			return fmt.Errorf("ReflectFromSource: %w", err)
+			return fmt.Errorf("Source API From Image: %w", err)
 		}
 
 		clientAPI, err := j5client.APIFromSource(sourceAPI)
 		if err != nil {
-			return fmt.Errorf("APIFromSource: %w", err)
+			return fmt.Errorf("Client API From Source: %w", err)
 		}
 
 		if err := structure.ResolveProse(img, clientAPI); err != nil {
 			return fmt.Errorf("ResolveProse: %w", err)
 		}
 
-		_, err = j5reflect.PackageSetFromSourceAPI(sourceAPI)
+		_, err = j5reflect.PackageSetFromSourceAPI(sourceAPI.Packages)
 		if err != nil {
 			return fmt.Errorf("building reflection from descriptor: %w", err)
 		}

@@ -56,27 +56,18 @@ func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 		return nil, err
 	}
 
-	packageSet, err := j5reflect.SchemaSetFromFiles(descFiles, func(f protoreflect.FileDescriptor) bool {
+	selector := func(f protoreflect.FileDescriptor) bool {
+		name := string(f.Package())
 		for _, pkg := range image.Packages {
-			if strings.HasPrefix(string(f.Package()), pkg.Name) {
+			if strings.HasPrefix(name, pkg.Name) {
 				return true
 			}
 		}
 		return false
-	})
-	if err != nil {
-		return nil, fmt.Errorf("package set from files: %w", err)
 	}
 
-	for _, schemaPkg := range packageSet.Packages {
-		ss, err := bb.getSchemaSet(schemaPkg.Name)
-		if err != nil {
-			return nil, fmt.Errorf("get schema set: %w", err)
-		}
-		for name, schema := range schemaPkg.Schemas {
-			ss[name] = schema.To.ToJ5Root()
-		}
-
+	if err := bb.addSchemas(descFiles, selector); err != nil {
+		return nil, err
 	}
 
 	return bb.toAPI(), nil
@@ -88,6 +79,24 @@ func (b packageSet) toAPI() *source_j5pb.API {
 	}
 }
 
+func (bb packageSet) addSchemas(descFiles *protoregistry.Files, selector func(f protoreflect.FileDescriptor) bool) error {
+	packageSet, err := j5reflect.SchemaSetFromFiles(descFiles, selector)
+	if err != nil {
+		return fmt.Errorf("package set from files: %w", err)
+	}
+
+	for _, schemaPkg := range packageSet.Packages {
+		ss, err := bb.getSchemaSet(schemaPkg.Name)
+		if err != nil {
+			return fmt.Errorf("get schema set: %w", err)
+		}
+		for name, schema := range schemaPkg.Schemas {
+			ss[name] = schema.To.ToJ5Root()
+		}
+
+	}
+	return nil
+}
 func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 
 	services := make([]protoreflect.ServiceDescriptor, 0)

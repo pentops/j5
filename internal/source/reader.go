@@ -192,7 +192,6 @@ func readImageFromDir(ctx context.Context, bundleRoot fs.FS, dependencies []*sou
 				"error": err.Error(),
 			}).Warn("protoparse warning")
 		},
-
 		LookupImportProto: func(filename string) (*descriptorpb.FileDescriptorProto, error) {
 			if file, ok := fileMap[filename]; ok {
 				return file, nil
