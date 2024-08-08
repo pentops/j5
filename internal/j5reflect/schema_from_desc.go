@@ -3,52 +3,22 @@ package j5reflect
 import (
 	"fmt"
 
-	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/patherr"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func PackageSetFromClientAPI(api *client_j5pb.API) (*SchemaSet, error) {
+func PackageSetFromSourceAPI(packages []*source_j5pb.Package) (*SchemaSet, error) {
 	pkgSet := newSchemaSet()
 
-	for _, apiPackage := range api.Packages {
-		pkg := pkgSet.Package(apiPackage.Name)
-
-		for name, schema := range apiPackage.Schemas {
-			refSchema := &RefSchema{
-				Package: pkg,
-				Schema:  name,
-			}
-			pkg.Schemas[name] = refSchema
-
-			to, err := pkg.buildRoot(schema)
-			if err != nil {
-				return nil, patherr.Wrap(err, "schema", name)
-			}
-
-			refSchema.To = to
-		}
-	}
-
-	for _, pkg := range pkgSet.Packages {
-		if err := pkg.assertAllRefsLink(); err != nil {
-			return nil, patherr.Wrap(err, "package", pkg.Name)
-		}
-	}
-
-	return pkgSet, nil
-}
-
-func PackageSetFromSourceAPI(api *source_j5pb.API) (*SchemaSet, error) {
-	pkgSet := newSchemaSet()
-
-	for _, apiPackage := range api.Packages {
+	packagesInAPI := []*Package{}
+	for _, apiPackage := range packages {
 		pkg := pkgSet.Package(apiPackage.Name)
 		if err := pkg.buildSchemas(apiPackage.Schemas); err != nil {
 			return nil, patherr.Wrap(err, pkg.Name)
 		}
+		packagesInAPI = append(packagesInAPI, pkg)
 
 		for _, subPkg := range apiPackage.SubPackages {
 			pkg := pkgSet.Package(fmt.Sprintf("%s.%s", apiPackage.Name, subPkg.Name))
@@ -59,8 +29,11 @@ func PackageSetFromSourceAPI(api *source_j5pb.API) (*SchemaSet, error) {
 		}
 	}
 
-	for _, pkg := range pkgSet.Packages {
-		if err := pkg.assertAllRefsLink(); err != nil {
+	for _, pkg := range packagesInAPI {
+		// make sure every ref has a To set, meaning it eventually got built in
+		// a buildSchemas call for any package.
+		// If not, the source api does not contain all schemas it references.
+		if err := pkg.assertRefsLink(); err != nil {
 			return nil, fmt.Errorf("asserting links on package from source API: %w", patherr.Wrap(err, pkg.Name))
 		}
 	}
@@ -77,9 +50,23 @@ func (ps *SchemaSet) AnonymousObjectFromSchema(packageName string, schema *schem
 
 func (pkg *Package) buildSchemas(src map[string]*schema_j5pb.RootSchema) error {
 	for name, schema := range src {
+		// refTo either creates a new empty ref, or takes from an existing ref
+		// which has already been created, but may not have been built.
+
+		// in the buildRoot walk, refTo is called but not linked (i.e. To == nil)
+		// allowing schemas to reference others in any order
+
+		// All schemas will be built here, some will be built before they are
+		// referenced and some will be filled in after the fact.
+
+		// Since refSchema is a pointer, both orders work and should result in
+		// fully linked schemas.
+
 		refSchema, _ := pkg.PackageSet.refTo(pkg.Name, name)
 		pkg.Schemas[name] = refSchema
 
+		// the schema should only be built in this loop, for refs which already
+		// existed,
 		if refSchema.To != nil {
 			return fmt.Errorf("schema %q already exists in package %q", name, pkg.Name)
 		}

@@ -1,14 +1,12 @@
 ---
 
 packages:
-  - name: client.v1
-  - name: config.v1
-  - name: ext.v1
-  - name: list.v1
-  - name: plugin.v1
-  - name: schema.v1
-  - name: source.v1
-  - name: types.v1
+  - name: j5.auth.v1
+  - name: j5.list.v1
+  - name: j5.client.v1
+  - name: j5.config.v1
+  - name: j5.schema.v1
+  - name: j5.types.v1
 
 options:
   subPackages: []

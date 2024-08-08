@@ -66,7 +66,7 @@ type Package struct {
 	PackageSet RootSet
 }
 
-func (pkg *Package) assertAllRefsLink() error {
+func (pkg *Package) assertRefsLink() error {
 
 	var seenSchemas = map[string]struct{}{}
 
@@ -107,7 +107,7 @@ func (pkg *Package) assertAllRefsLink() error {
 
 	walkRef := func(tt *RefSchema) error {
 		if tt.To == nil {
-			return fmt.Errorf("unresolved reference %s", tt.FullName())
+			return fmt.Errorf("unresolved reference to %s", tt.FullName())
 		}
 		if err := walkRootSchema(tt.To); err != nil {
 			return err
@@ -144,7 +144,7 @@ func (pkg *Package) assertAllRefsLink() error {
 	}
 
 	for schemaName, ref := range pkg.Schemas {
-		if err := walkRootSchema(ref.To); err != nil {
+		if err := walkRef(ref); err != nil {
 			return patherr.Wrap(err, "schemas", schemaName)
 		}
 	}

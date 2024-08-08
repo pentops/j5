@@ -318,7 +318,19 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 	schemas := make(map[string]*schemaRef)
 
 	var walkRefs func(j5reflect.FieldSchema) error
-	walkRefRoot := func(schema j5reflect.RootSchema) error {
+	walkRefRoot := func(ref *j5reflect.RefSchema) error {
+		if ref.To == nil {
+			// should be a reference to another API
+			name := ref.Package.Name
+			for _, pkg := range api.Packages {
+				if pkg.Name == name {
+					return fmt.Errorf("unlinked ref %q in linked package %q", name, ref.Schema)
+				}
+			}
+
+			return nil
+		}
+		schema := ref.To
 		_, ok := schemas[schema.FullName()]
 		if ok {
 			return nil
@@ -354,17 +366,17 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 
 		switch st := schema.(type) {
 		case *j5reflect.ObjectField:
-			if err := walkRefRoot(st.Ref.To); err != nil {
+			if err := walkRefRoot(st.Ref); err != nil {
 				return fmt.Errorf("walk object as field: %w", err)
 			}
 
 		case *j5reflect.OneofField:
-			if err := walkRefRoot(st.Ref.To); err != nil {
+			if err := walkRefRoot(st.Ref); err != nil {
 				return fmt.Errorf("walk oneof as field: %w", err)
 			}
 
 		case *j5reflect.EnumField:
-			if err := walkRefRoot(st.Ref.To); err != nil {
+			if err := walkRefRoot(st.Ref); err != nil {
 				return fmt.Errorf("walk enum as field: %w", err)
 			}
 
@@ -422,6 +434,22 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 
 	for _, pkg := range api.Packages {
 		for _, entity := range pkg.StateEntities {
+
+			// add the entity fields directly so they don't get missed through
+			// flattening or otherwise being unused.
+
+			if err := walkRootObject(entity.KeysSchema); err != nil {
+				return nil, fmt.Errorf("keys schema %q: %w", entity.KeysSchema.FullName(), err)
+			}
+
+			if err := walkRootObject(entity.StateSchema); err != nil {
+				return nil, fmt.Errorf("state schema %q: %w", entity.StateSchema.FullName(), err)
+			}
+
+			if err := walkRootObject(entity.EventSchema); err != nil {
+				return nil, fmt.Errorf("event schema %q: %w", entity.EventSchema.FullName(), err)
+			}
+
 			if entity.Query != nil {
 				for _, method := range entity.Query.Methods {
 					if err := walkMethod(method); err != nil {
