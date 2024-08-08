@@ -124,8 +124,9 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 		case *schema_j5pb.ObjectField_Ref:
 			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
 			return &ObjectField{
-				Ref:   ref,
-				Rules: st.Object.Rules,
+				Ref:     ref,
+				Rules:   st.Object.Rules,
+				Flatten: st.Object.Flatten,
 			}, nil
 		default:
 			return nil, fmt.Errorf("unsupported oneof schema type %T", inner)
