@@ -79,7 +79,7 @@ func (b packageSet) toAPI() *source_j5pb.API {
 	}
 }
 
-func (bb packageSet) addSchemas(descFiles *protoregistry.Files, selector func(f protoreflect.FileDescriptor) bool) error {
+func (bb *packageSet) addSchemas(descFiles *protoregistry.Files, selector func(f protoreflect.FileDescriptor) bool) error {
 	packageSet, err := j5reflect.SchemaSetFromFiles(descFiles, selector)
 	if err != nil {
 		return fmt.Errorf("package set from files: %w", err)

@@ -907,7 +907,6 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 				ref.To, err = pkg.buildOneofSchema(msg)
 			} else {
 				ref.To, err = pkg.buildObjectSchema(msg)
-
 			}
 			if err != nil {
 				return nil, err
