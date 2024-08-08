@@ -2,16 +2,12 @@ package source
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/fs"
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // A repo has:
@@ -84,6 +80,10 @@ func (src *Source) ListAllDependencies() ([]*config_j5pb.Input, error) {
 			return nil, fmt.Errorf("bundle %q: %w", bundle.Name(), err)
 		}
 		allDeps = append(allDeps, cfg.Dependencies...)
+	}
+
+	for _, generated := range src.thisRepo.config.Generate {
+		allDeps = append(allDeps, generated.Inputs...)
 	}
 	return allDeps, nil
 }
@@ -192,38 +192,17 @@ func (src *Source) CombinedSourceImage(ctx context.Context, inputs []*config_j5p
 		return src.GetSourceImage(ctx, inputs[0])
 	}
 
-	allFiles := map[string]string{}
 	fullImage := &source_j5pb.SourceImage{
 		Options: &config_j5pb.PackageOptions{},
 	}
+
+	images := make([]*source_j5pb.SourceImage, 0, len(inputs))
 	for _, input := range inputs {
 		img, err := src.GetSourceImage(ctx, input)
 		if err != nil {
 			return nil, fmt.Errorf("input %v: %w", input, err)
 		}
-
-		wantFiles := map[string]struct{}{}
-		for _, file := range img.SourceFilenames {
-			wantFiles[file] = struct{}{}
-		}
-
-		for _, file := range img.File {
-			hash, err := hashFile(file)
-			if err != nil {
-				return nil, fmt.Errorf("file %q: %w", *file.Name, err)
-			}
-			if existing, ok := allFiles[*file.Name]; ok {
-				if existing != hash {
-					return nil, fmt.Errorf("file %q has conflicting content", *file.Name)
-				}
-			} else {
-				allFiles[*file.Name] = hash
-				fullImage.File = append(fullImage.File, file)
-				if _, ok := wantFiles[*file.Name]; ok {
-					fullImage.SourceFilenames = append(fullImage.SourceFilenames, *file.Name)
-				}
-			}
-		}
+		images = append(images, img)
 
 		if img.Options != nil {
 			for _, subPkg := range img.Options.SubPackages {
@@ -244,19 +223,18 @@ func (src *Source) CombinedSourceImage(ctx context.Context, inputs []*config_j5p
 		fullImage.Packages = append(fullImage.Packages, img.Packages...)
 	}
 
+	combined, err := combineSourceImages(images)
+	if err != nil {
+		return nil, err
+	}
+
+	files, sourceFilenames := combined.getFiles()
+	fullImage.File = files
+	fullImage.SourceFilenames = sourceFilenames
+
 	return fullImage, nil
 }
 
-func hashFile(file *descriptorpb.FileDescriptorProto) (string, error) {
-	sh := sha256.New()
-	fileContent, err := proto.Marshal(file)
-	if err != nil {
-		return "", err
-	}
-	sh.Write(fileContent)
-	return base64.StdEncoding.EncodeToString(sh.Sum(nil)), nil
-
-}
 func (src *Source) BundleImageSource(ctx context.Context, name string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {
 	bundleSource, err := src.BundleSource(name)
 	if err != nil {
