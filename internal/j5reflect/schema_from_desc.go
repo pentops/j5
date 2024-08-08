@@ -12,13 +12,11 @@ import (
 func PackageSetFromSourceAPI(packages []*source_j5pb.Package) (*SchemaSet, error) {
 	pkgSet := newSchemaSet()
 
-	packagesInAPI := []*Package{}
 	for _, apiPackage := range packages {
 		pkg := pkgSet.Package(apiPackage.Name)
 		if err := pkg.buildSchemas(apiPackage.Schemas); err != nil {
 			return nil, patherr.Wrap(err, pkg.Name)
 		}
-		packagesInAPI = append(packagesInAPI, pkg)
 
 		for _, subPkg := range apiPackage.SubPackages {
 			pkg := pkgSet.Package(fmt.Sprintf("%s.%s", apiPackage.Name, subPkg.Name))
@@ -29,7 +27,7 @@ func PackageSetFromSourceAPI(packages []*source_j5pb.Package) (*SchemaSet, error
 		}
 	}
 
-	for _, pkg := range packagesInAPI {
+	for _, pkg := range pkgSet.Packages {
 		// make sure every ref has a To set, meaning it eventually got built in
 		// a buildSchemas call for any package.
 		// If not, the source api does not contain all schemas it references.
