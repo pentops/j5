@@ -9,7 +9,7 @@ package realm_j5spb
 import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	auth_j5pb "github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
-	realm_j5pb "github.com/pentops/j5/gen/o5/realm/v1/realm_j5pb"
+	realm_j5pb "github.com/pentops/j5/gen/j5/realm/v1/realm_j5pb"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"

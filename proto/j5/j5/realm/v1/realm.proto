@@ -4,9 +4,9 @@ package j5.realm.v1;
 
 import "buf/validate/validate.proto";
 import "j5/ext/v1/annotations.proto";
-import "psm/state/v1/metadata.proto";
+import "j5/state/v1/metadata.proto";
 
-option go_package = "github.com/pentops/j5/gen/o5/realm/v1/realm_j5pb";
+option go_package = "github.com/pentops/j5/gen/j5/realm/v1/realm_j5pb";
 
 message RealmKeys {
   option (j5.ext.v1.psm).entity_name = "realm";
@@ -22,7 +22,7 @@ message RealmStateData {
 }
 
 message RealmState {
-  psm.state.v1.StateMetadata metadata = 1 [(buf.validate.field).required = true];
+  j5.state.v1.StateMetadata metadata = 1 [(buf.validate.field).required = true];
 
   RealmKeys keys = 2 [
     (j5.ext.v1.field).message.flatten = true,
@@ -66,7 +66,7 @@ message TenantType {
 }
 
 message RealmEvent {
-  psm.state.v1.EventMetadata metadata = 1 [(buf.validate.field).required = true];
+  j5.state.v1.EventMetadata metadata = 1 [(buf.validate.field).required = true];
 
   RealmKeys keys = 2 [
     (j5.ext.v1.field).message.flatten = true,

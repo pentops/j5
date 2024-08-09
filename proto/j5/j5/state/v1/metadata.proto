@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package psm.state.v1;
+package j5.state.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
@@ -8,7 +8,7 @@ import "google/protobuf/timestamp.proto";
 import "j5/auth/v1/actor.proto";
 import "j5/list/v1/annotations.proto";
 
-option go_package = "github.com/pentops/j5/gen/psm/state/v1/psm_pb";
+option go_package = "github.com/pentops/j5/gen/j5/state/v1/psm_pb";
 
 message StateMetadata {
   // Time of the first event on the state machine
@@ -76,7 +76,7 @@ message PSMEventCause {
 
   // The identity of the state machine for the event.
   // {package}.{name}, where name is the annotated name in
-  // psm.state.v1.(State|Event)ObjectOptions.name
+  // j5.state.v1.(State|Event)ObjectOptions.name
   // e.g. "foo.bar.v1.foobar" (not foo.bar.v1.FooBarState)
   string state_machine = 2;
 }
