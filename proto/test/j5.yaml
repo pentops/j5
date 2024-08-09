@@ -5,14 +5,6 @@ packages:
 dependencies:
   - local: j5
 
-  - bufRegistry:
-      owner: bufbuild
-      name: protovalidate
-
-  - bufRegistry:
-      owner: googleapis
-      name: googleapis
-
 options:
   subPackages:
     - name: "service"
