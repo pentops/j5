@@ -4,11 +4,14 @@ bundles:
   - name: j5
     dir: proto/j5
 
+  - name: realm
+    dir: proto/realm
+
   - name: test
     dir: proto/test
 
 generate:
-  - name: go
+  - name: base
     inputs:
       - local: j5
       - local: test
@@ -20,6 +23,18 @@ generate:
       - base: go
       - base: go-sugar
       - base: go-grpc
+  - name: ext
+    inputs:
+      - local: realm
+    output: .
+    opts:
+      paths: import
+      module: github.com/pentops/j5
+    plugins:
+      - base: go
+      - base: go-sugar
+      - base: go-grpc
+      - base: go-psm
 
 #managedPaths:
   #- gen
@@ -39,3 +54,8 @@ plugins:
     type: PLUGIN_PROTO
     docker:
       image: ghcr.io/pentops/protoc-gen-go-sugar:19495b5f5ac3fd3964a03031396d83f1bc1341ca
+
+  - name: go-psm
+    base: go
+    docker:
+      image: ghcr.io/pentops/protoc-gen-go-protostate:bf171617e83a6149db1b611ac6cfdf086476452e
