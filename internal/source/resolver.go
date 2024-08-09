@@ -15,14 +15,12 @@ type RegistryClient interface {
 }
 
 type Resolver struct {
-	bufClient RegistryClient
 	regClient RegistryClient
 	j5Cache   *j5Cache
 }
 
-func NewResolver(bufClient RegistryClient, regClient RegistryClient) (*Resolver, error) {
+func NewResolver(regClient RegistryClient) (*Resolver, error) {
 	return &Resolver{
-		bufClient: bufClient,
 		regClient: regClient,
 	}, nil
 }
@@ -33,18 +31,12 @@ func NewEnvResolver() (*Resolver, error) {
 		return nil, err
 	}
 
-	bufClient, err := NewBufClient()
-	if err != nil {
-		return nil, err
-	}
-
 	cache, err := newJ5Cache()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Resolver{
-		bufClient: bufClient,
 		regClient: regClient,
 		j5Cache:   cache,
 	}, nil
@@ -61,15 +53,6 @@ func (rr *Resolver) GetRemoteDependency(ctx context.Context, input *config_j5pb.
 			version:   st.Registry.Version,
 			reference: coalesce(st.Registry.Reference, ptr("main")),
 		}, rr.regClient, locks)
-
-	case *config_j5pb.Input_BufRegistry_:
-		return rr.cacheDance(ctx, cacheSpec{
-			repoType:  "buf",
-			owner:     st.BufRegistry.Owner,
-			repoName:  st.BufRegistry.Name,
-			version:   st.BufRegistry.Version,
-			reference: st.BufRegistry.Reference,
-		}, rr.bufClient, locks)
 
 	default:
 		return nil, fmt.Errorf("unsupported source type %T", input.Type)
@@ -152,15 +135,6 @@ func (src *Resolver) LatestLocks(ctx context.Context, deps []*config_j5pb.Input)
 			}
 			resolver = src.regClient
 
-		case *config_j5pb.Input_BufRegistry_:
-			spec = &cacheSpec{
-				repoType:  "buf",
-				owner:     st.BufRegistry.Owner,
-				repoName:  st.BufRegistry.Name,
-				version:   st.BufRegistry.Version,
-				reference: st.BufRegistry.Reference,
-			}
-			resolver = src.bufClient
 		default:
 			continue
 		}
