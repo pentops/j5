@@ -92,6 +92,7 @@ func runVerify(ctx context.Context, cfg struct {
 
 func runGenerate(ctx context.Context, cfg struct {
 	SourceConfig
+	Clean bool `flag:"clean" description:"Remove the directories in config as 'managedPaths' before generating"`
 }) error {
 
 	src, err := cfg.GetSource(ctx)
@@ -108,6 +109,13 @@ func runGenerate(ctx context.Context, cfg struct {
 	outRoot, err := NewLocalFS(cfg.Source)
 	if err != nil {
 		return err
+	}
+
+	if cfg.Clean {
+		repoConfig := src.RepoConfig()
+		if err := outRoot.Clean(repoConfig.ManagedPaths); err != nil {
+			return err
+		}
 	}
 
 	j5Config := src.RepoConfig()

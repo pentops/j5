@@ -167,6 +167,16 @@ func (local *LocalFS) Sub(subPath string) Dest {
 	}
 }
 
+func (local *LocalFS) Clean(paths []string) error {
+	for _, path := range paths {
+		err := os.RemoveAll(filepath.Join(local.root, path))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (local *LocalFS) PutFile(ctx context.Context, subPath string, body io.Reader) error {
 	key := filepath.Join(local.root, subPath)
 	err := os.MkdirAll(filepath.Dir(key), 0755)

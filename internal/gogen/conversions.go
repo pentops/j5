@@ -2,8 +2,6 @@ package gogen
 
 import (
 	"strings"
-
-	"github.com/iancoleman/strcase"
 )
 
 func goTypeName(name string) string {
@@ -13,7 +11,31 @@ func goTypeName(name string) string {
 	// the first letter.
 	parts := strings.Split(name, "_")
 	for i, part := range parts {
-		parts[i] = strcase.ToCamel(part)
+		parts[i] = exportName(part)
 	}
 	return strings.Join(parts, "_")
+}
+
+func exportName(name string) string {
+	if len(name) == 0 {
+		return name
+	}
+
+	out := make([]rune, 0, len(name))
+	for i, r := range name {
+		if r >= 'a' && r <= 'z' {
+			if i == 0 {
+				out = append(out, r-'a'+'A')
+			} else {
+				out = append(out, r)
+			}
+		} else if r >= 'A' && r <= 'Z' {
+			out = append(out, r)
+		} else if r >= '0' && r <= '9' {
+			out = append(out, r)
+		} else {
+			out = append(out, '_')
+		}
+	}
+	return string(out)
 }

@@ -9,7 +9,7 @@ package realm_j5pb
 import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
-	psm_pb "github.com/pentops/j5/gen/j5/state/v1/psm_pb"
+	psm_j5pb "github.com/pentops/j5/gen/j5/state/v1/psm_j5pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -184,10 +184,10 @@ type TenantState struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Metadata *psm_pb.StateMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	Keys     *TenantKeys           `protobuf:"bytes,2,opt,name=keys,proto3" json:"keys,omitempty"`
-	Status   TenantStatus          `protobuf:"varint,3,opt,name=status,proto3,enum=j5.realm.v1.TenantStatus" json:"status,omitempty"`
-	Data     *TenantStateData      `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
+	Metadata *psm_j5pb.StateMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Keys     *TenantKeys             `protobuf:"bytes,2,opt,name=keys,proto3" json:"keys,omitempty"`
+	Status   TenantStatus            `protobuf:"varint,3,opt,name=status,proto3,enum=j5.realm.v1.TenantStatus" json:"status,omitempty"`
+	Data     *TenantStateData        `protobuf:"bytes,4,opt,name=data,proto3" json:"data,omitempty"`
 }
 
 func (x *TenantState) Reset() {
@@ -222,7 +222,7 @@ func (*TenantState) Descriptor() ([]byte, []int) {
 	return file_j5_realm_v1_tenant_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *TenantState) GetMetadata() *psm_pb.StateMetadata {
+func (x *TenantState) GetMetadata() *psm_j5pb.StateMetadata {
 	if x != nil {
 		return x.Metadata
 	}
@@ -312,9 +312,9 @@ type TenantEvent struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Metadata *psm_pb.EventMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
-	Keys     *TenantKeys           `protobuf:"bytes,2,opt,name=keys,proto3" json:"keys,omitempty"`
-	Event    *TenantEventType      `protobuf:"bytes,3,opt,name=event,proto3" json:"event,omitempty"`
+	Metadata *psm_j5pb.EventMetadata `protobuf:"bytes,1,opt,name=metadata,proto3" json:"metadata,omitempty"`
+	Keys     *TenantKeys             `protobuf:"bytes,2,opt,name=keys,proto3" json:"keys,omitempty"`
+	Event    *TenantEventType        `protobuf:"bytes,3,opt,name=event,proto3" json:"event,omitempty"`
 }
 
 func (x *TenantEvent) Reset() {
@@ -349,7 +349,7 @@ func (*TenantEvent) Descriptor() ([]byte, []int) {
 	return file_j5_realm_v1_tenant_proto_rawDescGZIP(), []int{4}
 }
 
-func (x *TenantEvent) GetMetadata() *psm_pb.EventMetadata {
+func (x *TenantEvent) GetMetadata() *psm_j5pb.EventMetadata {
 	if x != nil {
 		return x.Metadata
 	}
@@ -662,8 +662,8 @@ var file_j5_realm_v1_tenant_proto_goTypes = []any{
 	nil,                             // 7: j5.realm.v1.TenantSpec.MetadataEntry
 	(*TenantEventType_Created)(nil), // 8: j5.realm.v1.TenantEventType.Created
 	(*TenantEventType_Updated)(nil), // 9: j5.realm.v1.TenantEventType.Updated
-	(*psm_pb.StateMetadata)(nil),    // 10: j5.state.v1.StateMetadata
-	(*psm_pb.EventMetadata)(nil),    // 11: j5.state.v1.EventMetadata
+	(*psm_j5pb.StateMetadata)(nil),  // 10: j5.state.v1.StateMetadata
+	(*psm_j5pb.EventMetadata)(nil),  // 11: j5.state.v1.EventMetadata
 }
 var file_j5_realm_v1_tenant_proto_depIdxs = []int32{
 	4,  // 0: j5.realm.v1.TenantStateData.spec:type_name -> j5.realm.v1.TenantSpec

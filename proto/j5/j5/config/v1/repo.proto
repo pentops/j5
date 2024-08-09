@@ -16,6 +16,9 @@ message RepoConfigFile {
 
   GitConfig git = 7;
 
+  // Managed Paths get deleted on `j5 generate --clean`
+  repeated string managed_paths = 5;
+
   // Inline Bundle
   RegistryConfig registry = 8;
   repeated PackageConfig packages = 9;
