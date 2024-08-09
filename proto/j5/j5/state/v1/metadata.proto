@@ -8,7 +8,7 @@ import "google/protobuf/timestamp.proto";
 import "j5/auth/v1/actor.proto";
 import "j5/list/v1/annotations.proto";
 
-option go_package = "github.com/pentops/j5/gen/j5/state/v1/psm_pb";
+option go_package = "github.com/pentops/j5/gen/j5/state/v1/psm_j5pb";
 
 message StateMetadata {
   // Time of the first event on the state machine

@@ -548,7 +548,7 @@ func (bb *builder) addQueryMethod(gen *GeneratedFile, req *builtRequest) error {
 			queryMethod.P("    if err != nil {")
 			queryMethod.P("      return nil, err")
 			queryMethod.P("    }")
-			queryMethod.P("    values.Set(\"", field.Name, "\", string(bb))")
+			queryMethod.P("    values.Set(\"", field.Property.Name, "\", string(bb))")
 			queryMethod.P("  }")
 
 		case *schema_j5pb.Field_Enum:
