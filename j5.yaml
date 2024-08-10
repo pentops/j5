@@ -21,8 +21,8 @@ generate:
       - base: go-sugar
       - base: go-grpc
 
-      #managedPaths:
-      #- gen
+managedPaths:
+ - gen
 
 plugins:
   - name: go
