@@ -7,20 +7,20 @@ import (
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/j5schema"
 )
 
-func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, error) {
+func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, error) {
 
-	responseObj, ok := response.(*j5reflect.ObjectSchema)
+	responseObj, ok := response.(*j5schema.ObjectSchema)
 	if !ok {
 		return nil, fmt.Errorf("expected object schema, got %T", response)
 	}
 
-	var foundArray *j5reflect.ArrayField
+	var foundArray *j5schema.ArrayField
 
 	for _, field := range responseObj.Properties {
-		asArray, ok := field.Schema.(*j5reflect.ArrayField)
+		asArray, ok := field.Schema.(*j5schema.ArrayField)
 		if !ok {
 			continue
 		}
@@ -34,14 +34,14 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 		return nil, fmt.Errorf("no array found in response")
 	}
 
-	rootSchema, ok := foundArray.Schema.(*j5reflect.ObjectField)
+	rootSchema, ok := foundArray.Schema.(*j5schema.ObjectField)
 	if !ok {
 		return nil, fmt.Errorf("expected object schema, got %T", foundArray.Schema)
 	}
 
 	out := &client_j5pb.ListRequest{}
 
-	addSearch := func(schema j5reflect.WalkProperty, searching *list_j5pb.SearchingConstraint) {
+	addSearch := func(schema j5schema.WalkProperty, searching *list_j5pb.SearchingConstraint) {
 		if searching == nil {
 			return
 		}
@@ -50,7 +50,7 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 		})
 	}
 
-	addFilter := func(schema j5reflect.WalkProperty, filtering *list_j5pb.FilteringConstraint) {
+	addFilter := func(schema j5schema.WalkProperty, filtering *list_j5pb.FilteringConstraint) {
 		if filtering == nil {
 			return
 		}
@@ -62,7 +62,7 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 		out.FilterableFields = append(out.FilterableFields, filter)
 	}
 
-	addSort := func(schema j5reflect.WalkProperty, sorting *list_j5pb.SortingConstraint) {
+	addSort := func(schema j5schema.WalkProperty, sorting *list_j5pb.SortingConstraint) {
 		if sorting == nil {
 			return
 		}
@@ -77,9 +77,9 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 		})
 	}
 
-	if err := j5reflect.WalkSchemaFields(rootSchema.Schema(), func(schema j5reflect.WalkProperty) error {
+	if err := j5schema.WalkSchemaFields(rootSchema.Schema(), func(schema j5schema.WalkProperty) error {
 		switch st := schema.Schema.(type) {
-		case *j5reflect.EnumField:
+		case *j5schema.EnumField:
 			if st.ListRules != nil {
 				if st.ListRules.Filtering != nil {
 					filtering := st.ListRules.Filtering
@@ -101,7 +101,7 @@ func buildListRequest(response j5reflect.RootSchema) (*client_j5pb.ListRequest, 
 				}
 			}
 
-		case *j5reflect.ScalarSchema:
+		case *j5schema.ScalarSchema:
 			switch scalar := st.Proto.Type.(type) {
 			case *schema_j5pb.Field_Any:
 				// do nothing

@@ -82,7 +82,7 @@ func (fw DirFileWriter) WriteFile(relPath string, data []byte) error {
 func WriteGoCode(api *client_j5pb.API, output FileWriter, options Options) error {
 
 	/*
-		reflect, err := j5reflect.APIFromDesc(api)
+		reflect, err := j5schema.APIFromDesc(api)
 		if err != nil {
 			return err
 		}*/

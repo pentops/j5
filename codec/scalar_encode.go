@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -30,7 +30,7 @@ const (
 	jtDecimal = protoreflect.FullName("j5.types.decimal.v1.Decimal")
 )
 
-func (e *encoder) encodeScalarField(field *j5reflect.ScalarSchema, val protoreflect.Value) error {
+func (e *encoder) encodeScalarField(field *j5schema.ScalarSchema, val protoreflect.Value) error {
 
 	if field.WellKnownTypeName != "" {
 		switch field.WellKnownTypeName {
@@ -125,7 +125,7 @@ func (e *encoder) marshalEmpty() {
 	e.add([]byte("{}"))
 }
 
-func (e *encoder) marshalWrapperType(field *j5reflect.ScalarSchema, msg protoreflect.Message) error {
+func (e *encoder) marshalWrapperType(field *j5schema.ScalarSchema, msg protoreflect.Message) error {
 	fd := msg.Descriptor().Fields().ByName("value")
 	val := msg.Get(fd)
 	return e.simpleScalarValue(field.Kind, val)

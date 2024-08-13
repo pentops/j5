@@ -6,7 +6,7 @@ import (
 	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/j5schema"
 	"github.com/pentops/j5/internal/patherr"
 	"github.com/pentops/j5/internal/structure"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -18,7 +18,7 @@ type API struct {
 }
 
 type schemaSource interface {
-	AnonymousObjectFromSchema(packageName string, schema *schema_j5pb.Object) (*j5reflect.ObjectSchema, error)
+	AnonymousObjectFromSchema(packageName string, schema *schema_j5pb.Object) (*j5schema.ObjectSchema, error)
 }
 
 func (api *API) ToJ5Proto() (*client_j5pb.API, error) {
@@ -139,14 +139,14 @@ func (ss *Service) ToJ5Proto() (*client_j5pb.Service, error) {
 
 type SchemaLink interface {
 	FullName() string
-	Schema() *j5reflect.ObjectSchema
+	Schema() *j5schema.ObjectSchema
 	link(schemaSource) error
 }
 
 type Request struct {
-	Body            *j5reflect.ObjectSchema
-	PathParameters  []*j5reflect.ObjectProperty
-	QueryParameters []*j5reflect.ObjectProperty
+	Body            *j5schema.ObjectSchema
+	PathParameters  []*j5schema.ObjectProperty
+	QueryParameters []*j5schema.ObjectProperty
 
 	List *client_j5pb.ListRequest
 }
@@ -183,7 +183,7 @@ type Method struct {
 	HasBody bool
 
 	Request      *Request
-	ResponseBody *j5reflect.ObjectSchema
+	ResponseBody *j5schema.ObjectSchema
 	RawResponse  bool
 	Auth         *auth_j5pb.MethodAuthType
 
@@ -212,9 +212,9 @@ type StateEntity struct {
 	Commands []*Service
 	Query    *Service
 
-	KeysSchema  *j5reflect.ObjectSchema
-	StateSchema *j5reflect.ObjectSchema
-	EventSchema *j5reflect.ObjectSchema
+	KeysSchema  *j5schema.ObjectSchema
+	StateSchema *j5schema.ObjectSchema
+	EventSchema *j5schema.ObjectSchema
 }
 
 func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
@@ -239,7 +239,7 @@ func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
 
 	primaryKeys := make([]string, 0)
 	for _, prop := range entity.KeysSchema.Properties {
-		scalar, ok := prop.Schema.(*j5reflect.ScalarSchema)
+		scalar, ok := prop.Schema.(*j5schema.ScalarSchema)
 		if !ok {
 			continue
 		}
@@ -253,12 +253,12 @@ func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
 		}
 	}
 
-	var eventOneof *j5reflect.OneofSchema
+	var eventOneof *j5schema.OneofSchema
 	for _, field := range entity.EventSchema.Properties {
 		if field.JSONName != "event" {
 			continue
 		}
-		oneofField, ok := field.Schema.(*j5reflect.OneofField)
+		oneofField, ok := field.Schema.(*j5schema.OneofField)
 		if !ok {
 			return nil, fmt.Errorf("event field is not oneof")
 		}
@@ -272,7 +272,7 @@ func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
 
 	events := make([]*client_j5pb.StateEvent, 0, len(eventOneof.Properties))
 	for _, prop := range eventOneof.Properties {
-		objectField, ok := prop.Schema.(*j5reflect.ObjectField)
+		objectField, ok := prop.Schema.(*j5schema.ObjectField)
 		if !ok {
 			return nil, fmt.Errorf("event property %q is not object", prop.JSONName)
 		}
@@ -302,7 +302,7 @@ func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
 type StateEvent struct {
 	StateEntity *StateEntity // parent
 	Name        string
-	Schema      *j5reflect.ObjectSchema
+	Schema      *j5schema.ObjectSchema
 }
 
 type schemaRef struct {
@@ -317,8 +317,8 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 	// map[
 	schemas := make(map[string]*schemaRef)
 
-	var walkRefs func(j5reflect.FieldSchema) error
-	walkRefRoot := func(ref *j5reflect.RefSchema) error {
+	var walkRefs func(j5schema.FieldSchema) error
+	walkRefRoot := func(ref *j5schema.RefSchema) error {
 		if ref.To == nil {
 			// should be a reference to another API
 			name := ref.Package.Name
@@ -342,19 +342,19 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 			name:      schema.Name(),
 		}
 		switch st := schema.(type) {
-		case *j5reflect.ObjectSchema:
+		case *j5schema.ObjectSchema:
 			for _, prop := range st.Properties {
 				if err := walkRefs(prop.Schema); err != nil {
 					return fmt.Errorf("walk %s: %w", st.FullName(), err)
 				}
 			}
-		case *j5reflect.OneofSchema:
+		case *j5schema.OneofSchema:
 			for _, prop := range st.Properties {
 				if err := walkRefs(prop.Schema); err != nil {
 					return fmt.Errorf("walk oneof: %w", err)
 				}
 			}
-		case *j5reflect.EnumSchema:
+		case *j5schema.EnumSchema:
 		// do nothing
 
 		default:
@@ -362,30 +362,30 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 		}
 		return nil
 	}
-	walkRefs = func(schema j5reflect.FieldSchema) error {
+	walkRefs = func(schema j5schema.FieldSchema) error {
 
 		switch st := schema.(type) {
-		case *j5reflect.ObjectField:
+		case *j5schema.ObjectField:
 			if err := walkRefRoot(st.Ref); err != nil {
 				return fmt.Errorf("walk object as field: %w", err)
 			}
 
-		case *j5reflect.OneofField:
+		case *j5schema.OneofField:
 			if err := walkRefRoot(st.Ref); err != nil {
 				return fmt.Errorf("walk oneof as field: %w", err)
 			}
 
-		case *j5reflect.EnumField:
+		case *j5schema.EnumField:
 			if err := walkRefRoot(st.Ref); err != nil {
 				return fmt.Errorf("walk enum as field: %w", err)
 			}
 
-		case *j5reflect.ArrayField:
+		case *j5schema.ArrayField:
 			if err := walkRefs(st.Schema); err != nil {
 				return fmt.Errorf("walk array: %w", err)
 			}
 
-		case *j5reflect.MapField:
+		case *j5schema.MapField:
 			if err := walkRefs(st.Schema); err != nil {
 				return fmt.Errorf("walk map: %w", err)
 			}
@@ -394,7 +394,7 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 		return nil
 	}
 
-	walkRootObject := func(schema *j5reflect.ObjectSchema) error {
+	walkRootObject := func(schema *j5schema.ObjectSchema) error {
 		if schema == nil {
 			return nil
 		}

@@ -9,12 +9,12 @@ import (
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/test/foo/v1/foo_testspb"
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/j5schema"
 )
 
 func TestTestListRequest(t *testing.T) {
 
-	ss := j5reflect.NewSchemaCache()
+	ss := j5schema.NewSchemaCache()
 
 	fooDesc := (&foo_testspb.ListFoosResponse{}).ProtoReflect().Descriptor()
 

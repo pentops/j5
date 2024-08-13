@@ -391,7 +391,7 @@ func TestBuildPath(t *testing.T) {
 	/*
 		t.Run("Re-Convert", func(t *testing.T) {
 
-			reflectionFromBuilt, err := j5reflect.APIFromDesc(apiDescriptor)
+			reflectionFromBuilt, err := j5schema.APIFromDesc(apiDescriptor)
 			if err != nil {
 				t.Fatal(err.Error())
 			}

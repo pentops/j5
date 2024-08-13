@@ -10,7 +10,7 @@ import (
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/j5schema"
 	"github.com/pentops/j5/internal/patherr"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
@@ -80,7 +80,7 @@ func (b packageSet) toAPI() *source_j5pb.API {
 }
 
 func (bb *packageSet) addSchemas(descFiles *protoregistry.Files, selector func(f protoreflect.FileDescriptor) bool) error {
-	packageSet, err := j5reflect.SchemaSetFromFiles(descFiles, selector)
+	packageSet, err := j5schema.SchemaSetFromFiles(descFiles, selector)
 	if err != nil {
 		return fmt.Errorf("package set from files: %w", err)
 	}
@@ -267,7 +267,7 @@ func splitPackageParts(packageName string) (*packageID, error) {
 }
 
 /*
-func buildEvents(src protoreflect.ServiceDescriptor) ([]*j5reflect.Event, error) {
+func buildEvents(src protoreflect.ServiceDescriptor) ([]*j5schema.Event, error) {
 	events := make([]*j5package.Event, 0)
 	methods := src.Methods()
 	for ii := 0; ii < methods.Len(); ii++ {
@@ -277,12 +277,12 @@ func buildEvents(src protoreflect.ServiceDescriptor) ([]*j5reflect.Event, error)
 		if err != nil {
 			return nil, fmt.Errorf("method %s: %w", method.FullName(), err)
 		}
-		objSchema, ok := schema.(*j5reflect.ObjectSchema)
+		objSchema, ok := schema.(*j5schema.ObjectSchema)
 		if !ok {
 			return nil, fmt.Errorf("method %s: expected object schema", method.FullName())
 		}
 
-		eventSpec := &j5reflect.Event{
+		eventSpec := &j5schema.Event{
 			Name:   string(method.Name()),
 			Schema: objSchema,
 		}

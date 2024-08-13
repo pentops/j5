@@ -1,4 +1,4 @@
-package j5reflect
+package j5schema
 
 import (
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
