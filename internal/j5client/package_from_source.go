@@ -7,12 +7,12 @@ import (
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/j5schema"
 	"github.com/pentops/j5/internal/patherr"
 )
 
 func APIFromSource(api *source_j5pb.API) (*client_j5pb.API, error) {
-	schemaSet, err := j5reflect.PackageSetFromSourceAPI(api.Packages)
+	schemaSet, err := j5schema.PackageSetFromSourceAPI(api.Packages)
 	if err != nil {
 		return nil, fmt.Errorf("package set from source api: %w", err)
 	}
@@ -30,7 +30,7 @@ func APIFromSource(api *source_j5pb.API) (*client_j5pb.API, error) {
 }
 
 type sourceBuilder struct {
-	schemas *j5reflect.SchemaSet
+	schemas *j5schema.SchemaSet
 }
 
 func (sb *sourceBuilder) apiBaseFromSource(api *source_j5pb.API) (*API, error) {
@@ -131,14 +131,14 @@ func (sp *subPackage) FullName() string {
 	return fmt.Sprintf("%s.%s", sp.Package.Name, sp.Name)
 }
 
-func (sb *sourceBuilder) entitiesFromSource(pkg *Package, schemaPackage *j5reflect.Package) (map[string]*StateEntity, error) {
+func (sb *sourceBuilder) entitiesFromSource(pkg *Package, schemaPackage *j5schema.Package) (map[string]*StateEntity, error) {
 	found := map[string]*StateEntity{}
 
 	for _, schema := range schemaPackage.Schemas {
 		if schema.To == nil {
 			continue
 		}
-		obj, ok := schema.To.(*j5reflect.ObjectSchema)
+		obj, ok := schema.To.(*j5schema.ObjectSchema)
 		if !ok {
 			continue
 		}
@@ -182,7 +182,7 @@ func (sb *sourceBuilder) entitiesFromSource(pkg *Package, schemaPackage *j5refle
 	return found, nil
 }
 
-func schemaDescForEntity(schema *j5reflect.ObjectSchema) string {
+func schemaDescForEntity(schema *j5schema.ObjectSchema) string {
 	if schema == nil {
 		return "<missing>"
 	}
@@ -215,7 +215,7 @@ func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src
 	if err != nil {
 		return nil, patherr.Wrap(err, "request")
 	}
-	requestObject, ok := requestSchema.(*j5reflect.ObjectSchema)
+	requestObject, ok := requestSchema.(*j5schema.ObjectSchema)
 	if !ok {
 		return nil, fmt.Errorf("request schema is not an object")
 	}
@@ -241,7 +241,7 @@ func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src
 		if err != nil {
 			return nil, patherr.Wrap(err, "response")
 		}
-		responseObject, ok := response.(*j5reflect.ObjectSchema)
+		responseObject, ok := response.(*j5schema.ObjectSchema)
 		if !ok {
 			return nil, fmt.Errorf("response schema is not an object")
 		}
@@ -255,7 +255,7 @@ func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src
 	return method, nil
 }
 
-func (mm *Method) fillRequest(requestObject *j5reflect.ObjectSchema) error {
+func (mm *Method) fillRequest(requestObject *j5schema.ObjectSchema) error {
 
 	pathParameterNames := map[string]struct{}{}
 	pathParts := strings.Split(mm.HTTPPath, "/")
@@ -267,13 +267,13 @@ func (mm *Method) fillRequest(requestObject *j5reflect.ObjectSchema) error {
 		pathParameterNames[fieldName] = struct{}{}
 	}
 
-	pathProperties := make([]*j5reflect.ObjectProperty, 0)
-	bodyProperties := make([]*j5reflect.ObjectProperty, 0)
+	pathProperties := make([]*j5schema.ObjectProperty, 0)
+	bodyProperties := make([]*j5schema.ObjectProperty, 0)
 
 	isQueryRequest := false
 
 	for _, prop := range requestObject.Properties {
-		if propObj, ok := prop.Schema.(*j5reflect.ObjectField); ok {
+		if propObj, ok := prop.Schema.(*j5schema.ObjectField); ok {
 			ref := propObj.Ref
 			if ref != nil {
 				if ref.Package.Name == "j5.list.v1" && ref.Schema == "QueryRequest" {

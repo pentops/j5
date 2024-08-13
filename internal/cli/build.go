@@ -9,7 +9,7 @@ import (
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/builder"
 	"github.com/pentops/j5/internal/j5client"
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/j5schema"
 	"github.com/pentops/j5/internal/structure"
 	"github.com/pentops/log.go/log"
 )
@@ -55,7 +55,7 @@ func runVerify(ctx context.Context, cfg struct {
 			return fmt.Errorf("ResolveProse: %w", err)
 		}
 
-		_, err = j5reflect.PackageSetFromSourceAPI(sourceAPI.Packages)
+		_, err = j5schema.PackageSetFromSourceAPI(sourceAPI.Packages)
 		if err != nil {
 			return fmt.Errorf("building reflection from descriptor: %w", err)
 		}

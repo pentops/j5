@@ -363,7 +363,6 @@ func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	err = mm.Invoker.Invoke(ctx, mm.FullName, inputMessage, outputMessage, grpc.Header(&responseHeader))
 	if err != nil {
-		log.WithError(ctx, err).Error("Failed to invoke")
 		doUserError(ctx, w, err)
 		return
 	}

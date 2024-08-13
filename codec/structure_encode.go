@@ -3,29 +3,29 @@ package codec
 import (
 	"fmt"
 
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type fieldSpec struct {
-	property *j5reflect.ObjectProperty
+	property *j5schema.ObjectProperty
 
 	value    protoreflect.Value
 	children []fieldSpec
 }
 
-func collectProperties(properties []*j5reflect.ObjectProperty, msg protoreflect.Message) ([]fieldSpec, error) {
+func collectProperties(properties []*j5schema.ObjectProperty, msg protoreflect.Message) ([]fieldSpec, error) {
 	var writeFields []fieldSpec
 
 properties:
 	for _, property := range properties {
 		if len(property.ProtoField) == 0 {
-			var childProperties []*j5reflect.ObjectProperty
+			var childProperties []*j5schema.ObjectProperty
 
 			switch wrapper := property.Schema.(type) {
-			case *j5reflect.ObjectField:
+			case *j5schema.ObjectField:
 				childProperties = wrapper.Schema().Properties
-			case *j5reflect.OneofField:
+			case *j5schema.OneofField:
 				childProperties = wrapper.Schema().Properties
 			default:
 				return nil, fmt.Errorf("unsupported schema type %T for nested json", wrapper)
@@ -87,11 +87,11 @@ func (enc *encoder) encodeObjectBody(fields []fieldSpec) error {
 		}
 		if len(spec.children) > 0 {
 			switch subSchema := spec.property.Schema.(type) {
-			case *j5reflect.ObjectField:
+			case *j5schema.ObjectField:
 				if err := enc.encodeObjectBody(spec.children); err != nil {
 					return err
 				}
-			case *j5reflect.OneofField:
+			case *j5schema.OneofField:
 				if err := enc.encodeOneofBody(spec.children); err != nil {
 					return err
 				}
@@ -154,7 +154,7 @@ func (enc *encoder) encodeOneofBody(properties []fieldSpec) error {
 	return nil
 }
 
-func (enc *encoder) encodeObject(schema *j5reflect.ObjectSchema, msg protoreflect.Message) error {
+func (enc *encoder) encodeObject(schema *j5schema.ObjectSchema, msg protoreflect.Message) error {
 
 	fields, err := collectProperties(schema.ClientProperties(), msg)
 	if err != nil {
@@ -168,7 +168,7 @@ func (enc *encoder) encodeObject(schema *j5reflect.ObjectSchema, msg protoreflec
 	return nil
 }
 
-func (enc *encoder) encodeOneof(schema *j5reflect.OneofSchema, msg protoreflect.Message) error {
+func (enc *encoder) encodeOneof(schema *j5schema.OneofSchema, msg protoreflect.Message) error {
 
 	properties, err := collectProperties(schema.Properties, msg)
 	if err != nil {
@@ -182,25 +182,25 @@ func (enc *encoder) encodeOneof(schema *j5reflect.OneofSchema, msg protoreflect.
 	return nil
 }
 
-func (enc *encoder) encodeValue(schema j5reflect.FieldSchema, value protoreflect.Value) error {
+func (enc *encoder) encodeValue(schema j5schema.FieldSchema, value protoreflect.Value) error {
 
 	switch schema := schema.(type) {
-	case *j5reflect.ObjectField:
+	case *j5schema.ObjectField:
 		return enc.encodeObject(schema.Schema(), value.Message())
 
-	case *j5reflect.OneofField:
+	case *j5schema.OneofField:
 		return enc.encodeOneof(schema.Schema(), value.Message())
 
-	case *j5reflect.EnumField:
+	case *j5schema.EnumField:
 		return enc.encodeEnum(schema.Schema(), value.Enum())
 
-	case *j5reflect.ArrayField:
+	case *j5schema.ArrayField:
 		return enc.encodeArray(schema, value.List())
 
-	case *j5reflect.MapField:
+	case *j5schema.MapField:
 		return enc.encodeMap(schema, value.Map())
 
-	case *j5reflect.ScalarSchema:
+	case *j5schema.ScalarSchema:
 		return enc.encodeScalarField(schema, value)
 
 	default:
@@ -208,7 +208,7 @@ func (enc *encoder) encodeValue(schema j5reflect.FieldSchema, value protoreflect
 	}
 }
 
-func (enc *encoder) encodeMap(schema *j5reflect.MapField, value protoreflect.Map) error {
+func (enc *encoder) encodeMap(schema *j5schema.MapField, value protoreflect.Map) error {
 	enc.openObject()
 	first := true
 	var outerError error
@@ -234,7 +234,7 @@ func (enc *encoder) encodeMap(schema *j5reflect.MapField, value protoreflect.Map
 	return nil
 }
 
-func (enc *encoder) encodeArray(schema *j5reflect.ArrayField, list protoreflect.List) error {
+func (enc *encoder) encodeArray(schema *j5schema.ArrayField, list protoreflect.List) error {
 	enc.openArray()
 	first := true
 	for i := 0; i < list.Len(); i++ {
@@ -251,7 +251,7 @@ func (enc *encoder) encodeArray(schema *j5reflect.ArrayField, list protoreflect.
 	return nil
 }
 
-func (enc *encoder) encodeEnum(schema *j5reflect.EnumSchema, enumVal protoreflect.EnumNumber) error {
+func (enc *encoder) encodeEnum(schema *j5schema.EnumSchema, enumVal protoreflect.EnumNumber) error {
 	value := int32(enumVal)
 
 	for _, val := range schema.Options {

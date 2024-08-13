@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/j5schema"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
 	"google.golang.org/protobuf/proto"
@@ -17,7 +17,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (dec *decoder) decodeScalarField(schema *j5reflect.ScalarSchema) (protoreflect.Value, error) {
+func (dec *decoder) decodeScalarField(schema *j5schema.ScalarSchema) (protoreflect.Value, error) {
 
 	if schema.WellKnownTypeName != "" {
 		switch schema.WellKnownTypeName {

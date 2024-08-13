@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/internal/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -22,11 +22,11 @@ func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
 	}
 
 	switch schema := schema.(type) {
-	case *j5reflect.ObjectSchema:
+	case *j5schema.ObjectSchema:
 		if err := enc.encodeObject(schema, msg); err != nil {
 			return nil, err
 		}
-	case *j5reflect.OneofSchema:
+	case *j5schema.OneofSchema:
 		if err := enc.encodeOneof(schema, msg); err != nil {
 			return nil, err
 		}
