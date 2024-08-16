@@ -1,7 +1,3 @@
-buf.build/gen/go/bufbuild/buf/grpc/go v1.5.1-20240801225352-56ed5eaafdd5.1 h1:kpsifEwOvElihPf6j2sriqzdTYLa19V+OWcIqLb8Ecg=
-buf.build/gen/go/bufbuild/buf/grpc/go v1.5.1-20240801225352-56ed5eaafdd5.1/go.mod h1:MvR2fzutlXDdPJRSFuqlG/mlTG2ZEv+tZXBTu+vFHGM=
-buf.build/gen/go/bufbuild/buf/protocolbuffers/go v1.34.2-20240801225352-56ed5eaafdd5.2 h1:ZcwAfI2BApbeM0atjcghA+gjBfdokgW4/IjmPRqTBxc=
-buf.build/gen/go/bufbuild/buf/protocolbuffers/go v1.34.2-20240801225352-56ed5eaafdd5.2/go.mod h1:ebzkeqWlkoZ1Tk0htPMA7EtLbII2nNBuDaSsEYvDdHE=
 buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240717164558-a6c49f84cc0f.2 h1:SZRVx928rbYZ6hEKUIN+vtGDkl7uotABRWGY4OAg5gM=
 buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.34.2-20240717164558-a6c49f84cc0f.2/go.mod h1:ylS4c28ACSI59oJrOdW4pHS4n0Hw4TgSPHn8rpHl4Yw=
 github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 h1:UQHMgLO+TxOElx5B5HZ4hJQsoJ/PvUvKRhJHDQXO8P8=

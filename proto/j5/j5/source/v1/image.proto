@@ -6,6 +6,7 @@ import "buf/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/config/v1/bundle.proto";
+import "j5/schema/v1/schema.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/source/v1/source_j5pb";
 

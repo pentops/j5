@@ -57,6 +57,9 @@ extend google.protobuf.MessageOptions {
 message MessageOptions {
   // When true, the message becomes a schema.Oneof.
   bool is_oneof_wrapper = 1;
+
+  // Use instead of comment descriptions for documentation
+  string description = 2;
 }
 
 extend google.protobuf.OneofOptions {
@@ -107,6 +110,9 @@ extend google.protobuf.FieldOptions {
 // directly, and will eventually hold all of the options from the other
 // annotation libraries (validate and list)
 message FieldOptions {
+  // Use instead of comment descriptions for documentation
+  string description = 2;
+
   oneof type {
     MessageFieldOptions message = 1;
 
