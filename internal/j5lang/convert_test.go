@@ -11,6 +11,20 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 )
 
+func TestErrors(t *testing.T) {
+
+}
+
+type errorAssertion func(*testing.T, error)
+
+func runErrors(t *testing.T, input string, assertions ...errorAssertion) {
+	_, err := ConvertFileToSource(input)
+	if err == nil {
+		t.Fatal("FATAL: expected error")
+	}
+
+}
+
 func TestConvert(t *testing.T) {
 
 	input := strings.Join([]string{
@@ -31,14 +45,12 @@ func TestConvert(t *testing.T) {
 		`}`,
 	}, "\n")
 
-	file, err := ParseFile(input)
+	got, err := ConvertFileToSource(input)
 	if err != nil {
-		t.Fatal(err)
-	}
-
-	source, err := ConvertFile(file)
-	if err != nil {
-		t.Fatal(err)
+		if pe, ok := AsSyntaxErrors(err); ok {
+			pe.Print(t.Logf)
+		}
+		t.Fatalf("FATAL: %s", err)
 	}
 
 	want := &source_j5pb.SourceFile{
@@ -81,7 +93,7 @@ func TestConvert(t *testing.T) {
 		}},
 	}
 
-	cmpProto(t, source, want)
+	cmpProto(t, got, want)
 
 }
 

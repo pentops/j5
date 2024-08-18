@@ -28,17 +28,14 @@ const (
 	LBRACE // {
 	RBRACE // }
 	DOT    // .
+	COLON  // :
 	operator_end
 
 	keyword_beg
 	PACKAGE // package
-	FIELD   // field
-	OBJECT  // object
-	ENUM    // enum
-	ENTITY  // entity
-	KEY     // key
-	EVENT   // event
-	REF     // ref
+	IMPORT  // import
+	EXPORT  // export
+	INCLUDE // include
 	keyword_end
 )
 
@@ -63,18 +60,15 @@ var tokens = [...]string{
 	LBRACE:       "{",
 	RBRACE:       "}",
 	DOT:          ".",
+	COLON:        ":",
 	operator_end: "",
 
 	// Keywords
 	keyword_beg: "",
 	PACKAGE:     "package",
-	FIELD:       "field",
-	OBJECT:      "object",
-	ENUM:        "enum",
-	ENTITY:      "entity",
-	KEY:         "key",
-	EVENT:       "event",
-	REF:         "ref",
+	IMPORT:      "import",
+	EXPORT:      "export",
+	INCLUDE:     "include",
 	keyword_end: "",
 }
 

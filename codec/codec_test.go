@@ -308,11 +308,7 @@ func TestUnmarshal(t *testing.T) {
 					}
 					t.Logf("SCHEMA: %s", protojson.Format(schema))
 				*/
-				buffer := &bytes.Buffer{}
-				if err := json.Indent(buffer, []byte(input), " | ", "  "); err != nil {
-					t.Fatalf("invalid test case: %s", err)
-				}
-				t.Logf("input: \n | %s\n", buffer.String())
+				logIndent(t, "input", input)
 
 				msg := tc.wantProto.ProtoReflect().New().Interface()
 				if err := codec.JSONToProto([]byte(input), msg.ProtoReflect()); err != nil {
@@ -331,6 +327,8 @@ func TestUnmarshal(t *testing.T) {
 					t.Fatal(err)
 				}
 
+				logIndent(t, "output", string(encoded))
+
 				CompareJSON(t, []byte(tc.json), encoded)
 			}
 
@@ -338,6 +336,13 @@ func TestUnmarshal(t *testing.T) {
 	}
 }
 
+func logIndent(t *testing.T, label, jsonStr string) {
+	buffer := &bytes.Buffer{}
+	if err := json.Indent(buffer, []byte(jsonStr), " | ", "  "); err != nil {
+		t.Fatalf("invalid test case: %s", err)
+	}
+	t.Logf("%s \n | %s\n", label, buffer.String())
+}
 func TestScalars(t *testing.T) {
 	// TODO: The tests above should be rewritten to use this method, then retire
 	// testproto.

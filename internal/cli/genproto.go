@@ -42,7 +42,7 @@ func runGenProto(ctx context.Context, cfg struct {
 			return nil
 		}
 
-		if !strings.HasSuffix(path, ".j5") {
+		if !strings.HasSuffix(path, ".j5s") {
 			return nil
 		}
 
@@ -59,7 +59,7 @@ func runGenProto(ctx context.Context, cfg struct {
 
 		parsed, err := j5lang.ParseFile(string(srcBytes))
 		if err != nil {
-			return err
+			return fmt.Errorf("file %s: %w", path, err)
 		}
 
 		j5Desc, err := j5lang.ConvertFile(parsed)

@@ -61,12 +61,6 @@ var (
 	tEOF = Token{
 		Type: EOF,
 	}
-	tObject = Token{
-		Type: OBJECT,
-	}
-	tField = Token{
-		Type: FIELD,
-	}
 
 	tLBrace = Token{
 		Type: LBRACE,
@@ -89,27 +83,39 @@ var (
 func TestSimple(t *testing.T) {
 
 	for _, tc := range []struct {
-		name        string
-		input       []string
-		expected    []Token
-		expectError *Position
+		name              string
+		input             []string
+		expected          []Token
+		expectError       *Position
+		expectedPositions []Position
 	}{{
 		name:  "assign",
-		input: []string{`vv=123`},
+		input: []string{`ab=123`},
 		expected: []Token{
-			tIdent("vv"),
-			tAssign,
-			tInt("123"),
-			tEOF,
+			tIdent("ab").tStart(1, 1).tEnd(1, 2),
+			tAssign.tStart(1, 3).tEnd(1, 3),
+			tInt("123").tStart(1, 4).tEnd(1, 6),
+			tEOF.tStart(1, 7).tEnd(1, 7),
 		},
 	}, {
-		name:  "assign with spaces",
-		input: []string{`vv = 123`},
+		name: "assign with spaces",
+		input: []string{
+			`ab = 123`,
+			`  cd = 456  `,
+			`  `,
+		},
 		expected: []Token{
-			tIdent("vv"),
-			tAssign,
-			tInt("123"),
-			tEOF,
+			tIdent("ab").tStart(1, 1).tEnd(1, 2),
+			tAssign.tStart(1, 4).tEnd(1, 4),
+			tInt("123").tStart(1, 6).tEnd(1, 8),
+			tEOL.tStart(1, 9).tEnd(1, 9),
+
+			tIdent("cd").tStart(2, 3).tEnd(2, 4),
+			tAssign.tStart(2, 6).tEnd(2, 6),
+			tInt("456").tStart(2, 8).tEnd(2, 10),
+			tEOL.tStart(2, 13).tEnd(2, 13),
+
+			tEOF.tStart(3, 3).tEnd(3, 3),
 		},
 	}, {
 		name: "identifier with dots",
@@ -148,7 +154,7 @@ func TestSimple(t *testing.T) {
 			`object Foo {}`,
 		},
 		expected: []Token{
-			tObject,
+			tIdent("object"),
 			tIdent("Foo"),
 			tLBrace,
 			tRBrace,
@@ -199,7 +205,7 @@ func TestSimple(t *testing.T) {
 			`vv = "value`,
 			`with newline"`,
 		},
-		expectError: &Position{Line: 1, Column: 11},
+		expectError: &Position{Line: 1, Column: 12},
 	}, {
 		name: "Escaped is fine",
 		input: []string{
@@ -241,6 +247,12 @@ func TestSimple(t *testing.T) {
 			tComment("c3"), tEOF,
 		},
 	}, {
+		name: "bad comment",
+		input: []string{
+			"vv = 123 / c1",
+		},
+		expectError: &Position{Line: 1, Column: 10},
+	}, {
 		name: "block comment empty",
 		input: []string{
 			"/**/ vv",
@@ -276,19 +288,39 @@ func TestSimple(t *testing.T) {
 			tIdent("vv"), tAssign, tInt("123"),
 			tEOF,
 		},
+	}, {
+		name: "unexpected character",
+		input: []string{
+			`!`,
+		},
+		expectError: &Position{Line: 1, Column: 1},
+	}, {
+		name: "unexpected eof",
+		input: []string{
+			`vv = "`,
+		},
+		expectError: &Position{Line: 1, Column: 7},
 	}} {
 
 		t.Run(tc.name, func(t *testing.T) {
 
-			tokens, err := scanAll(strings.Join(tc.input, "\n"))
+			sourceFile := strings.Join(tc.input, "\n")
+			tokens, err := scanAll(sourceFile)
+
 			if tc.expectError != nil {
 				if err == nil {
-					t.Fatalf("expected error at %s", tc.expectError)
+					t.Fatalf("expected error at %s but got none", tc.expectError)
 				}
-				posErr, ok := err.(*PositionError)
+				posErrs, ok := AsPositionErrorsWithSource(err)
 				if !ok {
 					t.Fatalf("expected position error, got %T", err)
 				}
+				if len(posErrs) != 1 {
+					t.Fatalf("expected 1 error, got %d", len(posErrs))
+				}
+
+				posErr := posErrs[0]
+				posErr.Print(t.Logf)
 				if posErr.Position.String() != tc.expectError.String() {
 					t.Fatalf("expected error at %s, got %s", tc.expectError, posErr.Position)
 				}
@@ -305,21 +337,39 @@ func TestSimple(t *testing.T) {
 	}
 }
 
+func (t Token) tStart(line, col int) Token {
+	t.Start = Position{Column: col, Line: line}
+	return t
+}
+func (t Token) tEnd(line, col int) Token {
+	t.End = Position{Column: col, Line: line}
+	return t
+}
+
 func assertTokensEqual(t *testing.T, tokens, expected []Token) {
 
 	for idx, tok := range tokens {
 		if len(expected) <= idx {
-			t.Errorf("BAD %d %s (extra)", idx, tok)
+			t.Errorf("BAD % 3d: %s (extra)", idx, tok)
 			continue
 		}
-		if tok.Type != expected[idx].Type {
-			t.Errorf("BAD %d %s want %s", idx, tok, expected[idx])
-			continue
-		} else if tok.Lit != expected[idx].Lit {
-			t.Errorf("BAD %d %s want %s", idx, tok, expected[idx])
+		want := expected[idx]
+		if tok.Type != expected[idx].Type || tok.Lit != want.Lit {
+			t.Errorf("BAD % 3d: %s want %s", idx, tok, want)
 			continue
 		}
-		t.Logf("OK  %d: %s at %s to %s", idx, tok, tok.Start, tok.End)
+		if want.Start.Line > 0 {
+			if tok.Start.Line != want.Start.Line || tok.Start.Column != want.Start.Column {
+				t.Errorf("BAD % 3d: %s start position %s, want %s", idx, tok, tok.Start, want.Start)
+			}
+		}
+		if want.End.Line > 0 {
+			if tok.End.Line != want.End.Line || tok.End.Column != want.End.Column {
+				t.Errorf("BAD % 3d: %s end position %s, want %s", idx, tok, tok.End, want.End)
+			}
+		}
+
+		t.Logf("OK  % 3d: %s at %s to %s", idx, tok, tok.Start, tok.End)
 	}
 
 	if len(expected) > len(tokens) {
@@ -335,7 +385,7 @@ func scanAll(input string) ([]Token, error) {
 	for {
 		tok, err := lexer.NextToken()
 		if err != nil {
-			return tokens, err
+			return tokens, AddPositionErrorSource(err, input)
 		}
 		tokens = append(tokens, tok)
 		if tok.Type == EOF {
@@ -379,12 +429,12 @@ With Lines
 		tIdent("version"), tAssign, tString("v1"), tEOL,
 		tEOL,
 		tComment(" Comment Line"), tEOL,
-		tObject, tIdent("Foo"), tLBrace, tEOL,
+		tIdent("object"), tIdent("Foo"), tLBrace, tEOL,
 		tDescription("Foo is an example object\nfrom ... Python I guess?\nUnsure."), tEOL,
 		tEOL,
-		tField, tIdent("id"), tIdent("uuid"), tLBrace, tRBrace, tEOL,
+		tIdent("field"), tIdent("id"), tIdent("uuid"), tLBrace, tRBrace, tEOL,
 		tEOL,
-		tField, tIdent("name"), tIdent("string"), tLBrace, tEOL,
+		tIdent("field"), tIdent("name"), tIdent("string"), tLBrace, tEOL,
 		tIdent("min_len"), tAssign, tInt("10"), tEOL,
 		tRBrace, tEOL,
 		tRBrace, tEOL,

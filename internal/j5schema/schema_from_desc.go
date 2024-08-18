@@ -306,6 +306,14 @@ func (pkg *Package) oneofSchemaFromDesc(sch *schema_j5pb.Oneof) (*OneofSchema, e
 }
 
 func (pkg *Package) enumSchemaFromDesc(sch *schema_j5pb.Enum) *EnumSchema {
+	opts := make([]*EnumOption, len(sch.Options))
+	for idx, src := range sch.Options {
+		opts[idx] = &EnumOption{
+			Name:        src.Name,
+			Description: src.Description,
+			Number:      src.Number,
+		}
+	}
 	return &EnumSchema{
 		NamePrefix: sch.Prefix,
 		rootSchema: rootSchema{
@@ -313,7 +321,7 @@ func (pkg *Package) enumSchemaFromDesc(sch *schema_j5pb.Enum) *EnumSchema {
 			name:        sch.Name,
 			pkg:         pkg,
 		},
-		Options: sch.Options,
+		Options: opts,
 	}
 }
 

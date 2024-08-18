@@ -941,12 +941,12 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 	ext := proto.GetExtension(enumDescriptor.Options(), ext_j5pb.E_Enum).(*ext_j5pb.EnumOptions)
 
 	sourceValues := enumDescriptor.Values()
-	values := make([]*schema_j5pb.Enum_Value, 0, sourceValues.Len())
+	values := make([]*EnumOption, 0, sourceValues.Len())
 	for ii := 0; ii < sourceValues.Len(); ii++ {
 		option := sourceValues.Get(ii)
 		number := int32(option.Number())
 
-		values = append(values, &schema_j5pb.Enum_Value{
+		values = append(values, &EnumOption{
 			Name:        string(option.Name()),
 			Number:      number,
 			Description: commentDescription(option),

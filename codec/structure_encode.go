@@ -1,264 +1,209 @@
 package codec
 
 import (
+	"encoding/base64"
 	"fmt"
+	"time"
 
-	"github.com/pentops/j5/internal/j5schema"
-	"google.golang.org/protobuf/reflect/protoreflect"
+	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/j5types/date_j5t"
+	"github.com/pentops/j5/j5types/decimal_j5t"
 )
 
-type fieldSpec struct {
-	property *j5schema.ObjectProperty
+func (enc *encoder) encodeObjectBody(fieldSet j5reflect.FieldSet) error {
 
-	value    protoreflect.Value
-	children []fieldSpec
-}
-
-func collectProperties(properties []*j5schema.ObjectProperty, msg protoreflect.Message) ([]fieldSpec, error) {
-	var writeFields []fieldSpec
-
-properties:
-	for _, property := range properties {
-		if len(property.ProtoField) == 0 {
-			var childProperties []*j5schema.ObjectProperty
-
-			switch wrapper := property.Schema.(type) {
-			case *j5schema.ObjectField:
-				childProperties = wrapper.Schema().Properties
-			case *j5schema.OneofField:
-				childProperties = wrapper.Schema().Properties
-			default:
-				return nil, fmt.Errorf("unsupported schema type %T for nested json", wrapper)
-			}
-			children, err := collectProperties(childProperties, msg)
-			if err != nil {
-				return nil, err
-			}
-			if len(children) > 0 {
-				writeFields = append(writeFields, fieldSpec{
-					property: property,
-					children: children,
-				})
-			}
-			continue
-		}
-
-		var walkFieldNumber protoreflect.FieldNumber
-		var walkField protoreflect.FieldDescriptor
-		walkPath := property.ProtoField[:]
-		walkMessage := msg
-		for len(walkPath) > 1 {
-			walkFieldNumber, walkPath = walkPath[0], walkPath[1:]
-			walkField = walkMessage.Descriptor().Fields().ByNumber(walkFieldNumber)
-
-			if !walkMessage.Has(walkField) {
-				continue properties
-			}
-			if walkField.Kind() != protoreflect.MessageKind {
-				return nil, fmt.Errorf("field %s is not a message but has nested types", walkField.FullName())
-			}
-			walkMessage = walkMessage.Get(walkField).Message()
-		}
-		walkFieldNumber = walkPath[0]
-		walkField = walkMessage.Descriptor().Fields().ByNumber(walkFieldNumber)
-		if !walkMessage.Has(walkField) {
-			continue properties
-		}
-		value := walkMessage.Get(walkField)
-
-		writeFields = append(writeFields, fieldSpec{
-			property: property,
-			value:    value,
-		})
-	}
-
-	return writeFields, nil
-}
-
-func (enc *encoder) encodeObjectBody(fields []fieldSpec) error {
-
+	first := true
 	enc.openObject()
-	for idx, spec := range fields {
-		if idx > 0 {
+	defer enc.closeObject()
+
+	return fieldSet.RangeSetProperties(func(prop j5reflect.Property) error {
+		if !first {
 			enc.fieldSep()
 		}
-		if err := enc.fieldLabel(spec.property.JSONName); err != nil {
+		first = false
+		if err := enc.fieldLabel(prop.JSONName()); err != nil {
 			return err
 		}
-		if len(spec.children) > 0 {
-			switch subSchema := spec.property.Schema.(type) {
-			case *j5schema.ObjectField:
-				if err := enc.encodeObjectBody(spec.children); err != nil {
-					return err
-				}
-			case *j5schema.OneofField:
-				if err := enc.encodeOneofBody(spec.children); err != nil {
-					return err
-				}
-			default:
-				return fmt.Errorf("invalid schema type for children: %T", subSchema)
-			}
-		} else {
-			if err := enc.encodeValue(spec.property.Schema, spec.value); err != nil {
-				return err
-			}
+
+		val, err := prop.Field()
+		if err != nil {
+			return err
+		}
+		if err := enc.encodeValue(val); err != nil {
+			return err
 		}
 
-	}
-	enc.closeObject()
-	return nil
+		return nil
+	})
+
 }
 
-func (enc *encoder) encodeOneofBody(properties []fieldSpec) error {
+func (enc *encoder) encodeOneofBody(fieldSet j5reflect.FieldSet) error {
 
-	if len(properties) == 0 {
+	prop, err := fieldSet.GetOne()
+	if err != nil {
+		return err
+	}
+	if prop == nil {
 		return nil
 	}
-	if len(properties) > 1 {
-		return fmt.Errorf("multiple values set for oneof")
-	}
-	spec := properties[0]
 
 	enc.openObject()
-
-	var err error
 
 	err = enc.fieldLabel("!type")
 	if err != nil {
 		return err
 	}
 
-	err = enc.addString(spec.property.JSONName)
+	err = enc.addString(prop.JSONName())
 	if err != nil {
 		return err
 	}
 
 	enc.fieldSep()
 
-	err = enc.fieldLabel(spec.property.JSONName)
+	err = enc.fieldLabel(prop.JSONName())
 	if err != nil {
 		return err
 	}
 
-	if len(spec.children) > 0 {
-		if err := enc.encodeObjectBody(spec.children); err != nil {
-			return err
-		}
-	} else {
-		if err := enc.encodeValue(spec.property.Schema, spec.value); err != nil {
-			return err
-		}
+	val, err := prop.Field()
+	if err != nil {
+		return err
+	}
+
+	if err := enc.encodeValue(val); err != nil {
+		return err
 	}
 
 	enc.closeObject()
 	return nil
 }
 
-func (enc *encoder) encodeObject(schema *j5schema.ObjectSchema, msg protoreflect.Message) error {
-
-	fields, err := collectProperties(schema.ClientProperties(), msg)
-	if err != nil {
-		return err
-	}
-
-	if err := enc.encodeObjectBody(fields); err != nil {
-		return err
-	}
-
-	return nil
+func (enc *encoder) encodeObject(object *j5reflect.Object) error {
+	return enc.encodeObjectBody(object)
 }
 
-func (enc *encoder) encodeOneof(schema *j5schema.OneofSchema, msg protoreflect.Message) error {
-
-	properties, err := collectProperties(schema.Properties, msg)
-	if err != nil {
-		return err
-	}
-
-	if err := enc.encodeOneofBody(properties); err != nil {
-		return err
-	}
-
-	return nil
+func (enc *encoder) encodeOneof(oneof *j5reflect.Oneof) error {
+	return enc.encodeOneofBody(oneof)
 }
 
-func (enc *encoder) encodeValue(schema j5schema.FieldSchema, value protoreflect.Value) error {
+func (enc *encoder) encodeValue(field j5reflect.Value) error {
 
-	switch schema := schema.(type) {
-	case *j5schema.ObjectField:
-		return enc.encodeObject(schema.Schema(), value.Message())
+	switch ft := field.(type) {
+	case j5reflect.ObjectField:
+		val, err := ft.Object()
+		if err != nil {
+			return err
+		}
+		return enc.encodeObject(val)
 
-	case *j5schema.OneofField:
-		return enc.encodeOneof(schema.Schema(), value.Message())
+	case j5reflect.OneofField:
+		val, err := ft.Oneof()
+		if err != nil {
+			return err
+		}
+		return enc.encodeOneof(val)
 
-	case *j5schema.EnumField:
-		return enc.encodeEnum(schema.Schema(), value.Enum())
+	case j5reflect.EnumField:
+		return enc.encodeEnum(ft)
 
-	case *j5schema.ArrayField:
-		return enc.encodeArray(schema, value.List())
+	case j5reflect.ArrayField:
+		return enc.encodeArray(ft)
 
-	case *j5schema.MapField:
-		return enc.encodeMap(schema, value.Map())
+	case j5reflect.MapField:
+		return enc.encodeMap(ft)
 
-	case *j5schema.ScalarSchema:
-		return enc.encodeScalarField(schema, value)
+	case j5reflect.ScalarField:
+		return enc.encodeScalarField(ft)
 
 	default:
-		return fmt.Errorf("unsupported schema %T", schema)
+		return fmt.Errorf("encode value of type %q, unsupported", field.Type())
 	}
 }
 
-func (enc *encoder) encodeMap(schema *j5schema.MapField, value protoreflect.Map) error {
+func (enc *encoder) encodeMap(field j5reflect.MapField) error {
 	enc.openObject()
 	first := true
-	var outerError error
-
-	value.Range(func(key protoreflect.MapKey, val protoreflect.Value) bool {
+	defer enc.closeObject()
+	return field.Range(func(key string, val j5reflect.Value) error {
 		if !first {
 			enc.fieldSep()
 		}
 		first = false
 
-		keyString := key.Value().String()
-		outerError = enc.fieldLabel(keyString)
-		if outerError != nil {
-			return false
-		}
-		outerError = enc.encodeValue(schema.Schema, val)
-		return outerError == nil
-	})
-	if outerError != nil {
-		return outerError
-	}
-	enc.closeObject()
-	return nil
-}
-
-func (enc *encoder) encodeArray(schema *j5schema.ArrayField, list protoreflect.List) error {
-	enc.openArray()
-	first := true
-	for i := 0; i < list.Len(); i++ {
-		if !first {
-			enc.fieldSep()
-		}
-		first = false
-		if err := enc.encodeValue(schema.Schema, list.Get(i)); err != nil {
+		err := enc.fieldLabel(key)
+		if err != nil {
 			return err
 		}
-	}
-
-	enc.closeArray()
-	return nil
+		return enc.encodeValue(val)
+	})
 }
 
-func (enc *encoder) encodeEnum(schema *j5schema.EnumSchema, enumVal protoreflect.EnumNumber) error {
-	value := int32(enumVal)
-
-	for _, val := range schema.Options {
-		if val.Number == value {
-			return enc.addString(val.Name)
+func (enc *encoder) encodeArray(array j5reflect.ArrayField) error {
+	enc.openArray()
+	defer enc.closeArray()
+	first := true
+	return array.Range(func(prop j5reflect.Value) error {
+		if !first {
+			enc.fieldSep()
 		}
+		first = false
+		return enc.encodeValue(prop)
+	})
+}
+
+func (enc *encoder) encodeEnum(enum j5reflect.EnumField) error {
+	val, err := enum.GetValue()
+	if err != nil {
+		return err
+	}
+	return enc.addString(val.Name)
+
+}
+
+func (enc *encoder) encodeScalarField(scalar j5reflect.ScalarField) error {
+	val := scalar.GetInterface()
+	switch vt := val.(type) {
+	case string:
+		return enc.addString(vt)
+	case bool:
+		enc.addBool(vt)
+		return nil
+	case int32:
+		enc.addInt(int64(vt))
+		return nil
+	case int64:
+		enc.addInt(vt)
+		return nil
+	case uint32:
+		enc.addUint(uint64(vt))
+		return nil
+	case uint64:
+		enc.addUint(vt)
+		return nil
+	case float32:
+		enc.addFloat(float64(vt), 32)
+		return nil
+	case float64:
+		enc.addFloat(vt, 64)
+		return nil
+	case []byte:
+		vv := base64.StdEncoding.EncodeToString(vt)
+		return enc.addString(vv)
+
+	case *date_j5t.Date:
+		return enc.addString(vt.DateString())
+
+	case *decimal_j5t.Decimal:
+		return enc.addString(vt.Value)
+
+	case time.Time:
+		return enc.addString(vt.In(time.UTC).Format(time.RFC3339))
+
+	default:
+		return fmt.Errorf("unsupported scalar type %T", vt)
+
 	}
 
-	return fmt.Errorf("enum value %d not found", value)
 }

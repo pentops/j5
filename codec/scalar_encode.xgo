@@ -5,32 +5,16 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pentops/j5/internal/j5reflect"
 	"github.com/pentops/j5/internal/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-const (
-	wktAny       = "google.protobuf.Any"
-	wktTimestamp = "google.protobuf.Timestamp"
-	wktDuration  = "google.protobuf.Duration"
 
-	wktBool   = "google.protobuf.BoolValue"
-	wktInt32  = "google.protobuf.Int32Value"
-	wktInt64  = "google.protobuf.Int64Value"
-	wktUInt32 = "google.protobuf.UInt32Value"
-	wktUInt64 = "google.protobuf.UInt64Value"
-	wktFloat  = "google.protobuf.FloatValue"
-	wktDouble = "google.protobuf.DoubleValue"
-	wktString = "google.protobuf.StringValue"
-	wktBytes  = "google.protobuf.BytesValue"
 
-	wktEmpty = "google.protobuf.Empty"
-
-	jtDate    = protoreflect.FullName("j5.types.date.v1.Date")
-	jtDecimal = protoreflect.FullName("j5.types.decimal.v1.Decimal")
-)
-
-func (e *encoder) encodeScalarField(field *j5schema.ScalarSchema, val protoreflect.Value) error {
+func (e *encoder) encodeScalarField(value j5reflect.ScalarField) error {
+	field := value.Schema()
+	val := value.Value()
 
 	if field.WellKnownTypeName != "" {
 		switch field.WellKnownTypeName {

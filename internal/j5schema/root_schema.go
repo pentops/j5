@@ -65,14 +65,29 @@ func (s *rootSchema) Description() string {
 	return s.description
 }
 
+type EnumOption struct {
+	Name        string
+	Number      int32
+	Description string
+}
+
+func (eo *EnumOption) ToJ5EnumValue() *schema_j5pb.Enum_Value {
+	return &schema_j5pb.Enum_Value{
+		Name:        eo.Name,
+		Number:      eo.Number,
+		Description: eo.Description,
+	}
+
+}
+
 type EnumSchema struct {
 	rootSchema
 
 	NamePrefix string
-	Options    []*schema_j5pb.Enum_Value
+	Options    []*EnumOption //schema_j5pb.Enum_Value
 }
 
-func (s *EnumSchema) OptionByName(name string) *schema_j5pb.Enum_Value {
+func (s *EnumSchema) OptionByName(name string) *EnumOption {
 	shortName := strings.TrimPrefix(name, s.NamePrefix)
 	for _, opt := range s.Options {
 		if opt.Name == shortName {
@@ -82,7 +97,7 @@ func (s *EnumSchema) OptionByName(name string) *schema_j5pb.Enum_Value {
 	return nil
 }
 
-func (s *EnumSchema) OptionByNumber(num int32) *schema_j5pb.Enum_Value {
+func (s *EnumSchema) OptionByNumber(num int32) *EnumOption {
 	for _, opt := range s.Options {
 		if opt.Number == num {
 			return opt
@@ -92,12 +107,16 @@ func (s *EnumSchema) OptionByNumber(num int32) *schema_j5pb.Enum_Value {
 }
 
 func (s *EnumSchema) ToJ5Root() *schema_j5pb.RootSchema {
+	options := make([]*schema_j5pb.Enum_Value, len(s.Options))
+	for idx, opt := range s.Options {
+		options[idx] = opt.ToJ5EnumValue()
+	}
 	return &schema_j5pb.RootSchema{
 		Type: &schema_j5pb.RootSchema_Enum{
 			Enum: &schema_j5pb.Enum{
 				Name:        s.name,
 				Description: s.description,
-				Options:     s.Options,
+				Options:     options,
 				Prefix:      s.NamePrefix,
 			},
 		},

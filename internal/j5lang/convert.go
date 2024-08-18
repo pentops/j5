@@ -6,165 +6,203 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/j5lang/ast"
 	"github.com/pentops/j5/internal/j5lang/extenders"
 	"github.com/pentops/j5/internal/j5lang/lexer"
+	"github.com/pentops/j5/internal/j5schema"
 	"github.com/pentops/j5/internal/patherr"
+	"github.com/pentops/j5/schema/j5reflect"
 )
 
 const (
-	VersionKey = "version"
+	VersionKey      = "version"
+	FieldTag        = "field"
+	ObjectTag       = "object"
+	EntityTag       = "entity"
+	EnumTag         = "enum"
+	EnumOptionTag   = "option"
+	EnumPrefixTag   = "prefix"
+	OneofOptionTag  = "option"
+	EntityDataTag   = "data"
+	EntityKeyTag    = "key"
+	EntityStatusTag = "status"
+	EntityEventTag  = "event"
 )
 
-func ConvertFile(f *File) (*source_j5pb.SourceFile, error) {
-	file := &source_j5pb.SourceFile{}
+func ConvertTreeToSource(f *ast.File) (*source_j5pb.SourceFile, error) {
 
-	for _, decl := range f.Body.Decls {
-		switch d := decl.(type) {
-		case SpecialDecl:
-			switch d.Key {
-			case lexer.PACKAGE:
-				file.Package = d.Value.ToString()
-
-			default:
-				return nil, fmt.Errorf("unexpected special decl in file root %s", d.Key)
-			}
-
-		case ValueAssign:
-			if len(d.Key) == 0 {
-				return nil, fmt.Errorf("empty value for option %s", d.Key)
-			} else if len(d.Key) == 1 {
-				switch d.Key[0] {
-				case VersionKey:
-					file.Version = d.Value.AsString()
-				default:
-					return nil, fmt.Errorf("unexpected option %s", d.Key)
-				}
-			} else {
-				return nil, fmt.Errorf("custom option not supported %s", d.Key)
-			}
-
-		case EnumDecl:
-			converted, err := ConvertEnum(d)
-			if err != nil {
-				return nil, fmt.Errorf("error converting enum: %w", err)
-			}
-			wrapped := &schema_j5pb.RootSchema{
-				Type: &schema_j5pb.RootSchema_Enum{
-					Enum: converted,
-				},
-			}
-
-			file.Schemas = append(file.Schemas, wrapped)
-
-		case ObjectDecl:
-			converted, err := ConvertObject(d)
-			if err != nil {
-				return nil, patherr.Wrap(err, "object", string(d.Name))
-			}
-			wrapped := &schema_j5pb.RootSchema{
-				Type: &schema_j5pb.RootSchema_Object{
-					Object: converted,
-				},
-			}
-
-			file.Schemas = append(file.Schemas, wrapped)
-
-		case EntityDecl:
-			converted, err := ConvertEntity(d)
-			if err != nil {
-				return nil, patherr.Wrap(err, "entity", string(d.Name))
-			}
-
-			file.Entities = append(file.Entities, converted)
-
-		default:
-			return nil, fmt.Errorf("unexpected type at root %T", d)
-		}
+	schemaSet := j5schema.NewSchemaCache()
+	builder := &SchemaBuilder{
+		schemaSet: schemaSet,
 	}
 
-	return file, nil
+	schema := &FileBuilder{
+		builder: builder,
+		file:    &source_j5pb.SourceFile{},
+	}
+	if err := ast.ApplySchema(f, schema); err != nil {
+		return nil, err
+	}
+
+	return schema.file, nil
 }
 
-func unexpectedDeclError(d Decl) error {
-	return fmt.Errorf("unexpected decl %T at %d:%d", d, d.Start().Line, d.Start().Column)
+type SchemaBuilder struct {
+	schemaSet *j5schema.SchemaCache
 }
 
-func ConvertEntity(src EntityDecl) (*source_j5pb.Entity, error) {
+// errUnexpected can be returned from Assign and Block, both of which will wrap
+// the error as a patherr to give context.
+var errUnexpected = fmt.Errorf("unexpected")
+
+type sourceNode interface {
+	Source() ast.SourceNode
+}
+
+func posErrorf(tok sourceNode, format string, args ...interface{}) error {
+	source := tok.Source()
+	return &lexer.PositionError{
+		Position: source.Start,
+		Msg:      fmt.Sprintf(format, args...),
+	}
+}
+
+type FileBuilder struct {
+	builder *SchemaBuilder
+	file    *source_j5pb.SourceFile
+	Version string
+}
+
+func (f *FileBuilder) Assign(ref ast.Reference, value ast.Value) error {
+	var err error
+	name := ref.String()
+	switch name {
+	case VersionKey:
+		f.Version, err = value.AsString()
+		if err != nil {
+			return patherr.Wrap(err, "version")
+		}
+		return nil
+	default:
+		return fmt.Errorf("unexpected option")
+	}
+}
+
+func (f *FileBuilder) Block(hdr ast.BlockHeader) (ast.Schema, error) {
+	switch hdr.RootName() {
+	case EnumTag:
+		builder, err := newEnumBlock(hdr)
+		if err != nil {
+			return nil, err
+		}
+		f.file.Schemas = append(f.file.Schemas, builder.asRootSchema())
+		return builder, nil
+
+	case ObjectTag:
+		builder, err := newObjectBlock(hdr)
+		if err != nil {
+			return nil, err
+		}
+		f.file.Schemas = append(f.file.Schemas, builder.asRootSchema())
+		return builder, nil
+
+	case EntityTag:
+		builder, err := newEntityBlock(hdr)
+		if err != nil {
+			return nil, err
+		}
+		f.file.Entities = append(f.file.Entities, builder.entity)
+		return builder, nil
+	}
+	return nil, errUnexpected
+}
+
+func (f *FileBuilder) Done() error {
+	return nil
+}
+
+type entityBlock struct {
+	entity *source_j5pb.Entity
+}
+
+func newEntityBlock(block ast.BlockHeader) (*entityBlock, error) {
+	var name string
+	err := block.ScanTags(&name)
+	if err != nil {
+		return nil, err
+	}
+	name = strcase.ToLowerCamel(name)
 	entity := &source_j5pb.Entity{
-		Name:        strcase.ToLowerCamel(string(src.Name)),
-		Description: src.Description,
+		Name:        name,
+		Description: block.Description,
 		Keys: &schema_j5pb.Object{
-			Name: strcase.ToCamel(string(src.Name)) + "Keys",
+			Name: strcase.ToCamel(name) + "Keys",
 			Entity: &schema_j5pb.EntityObject{
-				Entity: string(src.Name),
+				Entity: name,
 				Part:   schema_j5pb.EntityPart_KEYS,
 			},
 		},
+		Status: &schema_j5pb.Enum{
+			Name:   strcase.ToCamel(name) + "Status",
+			Prefix: fmt.Sprintf("%s_", strcase.ToScreamingSnake(name)),
+		},
 	}
+	return &entityBlock{entity: entity}, nil
+}
 
-	for _, decl := range src.Body.Decls {
-		switch d := decl.(type) {
-		case FieldDecl:
-			converted, err := ConvertField(d)
-			if err != nil {
-				return nil, patherr.Wrap(err, string(d.Name))
-			}
-			entity.Keys.Properties = append(entity.Keys.Properties, converted)
+func (eb entityBlock) Assign(ref ast.Reference, value ast.Value) error {
+	return fmt.Errorf("unexpected option")
+}
 
-		case ObjectDecl:
-
-			converted, err := ConvertObject(d)
-			if err != nil {
-				return nil, patherr.Wrap(err, string(d.Name))
-			}
-
-			switch d.Name {
-			case "data":
-				if entity.Data != nil {
-					return nil, fmt.Errorf("duplicate data object")
-				}
-				converted.Name = strcase.ToCamel(string(src.Name)) + "Data"
-				entity.Data = converted
-
-			default:
-				return nil, fmt.Errorf("unexpected object %s", d.Name)
-			}
-
-		//case OneofDecl:
-
-		case EnumDecl:
-			if d.Name != "status" {
-				return nil, fmt.Errorf("unexpected enum %s", d.Name)
-			}
-			if entity.Status != nil {
-				return nil, fmt.Errorf("duplicate status enum")
-			}
-			d.Name = src.Name + "_status"
-			converted, err := ConvertEnum(d)
-			if err != nil {
-				return nil, fmt.Errorf("error converting status enum: %w", err)
-			}
-			entity.Status = converted
-
-		default:
-			return nil, unexpectedDeclError(d)
+func (eb entityBlock) Block(stmt ast.BlockHeader) (ast.Schema, error) {
+	switch stmt.RootName() {
+	case FieldTag:
+		field, err := newFieldBlock(stmt)
+		if err != nil {
+			return nil, err
 		}
+		eb.entity.Keys.Properties = append(eb.entity.Keys.Properties, field.property)
+		return field, nil
+
+	case EntityDataTag:
+		builder, err := newObjectBlock(stmt)
+		if err != nil {
+			return nil, err
+		}
+		eb.entity.Data = builder.object
+		eb.entity.Data.Name = strcase.ToCamel(eb.entity.Name) + "Data"
+		return builder, nil
+
+	case EntityStatusTag:
+		enumOptionBlock, err := newEnumOptionBlock(stmt)
+		if err != nil {
+			return nil, err
+		}
+		eb.entity.Status.Options = append(eb.entity.Status.Options, enumOptionBlock.option)
+		return enumOptionBlock, nil
+
+	default:
+		return nil, errUnexpected
 	}
+}
+
+func (eb entityBlock) Done() error {
+	entity := eb.entity
 
 	if entity.Data == nil {
-		return nil, fmt.Errorf("missing data object")
+		return fmt.Errorf("missing data object")
 	}
 	if entity.Status == nil {
-		return nil, fmt.Errorf("missing status enum")
+		return fmt.Errorf("missing status enum")
 	}
 	if len(entity.Keys.Properties) == 0 {
-		return nil, fmt.Errorf("missing key fields")
+		return fmt.Errorf("missing key fields")
 	}
 
 	autoNumber(entity.Keys)
 	autoNumber(entity.Data)
 
-	return entity, nil
+	return nil
 }
 
 func autoNumber(obj *schema_j5pb.Object) {
@@ -173,68 +211,171 @@ func autoNumber(obj *schema_j5pb.Object) {
 	}
 }
 
-func ConvertObject(o ObjectDecl) (*schema_j5pb.Object, error) {
-	obj := &schema_j5pb.Object{
-		Name:        strcase.ToCamel(string(o.Name)),
-		Description: o.Description,
-	}
-
-	for _, decl := range o.Body.Decls {
-		switch d := decl.(type) {
-		case FieldDecl:
-			converted, err := ConvertField(d)
-			if err != nil {
-				return nil, patherr.Wrap(err, string(d.Name))
-			}
-			obj.Properties = append(obj.Properties, converted)
-
-		default:
-			return nil, unexpectedDeclError(d)
-		}
-	}
-
-	autoNumber(obj)
-	return obj, nil
+type objectBlock struct {
+	object *schema_j5pb.Object
 }
 
-func ConvertEnum(e EnumDecl) (*schema_j5pb.Enum, error) {
-	enum := &schema_j5pb.Enum{
-		Name:        strcase.ToCamel(string(e.Name)),
-		Description: e.Description,
-		Prefix:      fmt.Sprintf("%s_", strcase.ToScreamingSnake(string(e.Name))),
+func newObjectBlock(block ast.BlockHeader) (*objectBlock, error) {
+	var name string
+	err := block.ScanTags(&name)
+	if err != nil {
+		return nil, err
 	}
 
+	obj := &schema_j5pb.Object{
+		Name:        strcase.ToCamel(name),
+		Description: block.Description,
+	}
+	return &objectBlock{object: obj}, nil
+}
+
+func (ob objectBlock) asRootSchema() *schema_j5pb.RootSchema {
+	return &schema_j5pb.RootSchema{
+		Type: &schema_j5pb.RootSchema_Object{
+			Object: ob.object,
+		},
+	}
+}
+
+func (ob objectBlock) Assign(ref ast.Reference, value ast.Value) error {
+	return fmt.Errorf("unexpected option")
+}
+
+func (ob objectBlock) Block(block ast.BlockHeader) (ast.Schema, error) {
+	switch block.RootName() {
+	case FieldTag:
+		builder, err := newFieldBlock(block)
+		if err != nil {
+			return nil, err
+		}
+		ob.object.Properties = append(ob.object.Properties, builder.property)
+		return builder, nil
+
+	default:
+		return nil, errUnexpected
+	}
+
+}
+
+func (ob objectBlock) Done() error {
+	autoNumber(ob.object)
+	return nil
+}
+
+type enumBlock struct {
+	enum *schema_j5pb.Enum
+}
+
+func newEnumBlock(block ast.BlockHeader) (*enumBlock, error) {
+	var name string
+	err := block.ScanTags(&name)
+	if err != nil {
+		return nil, err
+	}
+
+	enum := &schema_j5pb.Enum{
+		Name:        strcase.ToCamel(name),
+		Description: block.Description,
+		Prefix:      fmt.Sprintf("%s_", strcase.ToScreamingSnake(name)),
+	}
 	enum.Options = append(enum.Options, &schema_j5pb.Enum_Value{
 		Name:   "UNSPECIFIED",
 		Number: 0,
 	})
-	for idx, v := range e.Options {
-		enum.Options = append(enum.Options, &schema_j5pb.Enum_Value{
-			Name:        string(v.Name),
-			Description: v.Description,
-			Number:      int32(idx + 1),
-		})
+	return &enumBlock{enum: enum}, nil
+}
+
+func (eb enumBlock) asRootSchema() *schema_j5pb.RootSchema {
+	return &schema_j5pb.RootSchema{
+		Type: &schema_j5pb.RootSchema_Enum{
+			Enum: eb.enum,
+		},
+	}
+}
+
+func (eb enumBlock) Done() error {
+	for idx, opt := range eb.enum.Options {
+		opt.Number = int32(idx)
+	}
+	return nil
+}
+
+func (eb enumBlock) Assign(ref ast.Reference, value ast.Value) error {
+	var err error
+	name := ref.String()
+	switch name {
+	case EnumPrefixTag:
+		eb.enum.Prefix, err = value.AsString()
+		if err != nil {
+			return patherr.Wrap(err, "prefix")
+		}
+		return nil
+	default:
+		return errUnexpected
+	}
+}
+
+func (eb enumBlock) Block(block ast.BlockHeader) (ast.Schema, error) {
+	switch block.RootName() {
+	case EnumOptionTag:
+		builder, err := newEnumOptionBlock(block)
+		if err != nil {
+			return nil, err
+		}
+		eb.enum.Options = append(eb.enum.Options, builder.option)
+		return builder, nil
+	default:
+		return nil, errUnexpected
+	}
+}
+
+type enumOptionBlock struct {
+	option *schema_j5pb.Enum_Value
+}
+
+func newEnumOptionBlock(hdr ast.BlockHeader) (*enumOptionBlock, error) {
+	var name string
+	err := hdr.ScanTags(&name)
+	if err != nil {
+		return nil, err
 	}
 
-	return enum, nil
+	option := &schema_j5pb.Enum_Value{
+		Name:        name,
+		Description: hdr.Description,
+		Number:      0, // Must be set in Done of the parent
+	}
+	return &enumOptionBlock{option: option}, nil
+}
+
+func (e enumOptionBlock) Assign(ref ast.Reference, value ast.Value) error {
+	return errUnexpected
+}
+
+func (e enumOptionBlock) Block(block ast.BlockHeader) (ast.Schema, error) {
+	return nil, errUnexpected
+}
+
+func (e enumOptionBlock) Done() error {
+	return nil
 }
 
 const (
-	FieldTypeAny       = Ident("any")
-	FieldTypeOneof     = Ident("oneof")
-	FieldTypeObject    = Ident("object")
-	FieldTypeEnum      = Ident("enum")
-	FieldTypeArray     = Ident("array")
-	FieldTypeMap       = Ident("map")
-	FieldTypeString    = Ident("string")
-	FieldTypeInteger   = Ident("integer")
-	FieldTypeFloat     = Ident("float")
-	FieldTypeBoolean   = Ident("boolean")
-	FieldTypeBytes     = Ident("bytes")
-	FieldTypeDecimal   = Ident("decimal")
-	FieldTypeDate      = Ident("date")
-	FieldTypeTimestamp = Ident("timestamp")
-	FieldTypeKey       = Ident("key")
+	FieldTypeAny       = "any"
+	FieldTypeOneof     = "oneof"
+	FieldTypeObject    = "object"
+	FieldTypeEnum      = "enum"
+	FieldTypeArray     = "array"
+	FieldTypeMap       = "map"
+	FieldTypeString    = "string"
+	FieldTypeInteger   = "integer"
+	FieldTypeFloat     = "float"
+	FieldTypeBoolean   = "boolean"
+	FieldTypeBytes     = "bytes"
+	FieldTypeDecimal   = "decimal"
+	FieldTypeDate      = "date"
+	FieldTypeTimestamp = "timestamp"
+	FieldTypeKey       = "key"
 )
 
 type FieldExtender interface {
@@ -266,6 +407,46 @@ type fieldExtension struct {
 	key      string
 	value    extenders.Value
 }
+
+type fieldBuilder struct {
+	property *schema_j5pb.ObjectProperty
+	schema   j5reflect.OneofSchema
+}
+
+func newFieldBlock(block ast.BlockHeader) (*fieldBuilder, error) {
+	var name, typeName string
+	err := block.ScanTags(&name, &typeName)
+	if err != nil {
+		return nil, err
+	}
+
+	property := &schema_j5pb.ObjectProperty{
+		Name:        strcase.ToCamel(name),
+		Description: block.Description,
+		Schema:      &schema_j5pb.Field{},
+	}
+
+	refl := property.Schema.ProtoReflect()
+
+	return &fieldBuilder{
+		property: property,
+		schema:   refl,
+	}, nil
+}
+
+func (fb fieldBuilder) Assign(ref ast.Reference, value ast.Value) error {
+	return errUnexpected
+}
+
+func (fb fieldBuilder) Block(block ast.BlockHeader) (ast.Schema, error) {
+	return nil, errUnexpected
+}
+
+func (fb fieldBuilder) Done() error {
+	return nil
+}
+
+/*
 
 func ConvertField(f FieldDecl) (*schema_j5pb.ObjectProperty, error) {
 	field := &schema_j5pb.ObjectProperty{
@@ -557,3 +738,4 @@ func ConvertField(f FieldDecl) (*schema_j5pb.ObjectProperty, error) {
 
 	return field, nil
 }
+*/

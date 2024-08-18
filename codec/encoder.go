@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/pentops/j5/internal/j5schema"
+	"github.com/pentops/j5/internal/j5reflect"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -14,20 +14,18 @@ func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
 		b: &bytes.Buffer{},
 	}
 
-	descriptor := msg.Descriptor()
-
-	schema, err := c.schemaSet.Schema(descriptor)
+	root, err := j5reflect.NewWithCache(c.schemaSet).NewRoot(msg)
 	if err != nil {
-		return nil, fmt.Errorf("schema object: %w", err)
+		return nil, err
 	}
 
-	switch schema := schema.(type) {
-	case *j5schema.ObjectSchema:
-		if err := enc.encodeObject(schema, msg); err != nil {
+	switch schema := root.(type) {
+	case *j5reflect.Object:
+		if err := enc.encodeObject(schema); err != nil {
 			return nil, err
 		}
-	case *j5schema.OneofSchema:
-		if err := enc.encodeOneof(schema, msg); err != nil {
+	case *j5reflect.Oneof:
+		if err := enc.encodeOneof(schema); err != nil {
 			return nil, err
 		}
 	default:

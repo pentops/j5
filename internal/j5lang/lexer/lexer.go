@@ -19,6 +19,7 @@ type Lexer struct {
 	ch     rune
 	offset int
 	data   []rune
+	isEOL  bool
 }
 
 func NewLexer(data string) *Lexer {
@@ -31,6 +32,16 @@ func NewLexer(data string) *Lexer {
 const eof = -1
 
 func (l *Lexer) next() {
+
+	if l.isEOL {
+		l.pos.Line++
+		// column begins at 0, incremented to 1 at the end of this function
+		l.pos.Column = 1
+		l.isEOL = false
+	} else {
+		l.pos.Column++
+	}
+
 	if l.offset >= len(l.data) {
 		l.ch = eof
 		return
@@ -39,12 +50,12 @@ func (l *Lexer) next() {
 	l.offset++
 
 	if r == '\n' {
-		l.pos.Line++
-		l.pos.Column = 0
+		// the EOL position is the end of this line, the next character will
+		// reset to n+1, 0
+		l.isEOL = true
 	}
 
 	l.ch = r
-	l.pos.Column++
 }
 
 func (l *Lexer) peek() rune {
@@ -54,13 +65,6 @@ func (l *Lexer) peek() rune {
 	return rune(l.data[l.offset])
 }
 
-func (l *Lexer) peekAhead(n int) rune {
-	if l.offset+n >= len(l.data) {
-		return eof
-	}
-	return rune(l.data[l.offset+n])
-}
-
 func (l *Lexer) skipWhitespace() {
 	for unicode.IsSpace(l.peek()) {
 		l.next()
@@ -68,11 +72,13 @@ func (l *Lexer) skipWhitespace() {
 }
 
 func (l *Lexer) peekPastWhitespace() rune {
-	n := 0
-	for unicode.IsSpace(l.peekAhead(n)) {
-		n++
+	for n := l.offset; n < len(l.data); n++ {
+		r := rune(l.data[n])
+		if !unicode.IsSpace(r) {
+			return r
+		}
 	}
-	return l.peekAhead(n)
+	return eof
 }
 
 func (l *Lexer) tokenOf(ty TokenType) Token {
@@ -97,32 +103,46 @@ func (l *Lexer) AllTokens() ([]Token, error) {
 	}
 }
 
+func (l *Lexer) errf(format string, args ...interface{}) error {
+	return &PositionError{
+		Position: l.pos,
+		Msg:      fmt.Sprintf(format, args...),
+	}
+}
+func (l *Lexer) unexpectedEOF() error {
+	return l.errf("unexpected EOF")
+}
+
 // NextToken scans the input for the next token. It returns the position of the token,
 // the token's type, and the literal value.
 func (l *Lexer) NextToken() (Token, error) {
 	// keep looping until we return a token
+	var err error
 	for {
-		next := l.peek()
-		if next == eof {
+		l.next()
+		if l.ch == eof {
 			return l.tokenOf(EOF), nil
 		}
 
-		if op, ok := operators[next]; ok {
-			l.next()
+		if op, ok := operators[l.ch]; ok {
 			return l.tokenOf(op), nil
 		}
 
-		switch next {
+		switch l.ch {
 		case '/':
-			l.next()
-			l.next()
-			if l.ch != '/' && l.ch != '*' {
-				return Token{}, l.errf("unexpected character %c", l.ch)
-			}
+			opener := l.peek()
 			commentStart := l.pos
-			lit, err := l.lexComment()
-			if err != nil {
-				return Token{}, err
+			var lit string
+			switch opener {
+			case '/':
+				lit = l.lexLineComment()
+			case '*':
+				lit, err = l.lexBlockComment()
+				if err != nil {
+					return Token{}, err
+				}
+			default:
+				return Token{}, l.errf("unexpected character %c", l.ch)
 			}
 			return Token{
 				Type:  COMMENT,
@@ -146,10 +166,7 @@ func (l *Lexer) NextToken() (Token, error) {
 
 		case '|':
 			startPos := l.pos
-			lit, err := l.lexDescription()
-			if err != nil {
-				return Token{}, err
-			}
+			lit := l.lexDescription()
 			return Token{
 				Type:  DESCRIPTION,
 				Start: startPos,
@@ -158,17 +175,14 @@ func (l *Lexer) NextToken() (Token, error) {
 			}, nil
 
 		case '\n':
-			l.next()
 			return l.tokenOf(EOL), nil
 
 		default:
-			if unicode.IsSpace(next) {
-				l.next()
-				continue // nothing to do here, just move on
-			} else if unicode.IsDigit(next) {
-				// backup and let lexInt rescan the beginning of the int
+			if unicode.IsSpace(l.ch) {
+				continue
+			} else if unicode.IsDigit(l.ch) {
 				return l.lexNumber()
-			} else if unicode.IsLetter(next) {
+			} else if unicode.IsLetter(l.ch) {
 				startPos := l.pos
 				lit := l.lexIdent()
 				if keyword, ok := asKeyword(lit); ok {
@@ -194,8 +208,7 @@ func (l *Lexer) NextToken() (Token, error) {
 					Lit:   lit,
 				}, nil
 			} else {
-				l.next()
-				return Token{}, l.errf("unexpected character: %c", next)
+				return Token{}, l.errf("unexpected character: %c", l.ch)
 			}
 		}
 	}
@@ -208,7 +221,7 @@ func (l *Lexer) lexNumber() (Token, error) {
 		Type:  INT,
 		Start: l.pos,
 		End:   l.pos,
-		Lit:   "",
+		Lit:   string(l.ch),
 	}
 	var seenDot bool
 	for {
@@ -236,14 +249,13 @@ func (l *Lexer) lexNumber() (Token, error) {
 // lexIdent scans the input until the end of an identifier and then returns the
 // literal.
 func (l *Lexer) lexIdent() string {
-	var lit string
+	var lit = string(l.ch)
 	for {
 		next := l.peek()
 		if unicode.IsLetter(next) || unicode.IsDigit(next) || next == '_' {
 			l.next()
 			lit = lit + string(l.ch)
 		} else {
-			// scanned something not in the identifier
 			return lit
 		}
 	}
@@ -253,31 +265,28 @@ func (l *Lexer) lexIdent() string {
 // literal.
 func (l *Lexer) lexString() (string, error) {
 	var lit string
-	l.next()
 	quote := l.ch
 	for {
-		next := l.peek()
+		l.next()
 
-		if next == eof {
+		if l.ch == eof {
 			return "", l.unexpectedEOF()
 		}
-		if next == quote {
-			l.next()
+		if l.ch == quote {
 			// at the end of the string
 			return lit, nil
 		}
-		if next == '\n' {
-			return "", l.errf("unesacped newline in string")
+		if l.ch == '\n' {
+			return "", l.errf("unexpected EOL in string, did you mean to escape it? ('\\n')")
 		}
 
-		if next == '\\' {
+		if l.ch == '\\' {
 			if err := l.lexEscape(quote); err != nil {
 				return "", err
 			}
 			// continue, having consumed the escape sequence, the next character
 			// is just 'normal'
 		}
-		l.next()
 		lit = lit + string(l.ch)
 	}
 }
@@ -285,25 +294,23 @@ func (l *Lexer) lexString() (string, error) {
 // lexEscape scans the input for an escape sequence and returns an error if the
 // escape sequence is invalid.
 func (l *Lexer) lexEscape(quote rune) error {
-	l.next()
 	switch l.peek() {
 	case '\\', '\n', quote:
+		l.next()
 		return nil
 	}
-	return l.errf("invalid escape sequence: \\%c", l.ch)
+	err := l.errf("invalid escape, did you mean '\\\\'?")
+	return err
 }
 
 // lexDescription scans the input lines the next line is not a description
-func (l *Lexer) lexDescription() (string, error) {
+func (l *Lexer) lexDescription() string {
 	var lit string
 	for {
-		line, err := l.lexDescriptionLine()
-		if err != nil {
-			return "", err
-		}
+		line := l.lexDescriptionLine()
 		if l.peekPastWhitespace() != '|' {
 			lit = lit + line
-			return lit, nil
+			return lit
 		}
 		l.skipWhitespace() // leading whitespace on newline
 		l.next()           // consume the |
@@ -311,39 +318,32 @@ func (l *Lexer) lexDescription() (string, error) {
 	}
 }
 
-func (l *Lexer) lexDescriptionLine() (string, error) {
-
+func (l *Lexer) lexDescriptionLine() string {
 	var lit string
 	l.next()
 	l.skipWhitespace()
 	for {
 		next := l.peek()
 		if next == eof {
-			return lit, nil
+			return lit
 		}
 		if next == '\n' {
-			return lit, nil
+			return lit
 		}
 		l.next()
 		lit = lit + string(l.ch)
 	}
 }
 
-// lineComment scans the input until the end of a line and then returns the
-// literal.
-func (l *Lexer) lexComment() (string, error) {
-	if l.ch == '/' {
-		return l.lexLineComment()
-	}
-
+func (l *Lexer) lexBlockComment() (string, error) {
+	l.next() // consume the first *
 	commentText := ""
 	for {
-		if l.peek() == '*' && l.peekAhead(1) == '/' {
-			l.next()
+		l.next()
+		if l.ch == '*' && l.peek() == '/' {
 			l.next()
 			return commentText, nil
 		}
-		l.next()
 		if l.ch == eof {
 			return commentText, nil
 		}
@@ -351,34 +351,15 @@ func (l *Lexer) lexComment() (string, error) {
 	}
 }
 
-func (l *Lexer) lexLineComment() (string, error) {
+func (l *Lexer) lexLineComment() string {
+	l.next() // consume the second /
 	var lit string
 	for {
 		next := l.peek()
 		if next == eof || next == '\n' {
-			return lit, nil
+			return lit
 		}
 		l.next()
 		lit = lit + string(l.ch)
-	}
-}
-
-type PositionError struct {
-	Position
-	Msg string
-}
-
-func (e PositionError) Error() string {
-	return fmt.Sprintf("%s: %s", e.Position, e.Msg)
-}
-
-func (l *Lexer) unexpectedEOF() error {
-	return l.errf("unexpected EOF")
-}
-
-func (l *Lexer) errf(format string, args ...interface{}) error {
-	return &PositionError{
-		Position: l.pos,
-		Msg:      fmt.Sprintf(format, args...),
 	}
 }

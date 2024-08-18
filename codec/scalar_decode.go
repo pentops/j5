@@ -17,6 +17,27 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const (
+	wktAny       = "google.protobuf.Any"
+	wktTimestamp = "google.protobuf.Timestamp"
+	wktDuration  = "google.protobuf.Duration"
+
+	wktBool   = "google.protobuf.BoolValue"
+	wktInt32  = "google.protobuf.Int32Value"
+	wktInt64  = "google.protobuf.Int64Value"
+	wktUInt32 = "google.protobuf.UInt32Value"
+	wktUInt64 = "google.protobuf.UInt64Value"
+	wktFloat  = "google.protobuf.FloatValue"
+	wktDouble = "google.protobuf.DoubleValue"
+	wktString = "google.protobuf.StringValue"
+	wktBytes  = "google.protobuf.BytesValue"
+
+	wktEmpty = "google.protobuf.Empty"
+
+	jtDate    = protoreflect.FullName("j5.types.date.v1.Date")
+	jtDecimal = protoreflect.FullName("j5.types.decimal.v1.Decimal")
+)
+
 func (dec *decoder) decodeScalarField(schema *j5schema.ScalarSchema) (protoreflect.Value, error) {
 
 	if schema.WellKnownTypeName != "" {
