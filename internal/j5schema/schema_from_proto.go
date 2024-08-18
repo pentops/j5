@@ -972,6 +972,7 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 		rootSchema: pkg.schemaRootFromProto(enumDescriptor),
 		Options:    values,
 		NamePrefix: trimPrefix,
+
 		//descriptor:  enumDescriptor,
 	}, nil
 }
@@ -998,6 +999,7 @@ func wktSchema(src protoreflect.MessageDescriptor, listConstraint *list_j5pb.Fie
 
 	case "google.protobuf.Duration":
 		return &ScalarSchema{
+			Kind:              protoreflect.MessageKind,
 			WellKnownTypeName: fullName,
 			Proto: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_String_{
@@ -1010,12 +1012,22 @@ func wktSchema(src protoreflect.MessageDescriptor, listConstraint *list_j5pb.Fie
 
 	case "j5.types.date.v1.Date":
 		return &ScalarSchema{
+			Kind:              protoreflect.MessageKind,
 			WellKnownTypeName: fullName,
 			Proto: &schema_j5pb.Field{
-				Type: &schema_j5pb.Field_String_{
-					String_: &schema_j5pb.StringField{
-						Format: Ptr("date"),
-					},
+				Type: &schema_j5pb.Field_Date{
+					Date: &schema_j5pb.DateField{},
+				},
+			},
+		}, true
+
+	case "j5.types.decimal.v1.Decimal":
+		return &ScalarSchema{
+			Kind:              protoreflect.MessageKind,
+			WellKnownTypeName: fullName,
+			Proto: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Decimal{
+					Decimal: &schema_j5pb.DecimalField{},
 				},
 			},
 		}, true

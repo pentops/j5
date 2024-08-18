@@ -8,6 +8,13 @@ import (
 
 type FieldSchema interface {
 	ToJ5Field() *schema_j5pb.Field
+
+	// Mutable determines how reflection can access the Field
+	// true for ObjectField and OneofField
+	// false for ScalarField, EnumField
+	// true for ArrayField and MapField
+	// false for AnyField special case
+	Mutable() bool
 }
 
 type ScalarSchema struct {
@@ -23,6 +30,10 @@ func (s *ScalarSchema) ToJ5Field() *schema_j5pb.Field {
 	return s.Proto
 }
 
+func (s *ScalarSchema) Mutable() bool {
+	return false
+}
+
 type AnyField struct {
 	Description *string
 }
@@ -35,10 +46,18 @@ func (s *AnyField) ToJ5Field() *schema_j5pb.Field {
 	}
 }
 
+func (s *AnyField) Mutable() bool {
+	return false
+}
+
 type EnumField struct {
 	Ref       *RefSchema
 	Rules     *schema_j5pb.EnumField_Rules
 	ListRules *list_j5pb.EnumRules
+}
+
+func (s *EnumField) Mutable() bool {
+	return false
 }
 
 func (s *EnumField) Schema() *EnumSchema {
@@ -68,6 +87,10 @@ type ObjectField struct {
 	Rules   *schema_j5pb.ObjectField_Rules
 }
 
+func (s *ObjectField) Mutable() bool {
+	return true
+}
+
 func (s *ObjectField) Schema() *ObjectSchema {
 	return s.Ref.To.(*ObjectSchema)
 }
@@ -93,6 +116,10 @@ type OneofField struct {
 	Ref       *RefSchema
 	Rules     *schema_j5pb.OneofField_Rules
 	ListRules *list_j5pb.OneofRules
+}
+
+func (s *OneofField) Mutable() bool {
+	return true
 }
 
 func (s *OneofField) Schema() *OneofSchema {
@@ -121,6 +148,10 @@ type MapField struct {
 	Rules  *schema_j5pb.MapField_Rules
 }
 
+func (s *MapField) Mutable() bool {
+	return true
+}
+
 func (s *MapField) ToJ5Field() *schema_j5pb.Field {
 	item := s.Schema.ToJ5Field()
 
@@ -138,6 +169,10 @@ func (s *MapField) ToJ5Field() *schema_j5pb.Field {
 type ArrayField struct {
 	Schema FieldSchema
 	Rules  *schema_j5pb.ArrayField_Rules
+}
+
+func (s *ArrayField) Mutable() bool {
+	return true
 }
 
 func (s *ArrayField) ToJ5Field() *schema_j5pb.Field {

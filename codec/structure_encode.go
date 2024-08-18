@@ -10,8 +10,7 @@ import (
 	"github.com/pentops/j5/j5types/decimal_j5t"
 )
 
-func (enc *encoder) encodeObjectBody(fieldSet j5reflect.FieldSet) error {
-
+func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 	first := true
 	enc.openObject()
 	defer enc.closeObject()
@@ -25,20 +24,15 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.FieldSet) error {
 			return err
 		}
 
-		val, err := prop.Field()
-		if err != nil {
-			return err
-		}
-		if err := enc.encodeValue(val); err != nil {
+		if err := enc.encodeValue(prop); err != nil {
 			return err
 		}
 
 		return nil
 	})
-
 }
 
-func (enc *encoder) encodeOneofBody(fieldSet j5reflect.FieldSet) error {
+func (enc *encoder) encodeOneofBody(fieldSet j5reflect.PropertySet) error {
 
 	prop, err := fieldSet.GetOne()
 	if err != nil {
@@ -67,12 +61,7 @@ func (enc *encoder) encodeOneofBody(fieldSet j5reflect.FieldSet) error {
 		return err
 	}
 
-	val, err := prop.Field()
-	if err != nil {
-		return err
-	}
-
-	if err := enc.encodeValue(val); err != nil {
+	if err := enc.encodeValue(prop); err != nil {
 		return err
 	}
 
@@ -88,7 +77,7 @@ func (enc *encoder) encodeOneof(oneof *j5reflect.Oneof) error {
 	return enc.encodeOneofBody(oneof)
 }
 
-func (enc *encoder) encodeValue(field j5reflect.Value) error {
+func (enc *encoder) encodeValue(field j5reflect.Field) error {
 
 	switch ft := field.(type) {
 	case j5reflect.ObjectField:
@@ -126,7 +115,7 @@ func (enc *encoder) encodeMap(field j5reflect.MapField) error {
 	enc.openObject()
 	first := true
 	defer enc.closeObject()
-	return field.Range(func(key string, val j5reflect.Value) error {
+	return field.Range(func(key string, val j5reflect.Field) error {
 		if !first {
 			enc.fieldSep()
 		}
@@ -144,7 +133,7 @@ func (enc *encoder) encodeArray(array j5reflect.ArrayField) error {
 	enc.openArray()
 	defer enc.closeArray()
 	first := true
-	return array.Range(func(prop j5reflect.Value) error {
+	return array.Range(func(prop j5reflect.Field) error {
 		if !first {
 			enc.fieldSep()
 		}
@@ -163,8 +152,12 @@ func (enc *encoder) encodeEnum(enum j5reflect.EnumField) error {
 }
 
 func (enc *encoder) encodeScalarField(scalar j5reflect.ScalarField) error {
-	val := scalar.GetInterface()
+	val, err := scalar.ToGoValue()
+	if err != nil {
+		return err
+	}
 	switch vt := val.(type) {
+
 	case string:
 		return enc.addString(vt)
 	case bool:
