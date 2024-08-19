@@ -35,8 +35,8 @@ func TestConvert(t *testing.T) {
 		`  `,
 		`  `,
 		`  field bar_field string {`,
-		`    validate.required = true`,
-		`    validate.min_length = 1`,
+		`    required = true`,
+		`    rules.minLength = 1`,
 		`  }`,
 		`  `,
 		`  field baz_field object {`,
@@ -101,7 +101,7 @@ func ptr[T any](v T) *T {
 	return &v
 }
 
-func cmpProto(t testing.TB, a, b proto.Message) {
+func cmpProto(t testing.TB, b, a proto.Message) {
 	diff := cmp.Diff(a, b, protocmp.Transform())
 	if diff != "" {
 		t.Error(diff)

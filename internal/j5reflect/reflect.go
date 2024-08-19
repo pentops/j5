@@ -34,10 +34,9 @@ func (r *Reflector) NewRoot(protoMsg protoreflect.Message) (Root, error) {
 		return nil, nil
 	}
 
-	msg := &protoMessage{
-		protoReflectMessage: protoMsg,
-		descriptor:          descriptor,
-		parent:              nil,
+	msg, err := newRootMessageValue(protoMsg)
+	if err != nil {
+		return nil, err
 	}
 
 	switch schema := schema.(type) {
@@ -50,7 +49,7 @@ func (r *Reflector) NewRoot(protoMsg protoreflect.Message) (Root, error) {
 	}
 }
 
-func (r *Reflector) NewObject(msg protoreflect.Message) (*Object, error) {
+func (r *Reflector) NewObject(msg protoreflect.Message) (*ObjectImpl, error) {
 
 	descriptor := msg.Descriptor()
 	schema, err := r.schemaSet.Schema(descriptor)
@@ -63,7 +62,7 @@ func (r *Reflector) NewObject(msg protoreflect.Message) (*Object, error) {
 		return nil, fmt.Errorf("expected object schema, got %T", schema)
 	}
 
-	mv, err := newRootMessageValue(msg, descriptor)
+	mv, err := newRootMessageValue(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -71,50 +70,50 @@ func (r *Reflector) NewObject(msg protoreflect.Message) (*Object, error) {
 	return newObject(obj, mv)
 }
 
-type Object struct {
+type ObjectImpl struct {
 	schema *j5schema.ObjectSchema
-	value  *protoMessage
+	value  *protoMessageWrapper
 	*propSet
 }
 
-func newObject(schema *j5schema.ObjectSchema, value *protoMessage) (*Object, error) {
+func newObject(schema *j5schema.ObjectSchema, value *protoMessageWrapper) (*ObjectImpl, error) {
 
 	props, err := collectProperties(schema.ClientProperties(), value)
 	if err != nil {
 		return nil, err
 	}
 
-	fieldset, err := newPropSet(props)
+	fieldset, err := newPropSet(schema.FullName(), props)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Object{
+	return &ObjectImpl{
 		schema:  schema,
 		value:   value,
 		propSet: fieldset,
 	}, nil
 }
 
-type Oneof struct {
+type OneofImpl struct {
 	schema *j5schema.OneofSchema
-	value  *protoMessage
+	value  *protoMessageWrapper
 	*propSet
 }
 
-func newOneof(schema *j5schema.OneofSchema, value *protoMessage) (*Oneof, error) {
+func newOneof(schema *j5schema.OneofSchema, value *protoMessageWrapper) (*OneofImpl, error) {
 
 	props, err := collectProperties(schema.Properties, value)
 	if err != nil {
 		return nil, err
 	}
 
-	fieldset, err := newPropSet(props)
+	fieldset, err := newPropSet(schema.FullName(), props)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Oneof{
+	return &OneofImpl{
 		schema:  schema,
 		value:   value,
 		propSet: fieldset,

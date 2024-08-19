@@ -9,59 +9,87 @@ import (
 type protoValueContext interface {
 	getValue() protoreflect.Value
 	kind() protoreflect.Kind
-	IsSet() bool
+	isSet() bool
 	setValue(protoreflect.Value)
+	clearValue() error
 	getOrCreate() protoreflect.Value
 	getOrCreateMutable() protoreflect.Value
+	getOrCreateChildMessage() (*protoMessageWrapper, error)
 }
 
 type realProtoMessageField struct {
-	msg   *protoMessage
-	field protoreflect.FieldDescriptor
+	parent        *protoMessageWrapper
+	fieldInParent protoreflect.FieldDescriptor
 }
 
 var _ protoValueContext = &realProtoMessageField{}
 
 func (mf *realProtoMessageField) kind() protoreflect.Kind {
-	return mf.field.Kind()
+	return mf.fieldInParent.Kind()
 }
 
 func (mf *realProtoMessageField) getValue() protoreflect.Value {
-	if !mf.IsSet() {
+	if !mf.isSet() {
 		return protoreflect.Value{}
 	}
-	return mf.msg.protoReflectMessage.Get(mf.field)
+	return mf.parent.protoReflectMessage.Get(mf.fieldInParent)
 }
 
 func (mf *realProtoMessageField) setValue(val protoreflect.Value) {
-	mf.msg.ensureExists()
-	mf.msg.protoReflectMessage.Set(mf.field, val)
+	mf.parent.ensureExists()
+	if !val.IsValid() {
+		mf.parent.protoReflectMessage.Clear(mf.fieldInParent)
+		return
+	}
+
+	mf.parent.protoReflectMessage.Set(mf.fieldInParent, val)
+}
+
+func (mf *realProtoMessageField) clearValue() error {
+	mf.parent.ensureExists()
+	mf.parent.protoReflectMessage.Clear(mf.fieldInParent)
+	return nil
 }
 
 func (mf *realProtoMessageField) getOrCreate() protoreflect.Value {
-	mf.msg.ensureExists()
-	if mf.msg.protoReflectMessage.Has(mf.field) {
-		return mf.msg.protoReflectMessage.Get(mf.field)
+	mf.parent.ensureExists()
+	if mf.parent.protoReflectMessage.Has(mf.fieldInParent) {
+		return mf.parent.protoReflectMessage.Get(mf.fieldInParent)
 	}
-	return mf.msg.protoReflectMessage.NewField(mf.field)
+	return mf.parent.protoReflectMessage.NewField(mf.fieldInParent)
 }
 
 func (mf *realProtoMessageField) getOrCreateMutable() protoreflect.Value {
-	mf.msg.ensureExists()
-	return mf.msg.protoReflectMessage.Mutable(mf.field)
+	mf.parent.ensureExists()
+	return mf.parent.protoReflectMessage.Mutable(mf.fieldInParent)
 }
 
-func (mf *realProtoMessageField) IsSet() bool {
-	if !mf.msg.exists() {
+func (mf *realProtoMessageField) getOrCreateChildMessage() (*protoMessageWrapper, error) {
+	mf.parent.ensureExists()
+
+	if mf.fieldInParent.Kind() != protoreflect.MessageKind {
+		return nil, fmt.Errorf("field is not a message but has nested types")
+	}
+
+	desc := mf.fieldInParent.Message()
+	if desc == nil {
+		return nil, fmt.Errorf("field is a message but has no descriptor")
+	}
+
+	return mf.parent.fieldAsWrapper(mf.fieldInParent)
+}
+
+func (mf *realProtoMessageField) isSet() bool {
+	if !mf.parent.exists() {
 		return false
 	}
-	return mf.msg.protoReflectMessage.Has(mf.field)
+	return mf.parent.protoReflectMessage.Has(mf.fieldInParent)
 }
 
 // vitualProtoField is a non-proto field which appears in client schemas, it is
 // a j5 schema around a sub-set of fields in a parent message
 type virtualProtoField struct {
-	msg      *protoMessage
+	msg      *protoMessageWrapper
 	children *propSet
 }
 
@@ -82,6 +110,10 @@ func (vf *virtualProtoField) getOrCreateMutable() protoreflect.Value {
 	return vf.getOrCreate()
 }
 
+func (vf *virtualProtoField) getOrCreateChildMessage() (*protoMessageWrapper, error) {
+	return nil, fmt.Errorf("cannot get child message of a virtual field")
+}
+
 func (vf *virtualProtoField) getValue() protoreflect.Value {
 	return protoreflect.Value{}
 }
@@ -90,7 +122,12 @@ func (vf *virtualProtoField) setValue(val protoreflect.Value) {
 	// There is nothing logical which could be set.
 }
 
-func (vf *virtualProtoField) IsSet() bool {
+func (vf *virtualProtoField) clearValue() error {
+	// TODO: Clear the children?
+	return fmt.Errorf("cannot clear a virtual field")
+}
+
+func (vf *virtualProtoField) isSet() bool {
 	// The field has no actual value, so we check if any child is set. For
 	// oneofs, this will be the one field
 	return vf.children.AnySet()
@@ -109,7 +146,7 @@ func (mfv *protoValueWrapper) kind() protoreflect.Kind {
 	return mfv.prField.Kind()
 }
 
-func (mfv *protoValueWrapper) IsSet() bool {
+func (mfv *protoValueWrapper) isSet() bool {
 	return true
 }
 
@@ -119,6 +156,10 @@ func (mfv *protoValueWrapper) getOrCreate() protoreflect.Value {
 
 func (mfv *protoValueWrapper) getOrCreateMutable() protoreflect.Value {
 	return mfv.value
+}
+
+func (mfv *protoValueWrapper) getOrCreateChildMessage() (*protoMessageWrapper, error) {
+	return newRootMessageValue(mfv.value.Message())
 }
 
 func (mfv *protoValueWrapper) getValue() protoreflect.Value {
@@ -138,6 +179,10 @@ func (lfv *protoListItem) setValue(val protoreflect.Value) {
 	lfv.prList.Set(lfv.idx, val)
 }
 
+func (lfv *protoListItem) clearValue() error {
+	return fmt.Errorf("cannot clear a list item")
+}
+
 type protoMapItem struct {
 	protoValueWrapper
 	key   protoreflect.MapKey
@@ -148,101 +193,107 @@ func (mfv *protoMapItem) setValue(val protoreflect.Value) {
 	mfv.prMap.Set(mfv.key, val)
 }
 
-type valueParent interface {
-	getOrCreate() protoreflect.Value
+func (mfv *protoMapItem) clearValue() error {
+	mfv.prMap.Clear(mfv.key)
+	return nil
 }
 
-type protoMessage struct {
+type protoMessageWrapper struct {
+	descriptor protoreflect.MessageDescriptor
+
+	// may be nil if the value is not yet set.
 	protoReflectMessage protoreflect.Message
-	descriptor          protoreflect.MessageDescriptor
-	parent              valueParent
+
+	fieldInParent protoreflect.FieldDescriptor
+	parent        *protoMessageWrapper
 }
 
-func newChildMessageValue(parent valueParent, value protoreflect.Message) (*protoMessage, error) {
-	if parent == nil {
-		return nil, fmt.Errorf("parent is nil")
-	}
-	if value == nil || !value.IsValid() {
-		return nil, fmt.Errorf("value is nil")
-	}
-
-	msg := &protoMessage{
-		descriptor:          value.Descriptor(),
-		protoReflectMessage: value,
-		parent:              parent,
-	}
-
-	return msg, nil
-}
-
-func newRootMessageValue(msg protoreflect.Message, descriptor protoreflect.MessageDescriptor) (*protoMessage, error) {
+func newRootMessageValue(msg protoreflect.Message) (*protoMessageWrapper, error) {
 	if msg == nil {
 		return nil, fmt.Errorf("message is nil")
 	}
-	if descriptor == nil {
-		return nil, fmt.Errorf("descriptor is nil")
-	}
 
-	return &protoMessage{
+	return &protoMessageWrapper{
+		descriptor:          msg.Descriptor(),
 		protoReflectMessage: msg,
-		descriptor:          descriptor,
+		parent:              nil,
+		fieldInParent:       nil,
 	}, nil
 }
 
-func (mv *protoMessage) ensureExists() {
-	if mv.protoReflectMessage != nil {
+func (pmw *protoMessageWrapper) ensureExists() {
+	if pmw.protoReflectMessage != nil {
 		return
 	}
-	msg := mv.parent.getOrCreate()
-	mv.protoReflectMessage = msg.Message()
+	msg := pmw.parent.getOrCreate(pmw.fieldInParent)
+	pmw.protoReflectMessage = msg
 }
 
-func (mv *protoMessage) exists() bool {
-	return mv.protoReflectMessage != nil
+func (pmw *protoMessageWrapper) exists() bool {
+	return pmw.protoReflectMessage != nil
 }
 
-func (mv *protoMessage) getOrCreate() protoreflect.Value {
-	mv.ensureExists()
-	return protoreflect.ValueOfMessage(mv.protoReflectMessage)
-}
-
-func (mv *protoMessage) childByNumber(field protoreflect.FieldNumber) (*protoMessage, error) {
-	fd := mv.protoReflectMessage.Descriptor().Fields().ByNumber(field)
-	if fd.Kind() != protoreflect.MessageKind {
-		return nil, fmt.Errorf("field %s is not a message but has nested types", fd.FullName())
+func (pmw *protoMessageWrapper) getOrCreate(field protoreflect.FieldDescriptor) protoreflect.Message {
+	pmw.ensureExists()
+	if pmw.protoReflectMessage.Has(field) {
+		return pmw.protoReflectMessage.Get(field).Message()
 	}
+	return pmw.protoReflectMessage.Mutable(field).Message()
+}
+
+func (pmw *protoMessageWrapper) fieldAsWrapper(fd protoreflect.FieldDescriptor) (*protoMessageWrapper, error) {
 	desc := fd.Message()
 	if desc == nil {
 		return nil, fmt.Errorf("field %s is a message but has no descriptor", fd.FullName())
 	}
 
-	child := &protoMessage{
+	// The 'child' message is field 'fd' in the parent message 'pmw'
+	child := &protoMessageWrapper{
 		descriptor: desc,
-		parent:     mv,
+
+		fieldInParent: fd,
+		parent:        pmw,
 	}
-	if mv.protoReflectMessage.Has(fd) {
-		child.protoReflectMessage = mv.protoReflectMessage.Get(fd).Message()
+
+	//child.logName("new child node")
+
+	if pmw.protoReflectMessage != nil {
+		if pmw.protoReflectMessage.Has(fd) {
+			child.protoReflectMessage = pmw.protoReflectMessage.Get(fd).Message()
+		}
 	}
 
 	return child, nil
 }
 
-func (mv *protoMessage) fieldByNumber(field protoreflect.FieldNumber) (*realProtoMessageField, error) {
-	fd := mv.descriptor.Fields().ByNumber(field)
+/*
+func (pmw *protoMessageWrapper) debugPrint(as string) {
+	fmt.Printf("%s\n | field %s \n |  in   %s\n |  is a %s\n", as, pmw.fieldInParent.FullName(), pmw.parent.descriptor.FullName(), pmw.descriptor.FullName())
+	if !strings.HasPrefix(string(pmw.fieldInParent.FullName()), string(pmw.parent.descriptor.FullName())) {
+		panic("field and message names do not match")
+	}
+}*/
 
+func (pmw *protoMessageWrapper) fieldByNumber(field protoreflect.FieldNumber) (*realProtoMessageField, error) {
+	if pmw.descriptor == nil {
+		return nil, fmt.Errorf("descriptor is nil in fieldByNumber")
+	}
+	fd := pmw.descriptor.Fields().ByNumber(field)
 	if fd == nil {
 		return nil, fmt.Errorf("field is nil")
 	}
 
-	return &realProtoMessageField{
-		msg:   mv,
-		field: fd,
-	}, nil
+	leafNode := &realProtoMessageField{
+		parent:        pmw,
+		fieldInParent: fd,
+	}
+
+	return leafNode, nil
 }
 
-func (mv *protoMessage) virtualField(children *propSet) *virtualProtoField {
+func (pmw *protoMessageWrapper) virtualField(children *propSet) *virtualProtoField {
 	return &virtualProtoField{
-		msg:      mv,
+		msg:      pmw,
 		children: children,
 	}
 }

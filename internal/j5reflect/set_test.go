@@ -16,7 +16,7 @@ func must(t *testing.T, err error) {
 func TestSetter(t *testing.T) {
 	refl := New()
 
-	newRoot := func(t *testing.T) (obj *Object, schema *schema_testpb.FullSchema) {
+	newRoot := func(t *testing.T) (obj *ObjectImpl, schema *schema_testpb.FullSchema) {
 		// not setting helper, as errors here are global fault
 		msg := &schema_testpb.FullSchema{}
 		root, err := refl.NewObject(msg.ProtoReflect())
@@ -30,7 +30,7 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a scalar field
-		prop := root.GetProperty("sString")
+		prop := root.GetProperty("sString").Field()
 		if prop == nil {
 			t.Fatal("missing field sString")
 		}
@@ -47,7 +47,7 @@ func TestSetter(t *testing.T) {
 	t.Run("nested", func(t *testing.T) {
 		root, msg := newRoot(t)
 		// Set a nested message field
-		sBar, ok := root.GetProperty("sBar").(ObjectField)
+		sBar, ok := root.GetProperty("sBar").Field().(ObjectField)
 		if !ok {
 			t.Fatal("missing field sBar")
 		}
@@ -57,7 +57,7 @@ func TestSetter(t *testing.T) {
 			t.Fatalf("calling bar.Object(): %s", err)
 		}
 
-		sBarID, ok := asObj.GetProperty("id").(ScalarField)
+		sBarID, ok := asObj.GetProperty("id").Field().(ScalarField)
 		if !ok {
 			t.Fatal("missing field ID")
 		}
@@ -75,14 +75,14 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a repeated leaf
-		sRepeated, ok := root.GetProperty("rString").(LeafArrayField)
+		sRepeated, ok := root.GetProperty("rString").Field().(ArrayOfScalarField)
 		if !ok {
 			t.Fatal("missing field")
 		}
 
-		must(t, sRepeated.AppendGoValue("a"))
+		must(t, sRepeated.AppendGoScalar("a"))
 
-		must(t, sRepeated.AppendGoValue("b"))
+		must(t, sRepeated.AppendGoScalar("b"))
 
 		assert.Equal(t, []string{"a", "b"}, msg.RString)
 	})
@@ -91,7 +91,7 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a repeated mutable field
-		prop := root.GetProperty("rBars")
+		prop := root.GetProperty("rBars").Field().(ArrayOfObjectField)
 		if prop == nil {
 			t.Fatal("missing field rBar")
 		}
@@ -112,7 +112,7 @@ func TestSetter(t *testing.T) {
 				t.Fatalf("calling barField.Object(): %s", err)
 			}
 
-			idField, ok := barObject.GetProperty("id").(ScalarField)
+			idField, ok := barObject.GetProperty("id").Field().(ScalarField)
 			if !ok {
 				t.Fatal("missing field id")
 			}
@@ -133,14 +133,104 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a map scalar field
-		sMap, ok := root.GetProperty("mapStringString").(LeafMapField)
+		sMap, ok := root.GetProperty("mapStringString").Field().(MapOfScalarField)
 		if !ok {
 			t.Fatal("missing field mString")
 		}
 
-		must(t, sMap.SetGoValue("key", "value"))
+		must(t, sMap.SetGoScalar("key", "value"))
 
 		assert.Equal(t, "value", msg.MapStringString["key"])
 	})
 
+	t.Run("nil optional", func(t *testing.T) {
+		root, msg := newRoot(t)
+
+		// Set a nil boolean field
+		sBool, ok := root.GetProperty("oBool").Field().(ScalarField)
+		if !ok {
+			t.Fatal("missing field sBool")
+		}
+
+		must(t, sBool.SetGoValue(true))
+		assert.Equal(t, ptr(true), msg.OBool)
+
+		var b *bool
+		must(t, sBool.SetGoValue(b))
+		assert.Nil(t, msg.OBool)
+
+		must(t, sBool.SetGoValue(true))
+		assert.Equal(t, ptr(true), msg.OBool)
+
+		must(t, sBool.SetGoValue(nil))
+		assert.Nil(t, msg.OBool)
+	})
+
+	t.Run("nil required", func(t *testing.T) {
+		root, msg := newRoot(t)
+
+		// Set a nil boolean field
+		sBool, ok := root.GetProperty("sBool").Field().(ScalarField)
+		if !ok {
+			t.Fatal("missing field sBool")
+		}
+
+		must(t, sBool.SetGoValue(true))
+		assert.Equal(t, true, msg.SBool)
+
+		var b *bool
+		must(t, sBool.SetGoValue(b))
+		assert.False(t, msg.SBool)
+
+		pr := msg.ProtoReflect()
+		assert.False(t, pr.Has(pr.Descriptor().Fields().ByJSONName("sBool")))
+
+		must(t, sBool.SetGoValue(true))
+		assert.Equal(t, true, msg.SBool)
+
+		must(t, sBool.SetGoValue(nil))
+		assert.False(t, msg.SBool)
+	})
+
+	t.Run("array of enum", func(t *testing.T) {
+		root, msg := newRoot(t)
+
+		// Set a repeated leaf
+		sRepeated, ok := root.GetProperty("rEnum").Field().(ArrayOfEnumField)
+		if !ok {
+			t.Fatal("missing field")
+		}
+
+		must(t, sRepeated.AppendEnumFromString("VALUE1"))
+
+		must(t, sRepeated.AppendEnumFromString("VALUE2"))
+
+		assert.Equal(t, []schema_testpb.Enum{
+			schema_testpb.Enum_ENUM_VALUE1,
+			schema_testpb.Enum_ENUM_VALUE2,
+		}, msg.REnum)
+	})
+
+	t.Run("nested flattened", func(t *testing.T) {
+		root, msg := newRoot(t)
+
+		// skips the top level message, should find in the child.
+		field, ok := root.GetProperty("fieldFromFlattened").Field().(ScalarField)
+		if !ok {
+			t.Fatal("missing field fieldFromFlattened")
+		}
+
+		if err := field.SetGoValue("hello"); err != nil {
+			t.Fatal(err)
+		}
+
+		assert.NotNil(t, msg.Flattened)
+		assert.Equal(t, "hello", msg.Flattened.FieldFromFlattened)
+
+	})
+
+}
+
+func ptr[T any](t T) *T {
+	return &t
 }

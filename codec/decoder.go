@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/internal/j5reflect"
-	"github.com/pentops/j5/internal/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -25,9 +24,9 @@ func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 	}
 
 	switch schema := root.(type) {
-	case *j5reflect.Object:
+	case *j5reflect.ObjectImpl:
 		return d2.decodeObject(schema)
-	case *j5reflect.Oneof:
+	case *j5reflect.OneofImpl:
 		return d2.decodeOneof(schema)
 	default:
 		return fmt.Errorf("unsupported root schema type %T", schema)
@@ -171,11 +170,11 @@ func passUpError(field string, err error) error {
 	}
 }
 
-func (dec *decoder) decodeObject(object *j5reflect.Object) error {
+func (dec *decoder) decodeObject(object j5reflect.Object) error {
 
 	return dec.jsonObject(func(keyTokenStr string) error {
-		value, ok := object.GetProperty(keyTokenStr)
-		if !ok {
+		prop := object.GetProperty(keyTokenStr)
+		if prop == nil {
 			return newFieldError(keyTokenStr, "no such field")
 		}
 
@@ -225,7 +224,7 @@ func (dec *decoder) decodeObject(object *j5reflect.Object) error {
 				}
 			}*/
 
-		if err := dec.decodeValue(value); err != nil {
+		if err := dec.decodeValue(prop.Field()); err != nil {
 			return err
 		}
 
@@ -233,92 +232,63 @@ func (dec *decoder) decodeObject(object *j5reflect.Object) error {
 	})
 }
 
-func (dec *decoder) decodeValue(value j5reflect.Field) error {
-	switch subSchema := field.(type) {
-
+func (dec *decoder) decodeValue(field j5reflect.Field) error {
+	switch ft := field.(type) {
 	case j5reflect.MapField:
-		if err := dec.decodeMapField(field); err != nil {
-			return err
-		}
-		return nil
+		return dec.decodeMapField(ft)
 
 	case j5reflect.ArrayField:
-		if !protoField.IsList() {
-			return errors.New("expected list")
-		}
-
-		list := msg.Mutable(protoField).List()
-		if err := dec.decodeListField(subSchema.Schema, list); err != nil {
-			return err
-		}
-		msg.Set(protoField, protoreflect.ValueOf(list))
-		return nil
+		return dec.decodeArrayField(ft)
 
 	case j5reflect.ObjectField:
-		if protoField.Kind() != protoreflect.MessageKind {
-			return errors.New("expected message")
+		object, err := ft.Object()
+		if err != nil {
+			return err
 		}
+		return dec.decodeObject(object)
 
-		subMsg := msg.Mutable(protoField).Message()
-		return dec.decodeObject(subSchema.Schema(), subMsg)
-
-	case *j5schema.OneofField:
-		if protoField.Kind() != protoreflect.MessageKind {
-			return errors.New("expected message for oneof")
+	case j5reflect.OneofField:
+		field, err := ft.Oneof()
+		if err != nil {
+			return err
 		}
-		subMsg := msg.Mutable(protoField).Message()
-		return dec.decodeOneof(subSchema.Schema(), subMsg)
+		return dec.decodeOneof(field)
 
-	case *j5schema.EnumField:
-		if protoField.Kind() != protoreflect.EnumKind {
-			return errors.New("expected enum")
-		}
+	case j5reflect.EnumField:
+		return dec.decodeEnum(ft)
 
-		val, err := dec.decodeEnum(subSchema.Schema())
+	case j5reflect.ScalarField:
+		tok, err := dec.Token()
 		if err != nil {
 			return err
 		}
 
-		msg.Set(protoField, val)
-		return nil
-
-	case *j5schema.ScalarSchema:
-		if protoField.IsList() || protoField.IsMap() {
-			return errors.New("expected scalar")
+		if _, ok := tok.(json.Delim); ok {
+			return unexpectedTokenError(tok, "scalar")
 		}
 
-		scalarVal, err := dec.decodeScalarField(subSchema)
-		if err != nil {
-			return err
-		}
-		msg.Set(protoField, scalarVal)
-		return nil
+		return ft.SetGoValue(tok)
 
 	default:
-		return fmt.Errorf("unsupported field schema type %T", subSchema)
+		return fmt.Errorf("unknown field schema type %T", ft)
 	}
 }
 
-func (dec *decoder) decodeEnum(schema *j5schema.EnumSchema) (protoreflect.Value, error) {
+func (dec *decoder) decodeEnum(field j5reflect.EnumField) error {
 	token, err := dec.Token()
 	if err != nil {
-		return protoreflect.Value{}, err
+		return err
+
 	}
 	stringVal, ok := token.(string)
 	if !ok {
-		return protoreflect.Value{}, unexpectedTokenError(token, "string")
+		return unexpectedTokenError(token, "string")
 	}
 
-	stringVal = strings.TrimPrefix(stringVal, schema.NamePrefix)
-	for _, val := range schema.Options {
-		if val.Name == stringVal {
-			return protoreflect.ValueOfEnum(protoreflect.EnumNumber(val.Number)), nil
-		}
-	}
-	return protoreflect.Value{}, fmt.Errorf("enum value %s not found", stringVal)
+	return field.SetFromString(stringVal)
 }
 
-func (dec *decoder) decodeOneof(oneof *j5schema.OneofSchema, msg protoreflect.Message) error {
+func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 
 	foundKeys := []string{}
 	var constrainType *string
@@ -340,22 +310,13 @@ func (dec *decoder) decodeOneof(oneof *j5schema.OneofSchema, msg protoreflect.Me
 			return nil
 		}
 
-		matchedProperty := oneof.Properties.ByJSONName(keyTokenStr)
+		matchedProperty := oneof.GetProperty(keyTokenStr)
 		if matchedProperty == nil {
 			return errors.New("no such key")
 		}
 		foundKeys = append(foundKeys, keyTokenStr)
 
-		if len(matchedProperty.ProtoField) != 1 {
-			return fmt.Errorf("oneof property has proto path of %#v", matchedProperty.ProtoField)
-		}
-
-		protoFieldNumber := matchedProperty.ProtoField[0]
-		protoField := msg.Descriptor().Fields().ByNumber(protoFieldNumber)
-		if protoField == nil {
-			return fmt.Errorf("no such field %d", protoFieldNumber)
-		}
-		if err := dec.decodeField(matchedProperty.Schema, msg, protoField); err != nil {
+		if err := dec.decodeValue(matchedProperty.Field()); err != nil {
 			return err
 		}
 
@@ -373,24 +334,11 @@ func (dec *decoder) decodeOneof(oneof *j5schema.OneofSchema, msg protoreflect.Me
 
 		// Special case, allows the consumer to set a nil value on a oneof
 		// just by using the type parameter
-		matchedProperty := oneof.Properties.ByJSONName(keyTokenStr)
+		matchedProperty := oneof.GetProperty(keyTokenStr)
 		if matchedProperty == nil {
 			return newFieldError(keyTokenStr, "no such key")
 		}
-		if len(matchedProperty.ProtoField) != 1 {
-			return newFieldError(keyTokenStr, "oneof has nested path")
-		}
-		protoFieldNumber := matchedProperty.ProtoField[0]
-		protoField := msg.Descriptor().Fields().ByNumber(protoFieldNumber)
-		if protoField == nil {
-			return fmt.Errorf("no such field %d", protoFieldNumber)
-		}
-		if protoField.Kind() == protoreflect.MessageKind {
-			msg.Mutable(protoField)
-		} else {
-			msg.Set(protoField, protoField.Default())
-		}
-		return nil
+		return matchedProperty.Field().SetDefault()
 	}
 
 	if len(foundKeys) > 1 {
@@ -404,114 +352,108 @@ func (dec *decoder) decodeOneof(oneof *j5schema.OneofSchema, msg protoreflect.Me
 	return nil
 }
 
-func (dec *decoder) decodeMapField(schema j5reflect.MapField) error {
-	return dec.jsonObject(func(keyTokenStr string) error {
-		subMsg := schema.NewValue()
-		return dec.decodeValue(subMsg)
-	})
+func (dec *decoder) decodeMapField(field j5reflect.MapField) error {
 
-	//	list := msg.Mutable(protoField).Map()
-	//	msg.Set(protoField, protoreflect.ValueOf(list))
-	switch subSchema := schema.(type) {
-
-	case *j5schema.ObjectField:
+	switch field := field.(type) {
+	case j5reflect.MapOfScalarField:
 		return dec.jsonObject(func(keyTokenStr string) error {
-			//	subMsg := list.NewValue()
-			schema.Schem
-			if err := dec.decodeObject(subSchema.Schema(), subMsg.Message()); err != nil {
-				return err
-			}
-
-			//	list.Set(protoreflect.ValueOfString(keyTokenStr).MapKey(), subMsg)
-			return nil
-		})
-
-	case *j5schema.OneofField:
-		return dec.jsonObject(func(keyTokenStr string) error {
-			subMsg := list.NewValue()
-			if err := dec.decodeOneof(subSchema.Schema(), subMsg.Message()); err != nil {
-				return err
-			}
-
-			list.Set(protoreflect.ValueOfString(keyTokenStr).MapKey(), subMsg)
-			return nil
-		})
-
-	case *j5schema.EnumField:
-		return dec.jsonObject(func(keyTokenStr string) error {
-			value, err := dec.decodeEnum(subSchema.Schema())
+			tok, err := dec.Token()
 			if err != nil {
 				return err
 			}
 
-			list.Set(protoreflect.ValueOfString(keyTokenStr).MapKey(), value)
-			return nil
+			if _, ok := tok.(json.Delim); ok {
+				return unexpectedTokenError(tok, "scalar")
+			}
+
+			return field.SetGoScalar(keyTokenStr, tok)
 		})
 
-	case *j5schema.ScalarSchema:
+	case j5reflect.MapOfEnumField:
 		return dec.jsonObject(func(keyTokenStr string) error {
-			value, err := dec.decodeScalarField(subSchema)
+			tok, err := dec.Token()
 			if err != nil {
 				return err
 			}
-			list.Set(protoreflect.ValueOfString(keyTokenStr).MapKey(), value)
-			return nil
+
+			str, ok := tok.(string)
+			if !ok {
+				return unexpectedTokenError(tok, "string")
+			}
+
+			return field.SetEnum(keyTokenStr, str)
 		})
+
+	case j5reflect.MapOfObjectField:
+		return dec.jsonObject(func(keyTokenStr string) error {
+			subMsg, err := field.NewObjectValue(keyTokenStr)
+			if err != nil {
+				return err
+			}
+			return dec.decodeObject(subMsg)
+		})
+
+	case j5reflect.MapOfOneofField:
+		return dec.jsonObject(func(keyTokenStr string) error {
+			subMsg, err := field.NewOneofValue(keyTokenStr)
+			if err != nil {
+				return err
+			}
+			return dec.decodeOneof(subMsg)
+		})
+
 	default:
-		return fmt.Errorf("unsupported map schema type %T", subSchema)
+		return fmt.Errorf("unknown map schema type %T", field)
 
 	}
 }
 
-func (dec *decoder) decodeListField(schema j5schema.FieldSchema, list protoreflect.List) error {
+func (dec *decoder) decodeArrayField(field j5reflect.ArrayField) error {
 
-	switch subSchema := schema.(type) {
-
-	case *j5schema.ObjectField:
-		return dec.jsonArray(func() error {
-			subMsg := list.NewElement()
-			if err := dec.decodeObject(subSchema.Schema(), subMsg.Message()); err != nil {
-				return err
-			}
-
-			list.Append(subMsg)
-			return nil
-		})
-
-	case *j5schema.OneofField:
-		return dec.jsonArray(func() error {
-			subMsg := list.NewElement()
-			if err := dec.decodeOneof(subSchema.Schema(), subMsg.Message()); err != nil {
-				return err
-			}
-
-			list.Append(subMsg)
-			return nil
-		})
-
-	case *j5schema.EnumField:
-
-		return dec.jsonArray(func() error {
-			value, err := dec.decodeEnum(subSchema.Schema())
+	return dec.jsonArray(func() error {
+		switch field := field.(type) {
+		case j5reflect.ArrayOfScalarField:
+			tok, err := dec.Token()
 			if err != nil {
 				return err
 			}
 
-			list.Append(value)
-			return nil
-		})
+			if _, ok := tok.(json.Delim); ok {
+				return unexpectedTokenError(tok, "scalar")
+			}
 
-	case *j5schema.ScalarSchema:
-		return dec.jsonArray(func() error {
-			value, err := dec.decodeScalarField(subSchema)
+			return field.AppendGoScalar(tok)
+
+		case j5reflect.ArrayOfEnumField:
+			tok, err := dec.Token()
 			if err != nil {
 				return err
 			}
-			list.Append(value)
-			return nil
-		})
-	default:
-		return fmt.Errorf("unsupported array schema type %T", subSchema)
 
-	}
+			str, ok := tok.(string)
+			if !ok {
+				return unexpectedTokenError(tok, "string")
+			}
+
+			return field.AppendEnumFromString(str)
+
+		case j5reflect.ArrayOfObjectField:
+			subMsg, err := field.NewObjectElement()
+			if err != nil {
+				return err
+			}
+			return dec.decodeObject(subMsg)
+
+		case j5reflect.ArrayOfOneofField:
+			subMsg, err := field.NewOneofElement()
+			if err != nil {
+				return err
+			}
+			return dec.decodeOneof(subMsg)
+
+		default:
+			return fmt.Errorf("unknown array schema type %T", field)
+		}
+	})
+
 }

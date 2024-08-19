@@ -8,17 +8,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type RangeCallback func(Property) error
-
-type PropertySet interface {
-	RangeProperties(RangeCallback) error
-	RangeSetProperties(RangeCallback) error
-	GetOne() (Property, error)
-
-	// AnySet returns true if any of the properties have a value
-	AnySet() bool
-}
-
 func copyReflect(a, b protoreflect.Message) {
 	a.Range(func(fd protoreflect.FieldDescriptor, val protoreflect.Value) bool {
 		b.Set(fd, val)
@@ -27,13 +16,15 @@ func copyReflect(a, b protoreflect.Message) {
 }
 
 type propSet struct {
-	asMap   map[string]Property
-	asSlice []Property
+	asMap    map[string]Property
+	asSlice  []Property
+	fullName string
 }
 
-func newPropSet(props []Property) (*propSet, error) {
+func newPropSet(name string, props []Property) (*propSet, error) {
 	fs := &propSet{
-		asMap: map[string]Property{},
+		asMap:    map[string]Property{},
+		fullName: name,
 	}
 
 	for _, prop := range props {
@@ -44,9 +35,21 @@ func newPropSet(props []Property) (*propSet, error) {
 	return fs, nil
 }
 
+func (fs *propSet) Name() string {
+	return fs.fullName
+}
+
 func (fs *propSet) GetProperty(name string) Property {
 	prop := fs.asMap[name]
 	return prop
+}
+
+func (fs *propSet) GetPropertyOrError(name string) (Property, error) {
+	prop := fs.GetProperty(name)
+	if prop == nil {
+		return nil, fmt.Errorf("%s has no property %s", fs.fullName, name)
+	}
+	return prop, nil
 }
 
 func (fs *propSet) RangeProperties(callback RangeCallback) error {
@@ -95,7 +98,7 @@ func (fs *propSet) GetOne() (Property, error) {
 	return property, nil
 }
 
-func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessage) ([]Property, error) {
+func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageWrapper) ([]Property, error) {
 	out := make([]Property, 0)
 	var err error
 
@@ -118,8 +121,8 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessage)
 				built := newObjectField(wrapper, msg.virtualField(preBuilt.propSet))
 				built._object = preBuilt
 				out = append(out, &objectProperty{
-					objectField: built,
-					fieldBase:   fieldBase,
+					field:     built,
+					fieldBase: fieldBase,
 				})
 
 			case *j5schema.OneofField:
@@ -130,8 +133,8 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessage)
 				built := newOneofField(wrapper, msg.virtualField(preBuilt.propSet))
 				built._oneof = preBuilt
 				out = append(out, &oneofProperty{
-					oneofField: built,
-					fieldBase:  fieldBase,
+					field:     built,
+					fieldBase: fieldBase,
 				})
 
 			default:
@@ -143,10 +146,16 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessage)
 
 		var walkFieldNumber protoreflect.FieldNumber
 		walkPath := schema.ProtoField[:]
+		//fmt.Printf("property: %v\n", schema.JSONName)
 		walkMessage := msg
 		for len(walkPath) > 1 {
+			//fmt.Printf("walkPath: %v\n", walkPath)
 			walkFieldNumber, walkPath = walkPath[0], walkPath[1:]
-			walkMessage, err = walkMessage.childByNumber(walkFieldNumber)
+			fd := walkMessage.descriptor.Fields().ByNumber(walkFieldNumber)
+			if fd.Kind() != protoreflect.MessageKind {
+				return nil, fmt.Errorf("field %s is not a message but has nested types", fd.FullName())
+			}
+			walkMessage, err = walkMessage.fieldAsWrapper(fd)
 			if err != nil {
 				return nil, err
 			}
@@ -180,44 +189,24 @@ func buildProperty(schema *j5schema.ObjectProperty, value *realProtoMessageField
 			return nil, err
 		}
 
-		switch ft := field.(type) {
-		case *mutableArrayField:
-			return &mutableArrayProperty{
-				mutableArrayField: ft,
-				fieldBase:         fieldBase,
-			}, nil
-		case *leafArrayField:
-			return &leafArrayProperty{
-				leafArrayField: ft,
-				fieldBase:      fieldBase,
-			}, nil
-		default:
-			return nil, fmt.Errorf("unsupported array field type %T", field)
-		}
+		return &arrayProperty{
+			field:     field,
+			fieldBase: fieldBase,
+		}, nil
 
 	case *j5schema.MapField:
 		field, err := newMapField(st, value)
 		if err != nil {
 			return nil, err
 		}
-		switch ft := field.(type) {
-		case *mutableMapField:
-			return &mutableMapProperty{
-				mutableMapField: ft,
-				fieldBase:       fieldBase,
-			}, nil
-		case *leafMapField:
-			return &leafMapProperty{
-				leafMapField: ft,
-				fieldBase:    fieldBase,
-			}, nil
-		default:
-			return nil, fmt.Errorf("unsupported map field type %T", field)
-		}
+		return &mapProperty{
+			field:     field,
+			fieldBase: fieldBase,
+		}, nil
 
 	}
 
-	ff, err := newFieldFactory(schema.Schema, value.field)
+	ff, err := newFieldFactory(schema.Schema, value.fieldInParent)
 	if err != nil {
 		return nil, err
 	}

@@ -549,7 +549,7 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		}
 		return prop, nil
 
-	case protoreflect.Int64Kind, protoreflect.Sint64Kind, protoreflect.Uint64Kind:
+	case protoreflect.Int64Kind, protoreflect.Sint64Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
 		int64Constraint := validateConstraint.GetInt64()
 		if int64Constraint != nil {
@@ -587,6 +587,50 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		schemaProto.Type = &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
 				Format:    schema_j5pb.IntegerField_FORMAT_INT64,
+				Rules:     integerRules,
+				ListRules: listConstraint.GetInt64(),
+			},
+		}
+		return prop, nil
+
+	case protoreflect.Uint64Kind:
+		var integerRules *schema_j5pb.IntegerField_Rules
+		int64Constraint := validateConstraint.GetUint64()
+		if int64Constraint != nil {
+			integerRules = &schema_j5pb.IntegerField_Rules{}
+			if int64Constraint.Const != nil {
+				return nil, fmt.Errorf("'const' not supported")
+			}
+			if int64Constraint.In != nil {
+				return nil, fmt.Errorf("'in' not supported")
+			}
+			if int64Constraint.NotIn != nil {
+				return nil, fmt.Errorf("'notIn' not supported")
+			}
+
+			if int64Constraint.LessThan != nil {
+				switch cType := int64Constraint.LessThan.(type) {
+				case *validate.UInt64Rules_Lt:
+					integerRules.Maximum = Ptr(int64(cType.Lt))
+					integerRules.ExclusiveMaximum = Ptr(true)
+				case *validate.UInt64Rules_Lte:
+					integerRules.Maximum = Ptr(int64(cType.Lte))
+				}
+			}
+			if int64Constraint.GreaterThan != nil {
+				switch cType := int64Constraint.GreaterThan.(type) {
+				case *validate.UInt64Rules_Gt:
+					integerRules.Minimum = Ptr(int64(cType.Gt))
+					integerRules.ExclusiveMinimum = Ptr(true)
+				case *validate.UInt64Rules_Gte:
+					integerRules.Minimum = Ptr(int64(cType.Gte))
+				}
+			}
+		}
+
+		schemaProto.Type = &schema_j5pb.Field_Integer{
+			Integer: &schema_j5pb.IntegerField{
+				Format:    schema_j5pb.IntegerField_FORMAT_UINT64,
 				Rules:     integerRules,
 				ListRules: listConstraint.GetInt64(),
 			},

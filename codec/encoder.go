@@ -20,12 +20,12 @@ func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
 	}
 
 	switch schema := root.(type) {
-	case *j5reflect.Object:
+	case *j5reflect.ObjectImpl:
 		if err := enc.encodeObject(schema); err != nil {
 			return nil, err
 		}
-	case *j5reflect.Oneof:
-		if err := enc.encodeOneof(schema); err != nil {
+	case *j5reflect.OneofImpl:
+		if err := enc.encodeOneofBody(schema); err != nil {
 			return nil, err
 		}
 	default:

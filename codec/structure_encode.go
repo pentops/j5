@@ -24,7 +24,7 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 			return err
 		}
 
-		if err := enc.encodeValue(prop); err != nil {
+		if err := enc.encodeValue(prop.Field()); err != nil {
 			return err
 		}
 
@@ -38,11 +38,12 @@ func (enc *encoder) encodeOneofBody(fieldSet j5reflect.PropertySet) error {
 	if err != nil {
 		return err
 	}
+
+	enc.openObject()
+	defer enc.closeObject()
 	if prop == nil {
 		return nil
 	}
-
-	enc.openObject()
 
 	err = enc.fieldLabel("!type")
 	if err != nil {
@@ -61,20 +62,15 @@ func (enc *encoder) encodeOneofBody(fieldSet j5reflect.PropertySet) error {
 		return err
 	}
 
-	if err := enc.encodeValue(prop); err != nil {
+	if err := enc.encodeValue(prop.Field()); err != nil {
 		return err
 	}
 
-	enc.closeObject()
 	return nil
 }
 
-func (enc *encoder) encodeObject(object *j5reflect.Object) error {
+func (enc *encoder) encodeObject(object j5reflect.Object) error {
 	return enc.encodeObjectBody(object)
-}
-
-func (enc *encoder) encodeOneof(oneof *j5reflect.Oneof) error {
-	return enc.encodeOneofBody(oneof)
 }
 
 func (enc *encoder) encodeValue(field j5reflect.Field) error {
@@ -92,7 +88,7 @@ func (enc *encoder) encodeValue(field j5reflect.Field) error {
 		if err != nil {
 			return err
 		}
-		return enc.encodeOneof(val)
+		return enc.encodeOneofBody(val)
 
 	case j5reflect.EnumField:
 		return enc.encodeEnum(ft)

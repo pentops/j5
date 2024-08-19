@@ -2,13 +2,12 @@ package j5reflect
 
 import "github.com/pentops/j5/internal/j5schema"
 
-type Property interface {
-	JSONName() string
-	Field
-}
-
 type fieldBase struct {
 	schema *j5schema.ObjectProperty
+}
+
+func (f fieldBase) AsScalarField() ScalarField {
+	return nil
 }
 
 func (f fieldBase) JSONName() string {
@@ -16,41 +15,95 @@ func (f fieldBase) JSONName() string {
 }
 
 type objectProperty struct {
-	*objectField
+	field *objectField
 	fieldBase
 }
+
+func (op objectProperty) Field() Field {
+	return op.field
+}
+
+func (op objectProperty) IsSet() bool {
+	return op.field.IsSet()
+}
+
+var _ Property = objectProperty{}
 
 type oneofProperty struct {
-	*oneofField
+	field *oneofField
 	fieldBase
 }
+
+func (op oneofProperty) Field() Field {
+	return op.field
+}
+
+func (op oneofProperty) IsSet() bool {
+	return op.field.IsSet()
+}
+
+var _ Property = oneofProperty{}
 
 type enumProperty struct {
-	*enumField
+	field *enumField
 	fieldBase
 }
 
-type mutableArrayProperty struct {
-	*mutableArrayField
+func (ep enumProperty) Field() Field {
+	return ep.field
+}
+
+func (ep enumProperty) IsSet() bool {
+	return ep.field.IsSet()
+}
+
+var _ Property = enumProperty{}
+
+type arrayProperty struct {
+	field ArrayField
 	fieldBase
 }
 
-type leafArrayProperty struct {
-	*leafArrayField
+func (ap arrayProperty) IsSet() bool {
+	return ap.field.IsSet()
+}
+
+func (ap arrayProperty) Field() Field {
+	return ap.field
+}
+
+var _ Property = arrayProperty{}
+
+type mapProperty struct {
+	field MapField
 	fieldBase
 }
 
-type mutableMapProperty struct {
-	*mutableMapField
-	fieldBase
+func (mp mapProperty) IsSet() bool {
+	return mp.field.IsSet()
 }
 
-type leafMapProperty struct {
-	*leafMapField
-	fieldBase
+func (mp mapProperty) Field() Field {
+	return mp.field
 }
+
+var _ Property = mapProperty{}
 
 type scalarProperty struct {
-	*scalarField
+	field *scalarField
 	fieldBase
 }
+
+func (sp scalarProperty) AsScalarField() ScalarField {
+	return sp.field
+}
+
+func (sp scalarProperty) Field() Field {
+	return sp.field
+}
+
+func (sp scalarProperty) IsSet() bool {
+	return sp.field.IsSet()
+}
+
+var _ Property = scalarProperty{}

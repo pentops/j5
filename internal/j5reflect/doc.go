@@ -33,3 +33,119 @@
 // All J6 schema types are values
 
 package j5reflect
+
+import "github.com/pentops/j5/internal/j5schema"
+
+type PropertySet interface {
+	RangeProperties(RangeCallback) error
+	RangeSetProperties(RangeCallback) error
+	GetOne() (Property, error)
+
+	// AnySet returns true if any of the properties have a value
+	AnySet() bool
+	GetProperty(name string) Property
+	GetPropertyOrError(name string) (Property, error)
+	Name() string
+}
+
+type Object interface {
+	PropertySet
+}
+
+type Oneof interface {
+	PropertySet
+}
+
+type Field interface {
+	Type() FieldType
+	IsSet() bool
+	SetDefault() error
+	asProperty(fieldBase) Property
+}
+
+type ObjectField interface {
+	Field
+	Object() (Object, error)
+}
+
+type OneofField interface {
+	Field
+	Oneof() (*OneofImpl, error)
+}
+
+type EnumField interface {
+	Field
+	GetValue() (*j5schema.EnumOption, error)
+	SetFromString(string) error
+}
+
+type ScalarField interface {
+	Field
+	Schema() *j5schema.ScalarSchema
+	ToGoValue() (interface{}, error)
+	SetGoValue(value interface{}) error
+	SetASTValue(ASTValue) error
+}
+
+type ArrayField interface {
+	Field
+	Range(func(Field) error) error
+	ItemSchema() j5schema.FieldSchema
+}
+
+type MutableArrayField interface {
+	ArrayField
+	NewElement() Field
+}
+
+type ArrayOfObjectField interface {
+	MutableArrayField
+	NewObjectElement() (Object, error)
+}
+
+type ArrayOfOneofField interface {
+	MutableArrayField
+	NewOneofElement() (Oneof, error)
+}
+
+type ArrayOfScalarField interface {
+	ArrayField
+	AppendGoScalar(value interface{}) error
+}
+
+type ArrayOfEnumField interface {
+	AppendEnumFromString(string) error
+}
+
+type MapField interface {
+	Field
+	Range(func(string, Field) error) error
+	ItemSchema() j5schema.FieldSchema
+}
+
+type MutableMapField interface {
+	MapField
+	NewValue(key string) Field
+}
+
+type MapOfObjectField interface {
+	NewObjectValue(key string) (Oneof, error)
+}
+
+type MapOfScalarField interface {
+	SetGoScalar(key string, value interface{}) error
+}
+
+type MapOfEnumField interface {
+	SetEnum(key string, value string) error
+}
+
+type Property interface {
+	JSONName() string
+	Field() Field
+	IsSet() bool
+
+	AsScalarField() ScalarField
+}
+
+type RangeCallback func(Property) error

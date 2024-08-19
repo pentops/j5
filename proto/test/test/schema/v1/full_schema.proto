@@ -19,6 +19,10 @@ message FullSchema {
   google.protobuf.Timestamp ts = 7;
   repeated google.protobuf.Timestamp r_ts = 8;
 
+  bool s_bool = 21;
+  optional bool o_bool = 22;
+  repeated bool r_bool = 23;
+
   Bar s_bar = 9;
   repeated Bar r_bars = 10;
 

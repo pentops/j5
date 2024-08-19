@@ -12,6 +12,7 @@ import (
 
 	"github.com/pentops/j5/codec"
 	"github.com/pentops/j5/internal/j5lang"
+	"github.com/pentops/j5/internal/j5lang/lexer"
 	"github.com/pentops/j5/internal/protobuild"
 	"github.com/pentops/j5/internal/protobuild/protoprint"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -57,23 +58,27 @@ func runGenProto(ctx context.Context, cfg struct {
 			return err
 		}
 
-		parsed, err := j5lang.ParseFile(string(srcBytes))
+		j5Desc, err := j5lang.ConvertFileToSource(string(srcBytes))
 		if err != nil {
-			return fmt.Errorf("file %s: %w", path, err)
-		}
+			pe, ok := lexer.AsPositionErrorsWithSource(err)
+			if ok {
+				pe.Print(func(aa string, args ...any) {
+					fmt.Printf(path+":"+aa+"\n", args...)
+				})
+			}
 
-		j5Desc, err := j5lang.ConvertFile(parsed)
-		if err != nil {
 			return err
 		}
 
 		jj, err := codec.NewCodec().ProtoToJSON(j5Desc.ProtoReflect())
 		if err != nil {
-			return err
+			return fmt.Errorf("CODEC: %w", err)
 		}
 		buf := new(bytes.Buffer)
 		if err := json.Indent(buf, jj, "", "  "); err != nil {
-			return err
+			fmt.Println(string(jj))
+			return fmt.Errorf("JSON: %w", err)
+
 		}
 		fmt.Println(buf.String())
 
