@@ -121,22 +121,22 @@ func TestUnmarshal(t *testing.T) {
 			name: "nested messages",
 			json: `{
 				"sBar": {
-					"id": "barId"
+					"barId": "barId"
 				},
 				"rBars": [{
-					"id": "bar1"
+					"barId": "bar1"
 				}, {
-					"id": "bar2"
+					"barId": "bar2"
 				}]
 			}`,
 			wantProto: &schema_testpb.FullSchema{
 				SBar: &schema_testpb.Bar{
-					Id: "barId",
+					BarId: "barId",
 				},
 				RBars: []*schema_testpb.Bar{{
-					Id: "bar1",
+					BarId: "bar1",
 				}, {
-					Id: "bar2",
+					BarId: "bar2",
 				}},
 			},
 		}, {

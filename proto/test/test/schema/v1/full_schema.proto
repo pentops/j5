@@ -56,6 +56,9 @@ message FullSchema {
   NestedExposed nested_exposed_oneof = 19;
 
   repeated NestedExposed nested_exposed_oneofs = 20;
+
+  ImplicitOneof s_implicit_oneof = 24;
+  repeated ImplicitOneof r_implicit_oneofs = 25;
 }
 
 message WrappedOneof {
@@ -66,6 +69,13 @@ message WrappedOneof {
     Bar w_oneof_bar = 2;
     float w_oneof_float = 3;
     Enum w_oneof_enum = 4;
+  }
+}
+
+message ImplicitOneof {
+  oneof type {
+    Bar io_bar = 1;
+    Baz io_baz = 2;
   }
 }
 
@@ -85,7 +95,11 @@ enum Enum {
 }
 
 message Bar {
-  string id = 1;
+  string bar_id = 1;
+}
+
+message Baz {
+  string baz_id = 1;
 }
 
 message FlattenedMessage {

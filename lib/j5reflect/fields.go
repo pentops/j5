@@ -182,7 +182,7 @@ func (field *oneofField) Type() FieldType {
 	return FieldTypeOneof
 }
 
-func (field *oneofField) Oneof() (*OneofImpl, error) {
+func (field *oneofField) Oneof() (Oneof, error) {
 	if field._oneof == nil {
 		msgChild, err := field.value.getOrCreateChildMessage()
 		if err != nil {
@@ -233,12 +233,11 @@ func (ef *enumField) Type() FieldType {
 	return FieldTypeEnum
 }
 
-func (ef *enumField) GetValue() (*j5schema.EnumOption, error) {
+func (ef *enumField) GetValue() (EnumOption, error) {
 	value := int32(ef.value.getValue().Enum())
-	for _, val := range ef.schema.Schema().Options {
-		if val.Number == value {
-			return val, nil
-		}
+	opt := ef.schema.Schema().OptionByNumber(value)
+	if opt != nil {
+		return opt, nil
 	}
 	return nil, fmt.Errorf("enum value %d not found", value)
 }
@@ -246,7 +245,7 @@ func (ef *enumField) GetValue() (*j5schema.EnumOption, error) {
 func (ef *enumField) SetFromString(val string) error {
 	option := ef.schema.Schema().OptionByName(val)
 	if option != nil {
-		ef.value.setValue(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number)))
+		ef.value.setValue(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
 		return nil
 	}
 	return fmt.Errorf("enum value %s not found", val)

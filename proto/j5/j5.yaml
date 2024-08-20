@@ -8,6 +8,7 @@ packages:
   - name: j5.schema.v1
   - name: j5.types.v1
   - name: j5.state.v1
+  - name: j5.sourcedef.v1
 
 options:
   subPackages: []

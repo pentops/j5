@@ -130,7 +130,7 @@ func (vf *virtualProtoField) clearValue() error {
 func (vf *virtualProtoField) isSet() bool {
 	// The field has no actual value, so we check if any child is set. For
 	// oneofs, this will be the one field
-	return vf.children.AnySet()
+	return vf.children.HasAnyValue()
 }
 
 // protoValueWrapper is used where the value must have already been created to

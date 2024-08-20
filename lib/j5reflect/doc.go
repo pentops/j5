@@ -37,15 +37,17 @@ package j5reflect
 import "github.com/pentops/j5/internal/j5schema"
 
 type PropertySet interface {
+	Name() string // Returns the full name of the entity wrapping the properties.
+
 	RangeProperties(RangeCallback) error
 	RangeSetProperties(RangeCallback) error
 	GetOne() (Property, error)
 
-	// AnySet returns true if any of the properties have a value
-	AnySet() bool
-	GetProperty(name string) Property
-	GetPropertyOrError(name string) (Property, error)
-	Name() string
+	// HasAnyValue returns true if any of the properties have a value
+	HasAnyValue() bool
+
+	MaybeGetProperty(name string) Property
+	GetProperty(name string) (Property, error)
 }
 
 type Object interface {
@@ -70,18 +72,24 @@ type ObjectField interface {
 
 type OneofField interface {
 	Field
-	Oneof() (*OneofImpl, error)
+	Oneof() (Oneof, error)
 }
 
 type EnumField interface {
 	Field
-	GetValue() (*j5schema.EnumOption, error)
+	GetValue() (EnumOption, error)
 	SetFromString(string) error
+}
+
+type EnumOption interface {
+	Name() string
+	Number() int32
+	Description() string
 }
 
 type ScalarField interface {
 	Field
-	Schema() *j5schema.ScalarSchema
+	//Schema() *j5schema.ScalarSchema
 	ToGoValue() (interface{}, error)
 	SetGoValue(value interface{}) error
 	SetASTValue(ASTValue) error
@@ -90,7 +98,7 @@ type ScalarField interface {
 type ArrayField interface {
 	Field
 	Range(func(Field) error) error
-	ItemSchema() j5schema.FieldSchema
+	//ItemSchema() j5schema.FieldSchema
 }
 
 type MutableArrayField interface {

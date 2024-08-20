@@ -20,7 +20,7 @@ func NewSchemaCache() *SchemaCache {
 // Schema returns the J5 schema for the given message descriptor.
 func (sc *SchemaCache) Schema(src protoreflect.MessageDescriptor) (RootSchema, error) {
 	packageName, nameInPackage := splitDescriptorName(src)
-	schemaPackage := sc.getPackage(packageName)
+	schemaPackage := sc.referencePackage(packageName)
 	if built, ok := schemaPackage.Schemas[nameInPackage]; ok {
 		if built.To == nil {
 			// When building from reflection, the 'to' should be linked by the
@@ -46,11 +46,14 @@ func (sc *SchemaCache) Schema(src protoreflect.MessageDescriptor) (RootSchema, e
 	if err != nil {
 		return nil, err
 	}
+	if placeholder.To.FullName() != placeholder.FullName() {
+		return nil, fmt.Errorf("schema %q has wrong name %q", placeholder.FullName(), placeholder.To.FullName())
+	}
 	return placeholder.To, nil
 }
 
 func (sc *SchemaCache) refTo(pkg, schema string) (*RefSchema, bool) {
-	refPackage := sc.getPackage(pkg)
+	refPackage := sc.referencePackage(pkg)
 	if existing, ok := refPackage.Schemas[schema]; ok {
 		return existing, true
 	}
@@ -64,7 +67,7 @@ func (sc *SchemaCache) refTo(pkg, schema string) (*RefSchema, bool) {
 	return refSchema, false
 }
 
-func (sc *SchemaCache) getPackage(name string) *Package {
+func (sc *SchemaCache) referencePackage(name string) *Package {
 	if existing, ok := sc.packages[name]; ok {
 		return existing
 	}

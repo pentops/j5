@@ -8,6 +8,7 @@ import (
 
 type RootSet interface {
 	refTo(pkg, schema string) (*RefSchema, bool)
+	referencePackage(name string) *Package
 }
 
 type SchemaSet struct {
@@ -47,7 +48,7 @@ func (ss *SchemaSet) refTo(pkg, schema string) (*RefSchema, bool) {
 	return refSchema, false
 }
 
-func (ps *SchemaSet) Package(name string) *Package {
+func (ps *SchemaSet) referencePackage(name string) *Package {
 	if pkg, ok := ps.Packages[name]; ok {
 		return pkg
 	}
@@ -58,6 +59,10 @@ func (ps *SchemaSet) Package(name string) *Package {
 	}
 	ps.Packages[name] = pkg
 	return pkg
+}
+
+func (ps *SchemaSet) Package(name string) *Package {
+	return ps.referencePackage(name)
 }
 
 type Package struct {

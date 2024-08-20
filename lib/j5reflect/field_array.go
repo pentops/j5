@@ -202,7 +202,7 @@ func (field *arrayOfEnumField) AppendEnumFromString(name string) error {
 	option := field.itemSchema.OptionByName(name)
 	if option != nil {
 		list := field.fieldInParent.getOrCreateMutable().List()
-		list.Append(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number)))
+		list.Append(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
 		return nil
 	}
 	return fmt.Errorf("enum value %s not found", name)

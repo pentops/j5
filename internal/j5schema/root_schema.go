@@ -25,6 +25,14 @@ type RefSchema struct {
 	To      RootSchema
 }
 
+func (ref *RefSchema) check() error {
+	if ref.To.FullName() != ref.FullName() {
+		//panic(fmt.Sprintf("placeholder %q links to %q", ref.FullName(), ref.To.FullName()))
+		return fmt.Errorf("schema %q has wrong name %q", ref.FullName(), ref.To.FullName())
+	}
+	return nil
+}
+
 func (s *RefSchema) FullName() string {
 	return fmt.Sprintf("%s.%s", s.Package.Name, s.Schema)
 }
@@ -66,16 +74,28 @@ func (s *rootSchema) Description() string {
 }
 
 type EnumOption struct {
-	Name        string
-	Number      int32
-	Description string
+	name        string
+	number      int32
+	description string
+}
+
+func (eo *EnumOption) Name() string {
+	return eo.name
+}
+
+func (eo *EnumOption) Number() int32 {
+	return eo.number
+}
+
+func (eo *EnumOption) Description() string {
+	return eo.description
 }
 
 func (eo *EnumOption) ToJ5EnumValue() *schema_j5pb.Enum_Value {
 	return &schema_j5pb.Enum_Value{
-		Name:        eo.Name,
-		Number:      eo.Number,
-		Description: eo.Description,
+		Name:        eo.name,
+		Number:      eo.number,
+		Description: eo.description,
 	}
 
 }
@@ -90,7 +110,7 @@ type EnumSchema struct {
 func (s *EnumSchema) OptionByName(name string) *EnumOption {
 	shortName := strings.TrimPrefix(name, s.NamePrefix)
 	for _, opt := range s.Options {
-		if opt.Name == shortName {
+		if opt.name == shortName {
 			return opt
 		}
 	}
@@ -99,7 +119,7 @@ func (s *EnumSchema) OptionByName(name string) *EnumOption {
 
 func (s *EnumSchema) OptionByNumber(num int32) *EnumOption {
 	for _, opt := range s.Options {
-		if opt.Number == num {
+		if opt.number == num {
 			return opt
 		}
 	}

@@ -39,14 +39,18 @@ func (fs *propSet) Name() string {
 	return fs.fullName
 }
 
-func (fs *propSet) GetProperty(name string) Property {
+func (fs *propSet) MaybeGetProperty(name string) Property {
 	prop := fs.asMap[name]
 	return prop
 }
 
-func (fs *propSet) GetPropertyOrError(name string) (Property, error) {
-	prop := fs.GetProperty(name)
+func (fs *propSet) GetProperty(name string) (Property, error) {
+	prop := fs.MaybeGetProperty(name)
 	if prop == nil {
+		fmt.Printf("no property %s in %s. Has:\n", name, fs.fullName)
+		for _, p := range fs.asSlice {
+			fmt.Printf("  %s\n", p.JSONName())
+		}
 		return nil, fmt.Errorf("%s has no property %s", fs.fullName, name)
 	}
 	return prop, nil
@@ -76,7 +80,7 @@ func (fs *propSet) RangeSetProperties(callback RangeCallback) error {
 	return nil
 }
 
-func (fs *propSet) AnySet() bool {
+func (fs *propSet) HasAnyValue() bool {
 	for _, prop := range fs.asSlice {
 		if prop.IsSet() {
 			return true
@@ -98,12 +102,18 @@ func (fs *propSet) GetOne() (Property, error) {
 	return property, nil
 }
 
+var cb func(name string, params ...interface{})
+
 func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageWrapper) ([]Property, error) {
 	out := make([]Property, 0)
 	var err error
 
 	for _, schema := range properties {
+		if cb != nil {
+			cb("building property: %s, path %v", schema.JSONName, schema.ProtoField)
+		}
 		if len(schema.ProtoField) == 0 {
+
 			// Then we have a 'fake' object, usually an exposed oneof.
 			// It shows as a object in clients, but in proto the fields are
 			// directly on the parent message.
@@ -126,6 +136,7 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 				})
 
 			case *j5schema.OneofField:
+
 				preBuilt, err := newOneof(wrapper.Schema(), msg)
 				if err != nil {
 					return nil, patherr.Wrap(err, schema.JSONName)
@@ -144,6 +155,9 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 			continue
 		}
 
+		if cb != nil {
+			cb("is normal %q, path %v", schema.JSONName, schema.ProtoField)
+		}
 		var walkFieldNumber protoreflect.FieldNumber
 		walkPath := schema.ProtoField[:]
 		//fmt.Printf("property: %v\n", schema.JSONName)
@@ -169,6 +183,16 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 		built, err := buildProperty(schema, fieldValue)
 		if err != nil {
 			return nil, patherr.Wrap(err, schema.JSONName)
+		}
+
+		if cb != nil {
+			cb("final field build, schema %s", schema.ToJ5Proto())
+			obj, ok := built.(*objectProperty)
+			if ok {
+				cb("schema.Ref.FullName: %v", obj.field.schema.Ref.FullName())
+				cb("schema.Ref.To.Full : %v", obj.field.schema.Ref.To.FullName())
+				cb("schema.Schema().Ful: %v", obj.field.schema.Schema().FullName())
+			}
 		}
 
 		out = append(out, built)

@@ -309,9 +309,9 @@ func (pkg *Package) enumSchemaFromDesc(sch *schema_j5pb.Enum) *EnumSchema {
 	opts := make([]*EnumOption, len(sch.Options))
 	for idx, src := range sch.Options {
 		opts[idx] = &EnumOption{
-			Name:        src.Name,
-			Description: src.Description,
-			Number:      src.Number,
+			name:        src.Name,
+			description: src.Description,
+			number:      src.Number,
 		}
 	}
 	return &EnumSchema{

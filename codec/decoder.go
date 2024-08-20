@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/pentops/j5/internal/j5reflect"
+	"github.com/pentops/j5/lib/j5reflect"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -173,7 +173,7 @@ func passUpError(field string, err error) error {
 func (dec *decoder) decodeObject(object j5reflect.Object) error {
 
 	return dec.jsonObject(func(keyTokenStr string) error {
-		prop := object.GetProperty(keyTokenStr)
+		prop := object.MaybeGetProperty(keyTokenStr)
 		if prop == nil {
 			return newFieldError(keyTokenStr, "no such field")
 		}
@@ -310,7 +310,7 @@ func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 			return nil
 		}
 
-		matchedProperty := oneof.GetProperty(keyTokenStr)
+		matchedProperty := oneof.MaybeGetProperty(keyTokenStr)
 		if matchedProperty == nil {
 			return errors.New("no such key")
 		}
@@ -334,7 +334,7 @@ func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 
 		// Special case, allows the consumer to set a nil value on a oneof
 		// just by using the type parameter
-		matchedProperty := oneof.GetProperty(keyTokenStr)
+		matchedProperty := oneof.MaybeGetProperty(keyTokenStr)
 		if matchedProperty == nil {
 			return newFieldError(keyTokenStr, "no such key")
 		}

@@ -210,6 +210,6 @@ func (field *mapOfEnumField) SetEnum(key string, value string) error {
 		return fmt.Errorf("enum value %s not found", value)
 	}
 
-	field.setKey(protoreflect.ValueOfString(key).MapKey(), protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number)))
+	field.setKey(protoreflect.ValueOfString(key).MapKey(), protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
 	return nil
 }

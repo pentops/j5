@@ -59,6 +59,10 @@ func SchemaSetFromFiles(descFiles *protoregistry.Files, include func(protoreflec
 			return nil, err
 		}
 		ref.To = built
+
+		if err := ref.check(); err != nil {
+			return nil, err
+		}
 	}
 
 	return pkgSet, nil
@@ -73,6 +77,7 @@ func (ps *SchemaSet) messageSchema(src protoreflect.MessageDescriptor) (RootSche
 			// caller which created the ref.
 			return nil, fmt.Errorf("unlinked ref: %s/%s", packageName, nameInPackage)
 		}
+
 		return built.To, nil
 	}
 
@@ -97,10 +102,15 @@ func (ps *SchemaSet) messageSchema(src protoreflect.MessageDescriptor) (RootSche
 
 func (pkg *Package) schemaRootFromProto(descriptor protoreflect.Descriptor) rootSchema {
 	description := commentDescription(descriptor)
-	_, nameInPackage := splitDescriptorName(descriptor)
+	pkgName, nameInPackage := splitDescriptorName(descriptor)
+	linkPackage := pkg
+	if pkgName != pkg.Name {
+		linkPackage = pkg.PackageSet.referencePackage(pkgName)
+	}
+
 	return rootSchema{
 		name:        nameInPackage,
-		pkg:         pkg,
+		pkg:         linkPackage,
 		description: description,
 	}
 }
@@ -278,6 +288,10 @@ func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*Obj
 			return nil, fmt.Errorf("placeholder already exists for oneof wrapper %q", oneofName)
 		}
 		refPlaceholder.To = oneofObject
+		if err := refPlaceholder.check(); err != nil {
+			return nil, err
+		}
+
 		prop := &ObjectProperty{
 			JSONName:    jsonFieldName(oneof.Name()),
 			Description: commentDescription(src),
@@ -894,7 +908,7 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 					if opt == nil {
 						return nil, fmt.Errorf("enum value %d not found", num)
 					}
-					rules.In = append(rules.In, opt.Name)
+					rules.In = append(rules.In, opt.name)
 				}
 			}
 			if vc.NotIn != nil {
@@ -906,7 +920,7 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 						}
 						return nil, fmt.Errorf("enum value %d not found", num)
 					}
-					rules.NotIn = append(rules.NotIn, opt.Name)
+					rules.NotIn = append(rules.NotIn, opt.name)
 				}
 
 			}
@@ -955,6 +969,11 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			if err != nil {
 				return nil, err
 			}
+
+			if err := ref.check(); err != nil {
+				return nil, err
+			}
+
 		}
 		if isOneofWrapper {
 			prop.Schema = &OneofField{
@@ -991,9 +1010,9 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 		number := int32(option.Number())
 
 		values = append(values, &EnumOption{
-			Name:        string(option.Name()),
-			Number:      number,
-			Description: commentDescription(option),
+			name:        string(option.Name()),
+			number:      number,
+			description: commentDescription(option),
 		})
 	}
 
@@ -1006,7 +1025,7 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 	trimPrefix := strings.TrimSuffix(unspecifiedVal, suffix)
 
 	for ii := range values {
-		values[ii].Name = strings.TrimPrefix(values[ii].Name, trimPrefix)
+		values[ii].name = strings.TrimPrefix(values[ii].name, trimPrefix)
 	}
 
 	if ext != nil && ext.NoDefault {

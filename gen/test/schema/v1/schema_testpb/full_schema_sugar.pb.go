@@ -10,6 +10,7 @@ import (
 type IsFullSchema_AnonOneof = isFullSchema_AnonOneof
 type IsFullSchema_ExposedOneof = isFullSchema_ExposedOneof
 type IsWrappedOneof_Type = isWrappedOneof_Type
+type IsImplicitOneof_Type = isImplicitOneof_Type
 type IsNestedExposed_Type = isNestedExposed_Type
 
 // Enum

@@ -89,7 +89,7 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 						if shortName == nil {
 							return fmt.Errorf("unknown enum value %q", val)
 						}
-						filtering.DefaultFilters[idx] = shortName.Name
+						filtering.DefaultFilters[idx] = shortName.Name()
 					}
 					filter := &client_j5pb.ListRequest_FilterField{
 						Name:           strings.Join(schema.Path, "."),

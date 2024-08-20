@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/pentops/j5/internal/j5reflect"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
+	"github.com/pentops/j5/lib/j5reflect"
 )
 
 func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
@@ -143,7 +143,7 @@ func (enc *encoder) encodeEnum(enum j5reflect.EnumField) error {
 	if err != nil {
 		return err
 	}
-	return enc.addString(val.Name)
+	return enc.addString(val.Name())
 
 }
 

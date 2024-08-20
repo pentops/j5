@@ -82,7 +82,6 @@ func newObject(schema *j5schema.ObjectSchema, value *protoMessageWrapper) (*Obje
 	if err != nil {
 		return nil, err
 	}
-
 	fieldset, err := newPropSet(schema.FullName(), props)
 	if err != nil {
 		return nil, err
