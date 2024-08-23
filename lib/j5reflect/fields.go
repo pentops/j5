@@ -78,74 +78,19 @@ func newFieldFactory(schema j5schema.FieldSchema, field protoreflect.FieldDescri
 	case *j5schema.ScalarSchema:
 		if st.WellKnownTypeName != "" {
 			if field.Kind() != protoreflect.MessageKind {
-				return nil, fmt.Errorf("ScalarField is kind %s, want message for %T", field.Kind(), st.Proto.Type)
+				return nil, fmt.Errorf("ScalarField is proto kind %s, want message for %T", field.Kind(), st.Proto.Type)
 			}
 			if string(field.Message().FullName()) != string(st.WellKnownTypeName) {
 				return nil, fmt.Errorf("ScalarField message is %s, want %s for %T", field.Message().FullName(), st.WellKnownTypeName, st.Proto.Type)
 			}
 		} else if field.Kind() != st.Kind {
-			return nil, fmt.Errorf("ScalarField value is kind %s, want %s for %T", field.Kind(), st.Kind, st.Proto.Type)
+			return nil, fmt.Errorf("ScalarField is proto kind %s, want schema %q for %T", field.Kind(), st.Kind, st.Proto.Type)
 		}
 		return &scalarFieldFactory{schema: st}, nil
 
 	default:
 		return nil, fmt.Errorf("unsupported schema type %T", schema)
 	}
-}
-
-type objectField struct {
-	value   protoValueContext
-	schema  *j5schema.ObjectField
-	_object *ObjectImpl
-}
-
-var _ ObjectField = (*objectField)(nil)
-
-func newObjectField(schema *j5schema.ObjectField, value protoValueContext) *objectField {
-	of := &objectField{
-		value:  value,
-		schema: schema,
-	}
-	return of
-}
-
-func (obj *objectField) asProperty(base fieldBase) Property {
-	return &objectProperty{
-		field:     obj,
-		fieldBase: base,
-	}
-}
-
-func (obj *objectField) Schema() j5schema.FieldSchema {
-	return obj.schema
-}
-
-func (obj *objectField) Type() FieldType {
-	return FieldTypeObject
-}
-
-func (obj *objectField) IsSet() bool {
-	return obj.value.isSet()
-}
-
-func (obj *objectField) SetDefault() error {
-	_ = obj.value.getOrCreateMutable()
-	return nil
-}
-
-func (obj *objectField) Object() (Object, error) {
-	if obj._object == nil {
-		msgChild, err := obj.value.getOrCreateChildMessage()
-		if err != nil {
-			return nil, err
-		}
-		built, err := newObject(obj.schema.Schema(), msgChild)
-		if err != nil {
-			return nil, err
-		}
-		obj._object = built
-	}
-	return obj._object, nil
 }
 
 type oneofField struct {

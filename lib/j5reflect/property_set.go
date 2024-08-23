@@ -8,6 +8,26 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// PropertySet is implemented by Oneofs, Objects and Maps with String keys.
+type PropertySet interface {
+	Name() string // Returns the full name of the entity wrapping the properties.
+
+	RangeProperties(RangeCallback) error
+	RangeSetProperties(RangeCallback) error
+
+	// HasProperty returns true if there is a property with the given name in
+	// the *schema* for the property set.
+	HasProperty(name string) bool
+
+	// GetProperty returns the property with the given name in the schema for
+	// the property set. The property may not be set to a value.
+	GetProperty(name string) (Property, error)
+
+	ListPropertyNames() []string
+
+	implementsPropertySet()
+}
+
 func copyReflect(a, b protoreflect.Message) {
 	a.Range(func(fd protoreflect.FieldDescriptor, val protoreflect.Value) bool {
 		b.Set(fd, val)
@@ -35,22 +55,29 @@ func newPropSet(name string, props []Property) (*propSet, error) {
 	return fs, nil
 }
 
+func (*propSet) implementsPropertySet() {}
+
 func (fs *propSet) Name() string {
 	return fs.fullName
 }
 
-func (fs *propSet) MaybeGetProperty(name string) Property {
-	prop := fs.asMap[name]
-	return prop
+func (fs *propSet) ListPropertyNames() []string {
+	names := make([]string, 0, len(fs.asSlice))
+	for _, prop := range fs.asSlice {
+		names = append(names, prop.JSONName())
+	}
+	return names
+
+}
+
+func (fs *propSet) HasProperty(name string) bool {
+	_, ok := fs.asMap[name]
+	return ok
 }
 
 func (fs *propSet) GetProperty(name string) (Property, error) {
-	prop := fs.MaybeGetProperty(name)
-	if prop == nil {
-		fmt.Printf("no property %s in %s. Has:\n", name, fs.fullName)
-		for _, p := range fs.asSlice {
-			fmt.Printf("  %s\n", p.JSONName())
-		}
+	prop, ok := fs.asMap[name]
+	if !ok {
 		return nil, fmt.Errorf("%s has no property %s", fs.fullName, name)
 	}
 	return prop, nil
@@ -80,38 +107,11 @@ func (fs *propSet) RangeSetProperties(callback RangeCallback) error {
 	return nil
 }
 
-func (fs *propSet) HasAnyValue() bool {
-	for _, prop := range fs.asSlice {
-		if prop.IsSet() {
-			return true
-		}
-	}
-	return false
-}
-
-func (fs *propSet) GetOne() (Property, error) {
-	var property Property
-	for _, prop := range fs.asSlice {
-		if prop.IsSet() {
-			if property != nil {
-				return nil, fmt.Errorf("multiple values set for oneof")
-			}
-			property = prop
-		}
-	}
-	return property, nil
-}
-
-var cb func(name string, params ...interface{})
-
 func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageWrapper) ([]Property, error) {
 	out := make([]Property, 0)
 	var err error
 
 	for _, schema := range properties {
-		if cb != nil {
-			cb("building property: %s, path %v", schema.JSONName, schema.ProtoField)
-		}
 		if len(schema.ProtoField) == 0 {
 
 			// Then we have a 'fake' object, usually an exposed oneof.
@@ -155,9 +155,6 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 			continue
 		}
 
-		if cb != nil {
-			cb("is normal %q, path %v", schema.JSONName, schema.ProtoField)
-		}
 		var walkFieldNumber protoreflect.FieldNumber
 		walkPath := schema.ProtoField[:]
 		//fmt.Printf("property: %v\n", schema.JSONName)
@@ -183,16 +180,6 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 		built, err := buildProperty(schema, fieldValue)
 		if err != nil {
 			return nil, patherr.Wrap(err, schema.JSONName)
-		}
-
-		if cb != nil {
-			cb("final field build, schema %s", schema.ToJ5Proto())
-			obj, ok := built.(*objectProperty)
-			if ok {
-				cb("schema.Ref.FullName: %v", obj.field.schema.Ref.FullName())
-				cb("schema.Ref.To.Full : %v", obj.field.schema.Ref.To.FullName())
-				cb("schema.Schema().Ful: %v", obj.field.schema.Schema().FullName())
-			}
 		}
 
 		out = append(out, built)
@@ -236,6 +223,7 @@ func buildProperty(schema *j5schema.ObjectProperty, value *realProtoMessageField
 	}
 
 	field := ff.buildField(value).asProperty(fieldBase)
+
 	return field, nil
 
 }

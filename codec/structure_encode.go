@@ -32,7 +32,7 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 	})
 }
 
-func (enc *encoder) encodeOneofBody(fieldSet j5reflect.PropertySet) error {
+func (enc *encoder) encodeOneofBody(fieldSet j5reflect.Oneof) error {
 
 	prop, err := fieldSet.GetOne()
 	if err != nil {

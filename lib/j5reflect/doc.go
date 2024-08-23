@@ -34,40 +34,16 @@
 
 package j5reflect
 
-import "github.com/pentops/j5/internal/j5schema"
-
-type PropertySet interface {
-	Name() string // Returns the full name of the entity wrapping the properties.
-
-	RangeProperties(RangeCallback) error
-	RangeSetProperties(RangeCallback) error
-	GetOne() (Property, error)
-
-	// HasAnyValue returns true if any of the properties have a value
-	HasAnyValue() bool
-
-	MaybeGetProperty(name string) Property
-	GetProperty(name string) (Property, error)
-}
-
-type Object interface {
-	PropertySet
-}
-
-type Oneof interface {
-	PropertySet
-}
+import (
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/internal/j5schema"
+)
 
 type Field interface {
 	Type() FieldType
 	IsSet() bool
 	SetDefault() error
 	asProperty(fieldBase) Property
-}
-
-type ObjectField interface {
-	Field
-	Object() (Object, error)
 }
 
 type OneofField interface {
@@ -150,10 +126,11 @@ type MapOfEnumField interface {
 
 type Property interface {
 	JSONName() string
+	FullName() string
 	Field() Field
 	IsSet() bool
-
 	AsScalarField() ScalarField
+	Schema() *schema_j5pb.ObjectProperty
 }
 
 type RangeCallback func(Property) error

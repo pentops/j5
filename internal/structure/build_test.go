@@ -4,17 +4,18 @@ import (
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	"github.com/google/go-cmp/cmp"
 	"github.com/pentops/flowtest/prototest"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/j5/internal/testlib"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -385,7 +386,8 @@ func TestBuildPath(t *testing.T) {
 	t.Run("Source to Descriptor", func(t *testing.T) {
 		assert.Len(t, apiSource.Packages, 1)
 		want := testAPI()
-		testlib.AssertEqualProto(t, want, apiSource)
+		assertEqualProto(t, want, apiSource)
+
 	})
 
 	/*
@@ -479,4 +481,12 @@ func TestBuildPath(t *testing.T) {
 		}
 
 	})
+}
+
+func assertEqualProto(t *testing.T, want, got proto.Message) {
+	t.Helper()
+	diff := cmp.Diff(want, got, protocmp.Transform())
+	if diff != "" {
+		t.Error(diff)
+	}
 }

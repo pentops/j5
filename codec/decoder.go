@@ -3,7 +3,6 @@ package codec
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -96,36 +95,6 @@ func (dec *decoder) jsonObject(callback func(key string) error) error {
 	}
 	return dec.expectDelim('}')
 }
-func (d *decoder) unmarshalEmptyObject() error {
-	tok, err := d.Token()
-	if err != nil {
-		return err
-	}
-	if tok != json.Delim('{') {
-		return unexpectedTokenError(tok, "{")
-	}
-	tok, err = d.Token()
-	if err != nil {
-		return err
-	}
-	if tok != json.Delim('}') {
-		return unexpectedTokenError(tok, "}")
-	}
-	return nil
-}
-
-func (d *decoder) stringToken() (string, error) {
-	tok, err := d.Token()
-	if err != nil {
-		return "", err
-	}
-
-	stringVal, ok := tok.(string)
-	if !ok {
-		return "", fmt.Errorf("expected string but got %v", tok)
-	}
-	return stringVal, nil
-}
 
 type fieldError struct {
 	pathToField []string
@@ -170,64 +139,15 @@ func passUpError(field string, err error) error {
 	}
 }
 
-func (dec *decoder) decodeObject(object j5reflect.Object) error {
-
+func (dec *decoder) decodeObject(object j5reflect.PropertySet) error {
 	return dec.jsonObject(func(keyTokenStr string) error {
-		prop := object.MaybeGetProperty(keyTokenStr)
-		if prop == nil {
+		prop, err := object.GetProperty(keyTokenStr)
+		if err != nil {
 			return newFieldError(keyTokenStr, "no such field")
 		}
-
-		/*
-			protoFieldPath := field.ProtoField[:]
-			if len(protoFieldPath) == 0 {
-				// oneof annotations in proto messages are not fields, so there is
-				// no 'path' from the message to the oneof.
-				// Wrapped oneofs are messages, so they ARE fields, and don't get
-				// handled here.
-				oneofWrapper, ok := field.Schema.(*j5schema.OneofField)
-				if !ok {
-					return newFieldError(keyTokenStr, "field has no proto field and is not a oneof")
-				}
-
-				if err := dec.decodeOneof(oneofWrapper.Schema(), msg); err != nil {
-					return err
-				}
-				return nil
-			}
-
-			var protoField protoreflect.FieldDescriptor
-			var protoFieldNumber protoreflect.FieldNumber
-			settingMessage := msg
-			for {
-				protoFieldNumber, protoFieldPath = protoFieldPath[0], protoFieldPath[1:]
-				protoField = settingMessage.Descriptor().Fields().ByNumber(protoFieldNumber)
-				if protoField == nil {
-					return fmt.Errorf("no such field %d in msg %s", protoFieldNumber, settingMessage.Descriptor().FullName())
-				}
-				if len(protoFieldPath) == 0 {
-					break
-				}
-
-				// The field should me a message, there are remaining fields in the
-				// path
-				if protoField.Kind() != protoreflect.MessageKind {
-					return newFieldError(protoField.JSONName(), "field is not a message but has a message annotation")
-				}
-
-				// if the field is nil, create a new message
-				if !settingMessage.Has(protoField) {
-					subMsg := settingMessage.Mutable(protoField).Message()
-					settingMessage = subMsg
-				} else {
-					settingMessage = settingMessage.Get(protoField).Message()
-				}
-			}*/
-
 		if err := dec.decodeValue(prop.Field()); err != nil {
 			return err
 		}
-
 		return nil
 	})
 }
@@ -310,9 +230,9 @@ func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 			return nil
 		}
 
-		matchedProperty := oneof.MaybeGetProperty(keyTokenStr)
-		if matchedProperty == nil {
-			return errors.New("no such key")
+		matchedProperty, err := oneof.GetProperty(keyTokenStr)
+		if err != nil {
+			return newFieldError(keyTokenStr, "no such key")
 		}
 		foundKeys = append(foundKeys, keyTokenStr)
 
@@ -334,8 +254,8 @@ func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 
 		// Special case, allows the consumer to set a nil value on a oneof
 		// just by using the type parameter
-		matchedProperty := oneof.MaybeGetProperty(keyTokenStr)
-		if matchedProperty == nil {
+		matchedProperty, err := oneof.GetProperty(keyTokenStr)
+		if err != nil {
 			return newFieldError(keyTokenStr, "no such key")
 		}
 		return matchedProperty.Field().SetDefault()

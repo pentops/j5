@@ -3,6 +3,7 @@ syntax = "proto3";
 package j5.sourcedef.v1;
 
 import "google/protobuf/descriptor.proto";
+import "j5/ext/v1/annotations.proto";
 import "j5/schema/v1/schema.proto";
 import "j5/sourcedef/v1/annotations.proto";
 
@@ -13,9 +14,7 @@ message SourceFile {
   string package = 2 [(j5.sourcedef.v1.field).assign = {}];
   string version = 3;
 
-  repeated RootSchema schemas = 4;
-
-  repeated Entity entities = 5;
+  repeated RootElement elements = 4;
 }
 
 message Entity {
@@ -25,13 +24,14 @@ message Entity {
   Object keys = 3 [(j5.sourcedef.v1.field).block.name = "key"];
   j5.schema.v1.Enum status = 4;
   Object data = 5;
-  Oneof events = 6;
+  repeated Object events = 6;
 
-  // nonspecific schemas relating to the entity
-  RootSchema schemas = 7;
+  repeated NestedSchema schemas = 7;
+
+  SourceLocation location = 8;
 }
 
-message RootSchema {
+message NestedSchema {
   oneof type {
     Oneof oneof = 1;
     Object object = 2;
@@ -39,12 +39,34 @@ message RootSchema {
   }
 }
 
+message RootElement {
+  oneof type {
+    Oneof oneof = 1;
+    Object object = 2;
+    j5.schema.v1.Enum enum = 3;
+    Entity entity = 4;
+  }
+}
+
 message Oneof {
-  j5.schema.v1.Oneof def = 1;
+  j5.schema.v1.Oneof def = 1 [(j5.ext.v1.field).message.flatten = true];
+  SourceLocation location = 2;
 }
 
 message Object {
-  j5.schema.v1.Object def = 1;
+  j5.schema.v1.Object def = 1 [(j5.ext.v1.field).message.flatten = true];
+  SourceLocation location = 2;
 
-  repeated RootSchema schemas = 2;
+  repeated NestedSchema schemas = 3;
+}
+
+message EntityElement {
+  Entity entity = 1 [(j5.ext.v1.field).message.flatten = true];
+  SourceLocation location = 2;
+}
+
+message SourceLocation {
+  optional string path = 1;
+  int32 line = 2; // 1 based
+  int32 column = 3; // 1 based
 }

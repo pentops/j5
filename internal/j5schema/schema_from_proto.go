@@ -189,11 +189,16 @@ func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*One
 	if err != nil {
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
-	return &OneofSchema{
+
+	oos := &OneofSchema{
 		rootSchema: ss.schemaRootFromProto(srcMsg),
 		Properties: properties,
 		// TODO: Rules
-	}, nil
+	}
+	for _, prop := range properties {
+		prop.Parent = oos
+	}
+	return oos, nil
 }
 
 func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*ObjectSchema, error) {
@@ -213,6 +218,10 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*Ob
 	}
 	if entity != nil {
 		objectSchema.Entity = entity
+	}
+
+	for _, prop := range properties {
+		prop.Parent = objectSchema
 	}
 
 	return objectSchema, nil
@@ -419,6 +428,41 @@ var wellKnownStringPatterns = map[string]string{
 	`^\d(.?\d)?$`:         "number",
 }
 
+type protoFieldExtensions struct {
+	validate *validate.FieldConstraints
+	list     *list_j5pb.FieldConstraint
+	j5       *ext_j5pb.FieldOptions
+}
+
+func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensions {
+	validateConstraint := proto.GetExtension(src.Options(), validate.E_Field).(*validate.FieldConstraints)
+	if validateConstraint != nil && validateConstraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
+		// constraint.IgnoreEmpty doesn't really apply
+
+		// if the constraint is repeated, unwrap it
+		repeatedConstraint, ok := validateConstraint.Type.(*validate.FieldConstraints_Repeated)
+		if ok {
+			validateConstraint = repeatedConstraint.Repeated.Items
+		}
+	}
+
+	if validateConstraint == nil {
+		validateConstraint = &validate.FieldConstraints{}
+	}
+
+	listConstraint := proto.GetExtension(src.Options(), list_j5pb.E_Field).(*list_j5pb.FieldConstraint)
+
+	fieldOptions := proto.GetExtension(src.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
+
+	exts := protoFieldExtensions{
+		validate: validateConstraint,
+		list:     listConstraint,
+		j5:       fieldOptions,
+	}
+
+	return exts
+}
+
 func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
 	schemaProto := &schema_j5pb.Field{}
 
@@ -432,36 +476,33 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		},
 	}
 
-	validateConstraint := proto.GetExtension(src.Options(), validate.E_Field).(*validate.FieldConstraints)
-	if validateConstraint != nil && validateConstraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
-		if validateConstraint.Required {
-			prop.Required = true
-		}
-
-		// constraint.IgnoreEmpty doesn't really apply
-
-		// if the constraint is repeated, unwrap it
-		repeatedConstraint, ok := validateConstraint.Type.(*validate.FieldConstraints_Repeated)
-		if ok {
-			validateConstraint = repeatedConstraint.Repeated.Items
-		}
-	}
-
-	listConstraint := proto.GetExtension(src.Options(), list_j5pb.E_Field).(*list_j5pb.FieldConstraint)
+	ext := getProtoFieldExtensions(src)
+	prop.Required = ext.validate.Required
 
 	if !prop.Required && src.HasOptionalKeyword() {
 		prop.ExplicitlyOptional = true
 	}
 
-	fieldOptions := proto.GetExtension(src.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
-
-	// TODO: Validation / Rules
-	// TODO: Map
-	// TODO: Extra types (see below)
-
 	switch src.Kind() {
+
+	case protoreflect.MessageKind:
+		schema, err := buildMessageFieldSchema(pkg, src, ext)
+		if err != nil {
+			return nil, err
+		}
+		prop.Schema = schema
+		return prop, nil
+
+	case protoreflect.StringKind:
+		schema, err := buildFromStringProto(src, ext)
+		if err != nil {
+			return nil, err
+		}
+		prop.Schema = schema
+		return prop, nil
+
 	case protoreflect.BoolKind:
-		boolConstraint := validateConstraint.GetBool()
+		boolConstraint := ext.validate.GetBool()
 		boolItem := &schema_j5pb.BooleanField{}
 
 		if boolConstraint != nil {
@@ -478,7 +519,7 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
 
-		if constraint := validateConstraint.GetInt32(); constraint != nil {
+		if constraint := ext.validate.GetInt32(); constraint != nil {
 			integerRules = &schema_j5pb.IntegerField_Rules{}
 			if constraint.Const != nil {
 				return nil, fmt.Errorf("'const' not supported")
@@ -514,14 +555,14 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			Integer: &schema_j5pb.IntegerField{
 				Format:    schema_j5pb.IntegerField_FORMAT_INT32,
 				Rules:     integerRules,
-				ListRules: listConstraint.GetInt32(),
+				ListRules: ext.list.GetInt32(),
 			},
 		}
 		return prop, nil
 
 	case protoreflect.Uint32Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
-		uint32Constraint := validateConstraint.GetUint32()
+		uint32Constraint := ext.validate.GetUint32()
 		if uint32Constraint != nil {
 			integerRules = &schema_j5pb.IntegerField_Rules{}
 			if uint32Constraint.Const != nil {
@@ -558,14 +599,14 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			Integer: &schema_j5pb.IntegerField{
 				Format:    schema_j5pb.IntegerField_FORMAT_UINT32,
 				Rules:     integerRules,
-				ListRules: listConstraint.GetUint32(),
+				ListRules: ext.list.GetUint32(),
 			},
 		}
 		return prop, nil
 
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
-		int64Constraint := validateConstraint.GetInt64()
+		int64Constraint := ext.validate.GetInt64()
 		if int64Constraint != nil {
 			integerRules = &schema_j5pb.IntegerField_Rules{}
 			if int64Constraint.Const != nil {
@@ -602,14 +643,14 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			Integer: &schema_j5pb.IntegerField{
 				Format:    schema_j5pb.IntegerField_FORMAT_INT64,
 				Rules:     integerRules,
-				ListRules: listConstraint.GetInt64(),
+				ListRules: ext.list.GetInt64(),
 			},
 		}
 		return prop, nil
 
 	case protoreflect.Uint64Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
-		int64Constraint := validateConstraint.GetUint64()
+		int64Constraint := ext.validate.GetUint64()
 		if int64Constraint != nil {
 			integerRules = &schema_j5pb.IntegerField_Rules{}
 			if int64Constraint.Const != nil {
@@ -646,14 +687,14 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			Integer: &schema_j5pb.IntegerField{
 				Format:    schema_j5pb.IntegerField_FORMAT_UINT64,
 				Rules:     integerRules,
-				ListRules: listConstraint.GetInt64(),
+				ListRules: ext.list.GetInt64(),
 			},
 		}
 		return prop, nil
 
 	case protoreflect.FloatKind:
 		var numberRules *schema_j5pb.FloatField_Rules
-		floatConstraint := validateConstraint.GetFloat()
+		floatConstraint := ext.validate.GetFloat()
 		if floatConstraint != nil {
 			numberRules = &schema_j5pb.FloatField_Rules{}
 			if floatConstraint.Const != nil {
@@ -690,14 +731,14 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			Float: &schema_j5pb.FloatField{
 				Format:    schema_j5pb.FloatField_FORMAT_FLOAT32,
 				Rules:     numberRules,
-				ListRules: listConstraint.GetFloat(),
+				ListRules: ext.list.GetFloat(),
 			},
 		}
 		return prop, nil
 
 	case protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind, protoreflect.DoubleKind:
 		var numberRules *schema_j5pb.FloatField_Rules
-		floatConstraint := validateConstraint.GetDouble()
+		floatConstraint := ext.validate.GetDouble()
 		if floatConstraint != nil {
 			numberRules = &schema_j5pb.FloatField_Rules{}
 			if floatConstraint.Const != nil {
@@ -734,149 +775,8 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			Float: &schema_j5pb.FloatField{
 				Format:    schema_j5pb.FloatField_FORMAT_FLOAT64,
 				Rules:     numberRules,
-				ListRules: listConstraint.GetDouble(),
+				ListRules: ext.list.GetDouble(),
 			},
-		}
-		return prop, nil
-
-	case protoreflect.StringKind:
-		stringItem := &schema_j5pb.StringField{}
-
-		var typeHint string
-
-		if validateConstraint != nil && validateConstraint.Type != nil {
-			stringConstraint, ok := validateConstraint.Type.(*validate.FieldConstraints_String_)
-			if !ok {
-				return nil, fmt.Errorf("wrong constraint type for string: %T", validateConstraint.Type)
-			}
-
-			stringItem.Rules = &schema_j5pb.StringField_Rules{}
-			constraint := stringConstraint.String_
-
-			stringItem.Rules.MinLength = constraint.MinLen
-
-			stringItem.Rules.MaxLength = constraint.MaxLen
-
-			if constraint.Pattern != nil {
-				pattern := *constraint.Pattern
-				wellKnownStringPattern, ok := wellKnownStringPatterns[pattern]
-				if ok {
-					stringItem.Format = Ptr(wellKnownStringPattern)
-				} else {
-					stringItem.Rules.Pattern = Ptr(pattern)
-				}
-			}
-
-			switch wkt := constraint.WellKnown.(type) {
-			case *validate.StringRules_Uuid:
-				if wkt.Uuid {
-					stringItem.Format = Ptr("uuid")
-					typeHint = "uuid"
-				}
-			case *validate.StringRules_Email:
-				if wkt.Email {
-					stringItem.Format = Ptr("email")
-				}
-
-			case *validate.StringRules_Hostname:
-				if wkt.Hostname {
-					stringItem.Format = Ptr("hostname")
-				}
-
-			case *validate.StringRules_Ipv4:
-				if wkt.Ipv4 {
-					stringItem.Format = Ptr("ipv4")
-				}
-
-			case *validate.StringRules_Ipv6:
-				if wkt.Ipv6 {
-					stringItem.Format = Ptr("ipv6")
-				}
-
-			case *validate.StringRules_Uri:
-				if wkt.Uri {
-					stringItem.Format = Ptr("uri")
-				}
-
-			// Other types not supported by swagger
-			case nil:
-
-			default:
-				return nil, fmt.Errorf("unknown string constraint: %T", constraint.WellKnown)
-
-			}
-		}
-
-		listRules := listConstraint.GetString_()
-
-		var fkRules *list_j5pb.KeyRules
-
-		if fk := listRules.GetForeignKey(); fk != nil {
-			switch fkt := fk.Type.(type) {
-			case *list_j5pb.ForeignKeyRules_UniqueString:
-				fkRules = fkt.UniqueString
-				if typeHint == "" {
-					typeHint = "natural_key"
-				} else if typeHint != "natural_key" {
-					return nil, fmt.Errorf("rules (%s) and list constraints (natural_key) do not match", typeHint)
-				}
-
-			case *list_j5pb.ForeignKeyRules_Uuid:
-				fkRules = fkt.Uuid
-				if typeHint == "" {
-					typeHint = "uuid"
-				} else if typeHint != "uuid" {
-					return nil, fmt.Errorf("rules (%s) and list constraints (uuid) do not match", typeHint)
-				}
-			}
-		}
-
-		if openText := listRules.GetOpenText(); openText != nil {
-			if typeHint != "" {
-				return nil, fmt.Errorf("open_text and rules (%s) do not match", typeHint)
-			}
-			typeHint = "open_text"
-			stringItem.ListRules = openText
-		}
-
-		isPrimary := false
-
-		if psmKeyExt, ok := proto.GetExtension(src.Options(), ext_j5pb.E_Key).(*ext_j5pb.KeyFieldOptions); ok && psmKeyExt != nil {
-			if psmKeyExt.PrimaryKey {
-				if typeHint == "" {
-					typeHint = "uuid"
-				} else if typeHint != "uuid" {
-					return nil, fmt.Errorf("rules (%s) and key constraint do not match", typeHint)
-				}
-
-				isPrimary = true
-			}
-
-		}
-
-		switch typeHint {
-		case "uuid":
-			schemaProto.Type = &schema_j5pb.Field_Key{
-				Key: &schema_j5pb.KeyField{
-					Format:    schema_j5pb.KeyFormat_UUID,
-					ListRules: fkRules,
-					Primary:   isPrimary,
-				},
-			}
-
-		case "natural_key":
-			schemaProto.Type = &schema_j5pb.Field_Key{
-				Key: &schema_j5pb.KeyField{
-					Format:    schema_j5pb.KeyFormat_UNSPECIFIED,
-					ListRules: fkRules,
-				},
-			}
-
-		default:
-
-			schemaProto.Type = &schema_j5pb.Field_String_{
-				String_: stringItem,
-			}
 		}
 		return prop, nil
 
@@ -899,7 +799,7 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		}
 
 		var rules *schema_j5pb.EnumField_Rules
-		if vc := validateConstraint.GetEnum(); vc != nil {
+		if vc := ext.validate.GetEnum(); vc != nil {
 			enumSchema := ref.To.(*EnumSchema)
 			rules = &schema_j5pb.EnumField_Rules{}
 			if vc.In != nil {
@@ -927,64 +827,10 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		}
 		prop.Schema = &EnumField{
 			Ref:       ref,
-			ListRules: listConstraint.GetEnum(),
+			ListRules: ext.list.GetEnum(),
 			Rules:     rules,
 		}
 
-		return prop, nil
-
-	case protoreflect.MessageKind:
-
-		flatten := false
-		if fieldOptions != nil {
-			if msgOptions := fieldOptions.GetMessage(); msgOptions != nil {
-				if src.Kind() != protoreflect.MessageKind {
-					return nil, fmt.Errorf("field %s is not a message but has a message annotation", src.Name())
-				}
-
-				if msgOptions.Flatten {
-					flatten = true
-				}
-			}
-		}
-		wktschema, ok := wktSchema(src.Message(), listConstraint)
-		if ok {
-			prop.Schema = wktschema
-			return prop, nil
-		}
-		if strings.HasPrefix(string(src.Message().FullName()), "google.protobuf.") {
-			return nil, fmt.Errorf("unsupported google type %s", src.Message().FullName())
-		}
-		msg := src.Message()
-		isOneofWrapper := isOneofWrapper(msg)
-
-		ref, didExist := newRefPlaceholder(pkg.PackageSet, msg)
-		if !didExist {
-			var err error
-			if isOneofWrapper {
-				ref.To, err = pkg.buildOneofSchema(msg)
-			} else {
-				ref.To, err = pkg.buildObjectSchema(msg)
-			}
-			if err != nil {
-				return nil, err
-			}
-
-			if err := ref.check(); err != nil {
-				return nil, err
-			}
-
-		}
-		if isOneofWrapper {
-			prop.Schema = &OneofField{
-				Ref: ref,
-			}
-		} else {
-			prop.Schema = &ObjectField{
-				Ref:     ref,
-				Flatten: flatten,
-			}
-		}
 		return prop, nil
 	default:
 		/* Not Supported in J5:
@@ -1105,4 +951,222 @@ func wktSchema(src protoreflect.MessageDescriptor, listConstraint *list_j5pb.Fie
 	}
 
 	return nil, false
+}
+
+func buildMessageFieldSchema(pkg *Package, src protoreflect.FieldDescriptor, ext protoFieldExtensions) (FieldSchema, error) {
+	flatten := false
+	if ext.j5 != nil {
+		if msgOptions := ext.j5.GetMessage(); msgOptions != nil {
+			if src.Kind() != protoreflect.MessageKind {
+				return nil, fmt.Errorf("field %s is not a message but has a message annotation", src.Name())
+			}
+
+			if msgOptions.Flatten {
+				flatten = true
+			}
+		}
+	}
+	wktschema, ok := wktSchema(src.Message(), ext.list)
+	if ok {
+		return wktschema, nil
+	}
+	if strings.HasPrefix(string(src.Message().FullName()), "google.protobuf.") {
+		return nil, fmt.Errorf("unsupported google type %s", src.Message().FullName())
+	}
+	msg := src.Message()
+	isOneofWrapper := isOneofWrapper(msg)
+
+	ref, didExist := newRefPlaceholder(pkg.PackageSet, msg)
+	if !didExist {
+		var err error
+		if isOneofWrapper {
+			ref.To, err = pkg.buildOneofSchema(msg)
+		} else {
+			ref.To, err = pkg.buildObjectSchema(msg)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		if err := ref.check(); err != nil {
+			return nil, err
+		}
+
+	}
+	if isOneofWrapper {
+		return &OneofField{
+			Ref: ref,
+		}, nil
+	}
+	return &ObjectField{
+		Ref:     ref,
+		Flatten: flatten,
+	}, nil
+}
+func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (*ScalarSchema, error) {
+	stringItem := &schema_j5pb.StringField{}
+
+	looksLikeKey := false
+
+	if ext.validate != nil && ext.validate.Type != nil {
+		stringItem.Rules = &schema_j5pb.StringField_Rules{}
+		constraint := ext.validate.GetString_()
+		if constraint == nil {
+			return nil, fmt.Errorf("constraint for string is %T", ext.validate.Type)
+		}
+
+		stringItem.Rules.MinLength = constraint.MinLen
+
+		stringItem.Rules.MaxLength = constraint.MaxLen
+
+		if constraint.Pattern != nil {
+			pattern := *constraint.Pattern
+			wellKnownStringPattern, ok := wellKnownStringPatterns[pattern]
+			if ok {
+				stringItem.Format = Ptr(wellKnownStringPattern)
+			} else {
+				stringItem.Rules.Pattern = Ptr(pattern)
+			}
+		}
+
+		switch wkt := constraint.WellKnown.(type) {
+		case *validate.StringRules_Uuid:
+			if wkt.Uuid {
+				stringItem.Format = Ptr("uuid")
+			}
+			looksLikeKey = true
+
+		case *validate.StringRules_Email:
+			if wkt.Email {
+				stringItem.Format = Ptr("email")
+			}
+
+		case *validate.StringRules_Hostname:
+			if wkt.Hostname {
+				stringItem.Format = Ptr("hostname")
+			}
+
+		case *validate.StringRules_Ipv4:
+			if wkt.Ipv4 {
+				stringItem.Format = Ptr("ipv4")
+			}
+
+		case *validate.StringRules_Ipv6:
+			if wkt.Ipv6 {
+				stringItem.Format = Ptr("ipv6")
+			}
+
+		case *validate.StringRules_Uri:
+			if wkt.Uri {
+				stringItem.Format = Ptr("uri")
+			}
+
+		// Other types not supported by swagger
+		case nil:
+
+		default:
+			return nil, fmt.Errorf("unknown string constraint: %T", constraint.WellKnown)
+
+		}
+	}
+
+	listRules := ext.list.GetString_()
+
+	var fkRules *list_j5pb.KeyRules
+
+	if fk := listRules.GetForeignKey(); fk != nil {
+		switch fkt := fk.Type.(type) {
+		case *list_j5pb.ForeignKeyRules_UniqueString:
+			looksLikeKey = true
+
+			if stringItem.Format != nil || *stringItem.Format == "uuid" {
+				return nil, fmt.Errorf("string format %q is not compatible with list.unique_string", *stringItem.Format)
+			}
+			fkRules = fkt.UniqueString
+			if stringItem.Format == nil {
+				stringItem.Format = Ptr("natural_key")
+			}
+
+		case *list_j5pb.ForeignKeyRules_Uuid:
+			looksLikeKey = true
+			fkRules = fkt.Uuid
+			if stringItem.Format != nil && *stringItem.Format != "uuid" {
+				return nil, fmt.Errorf("string format %q is not compatible with list.uuid", *stringItem.Format)
+			}
+			if stringItem.Format == nil {
+				stringItem.Format = Ptr("uuid")
+			}
+		}
+	}
+
+	psmKeyExt := proto.GetExtension(src.Options(), ext_j5pb.E_Key).(*ext_j5pb.KeyFieldOptions)
+
+	if openText := listRules.GetOpenText(); openText != nil {
+		if stringItem.Format != nil {
+			return nil, fmt.Errorf("open_text and format %q do not match", *stringItem.Format)
+		}
+
+		if psmKeyExt != nil {
+			return nil, fmt.Errorf("open_text and key constraint do not match")
+		}
+		stringItem.ListRules = openText
+	}
+
+	if fkRules != nil {
+		looksLikeKey = true
+	}
+
+	if psmKeyExt != nil {
+		looksLikeKey = true
+	}
+
+	if !looksLikeKey {
+		return &ScalarSchema{
+			Kind: src.Kind(),
+			Proto: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_String_{
+					String_: stringItem,
+				},
+			},
+		}, nil
+	}
+
+	if psmKeyExt == nil {
+		psmKeyExt = &ext_j5pb.KeyFieldOptions{}
+	}
+
+	keyField := &schema_j5pb.KeyField{
+
+		Primary:   psmKeyExt.PrimaryKey,
+		ListRules: fkRules,
+	}
+
+	if stringItem.Format == nil {
+
+	} else {
+		switch *stringItem.Format {
+		case "uuid":
+			keyField.Format = &schema_j5pb.KeyFormat{
+				Type: &schema_j5pb.KeyFormat_Uuid{
+					Uuid: &schema_j5pb.KeyFormat_UUID{},
+				},
+			}
+		case "natural_key":
+			keyField.Format = &schema_j5pb.KeyFormat{
+				Type: &schema_j5pb.KeyFormat_Informal_{
+					Informal: &schema_j5pb.KeyFormat_Informal{},
+				},
+			}
+		}
+	}
+
+	return &ScalarSchema{
+		Kind: src.Kind(),
+		Proto: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_Key{
+				Key: keyField,
+			},
+		},
+	}, nil
+
 }

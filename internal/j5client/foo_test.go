@@ -5,12 +5,15 @@ import (
 	"os"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/j5/internal/structure"
-	"github.com/pentops/j5/internal/testlib"
+	"google.golang.org/protobuf/encoding/prototext"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
 func TestFooSchema(t *testing.T) {
@@ -49,14 +52,22 @@ func TestFooSchema(t *testing.T) {
 		t.Fatalf("APIFromSource: %v", err)
 	}
 
-	t.Logf("ClientAPI: %v", clientAPI)
+	t.Logf("ClientAPI: %s", prototext.Format(clientAPI))
 
 	want := wantAPI().Packages[0]
 
 	got := clientAPI.Packages[0]
 	got.Schemas = nil
 
-	testlib.AssertEqualProto(t, want, got)
+	assertEqualProto(t, want, got)
+}
+
+func assertEqualProto(t *testing.T, want, got proto.Message) {
+	t.Helper()
+	diff := cmp.Diff(want, got, protocmp.Transform())
+	if diff != "" {
+		t.Error(diff)
+	}
 }
 
 func wantAPI() *client_j5pb.API {
@@ -235,7 +246,11 @@ func wantAPI() *client_j5pb.API {
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Key{
 						Key: &schema_j5pb.KeyField{
-							Format: schema_j5pb.KeyFormat_KEY_FORMAT_UUID,
+							Format: &schema_j5pb.KeyFormat{
+								Type: &schema_j5pb.KeyFormat_Uuid{
+									Uuid: &schema_j5pb.KeyFormat_UUID{},
+								},
+							},
 						},
 					},
 				},

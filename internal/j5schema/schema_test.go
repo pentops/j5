@@ -84,7 +84,7 @@ func TestStringSchemaTypes(t *testing.T) {
 			},
 		},
 		expected: map[string]interface{}{
-			"schema.key.format": "KEY_FORMAT_UUID",
+			"schema.key.format": jsontest.IsOneofKey("uuid"),
 		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {

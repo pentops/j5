@@ -283,6 +283,13 @@ type ObjectProperty struct {
 	Description string
 }
 
+func (prop *ObjectProperty) FullName() string {
+	if prop.Parent == nil {
+		return "<root>." + prop.JSONName
+	}
+	return prop.Parent.FullName() + "." + prop.JSONName
+}
+
 func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 	fieldPath := make([]int32, len(prop.ProtoField))
 	for idx, field := range prop.ProtoField {

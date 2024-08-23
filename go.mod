@@ -10,14 +10,12 @@ require (
 	github.com/bufbuild/protocompile v0.14.0
 	github.com/bufbuild/protoyaml-go v0.1.10
 	github.com/docker/docker v27.1.1+incompatible
-	github.com/envoyproxy/protoc-gen-validate v1.0.4
-	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jhump/protoreflect v1.16.0
-	github.com/pentops/flowtest v0.0.0-20240806162256-23b05c4df309
+	github.com/pentops/flowtest v0.0.0-20240823195451-08ebbdc5a426
 	github.com/pentops/log.go v0.0.0-20240806161938-2742d05b4c24
 	github.com/pentops/runner v0.0.0-20240806162317-0eb1ced9ab3d
 	github.com/ryanuber/go-glob v1.0.0
@@ -62,6 +60,7 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/cel-go v0.21.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect

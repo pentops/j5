@@ -2,4 +2,5 @@
 
 package sourcedef_j5pb
 
-type IsRootSchema_Type = isRootSchema_Type
+type IsNestedSchema_Type = isNestedSchema_Type
+type IsRootElement_Type = isRootElement_Type

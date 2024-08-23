@@ -31,39 +31,23 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a scalar field
-		prop := root.MaybeGetProperty("sString").Field()
-		if prop == nil {
-			t.Fatal("missing field sString")
-		}
-		sString, ok := prop.(ScalarField)
-		if !ok {
-			t.Fatalf("Wrong type for field: %T", prop)
-		}
-
-		must(t, sString.SetGoValue("hello"))
+		testPath(t, root,
+			tObjectProperty("sString"),
+			tSetScalar("hello"),
+		)
 
 		assert.Equal(t, "hello", msg.SString)
 	})
 
 	t.Run("nested", func(t *testing.T) {
 		root, msg := newRoot(t)
+
 		// Set a nested message field
-		sBar, ok := root.MaybeGetProperty("sBar").Field().(ObjectField)
-		if !ok {
-			t.Fatal("missing field sBar")
-		}
-
-		asObj, err := sBar.Object()
-		if err != nil {
-			t.Fatalf("calling bar.Object(): %s", err)
-		}
-
-		sBarID, ok := asObj.MaybeGetProperty("barId").Field().(ScalarField)
-		if !ok {
-			t.Fatal("missing field ID")
-		}
-
-		must(t, sBarID.SetGoValue("123"))
+		testPath(t, root,
+			tObjectProperty("sBar"),
+			tObjectProperty("barId"),
+			tSetScalar("123"),
+		)
 
 		if msg.SBar == nil {
 			t.Fatal("msg.SBar is nil")
@@ -76,14 +60,12 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a repeated leaf
-		sRepeated, ok := root.MaybeGetProperty("rString").Field().(ArrayOfScalarField)
-		if !ok {
-			t.Fatal("missing field")
-		}
-
-		must(t, sRepeated.AppendGoScalar("a"))
-
-		must(t, sRepeated.AppendGoScalar("b"))
+		testPath(t, root,
+			tObjectProperty("rString"),
+			tArrayOfScalar(),
+			tAppendScalar("a"),
+			tAppendScalar("b"),
+		)
 
 		assert.Equal(t, []string{"a", "b"}, msg.RString)
 	})
@@ -91,35 +73,22 @@ func TestSetter(t *testing.T) {
 	t.Run("repeated mutable", func(t *testing.T) {
 		root, msg := newRoot(t)
 
-		// Set a repeated mutable field
-		prop := root.MaybeGetProperty("rBars").Field().(ArrayOfObjectField)
-		if prop == nil {
-			t.Fatal("missing field rBar")
-		}
-		sRepeated, ok := prop.(MutableArrayField)
-		if !ok {
-			t.Fatalf("rBar is a %T", prop)
-		}
-
+		testPath(t, root,
+			tObjectProperty("rBars"),
+			tArrayElement(
+				tObjectProperty("barId"),
+				tSetScalar("1"),
+			),
+			tArrayElement(
+				tObjectProperty("barId"),
+				tSetScalar("2"),
+			),
+			tArrayElement(
+				tObjectProperty("barId"),
+				tSetScalar("3"),
+			),
+		)
 		ids := []string{"1", "2", "3"}
-		for _, id := range ids {
-			element := sRepeated.NewElement()
-			barField, ok := element.(ObjectField)
-			if !ok {
-				t.Fatalf("bar is a %T", element)
-			}
-			barObject, err := barField.Object()
-			if err != nil {
-				t.Fatalf("calling barField.Object(): %s", err)
-			}
-
-			idField, ok := barObject.MaybeGetProperty("barId").Field().(ScalarField)
-			if !ok {
-				t.Fatal("missing field id")
-			}
-			must(t, idField.SetGoValue(id))
-		}
-
 		if len(msg.RBars) != 3 {
 			t.Fatalf("expected 3 elements, got %d", len(msg.RBars))
 		}
@@ -134,9 +103,14 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a map scalar field
-		sMap, ok := root.MaybeGetProperty("mapStringString").Field().(MapOfScalarField)
+		sMapProp, err := root.GetProperty("mapStringString")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		sMap, ok := sMapProp.Field().(MapOfScalarField)
 		if !ok {
-			t.Fatal("missing field mString")
+			t.Fatalf("Wrong type for field: %T", sMapProp)
 		}
 
 		must(t, sMap.SetGoScalar("key", "value"))
@@ -144,67 +118,16 @@ func TestSetter(t *testing.T) {
 		assert.Equal(t, "value", msg.MapStringString["key"])
 	})
 
-	t.Run("nil optional", func(t *testing.T) {
-		root, msg := newRoot(t)
-
-		// Set a nil boolean field
-		sBool, ok := root.MaybeGetProperty("oBool").Field().(ScalarField)
-		if !ok {
-			t.Fatal("missing field sBool")
-		}
-
-		must(t, sBool.SetGoValue(true))
-		assert.Equal(t, ptr(true), msg.OBool)
-
-		var b *bool
-		must(t, sBool.SetGoValue(b))
-		assert.Nil(t, msg.OBool)
-
-		must(t, sBool.SetGoValue(true))
-		assert.Equal(t, ptr(true), msg.OBool)
-
-		must(t, sBool.SetGoValue(nil))
-		assert.Nil(t, msg.OBool)
-	})
-
-	t.Run("nil required", func(t *testing.T) {
-		root, msg := newRoot(t)
-
-		// Set a nil boolean field
-		sBool, ok := root.MaybeGetProperty("sBool").Field().(ScalarField)
-		if !ok {
-			t.Fatal("missing field sBool")
-		}
-
-		must(t, sBool.SetGoValue(true))
-		assert.Equal(t, true, msg.SBool)
-
-		var b *bool
-		must(t, sBool.SetGoValue(b))
-		assert.False(t, msg.SBool)
-
-		pr := msg.ProtoReflect()
-		assert.False(t, pr.Has(pr.Descriptor().Fields().ByJSONName("sBool")))
-
-		must(t, sBool.SetGoValue(true))
-		assert.Equal(t, true, msg.SBool)
-
-		must(t, sBool.SetGoValue(nil))
-		assert.False(t, msg.SBool)
-	})
-
 	t.Run("array of enum", func(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a repeated leaf
-		sRepeated, ok := root.MaybeGetProperty("rEnum").Field().(ArrayOfEnumField)
-		if !ok {
-			t.Fatal("missing field")
-		}
-
-		must(t, sRepeated.AppendEnumFromString("VALUE1"))
-
-		must(t, sRepeated.AppendEnumFromString("VALUE2"))
+		testPath(t, root,
+			tObjectProperty("rEnum"),
+			tArrayOfEnum(),
+			tAppendEnumFromString("VALUE1"),
+			tAppendEnumFromString("VALUE2"),
+		)
 
 		assert.Equal(t, []schema_testpb.Enum{
 			schema_testpb.Enum_ENUM_VALUE1,
@@ -215,15 +138,12 @@ func TestSetter(t *testing.T) {
 	t.Run("nested flattened", func(t *testing.T) {
 		root, msg := newRoot(t)
 
-		// skips the top level message, should find in the child.
-		field, ok := root.MaybeGetProperty("fieldFromFlattened").Field().(ScalarField)
-		if !ok {
-			t.Fatal("missing field fieldFromFlattened")
-		}
+		testPath(t, root,
+			tObjectProperty("fieldFromFlattened"),
+			tSetScalar("hello"),
+		)
 
-		if err := field.SetGoValue("hello"); err != nil {
-			t.Fatal(err)
-		}
+		// skips the top level message, should find in the child.
 
 		assert.NotNil(t, msg.Flattened)
 		assert.Equal(t, "hello", msg.Flattened.FieldFromFlattened)
@@ -233,7 +153,8 @@ func TestSetter(t *testing.T) {
 	t.Run("oneof", func(t *testing.T) {
 		root, msg := newRoot(t)
 
-		testPath(t, root.MaybeGetProperty("sImplicitOneof").Field(),
+		testPath(t, root,
+			tObjectProperty("sImplicitOneof"),
 			tOneofFullName("test.schema.v1.ImplicitOneof"),
 			tOneofProperty("ioBar"),
 			tObjectFullName("test.schema.v1.Bar"),
@@ -258,178 +179,77 @@ func TestSetter(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		cb = func(name string, params ...interface{}) {
-			t.Logf(name, params...)
-		}
-
-		testPath(t, root.MaybeGetProperty("entities").Field(),
-			tArrayElement(),
-			tObjectFullName("j5.sourcedef.v1.Entity"),
-			tObjectProperty("schemas"),
-			//tArrayElement(),
-			tOneofFullName("j5.sourcedef.v1.RootSchema"),
-			tOneofProperty("object"),
-			tObjectFullName("j5.sourcedef.v1.Object"),
-			tObjectProperty("def"),
-			tObjectFullName("j5.schema.v1.Object"),
+		testPath(t, root,
+			tObjectProperty("elements"),
+			tArrayElement(
+				tOneofFullName("j5.sourcedef.v1.RootElement"),
+				tOneofProperty("object"),
+				tObjectFullName("j5.sourcedef.v1.Object"),
+				// skip the 'def', is flattened
+				tObjectProperty("name"),
+				tSetScalar("foo"),
+			),
 		)
+
+		assert.Equal(t, "foo", msg.Elements[0].Type.(*sourcedef_j5pb.RootElement_Object).Object.Def.Name)
 
 	})
 
-}
+	t.Run("nil optional", func(t *testing.T) {
+		root, msg := newRoot(t)
 
-func toObj(t *testing.T, f Field) Object {
-	if f == nil {
-		t.Fatal("field is nil")
-	}
-	asObj, ok := f.(ObjectField)
-	if !ok {
-		t.Fatalf("expected ObjectField, got %T", f)
-	}
-	obj, err := asObj.Object()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return obj
-}
-
-func tObjectFullName(name string) tPathElement {
-	return func(t *testing.T, f Field) Field {
-		obj := toObj(t, f)
-		t.Logf("Assert object.Name()")
-		t.Logf("       Want name %s", name)
-		t.Logf("        Got name %s", obj.Name())
-		impl := obj.(*ObjectImpl)
-		descName := impl.value.descriptor.FullName()
-		t.Logf(" with descriptor %s", descName)
-
-		t.Logf(" field wrap desc %s\n", impl.value.descriptor.FullName())
-
-		if impl.value.parent == nil {
-			t.Logf("       parent is nil")
-		} else {
-			t.Logf("   parentMessage %s", impl.value.parent.descriptor.FullName())
+		// Set a nil boolean field
+		sBoolProp, err := root.GetProperty("oBool")
+		if err != nil {
+			t.Fatal("missing field sBool")
 		}
-		if impl.value.fieldInParent == nil {
-			t.Logf("fieldInParent is nil")
-		} else {
-			t.Logf("fieldInPareht    %s", impl.value.fieldInParent.FullName())
+		sBool, ok := sBoolProp.Field().(ScalarField)
+		if !ok {
+			t.Fatalf("Wrong type for field: %T", sBoolProp)
 		}
 
-		if name != obj.Name() {
-			t.Fatalf("expected %s, got %s", name, obj.Name())
-		}
-		if name != string(descName) {
-			t.Fatalf("FATAL message desc %s, got %s", name, descName)
-		}
-		return f
-	}
-}
+		must(t, sBool.SetGoValue(true))
+		assert.Equal(t, ptr(true), msg.OBool)
 
-func tOneofFullName(name string) tPathElement {
-	return func(t *testing.T, f Field) Field {
-		oneof := toOneof(t, f)
-		t.Logf("Assert oneof.Name()")
-		t.Logf("       Want name %s", name)
-		t.Logf("       Got  name %s", oneof.Name())
-		impl := oneof.(*OneofImpl)
-		descName := impl.value.descriptor.FullName()
-		t.Logf(" with descriptor %s", descName)
-		assert.Equal(t, name, oneof.Name())
-		return f
-	}
-}
+		var b *bool
+		must(t, sBool.SetGoValue(b))
+		assert.Nil(t, msg.OBool)
 
-func tObjectProperty(name string) tPathElement {
-	return func(t *testing.T, f Field) Field {
-		obj := toObj(t, f)
-		prop, err := obj.GetProperty(name)
+		must(t, sBool.SetGoValue(true))
+		assert.Equal(t, ptr(true), msg.OBool)
+
+		must(t, sBool.SetGoValue(nil))
+		assert.Nil(t, msg.OBool)
+	})
+
+	t.Run("nil required", func(t *testing.T) {
+		root, msg := newRoot(t)
+
+		// Set a nil boolean field
+		sBoolProp, err := root.GetProperty("sBool")
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Logf("found object property %s", name)
-		return prop.Field()
-	}
-}
-
-func toOneof(t *testing.T, f Field) Oneof {
-	if f == nil {
-		t.Fatal("field is nil")
-	}
-	asOneof, ok := f.(OneofField)
-	if !ok {
-		t.Fatalf("expected OneofField, got %T", f)
-	}
-	field := asOneof.(*oneofField)
-	asReal := field.value.(*realProtoMessageField)
-	t.Logf("Is a OneofField")
-	t.Logf("field      %s", asReal.fieldInParent.FullName())
-	t.Logf("in parent  %s", asReal.parent.descriptor.FullName())
-	obj, err := asOneof.Oneof()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return obj
-}
-
-func tOneofProperty(name string) tPathElement {
-	return func(t *testing.T, f Field) Field {
-		oneof := toOneof(t, f)
-		prop, err := oneof.GetProperty(name)
-		if err != nil {
-			t.Fatal(err)
-		}
-		t.Logf("found enum property %s", name)
-
-		return prop.Field()
-	}
-}
-
-func tIsScalar() tPathElement {
-	return func(t *testing.T, f Field) Field {
-		objField, ok := f.(ScalarField)
+		sBool, ok := sBoolProp.Field().(ScalarField)
 		if !ok {
-			t.Fatalf("expected ScalarField, got %T", f)
+			t.Fatalf("Wrong type for field: %T", sBoolProp)
 		}
-		return objField
-	}
-}
 
-func tSetScalar(v string) tPathElement {
-	return func(t *testing.T, f Field) Field {
-		objField, ok := f.(ScalarField)
-		if !ok {
-			t.Fatalf("expected ScalarField, got %T", f)
-		}
-		must(t, objField.SetGoValue(v))
-		return f
-	}
-}
+		must(t, sBool.SetGoValue(true))
+		assert.Equal(t, true, msg.SBool)
 
-func tArrayElement() tPathElement {
-	return func(t *testing.T, f Field) Field {
-		if f == nil {
-			t.Fatal("field is nil")
-		}
-		objField, ok := f.(MutableArrayField)
-		if !ok {
-			t.Fatalf("expected MutableArrayField, got %T", f)
-		}
-		t.Logf("new element")
-		return objField.NewElement()
-	}
-}
+		var b *bool
+		must(t, sBool.SetGoValue(b))
+		assert.False(t, msg.SBool)
 
-type tPathElement func(t *testing.T, f Field) Field
+		pr := msg.ProtoReflect()
+		assert.False(t, pr.Has(pr.Descriptor().Fields().ByJSONName("sBool")))
 
-func testPath(t *testing.T, field Field, elements ...tPathElement) Field {
-	t.Helper()
-	for _, el := range elements {
-		field = el(t, field)
-	}
-	return field
-}
+		must(t, sBool.SetGoValue(true))
+		assert.Equal(t, true, msg.SBool)
 
-func ptr[T any](t T) *T {
-	return &t
+		must(t, sBool.SetGoValue(nil))
+		assert.False(t, msg.SBool)
+	})
+
 }

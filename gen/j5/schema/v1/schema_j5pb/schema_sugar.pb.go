@@ -12,6 +12,7 @@ type IsField_Type = isField_Type
 type IsObjectField_Schema = isObjectField_Schema
 type IsOneofField_Schema = isOneofField_Schema
 type IsEnumField_Schema = isEnumField_Schema
+type IsKeyFormat_Type = isKeyFormat_Type
 
 // EntityPart
 const (
@@ -65,55 +66,5 @@ func (x *EntityPart) Scan(value interface{}) error {
 	}
 	val := EntityPart_value_either[strVal]
 	*x = EntityPart(val)
-	return nil
-}
-
-// KeyFormat
-const (
-	KeyFormat_UNSPECIFIED KeyFormat = 0
-	KeyFormat_UUID        KeyFormat = 1
-	KeyFormat_NATURAL_KEY KeyFormat = 2
-)
-
-var (
-	KeyFormat_name_short = map[int32]string{
-		0: "UNSPECIFIED",
-		1: "UUID",
-		2: "NATURAL_KEY",
-	}
-	KeyFormat_value_short = map[string]int32{
-		"UNSPECIFIED": 0,
-		"UUID":        1,
-		"NATURAL_KEY": 2,
-	}
-	KeyFormat_value_either = map[string]int32{
-		"UNSPECIFIED":            0,
-		"KEY_FORMAT_UNSPECIFIED": 0,
-		"UUID":                   1,
-		"KEY_FORMAT_UUID":        1,
-		"NATURAL_KEY":            2,
-		"KEY_FORMAT_NATURAL_KEY": 2,
-	}
-)
-
-// ShortString returns the un-prefixed string representation of the enum value
-func (x KeyFormat) ShortString() string {
-	return KeyFormat_name_short[int32(x)]
-}
-func (x KeyFormat) Value() (driver.Value, error) {
-	return []uint8(x.ShortString()), nil
-}
-func (x *KeyFormat) Scan(value interface{}) error {
-	var strVal string
-	switch vt := value.(type) {
-	case []uint8:
-		strVal = string(vt)
-	case string:
-		strVal = vt
-	default:
-		return fmt.Errorf("invalid type %T", value)
-	}
-	val := KeyFormat_value_either[strVal]
-	*x = KeyFormat(val)
 	return nil
 }

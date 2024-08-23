@@ -337,12 +337,14 @@ func TestUnmarshal(t *testing.T) {
 }
 
 func logIndent(t *testing.T, label, jsonStr string) {
+	t.Helper()
 	buffer := &bytes.Buffer{}
 	if err := json.Indent(buffer, []byte(jsonStr), " | ", "  "); err != nil {
 		t.Fatalf("invalid test case: %s", err)
 	}
 	t.Logf("%s \n | %s\n", label, buffer.String())
 }
+
 func TestScalars(t *testing.T) {
 	// TODO: The tests above should be rewritten to use this method, then retire
 	// testproto.

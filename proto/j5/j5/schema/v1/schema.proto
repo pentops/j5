@@ -3,6 +3,7 @@ syntax = "proto3";
 package j5.schema.v1;
 
 import "buf/validate/validate.proto";
+import "j5/ext/v1/annotations.proto";
 import "j5/list/v1/annotations.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
@@ -175,6 +176,34 @@ message StringField {
   }
 }
 
+message KeyField {
+  Rules rules = 1;
+  KeyFormat format = 2;
+
+  j5.list.v1.KeyRules list_rules = 3;
+
+  bool primary = 4;
+
+  message Rules {}
+}
+
+message KeyFormat {
+  option (j5.ext.v1.message).is_oneof_wrapper = true;
+  oneof type {
+    Informal informal = 1;
+    Custom custom = 2;
+    UUID uuid = 3;
+    UUID62 uuid62 = 4;
+  }
+
+  message Informal {}
+  message Custom {
+    string pattern = 1;
+  }
+  message UUID {}
+  message UUID62 {}
+}
+
 message FloatField {
   Format format = 1;
   Rules rules = 2;
@@ -248,23 +277,6 @@ message TimestampField {
   j5.list.v1.TimestampRules list_rules = 2;
 
   message Rules {}
-}
-
-message KeyField {
-  Rules rules = 1;
-  KeyFormat format = 2;
-  j5.list.v1.KeyRules list_rules = 3;
-
-  bool primary = 4;
-  string entity = 5;
-
-  message Rules {}
-}
-
-enum KeyFormat {
-  KEY_FORMAT_UNSPECIFIED = 0; // free text natural key
-  KEY_FORMAT_UUID = 1;
-  KEY_FORMAT_NATURAL_KEY = 2; // Format specified by an external system
 }
 
 message ObjectProperty {

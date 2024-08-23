@@ -1,6 +1,9 @@
 package j5reflect
 
-import "github.com/pentops/j5/internal/j5schema"
+import (
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/internal/j5schema"
+)
 
 type fieldBase struct {
 	schema *j5schema.ObjectProperty
@@ -10,12 +13,23 @@ func (f fieldBase) AsScalarField() ScalarField {
 	return nil
 }
 
+func (f fieldBase) Schema() *schema_j5pb.ObjectProperty {
+	return f.schema.ToJ5Proto()
+}
+
 func (f fieldBase) JSONName() string {
 	return f.schema.JSONName
 }
 
+func (f fieldBase) FullName() string {
+	if f.schema.Parent == nil {
+		return "?" + f.schema.JSONName
+	}
+	return f.schema.Parent.FullName() + "." + f.schema.JSONName
+}
+
 type objectProperty struct {
-	field *objectField
+	field ObjectField
 	fieldBase
 }
 
