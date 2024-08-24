@@ -15,16 +15,16 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 	enc.openObject()
 	defer enc.closeObject()
 
-	return fieldSet.RangeSetProperties(func(prop j5reflect.Property) error {
+	return fieldSet.RangeSetProperties(func(prop j5reflect.Field) error {
 		if !first {
 			enc.fieldSep()
 		}
 		first = false
-		if err := enc.fieldLabel(prop.JSONName()); err != nil {
+		if err := enc.fieldLabel(prop.NameInParent()); err != nil {
 			return err
 		}
 
-		if err := enc.encodeValue(prop.Field()); err != nil {
+		if err := enc.encodeValue(prop); err != nil {
 			return err
 		}
 
@@ -50,19 +50,19 @@ func (enc *encoder) encodeOneofBody(fieldSet j5reflect.Oneof) error {
 		return err
 	}
 
-	err = enc.addString(prop.JSONName())
+	err = enc.addString(prop.NameInParent())
 	if err != nil {
 		return err
 	}
 
 	enc.fieldSep()
 
-	err = enc.fieldLabel(prop.JSONName())
+	err = enc.fieldLabel(prop.NameInParent())
 	if err != nil {
 		return err
 	}
 
-	if err := enc.encodeValue(prop.Field()); err != nil {
+	if err := enc.encodeValue(prop); err != nil {
 		return err
 	}
 

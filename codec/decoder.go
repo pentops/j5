@@ -145,7 +145,7 @@ func (dec *decoder) decodeObject(object j5reflect.PropertySet) error {
 		if err != nil {
 			return newFieldError(keyTokenStr, "no such field")
 		}
-		if err := dec.decodeValue(prop.Field()); err != nil {
+		if err := dec.decodeValue(prop); err != nil {
 			return err
 		}
 		return nil
@@ -236,7 +236,7 @@ func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 		}
 		foundKeys = append(foundKeys, keyTokenStr)
 
-		if err := dec.decodeValue(matchedProperty.Field()); err != nil {
+		if err := dec.decodeValue(matchedProperty); err != nil {
 			return err
 		}
 
@@ -258,7 +258,7 @@ func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 		if err != nil {
 			return newFieldError(keyTokenStr, "no such key")
 		}
-		return matchedProperty.Field().SetDefault()
+		return matchedProperty.SetDefault()
 	}
 
 	if len(foundKeys) > 1 {

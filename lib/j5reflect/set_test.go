@@ -108,7 +108,7 @@ func TestSetter(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		sMap, ok := sMapProp.Field().(MapOfScalarField)
+		sMap, ok := sMapProp.(MapOfScalarField)
 		if !ok {
 			t.Fatalf("Wrong type for field: %T", sMapProp)
 		}
@@ -203,7 +203,7 @@ func TestSetter(t *testing.T) {
 		if err != nil {
 			t.Fatal("missing field sBool")
 		}
-		sBool, ok := sBoolProp.Field().(ScalarField)
+		sBool, ok := sBoolProp.(ScalarField)
 		if !ok {
 			t.Fatalf("Wrong type for field: %T", sBoolProp)
 		}
@@ -230,7 +230,7 @@ func TestSetter(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sBool, ok := sBoolProp.Field().(ScalarField)
+		sBool, ok := sBoolProp.(ScalarField)
 		if !ok {
 			t.Fatalf("Wrong type for field: %T", sBoolProp)
 		}

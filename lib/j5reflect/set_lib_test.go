@@ -108,7 +108,7 @@ func tObjectProperty(name string) tPathElement {
 			t.Fatal(err)
 		}
 		t.Logf("  found object property %s", name)
-		return prop.Field()
+		return prop
 	}
 }
 
@@ -148,7 +148,7 @@ func tOneofProperty(name string) tPathElement {
 		}
 		t.Logf("  found enum property %s", name)
 
-		return prop.Field()
+		return prop
 	}
 }
 

@@ -56,7 +56,7 @@ func (f fieldDefaults) NameInParent() string {
 	return f.context.nameInParent()
 }
 
-func (f fieldDefaults) setContext(c fieldContext) {
+func (f *fieldDefaults) setContext(c fieldContext) {
 	f.context = c
 }
 
