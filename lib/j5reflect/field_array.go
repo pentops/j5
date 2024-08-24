@@ -4,32 +4,10 @@ import (
 	"fmt"
 
 	"github.com/pentops/j5/internal/j5schema"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type arrayOfObjectField struct {
-	MutableArrayField
-}
-
-var _ ArrayOfObjectField = (*arrayOfObjectField)(nil)
-
-func (field *arrayOfObjectField) NewObjectElement() (Object, error) {
-	of := field.NewElement().(ObjectField)
-	return of.Object()
-}
-
-type arrayOfOneofField struct {
-	MutableArrayField
-}
-
-func (field *arrayOfOneofField) NewOneofElement() (Oneof, error) {
-	of := field.NewElement().(OneofField)
-	return of.Oneof()
-}
-
-var _ ArrayOfOneofField = (*arrayOfOneofField)(nil)
-
 type baseArrayField struct {
+	fieldDefaults
 	fieldInParent *realProtoMessageField
 	schema        *j5schema.ArrayField
 	factory       fieldFactory
@@ -89,6 +67,9 @@ func newArrayField(schema *j5schema.ArrayField, value *realProtoMessageField) (A
 	}
 
 	base := baseArrayField{
+		fieldDefaults: fieldDefaults{
+			fieldType: FieldTypeArray,
+		},
 		fieldInParent: value,
 		schema:        schema,
 		factory:       factory,
@@ -97,14 +78,14 @@ func newArrayField(schema *j5schema.ArrayField, value *realProtoMessageField) (A
 	switch st := schema.Schema.(type) {
 	case *j5schema.ObjectField:
 		return &arrayOfObjectField{
-			MutableArrayField: &mutableArrayField{
+			mutableArrayField: mutableArrayField{
 				baseArrayField: base,
 			},
 		}, nil
 
 	case *j5schema.OneofField:
 		return &arrayOfOneofField{
-			MutableArrayField: &mutableArrayField{
+			mutableArrayField: mutableArrayField{
 				baseArrayField: base,
 			},
 		}, nil
@@ -136,13 +117,6 @@ type mutableArrayField struct {
 
 var _ MutableArrayField = (*mutableArrayField)(nil)
 
-func (field *mutableArrayField) asProperty(base fieldBase) Property {
-	return &arrayProperty{
-		field:     field,
-		fieldBase: base,
-	}
-}
-
 func (field *mutableArrayField) NewElement() Field {
 	list := field.fieldInParent.getOrCreateMutable().List()
 	idx := list.Len()
@@ -163,47 +137,12 @@ type leafArrayField struct {
 	baseArrayField
 }
 
-func (field *leafArrayField) asProperty(base fieldBase) Property {
-	return &arrayProperty{
-		field:     field,
-		fieldBase: base,
-	}
-}
-
 func (field *leafArrayField) AppendGoValue(value interface{}) error {
-	return nil
-}
-
-type arrayOfScalarField struct {
-	leafArrayField
-	itemSchema *j5schema.ScalarSchema
-}
-
-var _ ArrayOfScalarField = (*arrayOfScalarField)(nil)
-
-func (field *arrayOfScalarField) AppendGoScalar(val interface{}) error {
 	list := field.fieldInParent.getOrCreateMutable().List()
-	value, err := scalarReflectFromGo(field.itemSchema.Proto, val)
+	reflectValue, err := scalarReflectFromGo(field.schema.Schema.ToJ5Field(), value)
 	if err != nil {
 		return err
 	}
-	list.Append(value)
+	list.Append(reflectValue)
 	return nil
-}
-
-type arrayOfEnumField struct {
-	leafArrayField
-	itemSchema *j5schema.EnumSchema
-}
-
-var _ ArrayOfEnumField = (*arrayOfEnumField)(nil)
-
-func (field *arrayOfEnumField) AppendEnumFromString(name string) error {
-	option := field.itemSchema.OptionByName(name)
-	if option != nil {
-		list := field.fieldInParent.getOrCreateMutable().List()
-		list.Append(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
-		return nil
-	}
-	return fmt.Errorf("enum value %s not found", name)
 }

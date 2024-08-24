@@ -16,6 +16,22 @@ message RootSchema {
   }
 }
 
+message ObjectProperty {
+  Field schema = 1;
+  string name = 3;
+  bool required = 4;
+  bool explicitly_optional = 5;
+  //bool read_only = 6;
+  //bool write_only = 7;
+  string description = 8;
+
+  // For flattened objects,
+  // Defines the path from the root proto message to the field. All but the last
+  // node will be message fields holding a message kind, and the last node is
+  // the field containing the property type.
+  repeated int32 proto_field = 11;
+}
+
 message Field {
   oneof type {
     // Special Cases
@@ -277,20 +293,4 @@ message TimestampField {
   j5.list.v1.TimestampRules list_rules = 2;
 
   message Rules {}
-}
-
-message ObjectProperty {
-  Field schema = 1;
-  string name = 3;
-  bool required = 4;
-  bool explicitly_optional = 5;
-  bool read_only = 6;
-  bool write_only = 7;
-  string description = 8;
-
-  // For flattened objects,
-  // Defines the path from the root proto message to the field. All but the last
-  // node will be message fields holding a message kind, and the last node is
-  // the field containing the property type.
-  repeated int32 proto_field = 11;
 }

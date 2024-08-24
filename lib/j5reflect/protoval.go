@@ -12,6 +12,7 @@ type protoValueContext interface {
 	isSet() bool
 	setValue(protoreflect.Value)
 	clearValue() error
+
 	getOrCreate() protoreflect.Value
 	getOrCreateMutable() protoreflect.Value
 	getOrCreateChildMessage() (*protoMessageWrapper, error)

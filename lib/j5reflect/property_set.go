@@ -10,7 +10,7 @@ import (
 
 // PropertySet is implemented by Oneofs, Objects and Maps with String keys.
 type PropertySet interface {
-	Name() string // Returns the full name of the entity wrapping the properties.
+	SchemaName() string // Returns the full name of the entity wrapping the properties.
 
 	RangeProperties(RangeCallback) error
 	RangeSetProperties(RangeCallback) error
@@ -21,7 +21,7 @@ type PropertySet interface {
 
 	// GetProperty returns the property with the given name in the schema for
 	// the property set. The property may not be set to a value.
-	GetProperty(name string) (Property, error)
+	GetProperty(name string) (Field, error)
 
 	ListPropertyNames() []string
 
@@ -36,19 +36,19 @@ func copyReflect(a, b protoreflect.Message) {
 }
 
 type propSet struct {
-	asMap    map[string]Property
-	asSlice  []Property
+	asMap    map[string]Field
+	asSlice  []Field
 	fullName string
 }
 
-func newPropSet(name string, props []Property) (*propSet, error) {
+func newPropSet(name string, props []Field) (*propSet, error) {
 	fs := &propSet{
-		asMap:    map[string]Property{},
+		asMap:    map[string]Field{},
 		fullName: name,
 	}
 
 	for _, prop := range props {
-		fs.asMap[prop.JSONName()] = prop
+		fs.asMap[prop.NameInParent()] = prop
 		fs.asSlice = append(fs.asSlice, prop)
 	}
 
@@ -57,14 +57,14 @@ func newPropSet(name string, props []Property) (*propSet, error) {
 
 func (*propSet) implementsPropertySet() {}
 
-func (fs *propSet) Name() string {
+func (fs *propSet) SchemaName() string {
 	return fs.fullName
 }
 
 func (fs *propSet) ListPropertyNames() []string {
 	names := make([]string, 0, len(fs.asSlice))
 	for _, prop := range fs.asSlice {
-		names = append(names, prop.JSONName())
+		names = append(names, prop.NameInParent())
 	}
 	return names
 
@@ -75,7 +75,7 @@ func (fs *propSet) HasProperty(name string) bool {
 	return ok
 }
 
-func (fs *propSet) GetProperty(name string) (Property, error) {
+func (fs *propSet) GetProperty(name string) (Field, error) {
 	prop, ok := fs.asMap[name]
 	if !ok {
 		return nil, fmt.Errorf("%s has no property %s", fs.fullName, name)
@@ -107,20 +107,20 @@ func (fs *propSet) RangeSetProperties(callback RangeCallback) error {
 	return nil
 }
 
-func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageWrapper) ([]Property, error) {
-	out := make([]Property, 0)
+func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageWrapper) ([]Field, error) {
+	out := make([]Field, 0)
 	var err error
 
 	for _, schema := range properties {
+		fieldContext := &propertyContext{
+			schema: schema,
+		}
+
 		if len(schema.ProtoField) == 0 {
 
 			// Then we have a 'fake' object, usually an exposed oneof.
 			// It shows as a object in clients, but in proto the fields are
 			// directly on the parent message.
-
-			fieldBase := fieldBase{
-				schema: schema,
-			}
 
 			switch wrapper := schema.Schema.(type) {
 			case *j5schema.ObjectField:
@@ -130,10 +130,9 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 				}
 				built := newObjectField(wrapper, msg.virtualField(preBuilt.propSet))
 				built._object = preBuilt
-				out = append(out, &objectProperty{
-					field:     built,
-					fieldBase: fieldBase,
-				})
+				built.setContext(fieldContext)
+
+				out = append(out, built)
 
 			case *j5schema.OneofField:
 
@@ -143,10 +142,8 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 				}
 				built := newOneofField(wrapper, msg.virtualField(preBuilt.propSet))
 				built._oneof = preBuilt
-				out = append(out, &oneofProperty{
-					field:     built,
-					fieldBase: fieldBase,
-				})
+				built.setContext(fieldContext)
+				out = append(out, built)
 
 			default:
 				return nil, fmt.Errorf("unsupported schema type %T for nested json", wrapper)
@@ -181,6 +178,9 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 		if err != nil {
 			return nil, patherr.Wrap(err, schema.JSONName)
 		}
+		built.setContext(&propertyContext{
+			schema: schema,
+		})
 
 		out = append(out, built)
 	}
@@ -188,10 +188,7 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 	return out, nil
 }
 
-func buildProperty(schema *j5schema.ObjectProperty, value *realProtoMessageField) (Property, error) {
-	fieldBase := fieldBase{
-		schema: schema,
-	}
+func buildProperty(schema *j5schema.ObjectProperty, value *realProtoMessageField) (Field, error) {
 	switch st := schema.Schema.(type) {
 
 	case *j5schema.ArrayField:
@@ -200,20 +197,14 @@ func buildProperty(schema *j5schema.ObjectProperty, value *realProtoMessageField
 			return nil, err
 		}
 
-		return &arrayProperty{
-			field:     field,
-			fieldBase: fieldBase,
-		}, nil
+		return field, nil
 
 	case *j5schema.MapField:
 		field, err := newMapField(st, value)
 		if err != nil {
 			return nil, err
 		}
-		return &mapProperty{
-			field:     field,
-			fieldBase: fieldBase,
-		}, nil
+		return field, nil
 
 	}
 
@@ -221,8 +212,7 @@ func buildProperty(schema *j5schema.ObjectProperty, value *realProtoMessageField
 	if err != nil {
 		return nil, err
 	}
-
-	field := ff.buildField(value).asProperty(fieldBase)
+	field := ff.buildField(value)
 
 	return field, nil
 

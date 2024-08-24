@@ -35,41 +35,8 @@
 package j5reflect
 
 import (
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5schema"
 )
-
-type Field interface {
-	Type() FieldType
-	IsSet() bool
-	SetDefault() error
-	asProperty(fieldBase) Property
-}
-
-type OneofField interface {
-	Field
-	Oneof() (Oneof, error)
-}
-
-type EnumField interface {
-	Field
-	GetValue() (EnumOption, error)
-	SetFromString(string) error
-}
-
-type EnumOption interface {
-	Name() string
-	Number() int32
-	Description() string
-}
-
-type ScalarField interface {
-	Field
-	//Schema() *j5schema.ScalarSchema
-	ToGoValue() (interface{}, error)
-	SetGoValue(value interface{}) error
-	SetASTValue(ASTValue) error
-}
 
 type ArrayField interface {
 	Field
@@ -83,22 +50,19 @@ type MutableArrayField interface {
 }
 
 type ArrayOfObjectField interface {
-	MutableArrayField
+	ArrayOfContainerField
 	NewObjectElement() (Object, error)
 }
 
 type ArrayOfOneofField interface {
-	MutableArrayField
+	ArrayOfContainerField
 	NewOneofElement() (Oneof, error)
 }
 
 type ArrayOfScalarField interface {
 	ArrayField
 	AppendGoScalar(value interface{}) error
-}
-
-type ArrayOfEnumField interface {
-	AppendEnumFromString(string) error
+	AppendASTValue(ASTValue) error
 }
 
 type MapField interface {
@@ -120,17 +84,4 @@ type MapOfScalarField interface {
 	SetGoScalar(key string, value interface{}) error
 }
 
-type MapOfEnumField interface {
-	SetEnum(key string, value string) error
-}
-
-type Property interface {
-	JSONName() string
-	FullName() string
-	Field() Field
-	IsSet() bool
-	AsScalarField() ScalarField
-	Schema() *schema_j5pb.ObjectProperty
-}
-
-type RangeCallback func(Property) error
+type RangeCallback func(Field) error

@@ -54,7 +54,7 @@ func tObjectFullName(name string) tPathElement {
 		t.Logf("T ObjectFullName")
 		obj := toObj(t, f)
 		t.Logf("       Want name %s", name)
-		t.Logf("        Got name %s", obj.Name())
+		t.Logf("        Got name %s", obj.SchemaName())
 		/*
 				impl := obj.(*ObjectImpl)
 				descName := impl.value.descriptor.FullName()
@@ -76,8 +76,8 @@ func tObjectFullName(name string) tPathElement {
 				t.Fatalf("FATAL message desc %s, got %s", name, descName)
 			}
 		*/
-		if name != obj.Name() {
-			t.Fatalf("expected %s, got %s", name, obj.Name())
+		if name != obj.SchemaName() {
+			t.Fatalf("expected %s, got %s", name, obj.SchemaName())
 		}
 		return f
 	}
@@ -89,11 +89,11 @@ func tOneofFullName(name string) tPathElement {
 		t.Logf("T OneofFullName %q", name)
 		oneof := toOneof(t, f)
 		t.Logf("       Want name %s", name)
-		t.Logf("       Got  name %s", oneof.Name())
+		t.Logf("       Got  name %s", oneof.SchemaName())
 		impl := oneof.(*OneofImpl)
 		descName := impl.value.descriptor.FullName()
 		t.Logf(" with descriptor %s", descName)
-		assert.Equal(t, name, oneof.Name())
+		assert.Equal(t, name, oneof.SchemaName())
 		return f
 	}
 }

@@ -12,7 +12,7 @@ type Object interface {
 }
 
 type ObjectField interface {
-	Field
+	ContainerField
 
 	// Object returns the existing object, or creates a new object up the chain,
 	// i.e. it sets default values for all object, oneof and map<string,x> nodes on
@@ -62,14 +62,8 @@ func (fs *ObjectImpl) HasAnyValue() bool {
 }
 
 type existingObjectField struct {
+	fieldDefaults
 	object *ObjectImpl
-}
-
-func (obj *existingObjectField) asProperty(base fieldBase) Property {
-	return &objectProperty{
-		field:     obj,
-		fieldBase: base,
-	}
 }
 
 func (obj *existingObjectField) Type() FieldType {
@@ -78,6 +72,18 @@ func (obj *existingObjectField) Type() FieldType {
 
 func (obj *existingObjectField) IsSet() bool {
 	return true
+}
+
+func (obj *existingObjectField) IsContainer() bool {
+	return true
+}
+
+func (obj *existingObjectField) AsContainer() (ContainerField, bool) {
+	return obj, true // returns self.
+}
+
+func (obj *existingObjectField) GetOrCreateContainer() (PropertySet, error) {
+	return obj.object, nil
 }
 
 func (obj *existingObjectField) Object() (Object, error) {
@@ -92,6 +98,7 @@ func (obj *existingObjectField) SetDefault() error {
 var _ ObjectField = (*existingObjectField)(nil)
 
 type objectField struct {
+	fieldDefaults
 	value         protoValueContext
 	_object       *ObjectImpl
 	_objectSchema *j5schema.ObjectSchema
@@ -101,6 +108,9 @@ var _ ObjectField = (*objectField)(nil)
 
 func newObjectField(fieldSchema *j5schema.ObjectField, value protoValueContext) *objectField {
 	of := &objectField{
+		fieldDefaults: fieldDefaults{
+			fieldType: FieldTypeObject,
+		},
 		value:         value,
 		_objectSchema: fieldSchema.Schema(),
 	}
@@ -111,13 +121,6 @@ func (obj *objectField) Type() FieldType {
 	return FieldTypeObject
 }
 
-func (obj *objectField) asProperty(base fieldBase) Property {
-	return &objectProperty{
-		field:     obj,
-		fieldBase: base,
-	}
-}
-
 func (obj *objectField) IsSet() bool {
 	return obj.value.isSet()
 }
@@ -125,6 +128,18 @@ func (obj *objectField) IsSet() bool {
 func (obj *objectField) SetDefault() error {
 	_ = obj.value.getOrCreateMutable()
 	return nil
+}
+
+func (obj *objectField) AsContainer() (ContainerField, bool) {
+	return obj, true
+}
+
+func (obj *objectField) GetOrCreateContainer() (PropertySet, error) {
+	val, err := obj.Object()
+	if err != nil {
+		return nil, err
+	}
+	return val, nil
 }
 
 func (obj *objectField) Object() (Object, error) {
@@ -140,4 +155,23 @@ func (obj *objectField) Object() (Object, error) {
 		obj._object = built
 	}
 	return obj._object, nil
+}
+
+type arrayOfObjectField struct {
+	mutableArrayField
+}
+
+var _ ArrayOfObjectField = (*arrayOfObjectField)(nil)
+
+func (field *arrayOfObjectField) NewObjectElement() (Object, error) {
+	of := field.NewElement().(ObjectField)
+	return of.Object()
+}
+
+func (field *arrayOfObjectField) NewContainerElement() (PropertySet, error) {
+	return field.NewObjectElement()
+}
+
+func (field *arrayOfObjectField) AsArrayOfContainer() (ArrayOfContainerField, bool) {
+	return field, true
 }

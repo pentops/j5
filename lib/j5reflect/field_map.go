@@ -11,13 +11,6 @@ type mutableMapField struct {
 	baseMapField
 }
 
-func (field *mutableMapField) asProperty(base fieldBase) Property {
-	return &mapProperty{
-		field:     field,
-		fieldBase: base,
-	}
-}
-
 var _ MutableMapField = (*mutableMapField)(nil)
 
 func (field *mutableMapField) NewValue(key string) Field {
@@ -59,6 +52,7 @@ func (field *mapOfOneofField) NewOneofValue(key string) (Oneof, error) {
 }
 
 type baseMapField struct {
+	fieldDefaults
 	fieldInParent *realProtoMessageField
 	schema        *j5schema.MapField
 	factory       fieldFactory
@@ -171,13 +165,6 @@ type leafMapField struct {
 }
 
 var _ MapField = (*leafMapField)(nil)
-
-func (field *leafMapField) asProperty(base fieldBase) Property {
-	return &mapProperty{
-		field:     field,
-		fieldBase: base,
-	}
-}
 
 func (field *leafMapField) setKey(key protoreflect.MapKey, val protoreflect.Value) {
 	mapVal := field.fieldInParent.getOrCreateMutable().Map()
