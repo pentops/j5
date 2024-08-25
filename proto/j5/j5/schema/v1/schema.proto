@@ -34,7 +34,7 @@ message Field {
     StringField string = 30;
     IntegerField integer = 31;
     FloatField float = 33;
-    BooleanField boolean = 34;
+    BoolField bool = 34;
     BytesField bytes = 35;
     DecimalField decimal = 36;
     DateField date = 37;
@@ -248,9 +248,9 @@ message IntegerField {
   message Ext {}
 }
 
-message BooleanField {
+message BoolField {
   Rules rules = 1;
-  j5.list.v1.BooleanRules list_rules = 2;
+  j5.list.v1.BoolRules list_rules = 2;
   Ext ext = 3;
 
   message Rules {

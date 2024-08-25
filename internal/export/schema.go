@@ -116,11 +116,11 @@ func (ri IntegerItem) TypeName() string {
 	return "integer"
 }
 
-type BooleanItem struct {
+type BoolItem struct {
 	Const Optional[bool] `json:"const,omitempty"`
 }
 
-func (ri BooleanItem) TypeName() string {
+func (ri BoolItem) TypeName() string {
 	return "boolean"
 }
 

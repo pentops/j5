@@ -223,7 +223,7 @@ func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Fie
 			Kind:         protoreflect.MessageKind,
 		}, nil
 
-	case *schema_j5pb.Field_Boolean:
+	case *schema_j5pb.Field_Bool:
 		return &ScalarSchema{
 			fieldContext: context,
 			Proto:        schema,

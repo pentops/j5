@@ -184,7 +184,7 @@ func (bb *builder) buildTypeName(currentPackage string, schema *schema_j5pb.Fiel
 			Pointer: false,
 		}, nil
 
-	case *schema_j5pb.Field_Boolean:
+	case *schema_j5pb.Field_Bool:
 		return &DataType{
 			Name:    "bool",
 			Pointer: false,

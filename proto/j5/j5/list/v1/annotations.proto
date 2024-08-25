@@ -44,7 +44,7 @@ message FieldConstraint {
     IntegerRules sint64 = 10;
     IntegerRules uint32 = 11;
     IntegerRules uint64 = 12;
-    BooleanRules bool = 13;
+    BoolRules bool = 13;
     StringRules string = 14;
 
     EnumRules enum = 20;
@@ -79,7 +79,7 @@ message FloatRules {
   SortingConstraint sorting = 11;
 }
 
-message BooleanRules {
+message BoolRules {
   FilteringConstraint filtering = 10;
 }
 

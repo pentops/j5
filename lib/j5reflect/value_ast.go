@@ -8,7 +8,7 @@ import (
 )
 
 type ASTValue interface {
-	AsBoolean() (bool, error)
+	AsBool() (bool, error)
 	AsString() (string, error)
 	AsInt(bits int) (int64, error)
 	AsUint(bits int) (uint64, error)
@@ -23,8 +23,8 @@ func scalarReflectFromAST(schema *schema_j5pb.Field, value ASTValue) (protorefle
 		// and hope for the best?
 		return pv, nil
 
-	case *schema_j5pb.Field_Boolean:
-		val, err := value.AsBoolean()
+	case *schema_j5pb.Field_Bool:
+		val, err := value.AsBool()
 		if err != nil {
 			return pv, err
 		}

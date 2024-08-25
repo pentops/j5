@@ -13,20 +13,24 @@ type WalkProperty struct {
 
 type WalkCallback func(schema WalkProperty) error
 
-func WalkSchemaFields(root RootSchema, callback WalkCallback) error {
-	err := walkSchemaFields(root, callback, nil)
+func WalkSchemaFields(root RootSchema, asClient bool, callback WalkCallback) error {
+	err := walkSchemaFields(root, asClient, callback, nil)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func walkSchemaFields(root RootSchema, callback WalkCallback, path []string) error {
+func walkSchemaFields(root RootSchema, asClient bool, callback WalkCallback, path []string) error {
 
 	var properties PropertySet
 	switch rt := root.(type) {
 	case *ObjectSchema:
-		properties = rt.Properties
+		if asClient {
+			properties = rt.ClientProperties()
+		} else {
+			properties = rt.Properties
+		}
 	case *OneofSchema:
 		properties = rt.Properties
 	case *EnumSchema:
@@ -46,11 +50,11 @@ func walkSchemaFields(root RootSchema, callback WalkCallback, path []string) err
 
 		switch st := prop.Schema.(type) {
 		case *ObjectField:
-			if err := walkSchemaFields(st.Ref.To, callback, propPath); err != nil {
+			if err := walkSchemaFields(st.Ref.To, asClient, callback, propPath); err != nil {
 				return err // not wrapped, the path is already in the error above
 			}
 		case *OneofField:
-			if err := walkSchemaFields(st.Ref.To, callback, propPath); err != nil {
+			if err := walkSchemaFields(st.Ref.To, asClient, callback, propPath); err != nil {
 				return err // not wrapped, the path is already in the error above
 			}
 		}

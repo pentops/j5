@@ -579,7 +579,7 @@ func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions)
 	case protoreflect.BoolKind:
 
 		boolConstraint := ext.validate.GetBool()
-		boolItem := &schema_j5pb.BooleanField{}
+		boolItem := &schema_j5pb.BoolField{}
 
 		if boolConstraint != nil {
 			if boolConstraint.Const != nil {
@@ -587,8 +587,8 @@ func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions)
 			}
 		}
 
-		return &schema_j5pb.Field_Boolean{
-			Boolean: boolItem,
+		return &schema_j5pb.Field_Bool{
+			Bool: boolItem,
 		}, nil
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:

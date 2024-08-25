@@ -29,7 +29,7 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 		// and hope for the best?
 		return pv, nil
 
-	case *schema_j5pb.Field_Boolean:
+	case *schema_j5pb.Field_Bool:
 		switch val := value.(type) {
 		case bool:
 			return protoreflect.ValueOfBool(val), nil
@@ -301,7 +301,7 @@ func scalarGoFromReflect(schema *schema_j5pb.Field, val protoreflect.Value) (int
 	case *schema_j5pb.Field_Any:
 		return AnyValue(val.Interface()), nil
 
-	case *schema_j5pb.Field_Boolean:
+	case *schema_j5pb.Field_Bool:
 		return val.Bool(), nil
 
 	case *schema_j5pb.Field_String_:

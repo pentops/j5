@@ -42,7 +42,7 @@ func baseTypeName(st schema_j5pb.IsField_Type) string {
 	switch st.(type) {
 	case *schema_j5pb.Field_Any:
 		return "any"
-	case *schema_j5pb.Field_Boolean:
+	case *schema_j5pb.Field_Bool:
 		return "bool"
 	case *schema_j5pb.Field_Bytes:
 		return "bytes"
