@@ -15,22 +15,6 @@ message RootSchema {
   }
 }
 
-message ObjectProperty {
-  Field schema = 1;
-  string name = 3;
-  bool required = 4;
-  bool explicitly_optional = 5;
-  //bool read_only = 6;
-  //bool write_only = 7;
-  string description = 8;
-
-  // For flattened objects,
-  // Defines the path from the root proto message to the field. All but the last
-  // node will be message fields holding a message kind, and the last node is
-  // the field containing the property type.
-  repeated int32 proto_field = 11;
-}
-
 message Field {
   oneof type {
     // Special Cases
@@ -217,34 +201,6 @@ message StringField {
   message Ext {}
 }
 
-message KeyField {
-  Rules rules = 1;
-  KeyFormat format = 2;
-  j5.list.v1.KeyRules list_rules = 3;
-  Ext ext = 4;
-
-  message Rules {}
-  message Ext {
-    bool primary_key = 4;
-  }
-}
-
-message KeyFormat {
-  oneof type {
-    Informal informal = 1;
-    Custom custom = 2;
-    UUID uuid = 3;
-    UUID62 uuid62 = 4;
-  }
-
-  message Informal {}
-  message Custom {
-    string pattern = 1;
-  }
-  message UUID {}
-  message UUID62 {}
-}
-
 message FloatField {
   Format format = 1;
   Rules rules = 2;
@@ -338,4 +294,48 @@ message TimestampField {
 
   message Rules {}
   message Ext {}
+}
+
+message KeyField {
+  Rules rules = 1;
+  KeyFormat format = 2;
+  j5.list.v1.KeyRules list_rules = 3;
+  Ext ext = 4;
+
+  message Rules {}
+  message Ext {
+    bool primary_key = 4;
+  }
+}
+
+message KeyFormat {
+  oneof type {
+    Informal informal = 1;
+    Custom custom = 2;
+    UUID uuid = 3;
+    UUID62 uuid62 = 4;
+  }
+
+  message Informal {}
+  message Custom {
+    string pattern = 1;
+  }
+  message UUID {}
+  message UUID62 {}
+}
+
+message ObjectProperty {
+  Field schema = 1;
+  string name = 3;
+  bool required = 4;
+  bool explicitly_optional = 5;
+  //bool read_only = 6;
+  //bool write_only = 7;
+  string description = 8;
+
+  // For flattened objects,
+  // Defines the path from the root proto message to the field. All but the last
+  // node will be message fields holding a message kind, and the last node is
+  // the field containing the property type.
+  repeated int32 proto_field = 11;
 }
