@@ -3,6 +3,7 @@ package j5reflect
 import (
 	"fmt"
 
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5schema"
 )
 
@@ -46,7 +47,11 @@ func (field *baseArrayField) Range(cb func(Field) error) error {
 			prList: list,
 			idx:    i,
 		}
-		property := field.factory.buildField(wrapped)
+		context := &arrayContext{
+			index:  i,
+			schema: field.schema,
+		}
+		property := field.factory.buildField(context, wrapped)
 
 		err := cb(property)
 		if err != nil {
@@ -56,7 +61,7 @@ func (field *baseArrayField) Range(cb func(Field) error) error {
 	return nil
 }
 
-func newArrayField(schema *j5schema.ArrayField, value *realProtoMessageField) (ArrayField, error) {
+func newArrayField(context fieldContext, schema *j5schema.ArrayField, value *realProtoMessageField) (ArrayField, error) {
 	if !value.fieldInParent.IsList() {
 		return nil, fmt.Errorf("ArrayField is not a list")
 	}
@@ -69,6 +74,7 @@ func newArrayField(schema *j5schema.ArrayField, value *realProtoMessageField) (A
 	base := baseArrayField{
 		fieldDefaults: fieldDefaults{
 			fieldType: FieldTypeArray,
+			context:   context,
 		},
 		fieldInParent: value,
 		schema:        schema,
@@ -129,7 +135,11 @@ func (field *mutableArrayField) NewElement() Field {
 		prList: list,
 		idx:    idx,
 	}
-	property := field.factory.buildField(element)
+	context := &arrayContext{
+		index:  idx,
+		schema: field.schema,
+	}
+	property := field.factory.buildField(context, element)
 	return property
 }
 
@@ -145,4 +155,39 @@ func (field *leafArrayField) AppendGoValue(value interface{}) error {
 	}
 	list.Append(reflectValue)
 	return nil
+}
+
+type arrayContext struct {
+	index  int
+	schema *j5schema.ArrayField
+}
+
+var _ fieldContext = (*arrayContext)(nil)
+
+func (c *arrayContext) nameInParent() string {
+	return fmt.Sprintf("%d", c.index)
+}
+
+func (c *arrayContext) indexInParent() int {
+	return c.index
+}
+
+func (c *arrayContext) fieldSchema() schema_j5pb.IsField_Type {
+	return c.schema.Schema.ToJ5Field().Type
+}
+
+func (c *arrayContext) typeName() string {
+	return c.schema.Schema.TypeName()
+}
+
+func (c *arrayContext) fullTypeName() string {
+	return fmt.Sprintf("%s.[]%s", c.schema.FullName(), c.schema.Schema.TypeName())
+}
+
+func (c *arrayContext) propertySchema() *schema_j5pb.ObjectProperty {
+	return nil
+}
+
+func (c *arrayContext) protoPath() []string {
+	return []string{fmt.Sprintf("%d", c.index)}
 }

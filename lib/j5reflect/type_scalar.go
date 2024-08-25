@@ -16,11 +16,18 @@ type scalarField struct {
 	schema *j5schema.ScalarSchema
 }
 
-func newScalarField(schema *j5schema.ScalarSchema, value protoValueContext) *scalarField {
+type scalarFieldFactory struct {
+	schema *j5schema.ScalarSchema
+}
 
+func (f *scalarFieldFactory) buildField(field fieldContext, value protoValueContext) Field {
 	return &scalarField{
+		fieldDefaults: fieldDefaults{
+			fieldType: FieldTypeScalar,
+			context:   field,
+		},
 		field:  value,
-		schema: schema,
+		schema: f.schema,
 	}
 }
 
@@ -39,10 +46,6 @@ func (sf *scalarField) AsScalar() (ScalarField, bool) {
 
 func (sf *scalarField) Type() FieldType {
 	return FieldTypeScalar
-}
-
-func (sf *scalarField) Schema() *j5schema.ScalarSchema {
-	return sf.schema
 }
 
 func (sf *scalarField) SetASTValue(value ASTValue) error {
@@ -76,22 +79,24 @@ type arrayOfScalarField struct {
 
 var _ ArrayOfScalarField = (*arrayOfScalarField)(nil)
 
-func (field *arrayOfScalarField) AppendGoScalar(val interface{}) error {
+func (field *arrayOfScalarField) AppendGoScalar(val interface{}) (int, error) {
 	list := field.fieldInParent.getOrCreateMutable().List()
 	value, err := scalarReflectFromGo(field.itemSchema.Proto, val)
 	if err != nil {
-		return err
+		return -1, err
 	}
 	list.Append(value)
-	return nil
+	idx := list.Len() - 1
+	return idx, nil
 }
 
-func (field *arrayOfScalarField) AppendASTValue(value ASTValue) error {
+func (field *arrayOfScalarField) AppendASTValue(value ASTValue) (int, error) {
 	reflectValue, err := scalarReflectFromAST(field.itemSchema.Proto, value)
 	if err != nil {
-		return err
+		return -1, err
 	}
 	list := field.fieldInParent.getOrCreateMutable().List()
 	list.Append(reflectValue)
-	return nil
+	idx := list.Len() - 1
+	return idx, nil
 }

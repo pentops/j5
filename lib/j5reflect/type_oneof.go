@@ -61,12 +61,23 @@ type oneofField struct {
 	_oneof *OneofImpl
 }
 
+type oneofFieldFactory struct {
+	schema *j5schema.OneofField
+}
+
+var _ fieldFactory = (*oneofFieldFactory)(nil)
+
+func (f *oneofFieldFactory) buildField(context fieldContext, value protoValueContext) Field {
+	return newOneofField(context, f.schema, value)
+}
+
 var _ OneofField = (*oneofField)(nil)
 
-func newOneofField(schema *j5schema.OneofField, value protoValueContext) *oneofField {
+func newOneofField(context fieldContext, schema *j5schema.OneofField, value protoValueContext) *oneofField {
 	return &oneofField{
 		fieldDefaults: fieldDefaults{
 			fieldType: FieldTypeOneof,
+			context:   context,
 		},
 		value:  value,
 		schema: schema,
@@ -118,14 +129,18 @@ type arrayOfOneofField struct {
 	mutableArrayField
 }
 
-func (field *arrayOfOneofField) NewOneofElement() (Oneof, error) {
+func (field *arrayOfOneofField) NewOneofElement() (Oneof, int, error) {
 	of := field.NewElement().(OneofField)
-	return of.Oneof()
+	ofb, err := of.Oneof()
+	if err != nil {
+		return nil, -1, err
+	}
+	return ofb, of.IndexInParent(), nil
 }
 
 var _ ArrayOfOneofField = (*arrayOfOneofField)(nil)
 
-func (field *arrayOfOneofField) NewContainerElement() (PropertySet, error) {
+func (field *arrayOfOneofField) NewContainerElement() (PropertySet, int, error) {
 	return field.NewOneofElement()
 }
 

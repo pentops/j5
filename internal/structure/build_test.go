@@ -239,7 +239,6 @@ func testAPI() *source_j5pb.API {
 									Name:        "testField",
 									Description: "",
 									Required:    false,
-									WriteOnly:   false,
 									Schema: &schema_j5pb.Field{
 										Type: &schema_j5pb.Field_String_{
 											String_: &schema_j5pb.StringField{},
@@ -308,7 +307,7 @@ func testAPI() *source_j5pb.API {
 						Enum: &schema_j5pb.Enum{
 							Name:   "TestEnum",
 							Prefix: "TEST_ENUM_",
-							Options: []*schema_j5pb.Enum_Value{{
+							Options: []*schema_j5pb.Enum_Option{{
 								Name:   "UNSPECIFIED",
 								Number: 0,
 							}, {

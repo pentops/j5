@@ -261,8 +261,6 @@ func convertObjectItem(item *schema_j5pb.Object) (*Schema, error) {
 		}
 		out.Properties[prop.Name] = &ObjectProperty{
 			Schema:      schema,
-			ReadOnly:    prop.ReadOnly,
-			WriteOnly:   prop.WriteOnly,
 			Description: prop.Description,
 			Optional:    prop.ExplicitlyOptional,
 		}
@@ -292,8 +290,6 @@ func convertOneofItem(item *schema_j5pb.Oneof) (*Schema, error) {
 		}
 		out.Properties[prop.Name] = &ObjectProperty{
 			Schema:      schema,
-			ReadOnly:    prop.ReadOnly,
-			WriteOnly:   prop.WriteOnly,
 			Description: prop.Description,
 			Optional:    prop.ExplicitlyOptional,
 		}

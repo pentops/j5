@@ -20,6 +20,7 @@ const (
 	EntityPart_KEYS        EntityPart = 1
 	EntityPart_STATE       EntityPart = 2
 	EntityPart_EVENT       EntityPart = 3
+	EntityPart_DATA        EntityPart = 4
 )
 
 var (
@@ -28,12 +29,14 @@ var (
 		1: "KEYS",
 		2: "STATE",
 		3: "EVENT",
+		4: "DATA",
 	}
 	EntityPart_value_short = map[string]int32{
 		"UNSPECIFIED": 0,
 		"KEYS":        1,
 		"STATE":       2,
 		"EVENT":       3,
+		"DATA":        4,
 	}
 	EntityPart_value_either = map[string]int32{
 		"UNSPECIFIED":             0,
@@ -44,6 +47,8 @@ var (
 		"ENTITY_PART_STATE":       2,
 		"EVENT":                   3,
 		"ENTITY_PART_EVENT":       3,
+		"DATA":                    4,
+		"ENTITY_PART_DATA":        4,
 	}
 )
 

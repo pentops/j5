@@ -3,6 +3,7 @@ package j5reflect
 import (
 	"fmt"
 
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -21,19 +22,63 @@ const (
 
 type fieldContext interface {
 	nameInParent() string
+	indexInParent() int
+
+	fieldSchema() schema_j5pb.IsField_Type
+	propertySchema() *schema_j5pb.ObjectProperty
+	typeName() string
+	fullTypeName() string
+	protoPath() []string
 }
 
 type propertyContext struct {
-	schema *j5schema.ObjectProperty
+	walkedProtoPath []string
+	schema          *j5schema.ObjectProperty
 }
 
 func (c propertyContext) nameInParent() string {
 	return c.schema.JSONName
 }
 
+func (c propertyContext) indexInParent() int {
+	return -1
+}
+
+func (c propertyContext) propertySchema() *schema_j5pb.ObjectProperty {
+	return c.schema.ToJ5Proto()
+}
+
+func (c propertyContext) fieldSchema() schema_j5pb.IsField_Type {
+	return c.schema.Schema.ToJ5Field().Type
+}
+
+func (c propertyContext) typeName() string {
+	return c.schema.Schema.TypeName()
+}
+
+func (c propertyContext) fullTypeName() string {
+	return fmt.Sprintf("%s.%s", c.schema.FullName(), c.schema.JSONName)
+}
+
+func (c propertyContext) protoPath() []string {
+	return c.walkedProtoPath
+}
+
 type fieldDefaults struct {
 	fieldType FieldType
 	context   fieldContext
+}
+
+func (fd fieldDefaults) Type() FieldType {
+	return fd.fieldType
+}
+
+func (fd fieldDefaults) TypeName() string {
+	return fd.context.typeName()
+}
+
+func (fd fieldDefaults) FullTypeName() string {
+	return fd.context.fullTypeName()
 }
 
 func (fieldDefaults) AsContainer() (ContainerField, bool) {
@@ -56,12 +101,25 @@ func (f fieldDefaults) NameInParent() string {
 	return f.context.nameInParent()
 }
 
-func (f *fieldDefaults) setContext(c fieldContext) {
-	f.context = c
+func (f fieldDefaults) IndexInParent() int {
+	return f.context.indexInParent()
+}
+
+func (f fieldDefaults) PropertySchema() *schema_j5pb.ObjectProperty {
+	return f.context.propertySchema()
+}
+
+func (f fieldDefaults) Schema() schema_j5pb.IsField_Type {
+	return f.context.fieldSchema()
+}
+
+func (f fieldDefaults) ProtoPath() []string {
+	return f.context.protoPath()
 }
 
 type Field interface {
 	Type() FieldType
+	TypeName() string
 	IsSet() bool
 	SetDefault() error
 
@@ -70,7 +128,14 @@ type Field interface {
 	// Map<string>x, the key
 	// Arrays, the index as a string
 	NameInParent() string
-	setContext(c fieldContext)
+
+	// IndexInParent returns -1 for non array fields
+	IndexInParent() int
+	ProtoPath() []string
+	FullTypeName() string
+
+	Schema() schema_j5pb.IsField_Type
+	PropertySchema() *schema_j5pb.ObjectProperty
 
 	// Fighting with go typing here, the implementations of these return
 	// themselves and true.
@@ -87,43 +152,11 @@ type ContainerField interface {
 
 type ArrayOfContainerField interface {
 	MutableArrayField
-	NewContainerElement() (PropertySet, error)
+	NewContainerElement() (PropertySet, int, error)
 }
 
 type fieldFactory interface {
-	buildField(value protoValueContext) Field
-}
-
-type objectFieldFactory struct {
-	schema *j5schema.ObjectField
-}
-
-func (f *objectFieldFactory) buildField(value protoValueContext) Field {
-	return newObjectField(f.schema, value)
-}
-
-type oneofFieldFactory struct {
-	schema *j5schema.OneofField
-}
-
-func (f *oneofFieldFactory) buildField(value protoValueContext) Field {
-	return newOneofField(f.schema, value)
-}
-
-type enumFieldFactory struct {
-	schema *j5schema.EnumField
-}
-
-func (f *enumFieldFactory) buildField(value protoValueContext) Field {
-	return newEnumField(f.schema, value)
-}
-
-type scalarFieldFactory struct {
-	schema *j5schema.ScalarSchema
-}
-
-func (f *scalarFieldFactory) buildField(value protoValueContext) Field {
-	return newScalarField(f.schema, value)
+	buildField(field fieldContext, value protoValueContext) Field
 }
 
 func newFieldFactory(schema j5schema.FieldSchema, field protoreflect.FieldDescriptor) (fieldFactory, error) {

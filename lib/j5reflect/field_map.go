@@ -3,6 +3,7 @@ package j5reflect
 import (
 	"fmt"
 
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -25,7 +26,11 @@ func (field *mutableMapField) NewValue(key string) Field {
 		key:   keyVal,
 		prMap: mapVal,
 	}
-	property := field.factory.buildField(wrapped)
+	context := &mapContext{
+		name:   key,
+		schema: field.schema,
+	}
+	property := field.factory.buildField(context, wrapped)
 	return property
 }
 
@@ -94,14 +99,18 @@ func (field *baseMapField) Range(cb func(string, Field) error) error {
 			key:   key,
 			prMap: mapVal,
 		}
-		itemField := field.factory.buildField(wrapped)
+		context := &mapContext{
+			name:   keyStr,
+			schema: field.schema,
+		}
+		itemField := field.factory.buildField(context, wrapped)
 		outerErr = cb(keyStr, itemField)
 		return outerErr == nil
 	})
 	return outerErr
 }
 
-func newMapField(schema *j5schema.MapField, value *realProtoMessageField) (MapField, error) {
+func newMapField(context fieldContext, schema *j5schema.MapField, value *realProtoMessageField) (MapField, error) {
 	if !value.fieldInParent.IsMap() {
 		return nil, fmt.Errorf("MapField is not a map")
 	}
@@ -112,6 +121,10 @@ func newMapField(schema *j5schema.MapField, value *realProtoMessageField) (MapFi
 	}
 
 	base := baseMapField{
+		fieldDefaults: fieldDefaults{
+			fieldType: FieldTypeMap,
+			context:   context,
+		},
 		fieldInParent: value,
 		schema:        schema,
 		factory:       factory,
@@ -199,4 +212,37 @@ func (field *mapOfEnumField) SetEnum(key string, value string) error {
 
 	field.setKey(protoreflect.ValueOfString(key).MapKey(), protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
 	return nil
+}
+
+type mapContext struct {
+	name   string
+	schema *j5schema.MapField
+}
+
+var _ fieldContext = (*mapContext)(nil)
+
+func (c *mapContext) nameInParent() string {
+	return c.name
+}
+
+func (c *mapContext) indexInParent() int {
+	return -1
+}
+
+func (c *mapContext) fieldSchema() schema_j5pb.IsField_Type {
+	return c.schema.Schema.ToJ5Field().Type
+}
+func (c *mapContext) typeName() string {
+	return c.schema.Schema.TypeName()
+}
+func (c *mapContext) propertySchema() *schema_j5pb.ObjectProperty {
+	return nil
+}
+
+func (c *mapContext) protoPath() []string {
+	return []string{c.name}
+}
+
+func (c *mapContext) fullTypeName() string {
+	return fmt.Sprintf("%s.{}%s", c.schema.FullName(), c.schema.Schema.TypeName())
 }

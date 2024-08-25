@@ -3,7 +3,6 @@ syntax = "proto3";
 package j5.schema.v1;
 
 import "buf/validate/validate.proto";
-import "j5/ext/v1/annotations.proto";
 import "j5/list/v1/annotations.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
@@ -75,17 +74,18 @@ message ObjectField {
     Object object = 2;
   }
 
-  bool additional_properties = 4;
   Rules rules = 5;
+  Ext ext = 6;
 
   // When true, the fields of the child message are flattened into the parent
   // message in JSON encoding and client schemas.
-  bool flatten = 6;
+  bool flatten = 7;
 
   message Rules {
     optional uint64 min_properties = 1;
     optional uint64 max_properties = 2;
   }
+  message Ext {}
 }
 
 message Object {
@@ -110,6 +110,7 @@ enum EntityPart {
   ENTITY_PART_KEYS = 1;
   ENTITY_PART_STATE = 2;
   ENTITY_PART_EVENT = 3;
+  ENTITY_PART_DATA = 4;
 }
 
 message OneofField {
@@ -120,7 +121,10 @@ message OneofField {
 
   Rules rules = 4;
   j5.list.v1.OneofRules list_rules = 5;
+  Ext ext = 6;
+
   message Rules {}
+  message Ext {}
 }
 
 // Similar to ObjectItem (it is an object in JSON Schema), but where exactly one
@@ -140,22 +144,22 @@ message EnumField {
 
   Rules rules = 4;
   j5.list.v1.EnumRules list_rules = 5;
+  Ext ext = 6;
 
   message Rules {
     repeated string in = 1;
     repeated string not_in = 2;
   }
+  message Ext {}
 }
 
 message Enum {
   string name = 1;
   string description = 2;
-
   string prefix = 3;
 
-  repeated Value options = 4;
-
-  message Value {
+  repeated Option options = 4;
+  message Option {
     string name = 1;
     int32 number = 2;
     string description = 3;
@@ -165,6 +169,13 @@ message Enum {
 message ArrayField {
   Rules rules = 1;
   Field items = 2;
+  Ext ext = 3;
+
+  message Ext {
+    // The name of the singular form of the array item, used in documentation and
+    // block parsing.
+    optional string single_form = 3;
+  }
 
   message Rules {
     optional uint64 min_items = 1;
@@ -177,34 +188,48 @@ message MapField {
   Field item_schema = 1;
   Field key_schema = 2;
   Rules rules = 3;
-  message Rules {}
+  Ext ext = 4;
+
+  message Rules {
+    optional uint64 min_pairs = 1;
+    optional uint64 max_pairs = 2;
+  }
+
+  message Ext {
+    // The name of the singular form of the map key, used in documentation and
+    // block parsing.
+    optional string key_single_form = 3;
+  }
 }
 
 message StringField {
   optional string format = 1;
   Rules rules = 3;
   list.v1.OpenTextRules list_rules = 4;
+  Ext ext = 5;
 
   message Rules {
     optional string pattern = 1;
     optional uint64 min_length = 2;
     optional uint64 max_length = 3;
   }
+
+  message Ext {}
 }
 
 message KeyField {
   Rules rules = 1;
   KeyFormat format = 2;
-
   j5.list.v1.KeyRules list_rules = 3;
-
-  bool primary = 4;
+  Ext ext = 4;
 
   message Rules {}
+  message Ext {
+    bool primary_key = 4;
+  }
 }
 
 message KeyFormat {
-  option (j5.ext.v1.message).is_oneof_wrapper = true;
   oneof type {
     Informal informal = 1;
     Custom custom = 2;
@@ -224,6 +249,7 @@ message FloatField {
   Format format = 1;
   Rules rules = 2;
   j5.list.v1.FloatRules list_rules = 3;
+  Ext ext = 4;
 
   enum Format {
     FORMAT_UNSPECIFIED = 0;
@@ -238,12 +264,14 @@ message FloatField {
     optional double maximum = 4;
     optional double multiple_of = 5;
   }
+  message Ext {}
 }
 
 message IntegerField {
   Format format = 1;
   Rules rules = 2;
   j5.list.v1.IntegerRules list_rules = 3;
+  Ext ext = 4;
 
   enum Format {
     FORMAT_UNSPECIFIED = 0;
@@ -260,37 +288,54 @@ message IntegerField {
     optional int64 maximum = 4;
     optional int64 multiple_of = 5;
   }
+
+  message Ext {}
 }
 
 message BooleanField {
   Rules rules = 1;
   j5.list.v1.BooleanRules list_rules = 2;
+  Ext ext = 3;
 
   message Rules {
     optional bool const = 1;
   }
+
+  message Ext {}
 }
 
 message BytesField {
   Rules rules = 1;
+  Ext ext = 4;
+
   message Rules {}
+
+  message Ext {}
 }
 
 message DecimalField {
   Rules rules = 1;
+  // TODO: List
+  Ext ext = 3;
 
   message Rules {}
+  message Ext {}
 }
 
 message DateField {
   Rules rules = 1;
+  // TODO: List
+  Ext ext = 3;
 
   message Rules {}
+  message Ext {}
 }
 
 message TimestampField {
   Rules rules = 1;
   j5.list.v1.TimestampRules list_rules = 2;
+  Ext ext = 3;
 
   message Rules {}
+  message Ext {}
 }

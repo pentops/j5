@@ -62,7 +62,7 @@ func TestConvertSchema(t *testing.T) {
 				Enum: &schema_j5pb.EnumField{
 					Schema: &schema_j5pb.EnumField_Enum{
 						Enum: &schema_j5pb.Enum{
-							Options: []*schema_j5pb.Enum_Value{{
+							Options: []*schema_j5pb.Enum_Option{{
 								Name:        "FOO",
 								Description: "Foo Description",
 							}, {

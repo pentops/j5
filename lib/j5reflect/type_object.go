@@ -106,15 +106,24 @@ type objectField struct {
 
 var _ ObjectField = (*objectField)(nil)
 
-func newObjectField(fieldSchema *j5schema.ObjectField, value protoValueContext) *objectField {
+func newObjectField(context fieldContext, fieldSchema *j5schema.ObjectField, value protoValueContext) *objectField {
 	of := &objectField{
 		fieldDefaults: fieldDefaults{
 			fieldType: FieldTypeObject,
+			context:   context,
 		},
 		value:         value,
 		_objectSchema: fieldSchema.Schema(),
 	}
 	return of
+}
+
+type objectFieldFactory struct {
+	schema *j5schema.ObjectField
+}
+
+func (f *objectFieldFactory) buildField(context fieldContext, value protoValueContext) Field {
+	return newObjectField(context, f.schema, value)
 }
 
 func (obj *objectField) Type() FieldType {
@@ -139,6 +148,7 @@ func (obj *objectField) GetOrCreateContainer() (PropertySet, error) {
 	if err != nil {
 		return nil, err
 	}
+	_ = obj.value.getOrCreateMutable()
 	return val, nil
 }
 
@@ -163,12 +173,16 @@ type arrayOfObjectField struct {
 
 var _ ArrayOfObjectField = (*arrayOfObjectField)(nil)
 
-func (field *arrayOfObjectField) NewObjectElement() (Object, error) {
+func (field *arrayOfObjectField) NewObjectElement() (Object, int, error) {
 	of := field.NewElement().(ObjectField)
-	return of.Object()
+	ofb, err := of.Object()
+	if err != nil {
+		return nil, -1, err
+	}
+	return ofb, of.IndexInParent(), nil
 }
 
-func (field *arrayOfObjectField) NewContainerElement() (PropertySet, error) {
+func (field *arrayOfObjectField) NewContainerElement() (PropertySet, int, error) {
 	return field.NewObjectElement()
 }
 

@@ -128,9 +128,8 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 				if err != nil {
 					return nil, patherr.Wrap(err, schema.JSONName)
 				}
-				built := newObjectField(wrapper, msg.virtualField(preBuilt.propSet))
+				built := newObjectField(fieldContext, wrapper, msg.virtualField(preBuilt.propSet))
 				built._object = preBuilt
-				built.setContext(fieldContext)
 
 				out = append(out, built)
 
@@ -140,9 +139,8 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 				if err != nil {
 					return nil, patherr.Wrap(err, schema.JSONName)
 				}
-				built := newOneofField(wrapper, msg.virtualField(preBuilt.propSet))
+				built := newOneofField(fieldContext, wrapper, msg.virtualField(preBuilt.propSet))
 				built._oneof = preBuilt
-				built.setContext(fieldContext)
 				out = append(out, built)
 
 			default:
@@ -163,6 +161,7 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 			if fd.Kind() != protoreflect.MessageKind {
 				return nil, fmt.Errorf("field %s is not a message but has nested types", fd.FullName())
 			}
+			fieldContext.walkedProtoPath = append(fieldContext.walkedProtoPath, fd.JSONName())
 			walkMessage, err = walkMessage.fieldAsWrapper(fd)
 			if err != nil {
 				return nil, err
@@ -173,14 +172,12 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 		if err != nil {
 			return nil, err
 		}
+		fieldContext.walkedProtoPath = append(fieldContext.walkedProtoPath, fieldValue.fieldInParent.JSONName())
 
-		built, err := buildProperty(schema, fieldValue)
+		built, err := buildProperty(fieldContext, schema, fieldValue)
 		if err != nil {
 			return nil, patherr.Wrap(err, schema.JSONName)
 		}
-		built.setContext(&propertyContext{
-			schema: schema,
-		})
 
 		out = append(out, built)
 	}
@@ -188,11 +185,11 @@ func collectProperties(properties []*j5schema.ObjectProperty, msg *protoMessageW
 	return out, nil
 }
 
-func buildProperty(schema *j5schema.ObjectProperty, value *realProtoMessageField) (Field, error) {
+func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value *realProtoMessageField) (Field, error) {
 	switch st := schema.Schema.(type) {
 
 	case *j5schema.ArrayField:
-		field, err := newArrayField(st, value)
+		field, err := newArrayField(context, st, value)
 		if err != nil {
 			return nil, err
 		}
@@ -200,7 +197,7 @@ func buildProperty(schema *j5schema.ObjectProperty, value *realProtoMessageField
 		return field, nil
 
 	case *j5schema.MapField:
-		field, err := newMapField(st, value)
+		field, err := newMapField(context, st, value)
 		if err != nil {
 			return nil, err
 		}
@@ -212,8 +209,7 @@ func buildProperty(schema *j5schema.ObjectProperty, value *realProtoMessageField
 	if err != nil {
 		return nil, err
 	}
-	field := ff.buildField(value)
-
+	field := ff.buildField(context, value)
 	return field, nil
 
 }

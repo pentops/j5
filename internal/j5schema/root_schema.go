@@ -91,8 +91,8 @@ func (eo *EnumOption) Description() string {
 	return eo.description
 }
 
-func (eo *EnumOption) ToJ5EnumValue() *schema_j5pb.Enum_Value {
-	return &schema_j5pb.Enum_Value{
+func (eo *EnumOption) ToJ5EnumValue() *schema_j5pb.Enum_Option {
+	return &schema_j5pb.Enum_Option{
 		Name:        eo.name,
 		Number:      eo.number,
 		Description: eo.description,
@@ -106,6 +106,8 @@ type EnumSchema struct {
 	NamePrefix string
 	Options    []*EnumOption //schema_j5pb.Enum_Value
 }
+
+var _ RootSchema = (*EnumSchema)(nil)
 
 func (s *EnumSchema) OptionByName(name string) *EnumOption {
 	shortName := strings.TrimPrefix(name, s.NamePrefix)
@@ -127,7 +129,7 @@ func (s *EnumSchema) OptionByNumber(num int32) *EnumOption {
 }
 
 func (s *EnumSchema) ToJ5Root() *schema_j5pb.RootSchema {
-	options := make([]*schema_j5pb.Enum_Value, len(s.Options))
+	options := make([]*schema_j5pb.Enum_Option, len(s.Options))
 	for idx, opt := range s.Options {
 		options[idx] = opt.ToJ5EnumValue()
 	}
@@ -300,8 +302,6 @@ func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 		Name:               prop.JSONName,
 		Required:           prop.Required,
 		ExplicitlyOptional: prop.ExplicitlyOptional,
-		ReadOnly:           prop.ReadOnly,
-		WriteOnly:          prop.WriteOnly,
 		Description:        prop.Description,
 		ProtoField:         fieldPath,
 	}

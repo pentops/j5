@@ -51,18 +51,18 @@ type MutableArrayField interface {
 
 type ArrayOfObjectField interface {
 	ArrayOfContainerField
-	NewObjectElement() (Object, error)
+	NewObjectElement() (Object, int, error)
 }
 
 type ArrayOfOneofField interface {
 	ArrayOfContainerField
-	NewOneofElement() (Oneof, error)
+	NewOneofElement() (Oneof, int, error)
 }
 
 type ArrayOfScalarField interface {
 	ArrayField
-	AppendGoScalar(value interface{}) error
-	AppendASTValue(ASTValue) error
+	AppendGoScalar(value interface{}) (int, error)
+	AppendASTValue(ASTValue) (int, error)
 }
 
 type MapField interface {

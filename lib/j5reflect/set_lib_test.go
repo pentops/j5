@@ -217,7 +217,8 @@ func tAppendScalar(v interface{}) tPathElement {
 		if !ok {
 			t.Fatalf("expected ArrayOfScalarField, got %T", f)
 		}
-		must(t, objField.AppendGoScalar(v))
+		_, err := objField.AppendGoScalar(v)
+		must(t, err)
 		return f
 	}
 }
@@ -242,7 +243,8 @@ func tAppendEnumFromString(v string) tPathElement {
 		if !ok {
 			t.Fatalf("expected ArrayOfEnumField, got %T", f)
 		}
-		must(t, objField.AppendEnumFromString(v))
+		_, err := objField.AppendEnumFromString(v)
+		must(t, err)
 		return f
 	}
 }

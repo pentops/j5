@@ -3,4 +3,4 @@
 package list_j5pb
 
 type IsFilter_Type = isFilter_Type
-type IsField_Type = isField_Type
+type IsFieldType_Type = isFieldType_Type

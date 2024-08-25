@@ -342,30 +342,18 @@ func (dec *decoder) decodeArrayField(field j5reflect.ArrayField) error {
 				return unexpectedTokenError(tok, "scalar")
 			}
 
-			return field.AppendGoScalar(tok)
-
-		case j5reflect.ArrayOfEnumField:
-			tok, err := dec.Token()
-			if err != nil {
-				return err
-			}
-
-			str, ok := tok.(string)
-			if !ok {
-				return unexpectedTokenError(tok, "string")
-			}
-
-			return field.AppendEnumFromString(str)
+			_, err = field.AppendGoScalar(tok)
+			return err
 
 		case j5reflect.ArrayOfObjectField:
-			subMsg, err := field.NewObjectElement()
+			subMsg, _, err := field.NewObjectElement()
 			if err != nil {
 				return err
 			}
 			return dec.decodeObject(subMsg)
 
 		case j5reflect.ArrayOfOneofField:
-			subMsg, err := field.NewOneofElement()
+			subMsg, _, err := field.NewOneofElement()
 			if err != nil {
 				return err
 			}

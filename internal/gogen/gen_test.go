@@ -91,7 +91,7 @@ func TestTestProtoGen(t *testing.T) {
 						Enum: &schema_j5pb.Enum{
 							Name:   "TestEnum",
 							Prefix: "TEST_ENUM_",
-							Options: []*schema_j5pb.Enum_Value{{
+							Options: []*schema_j5pb.Enum_Option{{
 								Name:   "UNSPECIFIED",
 								Number: 0,
 							}, {

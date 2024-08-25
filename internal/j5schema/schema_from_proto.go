@@ -185,32 +185,31 @@ func isOneofWrapper(src protoreflect.MessageDescriptor) bool {
 }
 
 func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*OneofSchema, error) {
-	properties, err := ss.messageProperties(srcMsg)
+	oneofSchema := &OneofSchema{
+		rootSchema: ss.schemaRootFromProto(srcMsg),
+		// TODO: Rules
+	}
+
+	properties, err := ss.messageProperties(oneofSchema, srcMsg)
 	if err != nil {
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
 
-	oos := &OneofSchema{
-		rootSchema: ss.schemaRootFromProto(srcMsg),
-		Properties: properties,
-		// TODO: Rules
-	}
-	for _, prop := range properties {
-		prop.Parent = oos
-	}
-	return oos, nil
+	oneofSchema.Properties = properties
+
+	return oneofSchema, nil
 }
 
 func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*ObjectSchema, error) {
-	properties, err := ss.messageProperties(srcMsg)
+	objectSchema := &ObjectSchema{
+		rootSchema: ss.schemaRootFromProto(srcMsg),
+		// TODO: Rules
+	}
+	properties, err := ss.messageProperties(objectSchema, srcMsg)
 	if err != nil {
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
-	objectSchema := &ObjectSchema{
-		rootSchema: ss.schemaRootFromProto(srcMsg),
-		Properties: properties,
-		// TODO: Rules
-	}
+	objectSchema.Properties = properties
 
 	entity, err := findPSMOptions(srcMsg)
 	if err != nil {
@@ -220,12 +219,7 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*Ob
 		objectSchema.Entity = entity
 	}
 
-	for _, prop := range properties {
-		prop.Parent = objectSchema
-	}
-
 	return objectSchema, nil
-
 }
 
 func findPSMOptions(srcMsg protoreflect.MessageDescriptor) (*schema_j5pb.EntityObject, error) {
@@ -266,7 +260,7 @@ func findPSMOptions(srcMsg protoreflect.MessageDescriptor) (*schema_j5pb.EntityO
 	}, nil
 }
 
-func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*ObjectProperty, error) {
+func (ss *Package) messageProperties(parent RootSchema, src protoreflect.MessageDescriptor) ([]*ObjectProperty, error) {
 
 	properties := make([]*ObjectProperty, 0, src.Fields().Len())
 
@@ -302,6 +296,7 @@ func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*Obj
 		}
 
 		prop := &ObjectProperty{
+			Parent:      parent,
 			JSONName:    jsonFieldName(oneof.Name()),
 			Description: commentDescription(src),
 			Schema: &OneofField{
@@ -317,14 +312,48 @@ func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*Obj
 	for ii := 0; ii < src.Fields().Len(); ii++ {
 		field := src.Fields().Get(ii)
 
+		context := fieldContext{
+			parent:       parent,
+			nameInParent: string(field.Name()),
+		}
+
 		if field.IsList() {
-			prop, err := ss.buildSchemaProperty(field)
+			ext := getProtoFieldExtensions(field)
+
+			arrayField := &ArrayField{
+				fieldContext: context,
+				Ext:          ext.j5.GetArray(),
+			}
+
+			childContext := fieldContext{
+				parent:       arrayField,
+				nameInParent: "[]",
+			}
+
+			childExt := protoFieldExtensions{}
+
+			repeatedValidate := ext.validate.GetRepeated()
+			if repeatedValidate != nil {
+				arrayField.Rules = &schema_j5pb.ArrayField_Rules{
+					MinItems:    repeatedValidate.MinItems,
+					MaxItems:    repeatedValidate.MaxItems,
+					UniqueItems: repeatedValidate.Unique,
+				}
+				childExt.validate = ext.validate.GetRepeated().GetItems()
+			}
+
+			fieldSchema, err := ss.buildSchema(childContext, field, childExt)
 			if err != nil {
 				return nil, patherr.Wrap(err, string(field.Name()))
 			}
-			// TODO: Rules
-			prop.Schema = &ArrayField{
-				Schema: prop.Schema,
+
+			arrayField.Schema = fieldSchema
+
+			prop := &ObjectProperty{
+				ProtoField:  []protoreflect.FieldNumber{field.Number()},
+				JSONName:    string(field.JSONName()),
+				Description: commentDescription(src),
+				Schema:      arrayField,
 			}
 
 			properties = append(properties, prop)
@@ -332,27 +361,54 @@ func (ss *Package) messageProperties(src protoreflect.MessageDescriptor) ([]*Obj
 
 		}
 		if field.IsMap() {
-			// TODO: Check that the map key is a string
+			if field.MapKey().Kind() != protoreflect.StringKind {
+				return nil, fmt.Errorf("map keys must be strings for J5")
+			}
 
-			valueProp, err := ss.buildSchemaProperty(field.MapValue())
+			ext := getProtoFieldExtensions(field)
+
+			mapField := &MapField{
+				fieldContext: context,
+				Ext:          ext.j5.GetMap(),
+			}
+
+			childContext := fieldContext{
+				parent:       mapField,
+				nameInParent: "{}",
+			}
+
+			childExt := protoFieldExtensions{}
+
+			mapValidate := ext.validate.GetMap()
+			if mapValidate != nil {
+				mapField.Rules = &schema_j5pb.MapField_Rules{
+					MinPairs: mapValidate.MinPairs,
+					MaxPairs: mapValidate.MaxPairs,
+				}
+				if mapValidate.Values != nil {
+					childExt.validate = mapValidate.Values
+				}
+			}
+
+			valueSchema, err := ss.buildSchema(childContext, field.MapValue(), childExt)
 			if err != nil {
 				return nil, patherr.Wrap(err, string(field.Name()))
 			}
 
-			src := field
+			mapField.Schema = valueSchema
+
 			prop := &ObjectProperty{
-				ProtoField:  []protoreflect.FieldNumber{src.Number()},
-				JSONName:    string(src.JSONName()),
+				ProtoField:  []protoreflect.FieldNumber{field.Number()},
+				JSONName:    string(field.JSONName()),
 				Description: commentDescription(src),
-				Schema: &MapField{
-					Schema: valueProp.Schema,
-				},
+				Schema:      mapField,
+				Parent:      parent,
 			}
 			properties = append(properties, prop)
 			continue
 		}
 
-		prop, err := ss.buildSchemaProperty(field)
+		prop, err := ss.buildSchemaProperty(context, field)
 		if err != nil {
 			return nil, patherr.Wrap(err, string(field.Name()))
 		}
@@ -463,17 +519,12 @@ func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensi
 	return exts
 }
 
-func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
-	schemaProto := &schema_j5pb.Field{}
+func (pkg *Package) buildSchemaProperty(context fieldContext, src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
 
 	prop := &ObjectProperty{
 		JSONName:    string(src.JSONName()),
 		ProtoField:  []protoreflect.FieldNumber{src.Number()},
 		Description: commentDescription(src),
-		Schema: &ScalarSchema{
-			Proto: schemaProto,
-			Kind:  src.Kind(),
-		},
 	}
 
 	ext := getProtoFieldExtensions(src)
@@ -483,25 +534,50 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 		prop.ExplicitlyOptional = true
 	}
 
+	fieldSchema, err := pkg.buildSchema(context, src, ext)
+	if err != nil {
+		return nil, err
+	}
+	prop.Schema = fieldSchema
+	return prop, nil
+}
+
+func (pkg *Package) buildSchema(context fieldContext, src protoreflect.FieldDescriptor, ext protoFieldExtensions) (FieldSchema, error) {
+
+	switch src.Kind() {
+	case protoreflect.MessageKind:
+		return buildMessageFieldSchema(pkg, context, src, ext)
+
+	case protoreflect.EnumKind:
+		return buildEnumFieldSchema(pkg, context, src, ext)
+	}
+
+	inner, err := buildScalarType(src, ext)
+	if err != nil {
+		return nil, err
+	}
+
+	schemaProto := &schema_j5pb.Field{
+		Type: inner,
+	}
+	scalar := &ScalarSchema{
+		fieldContext: context,
+		Kind:         src.Kind(),
+		Proto:        schemaProto,
+	}
+
+	return scalar, nil
+}
+
+func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
+
 	switch src.Kind() {
 
-	case protoreflect.MessageKind:
-		schema, err := buildMessageFieldSchema(pkg, src, ext)
-		if err != nil {
-			return nil, err
-		}
-		prop.Schema = schema
-		return prop, nil
-
 	case protoreflect.StringKind:
-		schema, err := buildFromStringProto(src, ext)
-		if err != nil {
-			return nil, err
-		}
-		prop.Schema = schema
-		return prop, nil
+		return buildFromStringProto(src, ext)
 
 	case protoreflect.BoolKind:
+
 		boolConstraint := ext.validate.GetBool()
 		boolItem := &schema_j5pb.BooleanField{}
 
@@ -510,11 +586,10 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 				boolItem.Rules.Const = boolConstraint.Const
 			}
 		}
-		schemaProto.Type = &schema_j5pb.Field_Boolean{
+
+		return &schema_j5pb.Field_Boolean{
 			Boolean: boolItem,
-		}
-		prop.Required = true
-		return prop, nil
+		}, nil
 
 	case protoreflect.Int32Kind, protoreflect.Sint32Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
@@ -551,14 +626,13 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			}
 		}
 
-		schemaProto.Type = &schema_j5pb.Field_Integer{
+		return &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
 				Format:    schema_j5pb.IntegerField_FORMAT_INT32,
 				Rules:     integerRules,
 				ListRules: ext.list.GetInt32(),
 			},
-		}
-		return prop, nil
+		}, nil
 
 	case protoreflect.Uint32Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
@@ -595,14 +669,13 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			}
 		}
 
-		schemaProto.Type = &schema_j5pb.Field_Integer{
+		return &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
 				Format:    schema_j5pb.IntegerField_FORMAT_UINT32,
 				Rules:     integerRules,
 				ListRules: ext.list.GetUint32(),
 			},
-		}
-		return prop, nil
+		}, nil
 
 	case protoreflect.Int64Kind, protoreflect.Sint64Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
@@ -639,14 +712,13 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			}
 		}
 
-		schemaProto.Type = &schema_j5pb.Field_Integer{
+		return &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
 				Format:    schema_j5pb.IntegerField_FORMAT_INT64,
 				Rules:     integerRules,
 				ListRules: ext.list.GetInt64(),
 			},
-		}
-		return prop, nil
+		}, nil
 
 	case protoreflect.Uint64Kind:
 		var integerRules *schema_j5pb.IntegerField_Rules
@@ -683,14 +755,13 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			}
 		}
 
-		schemaProto.Type = &schema_j5pb.Field_Integer{
+		return &schema_j5pb.Field_Integer{
 			Integer: &schema_j5pb.IntegerField{
 				Format:    schema_j5pb.IntegerField_FORMAT_UINT64,
 				Rules:     integerRules,
 				ListRules: ext.list.GetInt64(),
 			},
-		}
-		return prop, nil
+		}, nil
 
 	case protoreflect.FloatKind:
 		var numberRules *schema_j5pb.FloatField_Rules
@@ -727,14 +798,13 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			}
 		}
 
-		schemaProto.Type = &schema_j5pb.Field_Float{
+		return &schema_j5pb.Field_Float{
 			Float: &schema_j5pb.FloatField{
 				Format:    schema_j5pb.FloatField_FORMAT_FLOAT32,
 				Rules:     numberRules,
 				ListRules: ext.list.GetFloat(),
 			},
-		}
-		return prop, nil
+		}, nil
 
 	case protoreflect.Sfixed64Kind, protoreflect.Fixed64Kind, protoreflect.DoubleKind:
 		var numberRules *schema_j5pb.FloatField_Rules
@@ -771,67 +841,22 @@ func (pkg *Package) buildSchemaProperty(src protoreflect.FieldDescriptor) (*Obje
 			}
 		}
 
-		schemaProto.Type = &schema_j5pb.Field_Float{
+		return &schema_j5pb.Field_Float{
 			Float: &schema_j5pb.FloatField{
 				Format:    schema_j5pb.FloatField_FORMAT_FLOAT64,
 				Rules:     numberRules,
 				ListRules: ext.list.GetDouble(),
 			},
-		}
-		return prop, nil
+		}, nil
 
 	case protoreflect.BytesKind:
-		schemaProto.Type = &schema_j5pb.Field_Bytes{
+
+		return &schema_j5pb.Field_Bytes{
 			Bytes: &schema_j5pb.BytesField{
 				Rules: &schema_j5pb.BytesField_Rules{},
 			},
-		}
-		return prop, nil
+		}, nil
 
-	case protoreflect.EnumKind:
-		ref, didExist := newRefPlaceholder(pkg.PackageSet, src.Enum())
-		if !didExist {
-			built, err := pkg.buildEnum(src.Enum())
-			if err != nil {
-				return nil, err
-			}
-			ref.To = built
-		}
-
-		var rules *schema_j5pb.EnumField_Rules
-		if vc := ext.validate.GetEnum(); vc != nil {
-			enumSchema := ref.To.(*EnumSchema)
-			rules = &schema_j5pb.EnumField_Rules{}
-			if vc.In != nil {
-				for _, num := range vc.In {
-					opt := enumSchema.OptionByNumber(num)
-					if opt == nil {
-						return nil, fmt.Errorf("enum value %d not found", num)
-					}
-					rules.In = append(rules.In, opt.name)
-				}
-			}
-			if vc.NotIn != nil {
-				for _, num := range vc.NotIn {
-					opt := enumSchema.OptionByNumber(num)
-					if opt == nil {
-						if num == 0 {
-							continue // _UNSPECIFIED is being excluded already
-						}
-						return nil, fmt.Errorf("enum value %d not found", num)
-					}
-					rules.NotIn = append(rules.NotIn, opt.name)
-				}
-
-			}
-		}
-		prop.Schema = &EnumField{
-			Ref:       ref,
-			ListRules: ext.list.GetEnum(),
-			Rules:     rules,
-		}
-
-		return prop, nil
 	default:
 		/* Not Supported in J5:
 		Sfixed32Kind Kind = 15
@@ -953,7 +978,7 @@ func wktSchema(src protoreflect.MessageDescriptor, listConstraint *list_j5pb.Fie
 	return nil, false
 }
 
-func buildMessageFieldSchema(pkg *Package, src protoreflect.FieldDescriptor, ext protoFieldExtensions) (FieldSchema, error) {
+func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflect.FieldDescriptor, ext protoFieldExtensions) (FieldSchema, error) {
 	flatten := false
 	if ext.j5 != nil {
 		if msgOptions := ext.j5.GetMessage(); msgOptions != nil {
@@ -995,15 +1020,64 @@ func buildMessageFieldSchema(pkg *Package, src protoreflect.FieldDescriptor, ext
 	}
 	if isOneofWrapper {
 		return &OneofField{
-			Ref: ref,
+			fieldContext: context,
+			Ref:          ref,
 		}, nil
 	}
 	return &ObjectField{
-		Ref:     ref,
-		Flatten: flatten,
+		fieldContext: context,
+		Ref:          ref,
+		Flatten:      flatten,
 	}, nil
 }
-func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (*ScalarSchema, error) {
+
+func buildEnumFieldSchema(pkg *Package, context fieldContext, src protoreflect.FieldDescriptor, ext protoFieldExtensions) (*EnumField, error) {
+	ref, didExist := newRefPlaceholder(pkg.PackageSet, src.Enum())
+	if !didExist {
+		built, err := pkg.buildEnum(src.Enum())
+		if err != nil {
+			return nil, err
+		}
+		ref.To = built
+	}
+
+	var rules *schema_j5pb.EnumField_Rules
+	if vc := ext.validate.GetEnum(); vc != nil {
+		enumSchema := ref.To.(*EnumSchema)
+		rules = &schema_j5pb.EnumField_Rules{}
+		if vc.In != nil {
+			for _, num := range vc.In {
+				opt := enumSchema.OptionByNumber(num)
+				if opt == nil {
+					return nil, fmt.Errorf("enum value %d not found", num)
+				}
+				rules.In = append(rules.In, opt.name)
+			}
+		}
+		if vc.NotIn != nil {
+			for _, num := range vc.NotIn {
+				opt := enumSchema.OptionByNumber(num)
+				if opt == nil {
+					if num == 0 {
+						continue // _UNSPECIFIED is being excluded already
+					}
+					return nil, fmt.Errorf("enum value %d not found", num)
+				}
+				rules.NotIn = append(rules.NotIn, opt.name)
+			}
+
+		}
+	}
+
+	return &EnumField{
+		fieldContext: context,
+		Ref:          ref,
+		ListRules:    ext.list.GetEnum(),
+		Rules:        rules,
+	}, nil
+}
+
+func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
 	stringItem := &schema_j5pb.StringField{}
 
 	looksLikeKey := false
@@ -1099,7 +1173,7 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		}
 	}
 
-	psmKeyExt := proto.GetExtension(src.Options(), ext_j5pb.E_Key).(*ext_j5pb.KeyFieldOptions)
+	psmKeyExt := proto.GetExtension(src.Options(), ext_j5pb.E_Key).(*ext_j5pb.PSMKeyFieldOptions)
 
 	if openText := listRules.GetOpenText(); openText != nil {
 		if stringItem.Format != nil {
@@ -1120,24 +1194,28 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		looksLikeKey = true
 	}
 
+	keyFieldOpt := ext.j5.GetKey()
+	if keyFieldOpt != nil {
+		looksLikeKey = true
+	}
+
 	if !looksLikeKey {
-		return &ScalarSchema{
-			Kind: src.Kind(),
-			Proto: &schema_j5pb.Field{
-				Type: &schema_j5pb.Field_String_{
-					String_: stringItem,
-				},
-			},
+		return &schema_j5pb.Field_String_{
+			String_: stringItem,
 		}, nil
 	}
 
 	if psmKeyExt == nil {
-		psmKeyExt = &ext_j5pb.KeyFieldOptions{}
+		psmKeyExt = &ext_j5pb.PSMKeyFieldOptions{}
+	}
+	if keyFieldOpt == nil {
+		keyFieldOpt = &schema_j5pb.KeyField_Ext{}
 	}
 
-	keyField := &schema_j5pb.KeyField{
+	keyFieldOpt.PrimaryKey = keyFieldOpt.PrimaryKey || psmKeyExt.PrimaryKey
 
-		Primary:   psmKeyExt.PrimaryKey,
+	keyField := &schema_j5pb.KeyField{
+		Ext:       keyFieldOpt,
 		ListRules: fkRules,
 	}
 
@@ -1160,13 +1238,8 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		}
 	}
 
-	return &ScalarSchema{
-		Kind: src.Kind(),
-		Proto: &schema_j5pb.Field{
-			Type: &schema_j5pb.Field_Key{
-				Key: keyField,
-			},
-		},
+	return &schema_j5pb.Field_Key{
+		Key: keyField,
 	}, nil
 
 }

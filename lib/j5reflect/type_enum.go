@@ -15,8 +15,9 @@ type EnumField interface {
 
 type ArrayOfEnumField interface {
 	ArrayOfScalarField
-	AppendEnumFromString(string) error
+	AppendEnumFromString(string) (int, error)
 }
+
 type MapOfEnumField interface {
 	SetEnum(key string, value string) error
 }
@@ -27,6 +28,21 @@ type EnumOption interface {
 	Description() string
 }
 
+type enumFieldFactory struct {
+	schema *j5schema.EnumField
+}
+
+func (factory *enumFieldFactory) buildField(context fieldContext, value protoValueContext) Field {
+	return &enumField{
+		value: value,
+		fieldDefaults: fieldDefaults{
+			fieldType: FieldTypeEnum,
+			context:   context,
+		},
+		schema: factory.schema,
+	}
+}
+
 type enumField struct {
 	fieldDefaults
 	value  protoValueContext
@@ -34,13 +50,6 @@ type enumField struct {
 }
 
 var _ EnumField = (*enumField)(nil)
-
-func newEnumField(schema *j5schema.EnumField, value protoValueContext) *enumField {
-	return &enumField{
-		value:  value,
-		schema: schema,
-	}
-}
 
 func (ef *enumField) IsSet() bool {
 	return ef.value.isSet()
@@ -92,6 +101,7 @@ func (ef *enumField) SetGoValue(value interface{}) error {
 	case *string:
 		if v == nil {
 			ef.value.setValue(protoreflect.ValueOfEnum(0))
+			return nil
 		}
 		return ef.SetFromString(*v)
 	default:
@@ -115,35 +125,36 @@ type arrayOfEnumField struct {
 
 var _ ArrayOfEnumField = (*arrayOfEnumField)(nil)
 
-func (field *arrayOfEnumField) AppendEnumFromString(name string) error {
+func (field *arrayOfEnumField) AppendEnumFromString(name string) (int, error) {
 	option := field.itemSchema.OptionByName(name)
 	if option != nil {
 		list := field.fieldInParent.getOrCreateMutable().List()
 		list.Append(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
-		return nil
+		idx := list.Len() - 1
+		return idx, nil
 	}
-	return fmt.Errorf("enum value %s not found", name)
+	return -1, fmt.Errorf("enum value %s not found", name)
 }
 
-func (ef *arrayOfEnumField) AppendASTValue(value ASTValue) error {
+func (ef *arrayOfEnumField) AppendASTValue(value ASTValue) (int, error) {
 	str, err := value.AsString()
 	if err != nil {
-		return err
+		return -1, err
 	}
 	return ef.AppendEnumFromString(str)
 }
 
-func (ef *arrayOfEnumField) AppendGoScalar(value interface{}) error {
+func (ef *arrayOfEnumField) AppendGoScalar(value interface{}) (int, error) {
 	switch v := value.(type) {
 	case string:
 		return ef.AppendEnumFromString(v)
 	case *string:
 		if v == nil {
-			return fmt.Errorf("cannot append nil value")
+			return -1, fmt.Errorf("cannot append nil value")
 		}
 
 		return ef.AppendEnumFromString(*v)
 	default:
-		return fmt.Errorf("cannot set enum value from %T", value)
+		return -1, fmt.Errorf("cannot set enum value from %T", value)
 	}
 }

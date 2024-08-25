@@ -11,24 +11,36 @@ option go_package = "github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb";
 
 message SourceFile {
   string path = 1;
-  string package = 2 [(j5.sourcedef.v1.field).assign = {}];
+  string package = 2;
   string version = 3;
 
-  repeated RootElement elements = 4;
+  repeated Import imports = 4;
+
+  repeated RootElement elements = 5;
+
+  SourceLocation source_locations = 6;
+}
+
+message SourceLocation {
+  map<string, SourceLocation> children = 1;
+  int32 start_line = 2;
+  int32 start_column = 3;
+  int32 end_line = 4;
+  int32 end_column = 5;
 }
 
 message Entity {
   string name = 1;
   string description = 2;
 
-  Object keys = 3 [(j5.sourcedef.v1.field).block.name = "key"];
   j5.schema.v1.Enum status = 4;
-  Object data = 5;
+
+  repeated j5.schema.v1.ObjectProperty keys = 3 [(j5.ext.v1.field).array.single_form = "key"];
+
+  repeated j5.schema.v1.ObjectProperty data = 5;
   repeated Object events = 6;
 
   repeated NestedSchema schemas = 7;
-
-  SourceLocation location = 8;
 }
 
 message NestedSchema {
@@ -45,28 +57,35 @@ message RootElement {
     Object object = 2;
     j5.schema.v1.Enum enum = 3;
     Entity entity = 4;
+    Partial partial = 5;
   }
 }
 
 message Oneof {
   j5.schema.v1.Oneof def = 1 [(j5.ext.v1.field).message.flatten = true];
-  SourceLocation location = 2;
 }
 
 message Object {
   j5.schema.v1.Object def = 1 [(j5.ext.v1.field).message.flatten = true];
-  SourceLocation location = 2;
 
   repeated NestedSchema schemas = 3;
 }
 
 message EntityElement {
   Entity entity = 1 [(j5.ext.v1.field).message.flatten = true];
-  SourceLocation location = 2;
 }
 
-message SourceLocation {
-  optional string path = 1;
-  int32 line = 2; // 1 based
-  int32 column = 3; // 1 based
+message Partial {
+  oneof type {
+    Field field = 1;
+  }
+
+  message Field {
+    j5.schema.v1.ObjectProperty def = 1 [(j5.ext.v1.field).message.flatten = true];
+  }
+}
+
+message Import {
+  string path = 1;
+  string alias = 2;
 }
