@@ -7,6 +7,8 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+/*** Interface ***/
+
 type EnumField interface {
 	Field
 	GetValue() (EnumOption, error)
@@ -28,11 +30,13 @@ type EnumOption interface {
 	Description() string
 }
 
+/*** Implementation ***/
+
 type enumFieldFactory struct {
 	schema *j5schema.EnumField
 }
 
-func (factory *enumFieldFactory) buildField(context fieldContext, value protoValueContext) Field {
+func (factory *enumFieldFactory) buildField(context fieldContext, value protoContext) Field {
 	return &enumField{
 		value: value,
 		fieldDefaults: fieldDefaults{
@@ -45,7 +49,7 @@ func (factory *enumFieldFactory) buildField(context fieldContext, value protoVal
 
 type enumField struct {
 	fieldDefaults
-	value  protoValueContext
+	value  protoContext
 	schema *j5schema.EnumField
 }
 
@@ -53,11 +57,6 @@ var _ EnumField = (*enumField)(nil)
 
 func (ef *enumField) IsSet() bool {
 	return ef.value.isSet()
-}
-
-func (ef *enumField) SetDefault() error {
-	ef.value.getOrCreateMutable()
-	return nil
 }
 
 func (ef *enumField) AsScalar() (ScalarField, bool) {
@@ -69,12 +68,16 @@ func (ef *enumField) Type() FieldType {
 }
 
 func (ef *enumField) GetValue() (EnumOption, error) {
-	value := int32(ef.value.getValue().Enum())
-	opt := ef.schema.Schema().OptionByNumber(value)
+	val, ok := ef.value.getValue()
+	if !ok {
+		return nil, fmt.Errorf("enum value not set")
+	}
+	numVal := int32(val.Enum())
+	opt := ef.schema.Schema().OptionByNumber(numVal)
 	if opt != nil {
 		return opt, nil
 	}
-	return nil, fmt.Errorf("enum value %d not found", value)
+	return nil, fmt.Errorf("enum value %d not found", numVal)
 }
 
 func (ef *enumField) SetFromString(val string) error {
@@ -110,12 +113,11 @@ func (ef *enumField) SetGoValue(value interface{}) error {
 }
 
 func (ef *enumField) ToGoValue() (interface{}, error) {
-	val := ef.value.getValue().Enum()
-	opt := ef.schema.Schema().OptionByNumber(int32(val))
-	if opt == nil {
-		return nil, fmt.Errorf("enum value %d not found", val)
+	val, err := ef.GetValue()
+	if err != nil {
+		return nil, err
 	}
-	return opt.Name(), nil
+	return val.Name(), nil
 }
 
 type arrayOfEnumField struct {
@@ -124,16 +126,16 @@ type arrayOfEnumField struct {
 }
 
 var _ ArrayOfEnumField = (*arrayOfEnumField)(nil)
+var _ ArrayOfScalarField = (*arrayOfEnumField)(nil)
 
 func (field *arrayOfEnumField) AppendEnumFromString(name string) (int, error) {
 	option := field.itemSchema.OptionByName(name)
-	if option != nil {
-		list := field.fieldInParent.getOrCreateMutable().List()
-		list.Append(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
-		idx := list.Len() - 1
-		return idx, nil
+	if option == nil {
+		return -1, fmt.Errorf("enum value %s not found", name)
 	}
-	return -1, fmt.Errorf("enum value %s not found", name)
+
+	val := protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number()))
+	return field.appendProtoValue(val), nil
 }
 
 func (ef *arrayOfEnumField) AppendASTValue(value ASTValue) (int, error) {
@@ -144,7 +146,7 @@ func (ef *arrayOfEnumField) AppendASTValue(value ASTValue) (int, error) {
 	return ef.AppendEnumFromString(str)
 }
 
-func (ef *arrayOfEnumField) AppendGoScalar(value interface{}) (int, error) {
+func (ef *arrayOfEnumField) AppendGoValue(value interface{}) (int, error) {
 	switch v := value.(type) {
 	case string:
 		return ef.AppendEnumFromString(v)
@@ -157,4 +159,19 @@ func (ef *arrayOfEnumField) AppendGoScalar(value interface{}) (int, error) {
 	default:
 		return -1, fmt.Errorf("cannot set enum value from %T", value)
 	}
+}
+
+type mapOfEnumField struct {
+	leafMapField
+	itemSchema *j5schema.EnumSchema
+}
+
+func (field *mapOfEnumField) SetEnum(key string, value string) error {
+	option := field.itemSchema.OptionByName(value)
+	if option == nil {
+		return fmt.Errorf("enum value %s not found", value)
+	}
+
+	field.setKey(key, protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
+	return nil
 }

@@ -285,6 +285,19 @@ type ObjectProperty struct {
 	Description string
 }
 
+func (prop *ObjectProperty) checkValid() error {
+	if prop.Parent == nil {
+		return fmt.Errorf("property %q has no parent", prop.FullName())
+	}
+	if prop.JSONName == "" {
+		return fmt.Errorf("property %q has no JSON name", prop.FullName())
+	}
+	if prop.Schema == nil {
+		return fmt.Errorf("property %q has no schema", prop.FullName())
+	}
+	return nil
+}
+
 func (prop *ObjectProperty) FullName() string {
 	if prop.Parent == nil {
 		return "<root>." + prop.JSONName

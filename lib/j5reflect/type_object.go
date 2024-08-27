@@ -1,8 +1,13 @@
 package j5reflect
 
 import (
+	"fmt"
+
 	"github.com/pentops/j5/internal/j5schema"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+/*** Interface ***/
 
 type Object interface {
 	PropertySet
@@ -20,39 +25,51 @@ type ObjectField interface {
 	Object() (Object, error)
 }
 
-type ObjectImpl struct {
+type MapOfObjectField interface {
+	NewObjectValue(key string) (Oneof, error)
+}
+
+type ArrayOfObjectField interface {
+	ArrayOfContainerField
+	NewObjectElement() (Object, int, error)
+}
+
+/*** Implementation ***/
+
+type objectImpl struct {
 	schema *j5schema.ObjectSchema
-	value  *protoMessageWrapper
+	value  protoreflect.Message
 	*propSet
 }
 
-var _ Object = &ObjectImpl{}
+var _ Object = &objectImpl{}
 
-func newObject(schema *j5schema.ObjectSchema, value *protoMessageWrapper) (*ObjectImpl, error) {
-
-	props, err := collectProperties(schema.ClientProperties(), value)
-	if err != nil {
-		return nil, err
-	}
-	fieldset, err := newPropSet(schema.FullName(), props)
+func newObject(schema *j5schema.ObjectSchema, value protoreflect.Message) (*objectImpl, error) {
+	fieldset, err := newPropSet(schema.FullName(), value, schema.ClientProperties())
 	if err != nil {
 		return nil, err
 	}
 
-	return &ObjectImpl{
+	return &objectImpl{
 		schema:  schema,
 		value:   value,
 		propSet: fieldset,
 	}, nil
 }
 
-func (fs *ObjectImpl) asDetachedField() (Field, error) {
-	return &existingObjectField{
-		object: fs,
-	}, nil
+func (fs *objectImpl) NewValue(propName string) (Field, error) {
+	prop, ok := fs.propSet.asMap[propName]
+	if !ok {
+		return nil, fmt.Errorf("unknown property %s", prop)
+	}
+	if prop.hasValue {
+		return nil, fmt.Errorf("property %s already set", propName)
+	}
+	val, _, err := fs.propSet.getValue(propName, true)
+	return val, err
 }
 
-func (fs *ObjectImpl) HasAnyValue() bool {
+func (fs *objectImpl) HasAnyValue() bool {
 	for _, prop := range fs.asSlice {
 		if prop.IsSet() {
 			return true
@@ -63,7 +80,7 @@ func (fs *ObjectImpl) HasAnyValue() bool {
 
 type existingObjectField struct {
 	fieldDefaults
-	object *ObjectImpl
+	object *objectImpl
 }
 
 func (obj *existingObjectField) Type() FieldType {
@@ -86,6 +103,10 @@ func (obj *existingObjectField) GetOrCreateContainer() (PropertySet, error) {
 	return obj.object, nil
 }
 
+func (obj *existingObjectField) GetExistingContainer() (PropertySet, bool, error) {
+	return obj.object, true, nil
+}
+
 func (obj *existingObjectField) Object() (Object, error) {
 	return obj.object, nil
 }
@@ -99,14 +120,14 @@ var _ ObjectField = (*existingObjectField)(nil)
 
 type objectField struct {
 	fieldDefaults
-	value         protoValueContext
-	_object       *ObjectImpl
+	value         protoContext
+	_object       *objectImpl
 	_objectSchema *j5schema.ObjectSchema
 }
 
 var _ ObjectField = (*objectField)(nil)
 
-func newObjectField(context fieldContext, fieldSchema *j5schema.ObjectField, value protoValueContext) *objectField {
+func newObjectField(context fieldContext, fieldSchema *j5schema.ObjectField, value protoContext) *objectField {
 	of := &objectField{
 		fieldDefaults: fieldDefaults{
 			fieldType: FieldTypeObject,
@@ -122,7 +143,7 @@ type objectFieldFactory struct {
 	schema *j5schema.ObjectField
 }
 
-func (f *objectFieldFactory) buildField(context fieldContext, value protoValueContext) Field {
+func (f *objectFieldFactory) buildField(context fieldContext, value protoContext) Field {
 	return newObjectField(context, f.schema, value)
 }
 
@@ -135,8 +156,8 @@ func (obj *objectField) IsSet() bool {
 }
 
 func (obj *objectField) SetDefault() error {
-	_ = obj.value.getOrCreateMutable()
-	return nil
+	_, err := obj.value.getMutableValue(true)
+	return err
 }
 
 func (obj *objectField) AsContainer() (ContainerField, bool) {
@@ -148,17 +169,30 @@ func (obj *objectField) GetOrCreateContainer() (PropertySet, error) {
 	if err != nil {
 		return nil, err
 	}
-	_ = obj.value.getOrCreateMutable()
-	return val, nil
+	_, err = obj.value.getMutableValue(true)
+	return val, err
+}
+
+func (obj *objectField) GetExistingContainer() (PropertySet, bool, error) {
+	if !obj.value.isSet() {
+		return nil, false, nil
+	}
+	val, err := obj.Object()
+	if err != nil {
+		return nil, false, err
+	}
+	return val, true, nil
 }
 
 func (obj *objectField) Object() (Object, error) {
 	if obj._object == nil {
-		msgChild, err := obj.value.getOrCreateChildMessage()
+		val, err := obj.value.getMutableValue(true)
 		if err != nil {
 			return nil, err
 		}
-		built, err := newObject(obj._objectSchema, msgChild)
+		msg := val.Message()
+
+		built, err := newObject(obj._objectSchema, msg)
 		if err != nil {
 			return nil, err
 		}
@@ -182,10 +216,29 @@ func (field *arrayOfObjectField) NewObjectElement() (Object, int, error) {
 	return ofb, of.IndexInParent(), nil
 }
 
-func (field *arrayOfObjectField) NewContainerElement() (PropertySet, int, error) {
-	return field.NewObjectElement()
+func (field *arrayOfObjectField) NewContainerElement() (ContainerField, int, error) {
+	of := field.NewElement().(ObjectField)
+	return of, of.IndexInParent(), nil
 }
 
 func (field *arrayOfObjectField) AsArrayOfContainer() (ArrayOfContainerField, bool) {
 	return field, true
+}
+
+func (field *arrayOfObjectField) RangeContainers(cb func(ContainerField, PropertySet) error) error {
+	return field.RangeValues(func(idx int, f Field) error {
+		val, ok := f.(ContainerField)
+		if !ok {
+			return nil
+		}
+		valContainer, ok, err := val.GetExistingContainer()
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			return fmt.Errorf("Reflect Internal Error: expected container field to be set")
+		}
+		return cb(val, valContainer)
+	})
 }

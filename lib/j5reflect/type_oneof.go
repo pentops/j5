@@ -4,48 +4,59 @@ import (
 	"fmt"
 
 	"github.com/pentops/j5/internal/j5schema"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+/*** Interface ***/
 
 type Oneof interface {
 	PropertySet
-	GetOne() (Field, error)
+	GetOne() (Field, bool, error)
 }
 
-type OneofImpl struct {
-	schema *j5schema.OneofSchema
-	value  *protoMessageWrapper
+type MapOfOneofField interface {
+	NewOneofValue(key string) (*oneofImpl, error)
+}
+
+type ArrayOfOneofField interface {
+	ArrayOfContainerField
+	NewOneofElement() (Oneof, int, error)
+}
+
+/*** Implementation ***/
+
+type oneofImpl struct {
+	schema  *j5schema.OneofSchema
+	message protoreflect.Message
 	*propSet
 }
 
-func newOneof(schema *j5schema.OneofSchema, value *protoMessageWrapper) (*OneofImpl, error) {
-
-	props, err := collectProperties(schema.Properties, value)
+func newOneof(schema *j5schema.OneofSchema, message protoreflect.Message) (*oneofImpl, error) {
+	fieldset, err := newPropSet(schema.FullName(), message, schema.Properties)
 	if err != nil {
 		return nil, err
 	}
-
-	fieldset, err := newPropSet(schema.FullName(), props)
-	if err != nil {
-		return nil, err
-	}
-	return &OneofImpl{
+	return &oneofImpl{
 		schema:  schema,
-		value:   value,
+		message: message,
 		propSet: fieldset,
 	}, nil
 }
 
-func (fs *OneofImpl) GetOne() (Field, error) {
+func (fs *oneofImpl) GetOne() (Field, bool, error) {
 	var property Field
-	for _, prop := range fs.asSlice {
-		if prop.IsSet() {
-			if property != nil {
-				return nil, fmt.Errorf("multiple values set for oneof")
+	var found bool
+
+	for _, search := range fs.asSlice {
+		if search.hasValue {
+			if found {
+				return nil, true, fmt.Errorf("multiple values set for oneof")
 			}
-			property = prop
+			property = search.value
+			found = true
 		}
 	}
-	return property, nil
+	return property, found, nil
 }
 
 type OneofField interface {
@@ -56,9 +67,9 @@ type OneofField interface {
 
 type oneofField struct {
 	fieldDefaults
-	value  protoValueContext
+	value  protoContext
 	schema *j5schema.OneofField
-	_oneof *OneofImpl
+	_oneof *oneofImpl
 }
 
 type oneofFieldFactory struct {
@@ -67,13 +78,13 @@ type oneofFieldFactory struct {
 
 var _ fieldFactory = (*oneofFieldFactory)(nil)
 
-func (f *oneofFieldFactory) buildField(context fieldContext, value protoValueContext) Field {
+func (f *oneofFieldFactory) buildField(context fieldContext, value protoContext) Field {
 	return newOneofField(context, f.schema, value)
 }
 
 var _ OneofField = (*oneofField)(nil)
 
-func newOneofField(context fieldContext, schema *j5schema.OneofField, value protoValueContext) *oneofField {
+func newOneofField(context fieldContext, schema *j5schema.OneofField, value protoContext) *oneofField {
 	return &oneofField{
 		fieldDefaults: fieldDefaults{
 			fieldType: FieldTypeOneof,
@@ -96,12 +107,19 @@ func (field *oneofField) GetOrCreateContainer() (PropertySet, error) {
 	return oneof, nil
 }
 
-func (field *oneofField) IsSet() bool {
-	return field.value.isSet()
+func (field *oneofField) GetExistingContainer() (PropertySet, bool, error) {
+	if !field.IsSet() {
+		return nil, false, nil
+	}
+	oneof, err := field.Oneof()
+	if err != nil {
+		return nil, false, err
+	}
+	return oneof, true, nil
 }
 
-func (field *oneofField) SetDefault() error {
-	return fmt.Errorf("cannot set default on oneof fields")
+func (field *oneofField) IsSet() bool {
+	return field.value.isSet()
 }
 
 func (field *oneofField) Type() FieldType {
@@ -110,16 +128,17 @@ func (field *oneofField) Type() FieldType {
 
 func (field *oneofField) Oneof() (Oneof, error) {
 	if field._oneof == nil {
-		msgChild, err := field.value.getOrCreateChildMessage()
+		val, err := field.value.getMutableValue(true)
 		if err != nil {
 			return nil, err
 		}
+		msg := val.Message()
 
-		obj, err := newOneof(field.schema.Schema(), msgChild)
+		built, err := newOneof(field.schema.Schema(), msg)
 		if err != nil {
 			return nil, err
 		}
-		field._oneof = obj
+		field._oneof = built
 	}
 
 	return field._oneof, nil
@@ -140,10 +159,29 @@ func (field *arrayOfOneofField) NewOneofElement() (Oneof, int, error) {
 
 var _ ArrayOfOneofField = (*arrayOfOneofField)(nil)
 
-func (field *arrayOfOneofField) NewContainerElement() (PropertySet, int, error) {
-	return field.NewOneofElement()
+func (field *arrayOfOneofField) NewContainerElement() (ContainerField, int, error) {
+	of := field.NewElement().(OneofField)
+	return of, of.IndexInParent(), nil
 }
 
 func (field *arrayOfOneofField) AsArrayOfContainer() (ArrayOfContainerField, bool) {
 	return field, true
+}
+
+func (field *arrayOfOneofField) RangeContainers(cb func(ContainerField, PropertySet) error) error {
+	return field.RangeValues(func(idx int, f Field) error {
+		val, ok := f.(ContainerField)
+		if !ok {
+			return nil
+		}
+		valContainer, ok, err := val.GetExistingContainer()
+		if err != nil {
+			return err
+		}
+
+		if !ok {
+			return fmt.Errorf("Reflect Internal Error: expected container field to be set")
+		}
+		return cb(val, valContainer)
+	})
 }

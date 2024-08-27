@@ -8,126 +8,81 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type mutableMapField struct {
-	baseMapField
+/*** Interface ***/
+
+type RangeMapCallback func(string, Field) error
+
+type MapField interface {
+	Field
+	Range(RangeMapCallback) error
+	ItemSchema() j5schema.FieldSchema
 }
 
-var _ MutableMapField = (*mutableMapField)(nil)
-
-func (field *mutableMapField) NewValue(key string) Field {
-	mapVal := field.fieldInParent.getOrCreateMutable().Map()
-	keyVal := protoreflect.ValueOfString(key).MapKey()
-	val := mapVal.Get(keyVal)
-	wrapped := &protoMapItem{
-		protoValueWrapper: protoValueWrapper{
-			value:   val,
-			prField: field.fieldInParent.fieldInParent.MapValue(),
-		},
-		key:   keyVal,
-		prMap: mapVal,
-	}
-	context := &mapContext{
-		name:   key,
-		schema: field.schema,
-	}
-	property := field.factory.buildField(context, wrapped)
-	return property
+type MutableMapField interface {
+	MapField
+	NewElement(key string) Field
 }
 
-type mapOfObjectField struct {
-	MutableMapField
-}
-
-func (field *mapOfObjectField) NewObjectValue(key string) (Object, error) {
-	of := field.NewValue(key).(ObjectField)
-	return of.Object()
-}
-
-type MapOfOneofField interface {
-	NewOneofValue(key string) (*OneofImpl, error)
-}
-
-type mapOfOneofField struct {
-	MutableMapField
-}
-
-func (field *mapOfOneofField) NewOneofValue(key string) (Oneof, error) {
-	of := field.NewValue(key).(OneofField)
-	return of.Oneof()
-}
+/*** Implementation ***/
 
 type baseMapField struct {
 	fieldDefaults
-	fieldInParent *realProtoMessageField
-	schema        *j5schema.MapField
-	factory       fieldFactory
+	value protoreflect.Map
+	//fieldDescriptor protoreflect.FieldDescriptor
+	schema  *j5schema.MapField
+	factory fieldFactory
 }
 
-func (field *baseMapField) Type() FieldType {
+func (mapField *baseMapField) Type() FieldType {
 	return FieldTypeMap
 }
 
-func (field *baseMapField) ItemSchema() j5schema.FieldSchema {
-	return field.schema.Schema
+func (mapField *baseMapField) IsSet() bool {
+	return mapField.value.IsValid()
 }
 
-func (field *baseMapField) IsSet() bool {
-	return field.fieldInParent.isSet()
+func (mapField *baseMapField) ItemSchema() j5schema.FieldSchema {
+	return mapField.schema.Schema
 }
 
-func (field *baseMapField) SetDefault() error {
-	field.fieldInParent.getOrCreateMutable().Map()
-	return nil
-}
-
-func (field *baseMapField) Range(cb func(string, Field) error) error {
-	if !field.fieldInParent.isSet() {
-		return nil
+func (mapField *baseMapField) Range(cb RangeMapCallback) error {
+	if !mapField.value.IsValid() {
+		return nil // empty map, probably invalid anyway, but has no keys.
 	}
-	mapVal := field.fieldInParent.getValue().Map()
+
 	var outerErr error
 
-	fieldDef := field.fieldInParent.fieldInParent.MapValue()
-
-	mapVal.Range(func(key protoreflect.MapKey, val protoreflect.Value) bool {
+	mapField.value.Range(func(key protoreflect.MapKey, val protoreflect.Value) bool {
 		keyStr := key.Value().String()
-		wrapped := &protoMapItem{
-			protoValueWrapper: protoValueWrapper{
-				value:   val,
-				prField: fieldDef,
-			},
-			key:   key,
-			prMap: mapVal,
-		}
-		context := &mapContext{
-			name:   keyStr,
-			schema: field.schema,
-		}
-		itemField := field.factory.buildField(context, wrapped)
-		outerErr = cb(keyStr, itemField)
+		field := mapField.wrapValue(keyStr, val)
+		outerErr = cb(keyStr, field)
 		return outerErr == nil
 	})
 	return outerErr
 }
 
-func newMapField(context fieldContext, schema *j5schema.MapField, value *realProtoMessageField) (MapField, error) {
-	if !value.fieldInParent.IsMap() {
-		return nil, fmt.Errorf("MapField is not a map")
+func (mapField *baseMapField) wrapValue(key string, value protoreflect.Value) Field {
+	wrapped := &protoMapValue{
+		mapVal: mapField.value,
+		key:    protoreflect.ValueOfString(key).MapKey(),
 	}
+	context := &mapContext{
+		name:   key,
+		schema: mapField.schema,
+	}
+	return mapField.factory.buildField(context, wrapped)
+}
 
-	factory, err := newFieldFactory(schema.Schema, value.fieldInParent.MapValue())
-	if err != nil {
-		return nil, fmt.Errorf("factory for map value: %w", err)
-	}
+func newMapField(context fieldContext, schema *j5schema.MapField, value protoreflect.Map, factory fieldFactory) (MapField, error) {
 
 	base := baseMapField{
 		fieldDefaults: fieldDefaults{
 			fieldType: FieldTypeMap,
 			context:   context,
 		},
-		fieldInParent: value,
-		schema:        schema,
-		factory:       factory,
+		value:   value,
+		schema:  schema,
+		factory: factory,
 	}
 
 	switch st := schema.Schema.(type) {
@@ -173,45 +128,73 @@ func newMapField(context fieldContext, schema *j5schema.MapField, value *realPro
 	}
 }
 
+type mutableMapField struct {
+	baseMapField
+}
+
+var _ MutableMapField = (*mutableMapField)(nil)
+
+func (mapField *mutableMapField) NewElement(key string) Field {
+	mapKey := protoreflect.ValueOfString(key).MapKey()
+	itemVal := mapField.value.Mutable(mapKey)
+	return mapField.wrapValue(key, itemVal)
+}
+
+type mapOfObjectField struct {
+	MutableMapField
+}
+
+func (field *mapOfObjectField) NewObjectValue(key string) (Object, error) {
+	val := field.NewElement(key)
+	of := val.(ObjectField)
+	return of.Object()
+}
+
+type mapOfOneofField struct {
+	MutableMapField
+}
+
+func (field *mapOfOneofField) NewOneofValue(key string) (Oneof, error) {
+	val := field.NewElement(key)
+	of := val.(OneofField)
+	return of.Oneof()
+}
+
 type leafMapField struct {
 	baseMapField
 }
 
 var _ MapField = (*leafMapField)(nil)
 
-func (field *leafMapField) setKey(key protoreflect.MapKey, val protoreflect.Value) {
-	mapVal := field.fieldInParent.getOrCreateMutable().Map()
-	mapVal.Set(key, val)
+func (mapField *leafMapField) setKey(key string, val protoreflect.Value) {
+	keyVal := protoreflect.ValueOfString(key).MapKey()
+	mapField.value.Set(keyVal, val)
 }
 
-type mapOfScalarField struct {
-	leafMapField
-	itemSchema *j5schema.ScalarSchema
+type protoMapValue struct {
+	mapVal protoreflect.Map
+	key    protoreflect.MapKey
 }
 
-func (field *mapOfScalarField) SetGoScalar(key string, value interface{}) error {
-	reflVal, err := scalarReflectFromGo(field.itemSchema.Proto, value)
-	if err != nil {
-		return fmt.Errorf("converting value to proto: %w", err)
-	}
+var _ protoContext = (*protoListValue)(nil)
 
-	field.setKey(protoreflect.ValueOfString(key).MapKey(), reflVal)
+func (pmv *protoMapValue) isSet() bool {
+	_, ok := pmv.getValue()
+	return ok
+}
+
+func (pmv *protoMapValue) setValue(val protoreflect.Value) error {
+	pmv.mapVal.Set(pmv.key, val)
 	return nil
 }
 
-type mapOfEnumField struct {
-	leafMapField
-	itemSchema *j5schema.EnumSchema
+func (pmv *protoMapValue) getValue() (protoreflect.Value, bool) {
+	itemVal := pmv.mapVal.Get(pmv.key)
+	return itemVal, itemVal.IsValid()
 }
 
-func (field *mapOfEnumField) SetEnum(key string, value string) error {
-	option := field.itemSchema.OptionByName(value)
-	if option == nil {
-		return fmt.Errorf("enum value %s not found", value)
-	}
-
-	field.setKey(protoreflect.ValueOfString(key).MapKey(), protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
-	return nil
+func (pmv *protoMapValue) getMutableValue(createIfNotSet bool) (protoreflect.Value, error) {
+	return pmv.mapVal.Get(pmv.key), nil
 }
 
 type mapContext struct {

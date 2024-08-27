@@ -25,18 +25,16 @@ func NewWithCache(cache *j5schema.SchemaCache) *Reflector {
 	}
 }
 
-func (r *Reflector) NewRoot(protoMsg protoreflect.Message) (Root, error) {
+func (r *Reflector) NewRoot(msg protoreflect.Message) (Root, error) {
+	if !msg.IsValid() {
+		return nil, fmt.Errorf("invalid / nil message")
+	}
 
-	descriptor := protoMsg.Descriptor()
+	descriptor := msg.Descriptor()
 
 	schema, err := r.schemaSet.Schema(descriptor)
 	if err != nil {
 		return nil, nil
-	}
-
-	msg, err := newRootMessageValue(protoMsg)
-	if err != nil {
-		return nil, err
 	}
 
 	switch schema := schema.(type) {
@@ -49,7 +47,11 @@ func (r *Reflector) NewRoot(protoMsg protoreflect.Message) (Root, error) {
 	}
 }
 
-func (r *Reflector) NewObject(msg protoreflect.Message) (*ObjectImpl, error) {
+func (r *Reflector) NewObject(msg protoreflect.Message) (*objectImpl, error) {
+	if !msg.IsValid() {
+		return nil, fmt.Errorf("invalid / nil message")
+	}
+
 	descriptor := msg.Descriptor()
 	schema, err := r.schemaSet.Schema(descriptor)
 	if err != nil {
@@ -61,10 +63,5 @@ func (r *Reflector) NewObject(msg protoreflect.Message) (*ObjectImpl, error) {
 		return nil, fmt.Errorf("expected object schema, got %T", schema)
 	}
 
-	mv, err := newRootMessageValue(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return newObject(obj, mv)
+	return newObject(obj, msg)
 }

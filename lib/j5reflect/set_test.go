@@ -70,6 +70,29 @@ func TestSetter(t *testing.T) {
 		assert.Equal(t, []string{"a", "b"}, msg.RString)
 	})
 
+	t.Run("empty oneof object", func(t *testing.T) {
+		root, msg := newRoot(t)
+
+		testPath(t, root,
+			tObjectProperty("wrappedOneof"),
+			tOneofProperty("wOneofBar"),
+			tGetOrCreateContainer(),
+		)
+
+		if msg.WrappedOneof == nil {
+			t.Fatal("msg.WrappedOneof is nil")
+		}
+		if msg.WrappedOneof.Type == nil {
+			t.Fatal("msg.WrappedOneof.Type is nil")
+		}
+		sv, ok := msg.WrappedOneof.Type.(*schema_testpb.WrappedOneof_WOneofBar)
+		if !ok {
+			t.Fatalf("wrong type: %T", msg.WrappedOneof.Type)
+		}
+		assert.NotNil(t, sv.WOneofBar)
+
+	})
+
 	t.Run("repeated mutable", func(t *testing.T) {
 		root, msg := newRoot(t)
 

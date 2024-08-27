@@ -177,6 +177,31 @@ func tSetScalar(v interface{}) tPathElement {
 	}
 }
 
+func tSetDefault() tPathElement {
+	return func(t *testing.T, f Field) Field {
+		t.Helper()
+		must(t, f.SetDefault())
+		return f
+	}
+}
+
+func tGetOrCreateContainer() tPathElement {
+	return func(t *testing.T, f Field) Field {
+		t.Helper()
+		t.Logf("T AsContainer")
+		c, ok := f.AsContainer()
+		if !ok {
+			t.Fatalf("expected ContainerField, got %T", f)
+		}
+		_, err := c.GetOrCreateContainer()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return f
+	}
+}
+
 func tArrayElement(inArrayElement ...tPathElement) tPathElement {
 	return func(t *testing.T, f Field) Field {
 		t.Helper()

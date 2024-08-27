@@ -2,58 +2,57 @@ package j5reflect
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5schema"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+/*** Interface ***/
+
+type RangeArrayCallback func(int, Field) error
+
+type ArrayField interface {
+	Field
+	RangeValues(RangeArrayCallback) error
+}
+
+type MutableArrayField interface {
+	ArrayField
+	NewElement() Field
+}
+
+/*** Implementation ***/
 
 type baseArrayField struct {
 	fieldDefaults
-	fieldInParent *realProtoMessageField
-	schema        *j5schema.ArrayField
-	factory       fieldFactory
+	value protoreflect.List
+	//fieldDescriptor protoreflect.FieldDescriptor
+	schema  *j5schema.ArrayField
+	factory fieldFactory
 }
 
-func (field *baseArrayField) IsSet() bool {
-	return field.fieldInParent.isSet()
-}
-
-func (field *baseArrayField) Type() FieldType {
+func (array *baseArrayField) Type() FieldType {
 	return FieldTypeArray
 }
 
-func (field *baseArrayField) ItemSchema() j5schema.FieldSchema {
-	return field.schema.Schema
+func (array *baseArrayField) IsSet() bool {
+	return array.value.IsValid()
 }
 
-func (field *baseArrayField) SetDefault() error {
-	field.fieldInParent.getOrCreateMutable().List()
-	return nil
+func (array *baseArrayField) ItemSchema() j5schema.FieldSchema {
+	return array.schema.Schema
 }
 
-func (field *baseArrayField) Range(cb func(Field) error) error {
-	if !field.fieldInParent.isSet() {
-		return nil
+func (array *baseArrayField) RangeValues(cb RangeArrayCallback) error {
+	if !array.value.IsValid() {
+		return nil // TODO: return an error? Ranging a nil array means there's certainly nothing to range
 	}
-	list := field.fieldInParent.getValue().List()
 
-	for i := 0; i < list.Len(); i++ {
-		val := list.Get(i)
-		wrapped := &protoListItem{
-			protoValueWrapper: protoValueWrapper{
-				value:   val,
-				prField: field.fieldInParent.fieldInParent,
-			},
-			prList: list,
-			idx:    i,
-		}
-		context := &arrayContext{
-			index:  i,
-			schema: field.schema,
-		}
-		property := field.factory.buildField(context, wrapped)
-
-		err := cb(property)
+	for idx := 0; idx < array.value.Len(); idx++ {
+		fieldVal := array.wrapValue(idx, array.value.Get(idx))
+		err := cb(idx, fieldVal)
 		if err != nil {
 			return err
 		}
@@ -61,24 +60,33 @@ func (field *baseArrayField) Range(cb func(Field) error) error {
 	return nil
 }
 
-func newArrayField(context fieldContext, schema *j5schema.ArrayField, value *realProtoMessageField) (ArrayField, error) {
-	if !value.fieldInParent.IsList() {
-		return nil, fmt.Errorf("ArrayField is not a list")
+func (array *baseArrayField) wrapValue(idx int, value protoreflect.Value) Field {
+	protoItemContext := &protoListValue{
+		list:  array.value,
+		index: idx,
+		//parentField: array.fieldDescriptor,
 	}
 
-	factory, err := newFieldFactory(schema.Schema, value.fieldInParent)
-	if err != nil {
-		return nil, err
+	schemaContext := &arrayContext{
+		index:  idx,
+		schema: array.schema,
 	}
+
+	field := array.factory.buildField(schemaContext, protoItemContext)
+	return field
+}
+
+func newArrayField(context fieldContext, schema *j5schema.ArrayField, value protoreflect.List, factory fieldFactory) (ArrayField, error) {
 
 	base := baseArrayField{
 		fieldDefaults: fieldDefaults{
 			fieldType: FieldTypeArray,
 			context:   context,
 		},
-		fieldInParent: value,
-		schema:        schema,
-		factory:       factory,
+		schema:  schema,
+		value:   value,
+		factory: factory,
+		//fieldDescriptor: value.fieldInParent,
 	}
 
 	switch st := schema.Schema.(type) {
@@ -119,43 +127,67 @@ func newArrayField(context fieldContext, schema *j5schema.ArrayField, value *rea
 
 type mutableArrayField struct {
 	baseArrayField
+	value protoreflect.List
+	lock  sync.Mutex
 }
 
 var _ MutableArrayField = (*mutableArrayField)(nil)
 
-func (field *mutableArrayField) NewElement() Field {
-	list := field.fieldInParent.getOrCreateMutable().List()
-	idx := list.Len()
-	elem := list.AppendMutable()
-	element := &protoListItem{
-		protoValueWrapper: protoValueWrapper{
-			prField: field.fieldInParent.fieldInParent,
-			value:   elem,
-		},
-		prList: list,
-		idx:    idx,
-	}
-	context := &arrayContext{
-		index:  idx,
-		schema: field.schema,
-	}
-	property := field.factory.buildField(context, element)
-	return property
+func (array *mutableArrayField) NewElement() Field {
+	array.lock.Lock()
+	idx := array.value.Len()
+	elem := array.value.AppendMutable()
+	array.lock.Unlock()
+	return array.wrapValue(idx, elem)
 }
 
 type leafArrayField struct {
 	baseArrayField
+	lock sync.Mutex
 }
 
-func (field *leafArrayField) AppendGoValue(value interface{}) error {
-	list := field.fieldInParent.getOrCreateMutable().List()
-	reflectValue, err := scalarReflectFromGo(field.schema.Schema.ToJ5Field(), value)
-	if err != nil {
-		return err
-	}
-	list.Append(reflectValue)
+func (array *leafArrayField) appendProtoValue(value protoreflect.Value) int {
+	array.lock.Lock()
+	idx := array.value.Len()
+	array.value.Append(value)
+	array.lock.Unlock()
+	return idx
+}
+
+// protoListValue wraps a scalar/leaf type array, keeping pointer to the parent
+// and the location within the parent where the object exists to make it
+// semi-mutable.
+type protoListValue struct {
+	list protoreflect.List
+	//parentField protoreflect.FieldDescriptor
+	index int
+}
+
+var _ protoContext = (*protoListValue)(nil)
+
+func (plv *protoListValue) isSet() bool {
+	_, ok := plv.getValue()
+	return ok
+}
+
+func (plv *protoListValue) setValue(val protoreflect.Value) error {
+	plv.list.Set(plv.index, val)
 	return nil
 }
+
+func (plv *protoListValue) getValue() (protoreflect.Value, bool) {
+	itemVal := plv.list.Get(plv.index)
+	return itemVal, itemVal.IsValid()
+}
+
+func (plv *protoListValue) getMutableValue(createIfNotSet bool) (protoreflect.Value, error) {
+	return plv.list.Get(plv.index), nil
+}
+
+/*
+func (plv *protoListValue) fieldDescriptor() protoreflect.FieldDescriptor {
+	return plv.parentField
+}*/
 
 type arrayContext struct {
 	index  int

@@ -195,6 +195,12 @@ func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*One
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
 
+	for _, prop := range properties {
+		if err := prop.checkValid(); err != nil {
+			return nil, fmt.Errorf("property %q: %w", prop.JSONName, err)
+		}
+	}
+
 	oneofSchema.Properties = properties
 
 	return oneofSchema, nil
@@ -210,6 +216,12 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*Ob
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
 	}
 	objectSchema.Properties = properties
+
+	for _, prop := range properties {
+		if err := prop.checkValid(); err != nil {
+			return nil, fmt.Errorf("property %q: %w", prop.JSONName, err)
+		}
+	}
 
 	entity, err := findPSMOptions(srcMsg)
 	if err != nil {
@@ -350,6 +362,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			arrayField.Schema = fieldSchema
 
 			prop := &ObjectProperty{
+				Parent:      parent,
 				ProtoField:  []protoreflect.FieldNumber{field.Number()},
 				JSONName:    string(field.JSONName()),
 				Description: commentDescription(src),
@@ -412,6 +425,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 		if err != nil {
 			return nil, patherr.Wrap(err, string(field.Name()))
 		}
+		prop.Parent = parent
 
 		inOneof := field.ContainingOneof()
 		if inOneof == nil || inOneof.IsSynthetic() {

@@ -4,9 +4,13 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
+	"regexp"
 
 	"github.com/google/uuid"
 )
+
+var PatternString = `^[0-9A-Za-z]{22}$`
+var Pattern = regexp.MustCompile(PatternString)
 
 type UUID [16]byte
 
@@ -38,7 +42,13 @@ func Parse(s string) (UUID, error) {
 func base62String(id []byte) string {
 	var i big.Int
 	i.SetBytes(id)
-	return i.Text(62)
+	str := i.Text(62)
+	if len(str) < 22 {
+		str = fmt.Sprintf("%022s", str)
+	} else if len(str) > 22 {
+		panic("base62 value is too large")
+	}
+	return str
 }
 
 func parseBase62(s string, into []byte) error {

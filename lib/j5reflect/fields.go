@@ -57,7 +57,7 @@ func (c propertyContext) typeName() string {
 }
 
 func (c propertyContext) fullTypeName() string {
-	return fmt.Sprintf("%s.%s", c.schema.FullName(), c.schema.JSONName)
+	return c.schema.FullName()
 }
 
 func (c propertyContext) protoPath() []string {
@@ -71,14 +71,6 @@ type fieldDefaults struct {
 
 func (fd fieldDefaults) Type() FieldType {
 	return fd.fieldType
-}
-
-func (fd fieldDefaults) TypeName() string {
-	return fd.context.typeName()
-}
-
-func (fd fieldDefaults) FullTypeName() string {
-	return fd.context.fullTypeName()
 }
 
 func (fieldDefaults) AsContainer() (ContainerField, bool) {
@@ -117,11 +109,18 @@ func (f fieldDefaults) ProtoPath() []string {
 	return f.context.protoPath()
 }
 
+func (fd fieldDefaults) TypeName() string {
+	return fd.context.typeName()
+}
+
+func (fd fieldDefaults) FullTypeName() string {
+	return fd.context.fullTypeName()
+}
+
 type Field interface {
 	Type() FieldType
 	TypeName() string
 	IsSet() bool
-	SetDefault() error
 
 	// NameInParent is the name this field has in the context it exists.
 	// Object and Oneof: The property name
@@ -148,15 +147,17 @@ type Field interface {
 type ContainerField interface {
 	Field
 	GetOrCreateContainer() (PropertySet, error)
+	GetExistingContainer() (PropertySet, bool, error)
 }
 
 type ArrayOfContainerField interface {
 	MutableArrayField
-	NewContainerElement() (PropertySet, int, error)
+	NewContainerElement() (ContainerField, int, error)
+	RangeContainers(func(ContainerField, PropertySet) error) error
 }
 
 type fieldFactory interface {
-	buildField(field fieldContext, value protoValueContext) Field
+	buildField(schema fieldContext, value protoContext) Field
 }
 
 func newFieldFactory(schema j5schema.FieldSchema, field protoreflect.FieldDescriptor) (fieldFactory, error) {

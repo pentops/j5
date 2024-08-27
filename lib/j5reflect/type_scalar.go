@@ -1,18 +1,36 @@
 package j5reflect
 
-import "github.com/pentops/j5/internal/j5schema"
+import (
+	"fmt"
+
+	"github.com/pentops/j5/internal/j5schema"
+)
+
+/*** Interface ***/
 
 type ScalarField interface {
 	Field
-	//Schema() *j5schema.ScalarSchema
 	ToGoValue() (interface{}, error)
 	SetGoValue(value interface{}) error
 	SetASTValue(ASTValue) error
 }
 
+type ArrayOfScalarField interface {
+	ArrayField
+	AppendGoValue(value interface{}) (int, error)
+	AppendASTValue(ASTValue) (int, error)
+}
+
+type MapOfScalarField interface {
+	SetGoValue(key string, value interface{}) error
+	SetASTValue(key string, value ASTValue) error
+}
+
+/*** Implementation ***/
+
 type scalarField struct {
 	fieldDefaults
-	field  protoValueContext
+	value  protoContext
 	schema *j5schema.ScalarSchema
 }
 
@@ -20,24 +38,19 @@ type scalarFieldFactory struct {
 	schema *j5schema.ScalarSchema
 }
 
-func (f *scalarFieldFactory) buildField(field fieldContext, value protoValueContext) Field {
+func (f *scalarFieldFactory) buildField(field fieldContext, value protoContext) Field {
 	return &scalarField{
 		fieldDefaults: fieldDefaults{
 			fieldType: FieldTypeScalar,
 			context:   field,
 		},
-		field:  value,
+		value:  value,
 		schema: f.schema,
 	}
 }
 
 func (sf *scalarField) IsSet() bool {
-	return sf.field.isSet()
-}
-
-func (sf *scalarField) SetDefault() error {
-	sf.field.getOrCreateMutable()
-	return nil
+	return sf.value.isSet()
 }
 
 func (sf *scalarField) AsScalar() (ScalarField, bool) {
@@ -54,7 +67,7 @@ func (sf *scalarField) SetASTValue(value ASTValue) error {
 		return err
 	}
 
-	sf.field.setValue(reflectValue)
+	sf.value.setValue(reflectValue)
 	return nil
 }
 
@@ -64,12 +77,16 @@ func (sf *scalarField) SetGoValue(value interface{}) error {
 		return err
 	}
 
-	sf.field.setValue(reflectValue)
+	sf.value.setValue(reflectValue)
 	return nil
 }
 
 func (sf *scalarField) ToGoValue() (interface{}, error) {
-	return scalarGoFromReflect(sf.schema.Proto, sf.field.getValue())
+	val, ok := sf.value.getValue()
+	if !ok {
+		return nil, nil
+	}
+	return scalarGoFromReflect(sf.schema.Proto, val)
 }
 
 type arrayOfScalarField struct {
@@ -79,24 +96,44 @@ type arrayOfScalarField struct {
 
 var _ ArrayOfScalarField = (*arrayOfScalarField)(nil)
 
-func (field *arrayOfScalarField) AppendGoScalar(val interface{}) (int, error) {
-	list := field.fieldInParent.getOrCreateMutable().List()
-	value, err := scalarReflectFromGo(field.itemSchema.Proto, val)
+func (array *arrayOfScalarField) AppendGoValue(value interface{}) (int, error) {
+	reflectValue, err := scalarReflectFromGo(array.itemSchema.Proto, value)
 	if err != nil {
 		return -1, err
 	}
-	list.Append(value)
-	idx := list.Len() - 1
-	return idx, nil
+	return array.appendProtoValue(reflectValue), nil
 }
 
-func (field *arrayOfScalarField) AppendASTValue(value ASTValue) (int, error) {
-	reflectValue, err := scalarReflectFromAST(field.itemSchema.Proto, value)
+func (array *arrayOfScalarField) AppendASTValue(value ASTValue) (int, error) {
+	reflectValue, err := scalarReflectFromAST(array.itemSchema.Proto, value)
 	if err != nil {
 		return -1, err
 	}
-	list := field.fieldInParent.getOrCreateMutable().List()
-	list.Append(reflectValue)
-	idx := list.Len() - 1
-	return idx, nil
+	return array.appendProtoValue(reflectValue), nil
+}
+
+type mapOfScalarField struct {
+	leafMapField
+	itemSchema *j5schema.ScalarSchema
+}
+
+var _ MapOfScalarField = (*mapOfScalarField)(nil)
+
+func (mapField *mapOfScalarField) SetGoValue(key string, value interface{}) error {
+	reflVal, err := scalarReflectFromGo(mapField.itemSchema.Proto, value)
+	if err != nil {
+		return fmt.Errorf("converting value to proto: %w", err)
+	}
+	mapField.setKey(key, reflVal)
+	return nil
+}
+
+func (mapField *mapOfScalarField) SetASTValue(key string, value ASTValue) error {
+	reflVal, err := scalarReflectFromAST(mapField.itemSchema.Proto, value)
+
+	if err != nil {
+		return fmt.Errorf("converting value to proto: %w", err)
+	}
+	mapField.setKey(key, reflVal)
+	return nil
 }
