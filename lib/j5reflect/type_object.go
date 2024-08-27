@@ -55,10 +55,10 @@ var _ messageFieldFactory = (*objectFieldFactory)(nil)
 
 func (f *objectFieldFactory) buildField(context fieldContext, value protoreflect.Message) Field {
 	obj := &objectImpl{
-		propSet: f.propSet.linkMessage(value),
+		propSet: f.propSet.newMessage(value),
 		schema:  f.schema.Schema(),
 	}
-	return newObjectField(context, f.schema, obj)
+	return newObjectField(context, obj)
 }
 
 type existingObjectField struct {
@@ -66,7 +66,7 @@ type existingObjectField struct {
 	*objectImpl
 }
 
-func newObjectField(context fieldContext, schema *j5schema.ObjectField, obj *objectImpl) ObjectField {
+func newObjectField(context fieldContext, obj *objectImpl) ObjectField {
 	return &existingObjectField{
 		objectImpl: obj,
 		fieldDefaults: fieldDefaults{

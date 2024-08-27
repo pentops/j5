@@ -12,6 +12,13 @@ type fieldable interface {
 	asDetachedField() (Field, error)
 }
 
+func (obj *objectImpl) asDetachedField() (Field, error) {
+	return &existingObjectField{
+		objectImpl:    obj,
+		fieldDefaults: fieldDefaults{},
+	}, nil
+}
+
 func testPath(t *testing.T, wrap fieldable, elements ...tPathElement) Field {
 	t.Helper()
 
@@ -32,7 +39,7 @@ func testFieldPath(t *testing.T, field Field, elements ...tPathElement) Field {
 	return field
 }
 
-func toObj(t *testing.T, f Field) Object {
+func toObj(t *testing.T, f Field) ObjectField {
 	t.Helper()
 	if f == nil {
 		t.Fatal("field is nil")
@@ -41,11 +48,7 @@ func toObj(t *testing.T, f Field) Object {
 	if !ok {
 		t.Fatalf("expected ObjectField, got %T", f)
 	}
-	obj, err := asObj.Object()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return obj
+	return asObj
 }
 
 func tObjectFullName(name string) tPathElement {
@@ -90,9 +93,6 @@ func tOneofFullName(name string) tPathElement {
 		oneof := toOneof(t, f)
 		t.Logf("       Want name %s", name)
 		t.Logf("       Got  name %s", oneof.SchemaName())
-		impl := oneof.(*OneofImpl)
-		descName := impl.value.descriptor.FullName()
-		t.Logf(" with descriptor %s", descName)
 		assert.Equal(t, name, oneof.SchemaName())
 		return f
 	}
@@ -103,11 +103,12 @@ func tObjectProperty(name string) tPathElement {
 		t.Helper()
 		t.Logf("T ObjectProperty %q", name)
 		obj := toObj(t, f)
-		prop, err := obj.GetProperty(name)
+		prop, err := obj.NewValue(name)
 		if err != nil {
 			t.Fatal(err)
 		}
 		t.Logf("  found object property %s", name)
+
 		return prop
 	}
 }
@@ -121,12 +122,7 @@ func toOneof(t *testing.T, f Field) Oneof {
 	if !ok {
 		t.Fatalf("expected OneofField, got %T", f)
 	}
-
-	obj, err := asOneof.Oneof()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return obj
+	return asOneof
 }
 
 /*
@@ -142,7 +138,7 @@ func tOneofProperty(name string) tPathElement {
 		t.Helper()
 		t.Logf("T OneofProperty")
 		oneof := toOneof(t, f)
-		prop, err := oneof.GetProperty(name)
+		prop, err := oneof.NewValue(name)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -177,31 +173,6 @@ func tSetScalar(v interface{}) tPathElement {
 	}
 }
 
-func tSetDefault() tPathElement {
-	return func(t *testing.T, f Field) Field {
-		t.Helper()
-		must(t, f.SetDefault())
-		return f
-	}
-}
-
-func tGetOrCreateContainer() tPathElement {
-	return func(t *testing.T, f Field) Field {
-		t.Helper()
-		t.Logf("T AsContainer")
-		c, ok := f.AsContainer()
-		if !ok {
-			t.Fatalf("expected ContainerField, got %T", f)
-		}
-		_, err := c.GetOrCreateContainer()
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		return f
-	}
-}
-
 func tArrayElement(inArrayElement ...tPathElement) tPathElement {
 	return func(t *testing.T, f Field) Field {
 		t.Helper()
@@ -215,7 +186,9 @@ func tArrayElement(inArrayElement ...tPathElement) tPathElement {
 			t.Fatalf("expected MutableArrayField, got %T", f)
 		}
 		t.Logf("  new array element")
-		testFieldPath(t, objField.NewElement(), inArrayElement...)
+		element := objField.NewElement()
+		t.Logf("  Run with new element %q", element.NameInParent())
+		testFieldPath(t, element, inArrayElement...)
 
 		// Then returns the outer array, so we can call this more than once
 		return f
@@ -242,7 +215,7 @@ func tAppendScalar(v interface{}) tPathElement {
 		if !ok {
 			t.Fatalf("expected ArrayOfScalarField, got %T", f)
 		}
-		_, err := objField.AppendGoScalar(v)
+		_, err := objField.AppendGoValue(v)
 		must(t, err)
 		return f
 	}

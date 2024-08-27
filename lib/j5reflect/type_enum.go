@@ -83,8 +83,7 @@ func (ef *enumField) GetValue() (EnumOption, error) {
 func (ef *enumField) SetFromString(val string) error {
 	option := ef.schema.Schema().OptionByName(val)
 	if option != nil {
-		ef.value.setValue(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
-		return nil
+		return ef.value.setValue(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
 	}
 	return fmt.Errorf("enum value %s not found", val)
 }
@@ -103,8 +102,7 @@ func (ef *enumField) SetGoValue(value interface{}) error {
 		return ef.SetFromString(v)
 	case *string:
 		if v == nil {
-			ef.value.setValue(protoreflect.ValueOfEnum(0))
-			return nil
+			return ef.value.setValue(protoreflect.ValueOfEnum(0))
 		}
 		return ef.SetFromString(*v)
 	default:

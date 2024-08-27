@@ -23,9 +23,9 @@ func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 	}
 
 	switch schema := root.(type) {
-	case *j5reflect.ObjectImpl:
+	case j5reflect.Object:
 		return d2.decodeObject(schema)
-	case *j5reflect.OneofImpl:
+	case j5reflect.Oneof:
 		return d2.decodeOneof(schema)
 	default:
 		return fmt.Errorf("unsupported root schema type %T", schema)
@@ -141,7 +141,7 @@ func passUpError(field string, err error) error {
 
 func (dec *decoder) decodeObject(object j5reflect.PropertySet) error {
 	return dec.jsonObject(func(keyTokenStr string) error {
-		prop, err := object.GetProperty(keyTokenStr)
+		prop, err := object.NewValue(keyTokenStr)
 		if err != nil {
 			return newFieldError(keyTokenStr, "no such field")
 		}
@@ -161,18 +161,10 @@ func (dec *decoder) decodeValue(field j5reflect.Field) error {
 		return dec.decodeArrayField(ft)
 
 	case j5reflect.ObjectField:
-		object, err := ft.Object()
-		if err != nil {
-			return err
-		}
-		return dec.decodeObject(object)
+		return dec.decodeObject(ft)
 
 	case j5reflect.OneofField:
-		field, err := ft.Oneof()
-		if err != nil {
-			return err
-		}
-		return dec.decodeOneof(field)
+		return dec.decodeOneof(ft)
 
 	case j5reflect.EnumField:
 		return dec.decodeEnum(ft)
@@ -230,7 +222,7 @@ func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 			return nil
 		}
 
-		matchedProperty, err := oneof.GetProperty(keyTokenStr)
+		matchedProperty, err := oneof.NewValue(keyTokenStr)
 		if err != nil {
 			return newFieldError(keyTokenStr, "no such key")
 		}
@@ -254,11 +246,10 @@ func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 
 		// Special case, allows the consumer to set a nil value on a oneof
 		// just by using the type parameter
-		matchedProperty, err := oneof.GetProperty(keyTokenStr)
+		_, err := oneof.NewValue(keyTokenStr)
 		if err != nil {
 			return newFieldError(keyTokenStr, "no such key")
 		}
-		return matchedProperty.SetDefault()
 	}
 
 	if len(foundKeys) > 1 {
@@ -286,7 +277,7 @@ func (dec *decoder) decodeMapField(field j5reflect.MapField) error {
 				return unexpectedTokenError(tok, "scalar")
 			}
 
-			return field.SetGoScalar(keyTokenStr, tok)
+			return field.SetGoValue(keyTokenStr, tok)
 		})
 
 	case j5reflect.MapOfEnumField:
@@ -342,14 +333,11 @@ func (dec *decoder) decodeArrayField(field j5reflect.ArrayField) error {
 				return unexpectedTokenError(tok, "scalar")
 			}
 
-			_, err = field.AppendGoScalar(tok)
+			_, err = field.AppendGoValue(tok)
 			return err
 
 		case j5reflect.ArrayOfObjectField:
-			subMsg, _, err := field.NewObjectElement()
-			if err != nil {
-				return err
-			}
+			subMsg, _ := field.NewObjectElement() // ignoring index, not error
 			return dec.decodeObject(subMsg)
 
 		case j5reflect.ArrayOfOneofField:

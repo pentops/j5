@@ -1,8 +1,6 @@
 package j5reflect
 
 import (
-	"fmt"
-
 	"github.com/pentops/j5/internal/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -37,22 +35,6 @@ type oneofImpl struct {
 	*propSet
 }
 
-func (fs *oneofImpl) GetOne() (Field, bool, error) {
-	var property Field
-	var found bool
-
-	for _, search := range fs.asSlice {
-		if search.hasValue {
-			if found {
-				return nil, true, fmt.Errorf("multiple values set for oneof")
-			}
-			property = search.value
-			found = true
-		}
-	}
-	return property, found, nil
-}
-
 type oneofField struct {
 	fieldDefaults
 	schema *j5schema.OneofField
@@ -69,7 +51,7 @@ var _ messageFieldFactory = (*oneofFieldFactory)(nil)
 func (f *oneofFieldFactory) buildField(context fieldContext, value protoreflect.Message) Field {
 	oneof := &oneofImpl{
 		schema:  f.schema.Schema(),
-		propSet: f.propSet.linkMessage(value),
+		propSet: f.propSet.newMessage(value),
 	}
 	return newOneofField(context, f.schema, oneof)
 }
@@ -92,7 +74,8 @@ func (field *oneofField) AsContainer() (PropertySet, bool) {
 }
 
 func (field *oneofField) IsSet() bool {
-	return true
+	_, ok, err := field.oneofImpl.GetOne()
+	return ok && err == nil
 }
 
 func (field *oneofField) Type() FieldType {

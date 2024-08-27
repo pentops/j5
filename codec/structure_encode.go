@@ -15,7 +15,7 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 	enc.openObject()
 	defer enc.closeObject()
 
-	return fieldSet.RangeSetProperties(func(prop j5reflect.Field) error {
+	return fieldSet.RangeValues(func(prop j5reflect.Field) error {
 		if !first {
 			enc.fieldSep()
 		}
@@ -34,14 +34,14 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 
 func (enc *encoder) encodeOneofBody(fieldSet j5reflect.Oneof) error {
 
-	prop, err := fieldSet.GetOne()
+	prop, isSet, err := fieldSet.GetOne()
 	if err != nil {
 		return err
 	}
 
 	enc.openObject()
 	defer enc.closeObject()
-	if prop == nil {
+	if !isSet {
 		return nil
 	}
 
@@ -77,18 +77,10 @@ func (enc *encoder) encodeValue(field j5reflect.Field) error {
 
 	switch ft := field.(type) {
 	case j5reflect.ObjectField:
-		val, err := ft.Object()
-		if err != nil {
-			return err
-		}
-		return enc.encodeObject(val)
+		return enc.encodeObject(ft)
 
 	case j5reflect.OneofField:
-		val, err := ft.Oneof()
-		if err != nil {
-			return err
-		}
-		return enc.encodeOneofBody(val)
+		return enc.encodeOneofBody(ft)
 
 	case j5reflect.EnumField:
 		return enc.encodeEnum(ft)
@@ -129,7 +121,7 @@ func (enc *encoder) encodeArray(array j5reflect.ArrayField) error {
 	enc.openArray()
 	defer enc.closeArray()
 	first := true
-	return array.Range(func(prop j5reflect.Field) error {
+	return array.RangeValues(func(idx int, prop j5reflect.Field) error {
 		if !first {
 			enc.fieldSep()
 		}

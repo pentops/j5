@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pentops/j5/internal/j5schema"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 /*** Interface ***/
@@ -67,8 +68,11 @@ func (sf *scalarField) SetASTValue(value ASTValue) error {
 		return err
 	}
 
-	sf.value.setValue(reflectValue)
-	return nil
+	return sf.setValue(reflectValue)
+}
+
+func (sf *scalarField) setValue(reflectValue protoreflect.Value) error {
+	return sf.value.setValue(reflectValue)
 }
 
 func (sf *scalarField) SetGoValue(value interface{}) error {
@@ -76,9 +80,7 @@ func (sf *scalarField) SetGoValue(value interface{}) error {
 	if err != nil {
 		return err
 	}
-
-	sf.value.setValue(reflectValue)
-	return nil
+	return sf.setValue(reflectValue)
 }
 
 func (sf *scalarField) ToGoValue() (interface{}, error) {

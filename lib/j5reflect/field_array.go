@@ -83,6 +83,9 @@ func newMessageArrayField(context fieldContext, schema *j5schema.ArrayField, val
 }
 
 func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value protoreflect.List, factory fieldFactory) (ArrayField, error) {
+	if value == nil {
+		panic("list value is nil for leaf")
+	}
 
 	base := baseArrayField{
 		fieldDefaults: fieldDefaults{
@@ -99,6 +102,7 @@ func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value 
 		return &arrayOfScalarField{
 			leafArrayField: leafArrayField{
 				baseArrayField: base,
+				factory:        factory,
 			},
 			itemSchema: schema.Schema.(*j5schema.ScalarSchema),
 		}, nil
@@ -107,6 +111,7 @@ func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value 
 		return &arrayOfEnumField{
 			leafArrayField: leafArrayField{
 				baseArrayField: base,
+				factory:        factory,
 			},
 			itemSchema: st.Schema(),
 		}, nil
@@ -118,7 +123,6 @@ func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value 
 
 type mutableArrayField struct {
 	baseArrayField
-	value   protoreflect.List
 	lock    sync.Mutex
 	factory messageFieldFactory
 }
@@ -128,7 +132,7 @@ var _ MutableArrayField = (*mutableArrayField)(nil)
 func (array *mutableArrayField) NewElement() Field {
 	array.lock.Lock()
 	idx := array.value.Len()
-	elem := array.value.AppendMutable()
+	elem := array.value.AppendMutable().Message()
 	array.lock.Unlock()
 	return array.wrapValue(idx, elem)
 }
@@ -139,7 +143,7 @@ func (array *mutableArrayField) RangeValues(cb RangeArrayCallback) error {
 	}
 
 	for idx := 0; idx < array.value.Len(); idx++ {
-		fieldVal := array.wrapValue(idx, array.value.Get(idx))
+		fieldVal := array.wrapValue(idx, array.value.Get(idx).Message())
 		err := cb(idx, fieldVal)
 		if err != nil {
 			return err
@@ -148,13 +152,13 @@ func (array *mutableArrayField) RangeValues(cb RangeArrayCallback) error {
 	return nil
 }
 
-func (array *mutableArrayField) wrapValue(idx int, value protoreflect.Value) Field {
+func (array *mutableArrayField) wrapValue(idx int, value protoreflect.Message) Field {
 	schemaContext := &arrayContext{
 		index:  idx,
 		schema: array.schema,
 	}
 
-	field := array.factory.buildField(schemaContext, value.Message())
+	field := array.factory.buildField(schemaContext, value)
 	return field
 }
 
@@ -170,7 +174,7 @@ func (array *leafArrayField) RangeValues(cb RangeArrayCallback) error {
 	}
 
 	for idx := 0; idx < array.value.Len(); idx++ {
-		fieldVal := array.wrapValue(idx, array.value.Get(idx))
+		fieldVal := array.wrapValue(idx)
 		err := cb(idx, fieldVal)
 		if err != nil {
 			return err
@@ -179,10 +183,11 @@ func (array *leafArrayField) RangeValues(cb RangeArrayCallback) error {
 	return nil
 }
 
-func (array *leafArrayField) wrapValue(idx int, value protoreflect.Value) Field {
+func (array *leafArrayField) wrapValue(idx int) Field {
 	protoItemContext := &protoListValue{
 		list:  array.value,
 		index: idx,
+
 		//parentField: array.fieldDescriptor,
 	}
 
@@ -220,6 +225,9 @@ func (plv *protoListValue) isSet() bool {
 }
 
 func (plv *protoListValue) setValue(val protoreflect.Value) error {
+	if !val.IsValid() {
+		return fmt.Errorf("cannot set a nil value to a list val")
+	}
 	plv.list.Set(plv.index, val)
 	return nil
 }

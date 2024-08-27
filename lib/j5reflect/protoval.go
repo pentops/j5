@@ -10,10 +10,8 @@ type protoContext interface {
 	isSet() bool
 
 	getValue() (protoreflect.Value, bool)
-	setValue(protoreflect.Value) error
 	getMutableValue(createIfNotSet bool) (protoreflect.Value, error)
-
-	//fieldDescriptor() protoreflect.FieldDescriptor
+	setValue(protoreflect.Value) error
 }
 
 // protoPair is a field within a message. The message will exist, but the field
@@ -27,8 +25,11 @@ type protoPair struct {
 var _ protoContext = (*protoPair)(nil)
 
 func newProtoPair(msg protoreflect.Message, field protoreflect.FieldDescriptor) *protoPair {
-	if msg == nil {
-		panic("msg is nil")
+	if msg == nil || !msg.IsValid() {
+		panic("msg is nil/invalid")
+	}
+	if field == nil {
+		panic("field is nil")
 	}
 	return &protoPair{
 		parentMessage: msg,
@@ -53,6 +54,10 @@ func (pp *protoPair) getValue() (protoreflect.Value, bool) {
 }
 
 func (pp *protoPair) setValue(val protoreflect.Value) error {
+	if !val.IsValid() {
+		pp.parentMessage.Clear(pp.fieldInParent)
+		return nil
+	}
 	pp.parentMessage.Set(pp.fieldInParent, val)
 	return nil
 }
@@ -69,31 +74,3 @@ func (pp *protoPair) getMutableValue(createIfNotSet bool) (protoreflect.Value, e
 	}
 	return pp.parentMessage.Mutable(pp.fieldInParent), nil
 }
-
-/*
-type protoMessage struct {
-	thisMessage protoreflect.Message
-}
-
-func newProtoMessage(msg protoreflect.Message) *protoMessage {
-	if msg == nil {
-		panic("msg is nil")
-	}
-	return &protoMessage{
-		thisMessage: msg,
-	}
-}
-
-func (pm *protoMessage) isSet() bool {
-	return true
-}
-
-func (pm *protoMessage) getValue() (protoreflect.Value, bool) {
-	return protoreflect.ValueOfMessage(pm.thisMessage), true
-}
-
-func (pm *protoMessage) getMutableValue(createIfNotSet bool) (protoreflect.Value, error) {
-	return protoreflect.ValueOfMessage(pm.thisMessage), nil
-}
-
-var _ protoContext = (*protoMessage)(nil)*/

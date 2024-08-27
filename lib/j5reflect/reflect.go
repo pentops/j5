@@ -73,7 +73,7 @@ func buildObject(schema *j5schema.ObjectSchema, msg protoreflect.Message) (*obje
 	if err != nil {
 		return nil, err
 	}
-	linked := ps.linkMessage(msg)
+	linked := ps.newMessage(msg)
 	return &objectImpl{
 		propSet: linked,
 		schema:  schema,
@@ -86,7 +86,7 @@ func buildOneof(schema *j5schema.OneofSchema, msg protoreflect.Message) (*oneofI
 	if err != nil {
 		return nil, err
 	}
-	linked := ps.linkMessage(msg)
+	linked := ps.newMessage(msg)
 	return &oneofImpl{
 		propSet: linked,
 		schema:  schema,

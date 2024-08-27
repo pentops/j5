@@ -172,14 +172,14 @@ func (mapField *leafMapField) Range(cb RangeMapCallback) error {
 
 	mapField.value.Range(func(key protoreflect.MapKey, val protoreflect.Value) bool {
 		keyStr := key.Value().String()
-		field := mapField.wrapValue(keyStr, val)
+		field := mapField.wrapValue(keyStr)
 		outerErr = cb(keyStr, field)
 		return outerErr == nil
 	})
 	return outerErr
 }
 
-func (mapField *leafMapField) wrapValue(key string, value protoreflect.Value) Field {
+func (mapField *leafMapField) wrapValue(key string) Field {
 	wrapped := &protoMapValue{
 		mapVal: mapField.value,
 		key:    protoreflect.ValueOfString(key).MapKey(),
@@ -209,6 +209,10 @@ func (pmv *protoMapValue) isSet() bool {
 }
 
 func (pmv *protoMapValue) setValue(val protoreflect.Value) error {
+	if !val.IsValid() {
+		pmv.mapVal.Clear(pmv.key)
+		return nil
+	}
 	pmv.mapVal.Set(pmv.key, val)
 	return nil
 }

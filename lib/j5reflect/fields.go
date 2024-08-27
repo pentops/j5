@@ -1,11 +1,8 @@
 package j5reflect
 
 import (
-	"fmt"
-
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5schema"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type FieldType string
@@ -142,51 +139,4 @@ type Field interface {
 	AsContainer() (PropertySet, bool)
 	AsArrayOfContainer() (ArrayOfContainerField, bool)
 	AsArrayOfScalar() (ArrayOfScalarField, bool)
-}
-
-type messageFieldFactory interface {
-	buildField(schema fieldContext, value protoreflect.Message) Field
-}
-
-type fieldFactory interface {
-	buildField(schema fieldContext, value protoContext) Field
-}
-
-func newMessageFieldFactory(schema j5schema.FieldSchema) (messageFieldFactory, error) {
-	switch st := schema.(type) {
-	case *j5schema.ObjectField:
-		return &objectFieldFactory{schema: st}, nil
-
-	case *j5schema.OneofField:
-		return &oneofFieldFactory{schema: st}, nil
-
-	default:
-		return nil, fmt.Errorf("unsupported schema type %T", schema)
-	}
-}
-
-func newFieldFactory(schema j5schema.FieldSchema, field protoreflect.FieldDescriptor) (fieldFactory, error) {
-	switch st := schema.(type) {
-	case *j5schema.EnumField:
-		if field.Kind() != protoreflect.EnumKind {
-			return nil, fmt.Errorf("EnumField is kind %s", field.Kind())
-		}
-		return &enumFieldFactory{schema: st}, nil
-
-	case *j5schema.ScalarSchema:
-		if st.WellKnownTypeName != "" {
-			if field.Kind() != protoreflect.MessageKind {
-				return nil, fmt.Errorf("ScalarField is proto kind %s, want message for %T", field.Kind(), st.Proto.Type)
-			}
-			if string(field.Message().FullName()) != string(st.WellKnownTypeName) {
-				return nil, fmt.Errorf("ScalarField message is %s, want %s for %T", field.Message().FullName(), st.WellKnownTypeName, st.Proto.Type)
-			}
-		} else if field.Kind() != st.Kind {
-			return nil, fmt.Errorf("ScalarField is proto kind %s, want schema %q for %T", field.Kind(), st.Kind, st.Proto.Type)
-		}
-		return &scalarFieldFactory{schema: st}, nil
-
-	default:
-		return nil, fmt.Errorf("unsupported schema type %T", schema)
-	}
 }

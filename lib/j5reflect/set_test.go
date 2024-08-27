@@ -17,7 +17,7 @@ func must(t *testing.T, err error) {
 func TestSetter(t *testing.T) {
 	refl := New()
 
-	newRoot := func(t *testing.T) (obj *ObjectImpl, schema *schema_testpb.FullSchema) {
+	newRoot := func(t *testing.T) (obj *objectImpl, schema *schema_testpb.FullSchema) {
 		// not setting helper, as errors here are global fault
 		msg := &schema_testpb.FullSchema{}
 		root, err := refl.NewObject(msg.ProtoReflect())
@@ -76,7 +76,6 @@ func TestSetter(t *testing.T) {
 		testPath(t, root,
 			tObjectProperty("wrappedOneof"),
 			tOneofProperty("wOneofBar"),
-			tGetOrCreateContainer(),
 		)
 
 		if msg.WrappedOneof == nil {
@@ -126,7 +125,7 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a map scalar field
-		sMapProp, err := root.GetProperty("mapStringString")
+		sMapProp, err := root.NewValue("mapStringString")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -136,7 +135,7 @@ func TestSetter(t *testing.T) {
 			t.Fatalf("Wrong type for field: %T", sMapProp)
 		}
 
-		must(t, sMap.SetGoScalar("key", "value"))
+		must(t, sMap.SetGoValue("key", "value"))
 
 		assert.Equal(t, "value", msg.MapStringString["key"])
 	})
@@ -222,7 +221,7 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a nil boolean field
-		sBoolProp, err := root.GetProperty("oBool")
+		sBoolProp, err := root.NewValue("oBool")
 		if err != nil {
 			t.Fatal("missing field sBool")
 		}
@@ -249,7 +248,7 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a nil boolean field
-		sBoolProp, err := root.GetProperty("sBool")
+		sBoolProp, err := root.NewValue("sBool")
 		if err != nil {
 			t.Fatal(err)
 		}
