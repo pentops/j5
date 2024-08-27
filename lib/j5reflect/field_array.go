@@ -23,14 +23,19 @@ type MutableArrayField interface {
 	NewElement() Field
 }
 
+type ArrayOfContainerField interface {
+	MutableArrayField
+	NewContainerElement() (PropertySet, int)
+	RangeContainers(func(PropertySet) error) error
+}
+
 /*** Implementation ***/
 
 type baseArrayField struct {
 	fieldDefaults
 	value protoreflect.List
 	//fieldDescriptor protoreflect.FieldDescriptor
-	schema  *j5schema.ArrayField
-	factory fieldFactory
+	schema *j5schema.ArrayField
 }
 
 func (array *baseArrayField) Type() FieldType {
@@ -45,55 +50,22 @@ func (array *baseArrayField) ItemSchema() j5schema.FieldSchema {
 	return array.schema.Schema
 }
 
-func (array *baseArrayField) RangeValues(cb RangeArrayCallback) error {
-	if !array.value.IsValid() {
-		return nil // TODO: return an error? Ranging a nil array means there's certainly nothing to range
-	}
-
-	for idx := 0; idx < array.value.Len(); idx++ {
-		fieldVal := array.wrapValue(idx, array.value.Get(idx))
-		err := cb(idx, fieldVal)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (array *baseArrayField) wrapValue(idx int, value protoreflect.Value) Field {
-	protoItemContext := &protoListValue{
-		list:  array.value,
-		index: idx,
-		//parentField: array.fieldDescriptor,
-	}
-
-	schemaContext := &arrayContext{
-		index:  idx,
-		schema: array.schema,
-	}
-
-	field := array.factory.buildField(schemaContext, protoItemContext)
-	return field
-}
-
-func newArrayField(context fieldContext, schema *j5schema.ArrayField, value protoreflect.List, factory fieldFactory) (ArrayField, error) {
-
+func newMessageArrayField(context fieldContext, schema *j5schema.ArrayField, value protoreflect.List, factory messageFieldFactory) (ArrayField, error) {
 	base := baseArrayField{
 		fieldDefaults: fieldDefaults{
 			fieldType: FieldTypeArray,
 			context:   context,
 		},
-		schema:  schema,
-		value:   value,
-		factory: factory,
-		//fieldDescriptor: value.fieldInParent,
+		schema: schema,
+		value:  value,
 	}
 
-	switch st := schema.Schema.(type) {
+	switch schema.Schema.(type) {
 	case *j5schema.ObjectField:
 		return &arrayOfObjectField{
 			mutableArrayField: mutableArrayField{
 				baseArrayField: base,
+				factory:        factory,
 			},
 		}, nil
 
@@ -101,8 +73,27 @@ func newArrayField(context fieldContext, schema *j5schema.ArrayField, value prot
 		return &arrayOfOneofField{
 			mutableArrayField: mutableArrayField{
 				baseArrayField: base,
+				factory:        factory,
 			},
 		}, nil
+
+	default:
+		return nil, fmt.Errorf("unsupported array item schema %T", schema.Schema)
+	}
+}
+
+func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value protoreflect.List, factory fieldFactory) (ArrayField, error) {
+
+	base := baseArrayField{
+		fieldDefaults: fieldDefaults{
+			fieldType: FieldTypeArray,
+			context:   context,
+		},
+		schema: schema,
+		value:  value,
+	}
+
+	switch st := schema.Schema.(type) {
 
 	case *j5schema.ScalarSchema:
 		return &arrayOfScalarField{
@@ -127,8 +118,9 @@ func newArrayField(context fieldContext, schema *j5schema.ArrayField, value prot
 
 type mutableArrayField struct {
 	baseArrayField
-	value protoreflect.List
-	lock  sync.Mutex
+	value   protoreflect.List
+	lock    sync.Mutex
+	factory messageFieldFactory
 }
 
 var _ MutableArrayField = (*mutableArrayField)(nil)
@@ -141,9 +133,66 @@ func (array *mutableArrayField) NewElement() Field {
 	return array.wrapValue(idx, elem)
 }
 
+func (array *mutableArrayField) RangeValues(cb RangeArrayCallback) error {
+	if !array.value.IsValid() {
+		return nil // TODO: return an error? Ranging a nil array means there's certainly nothing to range
+	}
+
+	for idx := 0; idx < array.value.Len(); idx++ {
+		fieldVal := array.wrapValue(idx, array.value.Get(idx))
+		err := cb(idx, fieldVal)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (array *mutableArrayField) wrapValue(idx int, value protoreflect.Value) Field {
+	schemaContext := &arrayContext{
+		index:  idx,
+		schema: array.schema,
+	}
+
+	field := array.factory.buildField(schemaContext, value.Message())
+	return field
+}
+
 type leafArrayField struct {
 	baseArrayField
-	lock sync.Mutex
+	lock    sync.Mutex
+	factory fieldFactory
+}
+
+func (array *leafArrayField) RangeValues(cb RangeArrayCallback) error {
+	if !array.value.IsValid() {
+		return nil // TODO: return an error? Ranging a nil array means there's certainly nothing to range
+	}
+
+	for idx := 0; idx < array.value.Len(); idx++ {
+		fieldVal := array.wrapValue(idx, array.value.Get(idx))
+		err := cb(idx, fieldVal)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (array *leafArrayField) wrapValue(idx int, value protoreflect.Value) Field {
+	protoItemContext := &protoListValue{
+		list:  array.value,
+		index: idx,
+		//parentField: array.fieldDescriptor,
+	}
+
+	schemaContext := &arrayContext{
+		index:  idx,
+		schema: array.schema,
+	}
+
+	field := array.factory.buildField(schemaContext, protoItemContext)
+	return field
 }
 
 func (array *leafArrayField) appendProtoValue(value protoreflect.Value) int {

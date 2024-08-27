@@ -70,20 +70,35 @@ type propSet struct {
 	asMap    map[string]*property
 	asSlice  []*property
 	fullName string
-	message  protoreflect.Message
+
+	value protoreflect.Message
 }
 
-func newPropSet(name string, message protoreflect.Message, props []*j5schema.ObjectProperty) (*propSet, error) {
+type propSetFactory interface {
+	linkMessage(protoreflect.Message) *propSet
+}
+
+func (ps *propSet) linkMessage(msg protoreflect.Message) *propSet {
+	ps.value = msg
+	return ps
+}
+
+type hasProps interface {
+	FullName() string
+	ClientProperties() []*j5schema.ObjectProperty
+}
+
+func newPropSet(schema hasProps, rootDesc protoreflect.MessageDescriptor) (propSetFactory, error) {
 	fs := &propSet{
 		asMap:    map[string]*property{},
-		fullName: name,
-		message:  message,
+		fullName: schema.FullName(),
 	}
 
-	rootDesc := message.Descriptor()
 	if rootDesc == nil {
 		return nil, fmt.Errorf("propSet root is not a message")
 	}
+
+	props := schema.ClientProperties()
 
 	for _, propSchema := range props {
 		prop := &property{
@@ -185,46 +200,61 @@ func (fs *propSet) getValue(name string, create bool) (Field, bool, error) {
 		return prop.value, true, nil
 	}
 
+	if !create {
+		return nil, false, nil
+	}
+
+	value, err := fs.newValue(prop)
+	if err != nil {
+		return nil, false, err
+	}
+	return value, true, nil
+}
+
+func (fs *propSet) newValue(prop *property) (Field, error) {
+
+	msg := fs.value
+
 	fieldContext := &propertyContext{
 		schema: prop.schema,
 	}
 
 	if len(prop.protoPath) == 0 {
-		// 'create' is meaningless here as the field is 'virtual', in that it is
-		// a subset of fields in an already existing message.
-
 		wrapper, ok := prop.schema.Schema.(*j5schema.OneofField)
 		if !ok {
-			return nil, false, fmt.Errorf("Reflection Bug: no proto field and not a oneof")
+			return nil, fmt.Errorf("Reflection Bug: no proto field and not a oneof")
 		}
 
-		preBuilt, err := newOneof(wrapper.Schema(), fs.message)
+		descriptor := msg.Descriptor()
+
+		propSetFactory, err := newPropSet(wrapper.Schema(), descriptor)
 		if err != nil {
-			return nil, false, patherr.Wrap(err, prop.schema.JSONName)
+			return nil, patherr.Wrap(err, prop.schema.JSONName)
 		}
 
-		protoVal := newProtoMessage(fs.message)
-		built := newOneofField(fieldContext, wrapper, protoVal)
-		built._oneof = preBuilt
-		return built, true, nil
+		propSet := propSetFactory.linkMessage(fs.value)
+		oneof := &oneofImpl{
+			schema:  wrapper.Schema(),
+			propSet: propSet,
+		}
+
+		built := newOneofField(fieldContext, wrapper, oneof)
+		return built, nil
 	}
 
 	var walkField protoreflect.FieldDescriptor
-	walkMessage := fs.message
+	walkMessage := msg
 	walkPath := prop.protoPath[:]
 	for len(walkPath) > 1 {
 		walkField, walkPath = walkPath[0], walkPath[1:]
 		fieldContext.walkedProtoPath = append(fieldContext.walkedProtoPath, walkField.JSONName())
 		fieldValue := walkMessage.Get(walkField)
 		if !fieldValue.IsValid() {
-			if !create {
-				return nil, false, fmt.Errorf("field %s is not set", walkField.FullName())
-			}
 			fieldValue = walkMessage.Mutable(walkField)
 		}
 		walkMessage = fieldValue.Message()
 		if walkMessage == nil {
-			return nil, false, fmt.Errorf("Reflection Bug: field %s is not a message", walkField.FullName())
+			return nil, fmt.Errorf("Reflection Bug: field %s is not a message", walkField.FullName())
 		}
 	}
 
@@ -235,13 +265,76 @@ func (fs *propSet) getValue(name string, create bool) (Field, bool, error) {
 
 	built, err := buildProperty(fieldContext, prop.schema, protoVal)
 	if err != nil {
-		return nil, false, patherr.Wrap(err, prop.schema.JSONName)
+		return nil, err
+	}
+
+	if finalField.Kind() == protoreflect.MessageKind {
+		built, err := buildMessageKindProperty(fieldContext, prop.schema, protoVal)
+		if err != nil {
+			return nil, err
+		}
+		prop.value = built
 	}
 
 	prop.hasValue = true
 	prop.value = built
 
-	return built, true, nil
+	return built, nil
+}
+
+func buildMessageKindProperty(context fieldContext, schema *j5schema.ObjectProperty, value *protoPair) (Field, error) {
+
+	ff, err := newMessageFieldFactory(schema.Schema)
+	if err != nil {
+		return nil, err
+	}
+	messageVal, err := value.getMutableValue(true)
+	if err != nil {
+		return nil, err
+	}
+
+	message := messageVal.Message()
+
+	switch st := schema.Schema.(type) {
+
+	case *j5schema.ArrayField:
+		if !value.fieldInParent.IsList() {
+			return nil, fmt.Errorf("Reflection Bug: ArrayField is not a list")
+		}
+
+		valVal, err := value.getMutableValue(true)
+		if err != nil {
+			return nil, err
+		}
+		listVal := valVal.List()
+
+		field, err := newMessageArrayField(context, st, listVal, ff)
+		if err != nil {
+			return nil, err
+		}
+
+		return field, nil
+
+	case *j5schema.MapField:
+		if !value.fieldInParent.IsMap() {
+			return nil, fmt.Errorf("MapField is not a map")
+		}
+
+		valVal, err := value.getMutableValue(true)
+		if err != nil {
+			return nil, err
+		}
+		mapVal := valVal.Map()
+
+		field, err := newMessageMapField(context, st, mapVal, ff)
+		if err != nil {
+			return nil, err
+		}
+		return field, nil
+	}
+
+	field := ff.buildField(context, message)
+	return field, nil
 }
 
 func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value *protoPair) (Field, error) {
@@ -264,7 +357,7 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 		}
 		listVal := valVal.List()
 
-		field, err := newArrayField(context, st, listVal, ff)
+		field, err := newLeafArrayField(context, st, listVal, ff)
 		if err != nil {
 			return nil, err
 		}
@@ -282,12 +375,11 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 		}
 		mapVal := valVal.Map()
 
-		field, err := newMapField(context, st, mapVal, ff)
+		field, err := newLeafMapField(context, st, mapVal, ff)
 		if err != nil {
 			return nil, err
 		}
 		return field, nil
-
 	}
 
 	field := ff.buildField(context, value)

@@ -7,7 +7,9 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-type Root interface{}
+type Root interface {
+	PropertySet
+}
 
 type Reflector struct {
 	schemaSet *j5schema.SchemaCache
@@ -39,9 +41,9 @@ func (r *Reflector) NewRoot(msg protoreflect.Message) (Root, error) {
 
 	switch schema := schema.(type) {
 	case *j5schema.ObjectSchema:
-		return newObject(schema, msg)
+		return buildObject(schema, msg)
 	case *j5schema.OneofSchema:
-		return newOneof(schema, msg)
+		return buildOneof(schema, msg)
 	default:
 		return nil, fmt.Errorf("unsupported root schema type %T", schema)
 	}
@@ -63,5 +65,30 @@ func (r *Reflector) NewObject(msg protoreflect.Message) (*objectImpl, error) {
 		return nil, fmt.Errorf("expected object schema, got %T", schema)
 	}
 
-	return newObject(obj, msg)
+	return buildObject(obj, msg)
+}
+
+func buildObject(schema *j5schema.ObjectSchema, msg protoreflect.Message) (*objectImpl, error) {
+	ps, err := newPropSet(schema, msg.Descriptor())
+	if err != nil {
+		return nil, err
+	}
+	linked := ps.linkMessage(msg)
+	return &objectImpl{
+		propSet: linked,
+		schema:  schema,
+	}, nil
+
+}
+
+func buildOneof(schema *j5schema.OneofSchema, msg protoreflect.Message) (*oneofImpl, error) {
+	ps, err := newPropSet(schema, msg.Descriptor())
+	if err != nil {
+		return nil, err
+	}
+	linked := ps.linkMessage(msg)
+	return &oneofImpl{
+		propSet: linked,
+		schema:  schema,
+	}, nil
 }

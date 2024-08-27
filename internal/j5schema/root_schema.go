@@ -267,6 +267,10 @@ func (s *OneofSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
 	return s.ToJ5Root()
 }
 
+func (s *OneofSchema) ClientProperties() []*ObjectProperty {
+	return s.Properties
+}
+
 type PropertySet []*ObjectProperty
 
 type ObjectProperty struct {

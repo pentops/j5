@@ -73,7 +73,7 @@ func (fd fieldDefaults) Type() FieldType {
 	return fd.fieldType
 }
 
-func (fieldDefaults) AsContainer() (ContainerField, bool) {
+func (fieldDefaults) AsContainer() (PropertySet, bool) {
 	return nil, false
 }
 
@@ -139,41 +139,34 @@ type Field interface {
 	// Fighting with go typing here, the implementations of these return
 	// themselves and true.
 	AsScalar() (ScalarField, bool)
-	AsContainer() (ContainerField, bool)
+	AsContainer() (PropertySet, bool)
 	AsArrayOfContainer() (ArrayOfContainerField, bool)
 	AsArrayOfScalar() (ArrayOfScalarField, bool)
 }
 
-type ContainerField interface {
-	Field
-	GetOrCreateContainer() (PropertySet, error)
-	GetExistingContainer() (PropertySet, bool, error)
-}
-
-type ArrayOfContainerField interface {
-	MutableArrayField
-	NewContainerElement() (ContainerField, int, error)
-	RangeContainers(func(ContainerField, PropertySet) error) error
+type messageFieldFactory interface {
+	buildField(schema fieldContext, value protoreflect.Message) Field
 }
 
 type fieldFactory interface {
 	buildField(schema fieldContext, value protoContext) Field
 }
 
-func newFieldFactory(schema j5schema.FieldSchema, field protoreflect.FieldDescriptor) (fieldFactory, error) {
+func newMessageFieldFactory(schema j5schema.FieldSchema) (messageFieldFactory, error) {
 	switch st := schema.(type) {
 	case *j5schema.ObjectField:
-		if field.Kind() != protoreflect.MessageKind {
-			return nil, fmt.Errorf("ObjectField is kind %s", field.Kind())
-		}
 		return &objectFieldFactory{schema: st}, nil
 
 	case *j5schema.OneofField:
-		if field.Kind() != protoreflect.MessageKind {
-			return nil, fmt.Errorf("OneofField is kind %s", field.Kind())
-		}
 		return &oneofFieldFactory{schema: st}, nil
 
+	default:
+		return nil, fmt.Errorf("unsupported schema type %T", schema)
+	}
+}
+
+func newFieldFactory(schema j5schema.FieldSchema, field protoreflect.FieldDescriptor) (fieldFactory, error) {
+	switch st := schema.(type) {
 	case *j5schema.EnumField:
 		if field.Kind() != protoreflect.EnumKind {
 			return nil, fmt.Errorf("EnumField is kind %s", field.Kind())

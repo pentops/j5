@@ -10,7 +10,7 @@ type protoContext interface {
 	isSet() bool
 
 	getValue() (protoreflect.Value, bool)
-	//setValue(protoreflect.Value) error
+	setValue(protoreflect.Value) error
 	getMutableValue(createIfNotSet bool) (protoreflect.Value, error)
 
 	//fieldDescriptor() protoreflect.FieldDescriptor
@@ -70,6 +70,7 @@ func (pp *protoPair) getMutableValue(createIfNotSet bool) (protoreflect.Value, e
 	return pp.parentMessage.Mutable(pp.fieldInParent), nil
 }
 
+/*
 type protoMessage struct {
 	thisMessage protoreflect.Message
 }
@@ -95,4 +96,4 @@ func (pm *protoMessage) getMutableValue(createIfNotSet bool) (protoreflect.Value
 	return protoreflect.ValueOfMessage(pm.thisMessage), nil
 }
 
-var _ protoContext = (*protoMessage)(nil)
+var _ protoContext = (*protoMessage)(nil)*/

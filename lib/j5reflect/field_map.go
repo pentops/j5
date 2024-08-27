@@ -20,7 +20,11 @@ type MapField interface {
 
 type MutableMapField interface {
 	MapField
-	NewElement(key string) Field
+	NewElement(key string) (Field, error)
+}
+
+type LeafMapField interface {
+	MapField
 }
 
 /*** Implementation ***/
@@ -29,8 +33,7 @@ type baseMapField struct {
 	fieldDefaults
 	value protoreflect.Map
 	//fieldDescriptor protoreflect.FieldDescriptor
-	schema  *j5schema.MapField
-	factory fieldFactory
+	schema *j5schema.MapField
 }
 
 func (mapField *baseMapField) Type() FieldType {
@@ -45,7 +48,82 @@ func (mapField *baseMapField) ItemSchema() j5schema.FieldSchema {
 	return mapField.schema.Schema
 }
 
-func (mapField *baseMapField) Range(cb RangeMapCallback) error {
+func newMessageMapField(context fieldContext, schema *j5schema.MapField, value protoreflect.Map, factory messageFieldFactory) (MutableMapField, error) {
+
+	base := baseMapField{
+		fieldDefaults: fieldDefaults{
+			fieldType: FieldTypeMap,
+			context:   context,
+		},
+		value:  value,
+		schema: schema,
+	}
+
+	switch schema.Schema.(type) {
+	case *j5schema.ObjectField:
+		return &mapOfObjectField{
+			MutableMapField: &mutableMapField{
+				baseMapField: base,
+				factory:      factory,
+			},
+		}, nil
+
+	case *j5schema.OneofField:
+		return &mapOfOneofField{
+			MutableMapField: &mutableMapField{
+				baseMapField: base,
+				factory:      factory,
+			},
+		}, nil
+	default:
+		return nil, fmt.Errorf("unsupported schema type %T", schema.Schema)
+	}
+}
+
+func newLeafMapField(context fieldContext, schema *j5schema.MapField, value protoreflect.Map, factory fieldFactory) (LeafMapField, error) {
+
+	base := baseMapField{
+		fieldDefaults: fieldDefaults{
+			fieldType: FieldTypeMap,
+			context:   context,
+		},
+		value:  value,
+		schema: schema,
+	}
+
+	switch st := schema.Schema.(type) {
+	case *j5schema.ScalarSchema:
+		return &mapOfScalarField{
+			leafMapField: leafMapField{
+				baseMapField: base,
+				factory:      factory,
+			},
+			itemSchema: st,
+		}, nil
+
+	case *j5schema.EnumField:
+		return &mapOfEnumField{
+			leafMapField: leafMapField{
+				baseMapField: base,
+				factory:      factory,
+			},
+			itemSchema: st.Schema(),
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("unsupported schema type %T", schema.Schema)
+	}
+
+}
+
+type mutableMapField struct {
+	baseMapField
+	factory messageFieldFactory
+}
+
+var _ MutableMapField = (*mutableMapField)(nil)
+
+func (mapField *mutableMapField) Range(cb RangeMapCallback) error {
 	if !mapField.value.IsValid() {
 		return nil // empty map, probably invalid anyway, but has no keys.
 	}
@@ -61,7 +139,47 @@ func (mapField *baseMapField) Range(cb RangeMapCallback) error {
 	return outerErr
 }
 
-func (mapField *baseMapField) wrapValue(key string, value protoreflect.Value) Field {
+func (mapField *mutableMapField) wrapValue(key string, value protoreflect.Value) Field {
+	context := &mapContext{
+		name:   key,
+		schema: mapField.schema,
+	}
+	return mapField.factory.buildField(context, value.Message())
+}
+
+func (mapField *mutableMapField) NewElement(key string) (Field, error) {
+	mapKey := protoreflect.ValueOfString(key).MapKey()
+	if mapField.value.Has(mapKey) {
+		return nil, fmt.Errorf("key %q already exists in map", key)
+	}
+	itemVal := mapField.value.Mutable(mapKey)
+	return mapField.wrapValue(key, itemVal), nil
+}
+
+type leafMapField struct {
+	baseMapField
+	factory fieldFactory
+}
+
+var _ LeafMapField = (*leafMapField)(nil)
+
+func (mapField *leafMapField) Range(cb RangeMapCallback) error {
+	if !mapField.value.IsValid() {
+		return nil // empty map, probably invalid anyway, but has no keys.
+	}
+
+	var outerErr error
+
+	mapField.value.Range(func(key protoreflect.MapKey, val protoreflect.Value) bool {
+		keyStr := key.Value().String()
+		field := mapField.wrapValue(keyStr, val)
+		outerErr = cb(keyStr, field)
+		return outerErr == nil
+	})
+	return outerErr
+}
+
+func (mapField *leafMapField) wrapValue(key string, value protoreflect.Value) Field {
 	wrapped := &protoMapValue{
 		mapVal: mapField.value,
 		key:    protoreflect.ValueOfString(key).MapKey(),
@@ -72,99 +190,6 @@ func (mapField *baseMapField) wrapValue(key string, value protoreflect.Value) Fi
 	}
 	return mapField.factory.buildField(context, wrapped)
 }
-
-func newMapField(context fieldContext, schema *j5schema.MapField, value protoreflect.Map, factory fieldFactory) (MapField, error) {
-
-	base := baseMapField{
-		fieldDefaults: fieldDefaults{
-			fieldType: FieldTypeMap,
-			context:   context,
-		},
-		value:   value,
-		schema:  schema,
-		factory: factory,
-	}
-
-	switch st := schema.Schema.(type) {
-	case *j5schema.ObjectField:
-		return &mapOfObjectField{
-			MutableMapField: &mutableMapField{
-				baseMapField: base,
-			},
-		}, nil
-
-	case *j5schema.OneofField:
-		return &mapOfOneofField{
-			MutableMapField: &mutableMapField{
-				baseMapField: base,
-			},
-		}, nil
-
-	case *j5schema.ScalarSchema:
-		return &mapOfScalarField{
-			leafMapField: leafMapField{
-				baseMapField: base,
-			},
-			itemSchema: st,
-		}, nil
-
-	case *j5schema.EnumField:
-		return &mapOfEnumField{
-			leafMapField: leafMapField{
-				baseMapField: base,
-			},
-			itemSchema: st.Schema(),
-		}, nil
-	}
-
-	if schema.Schema.Mutable() {
-		return &mutableMapField{
-			baseMapField: base,
-		}, nil
-	} else {
-		return &leafMapField{
-			baseMapField: base,
-		}, nil
-	}
-}
-
-type mutableMapField struct {
-	baseMapField
-}
-
-var _ MutableMapField = (*mutableMapField)(nil)
-
-func (mapField *mutableMapField) NewElement(key string) Field {
-	mapKey := protoreflect.ValueOfString(key).MapKey()
-	itemVal := mapField.value.Mutable(mapKey)
-	return mapField.wrapValue(key, itemVal)
-}
-
-type mapOfObjectField struct {
-	MutableMapField
-}
-
-func (field *mapOfObjectField) NewObjectValue(key string) (Object, error) {
-	val := field.NewElement(key)
-	of := val.(ObjectField)
-	return of.Object()
-}
-
-type mapOfOneofField struct {
-	MutableMapField
-}
-
-func (field *mapOfOneofField) NewOneofValue(key string) (Oneof, error) {
-	val := field.NewElement(key)
-	of := val.(OneofField)
-	return of.Oneof()
-}
-
-type leafMapField struct {
-	baseMapField
-}
-
-var _ MapField = (*leafMapField)(nil)
 
 func (mapField *leafMapField) setKey(key string, val protoreflect.Value) {
 	keyVal := protoreflect.ValueOfString(key).MapKey()
