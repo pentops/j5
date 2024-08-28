@@ -18,6 +18,9 @@ type Property interface {
 	IsSet() bool
 	Schema() *j5schema.ObjectProperty
 	Field() (Field, error)
+
+	IsArray() bool
+	IsMap() bool
 }
 
 // PropertySet is implemented by Oneofs, Objects and Maps with String keys.
@@ -44,6 +47,11 @@ type PropertySet interface {
 	implementsPropertySet()
 }
 
+type ContainerField interface {
+	PropertySet
+	Field
+}
+
 /*** Implementation ***/
 
 type property struct {
@@ -65,6 +73,16 @@ var _ Property = &property{}
 
 func (p *property) IsSet() bool {
 	return p.hasValue
+}
+
+func (p *property) IsArray() bool {
+	_, ok := p.schema.Schema.(*j5schema.ArrayField)
+	return ok
+}
+
+func (p *property) IsMap() bool {
+	_, ok := p.schema.Schema.(*j5schema.MapField)
+	return ok
 }
 
 func (p *property) Schema() *j5schema.ObjectProperty {

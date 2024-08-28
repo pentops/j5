@@ -98,6 +98,10 @@ type arrayOfScalarField struct {
 
 var _ ArrayOfScalarField = (*arrayOfScalarField)(nil)
 
+func (array *arrayOfScalarField) AsArrayOfScalar() (ArrayOfScalarField, bool) {
+	return array, true
+}
+
 func (array *arrayOfScalarField) AppendGoValue(value interface{}) (int, error) {
 	reflectValue, err := scalarReflectFromGo(array.itemSchema.Proto, value)
 	if err != nil {

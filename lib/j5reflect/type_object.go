@@ -77,6 +77,7 @@ func newObjectField(context fieldContext, obj *objectImpl) ObjectField {
 }
 
 var _ ObjectField = (*existingObjectField)(nil)
+var _ ContainerField = (*existingObjectField)(nil)
 
 func (obj *existingObjectField) Type() FieldType {
 	return FieldTypeObject
@@ -86,7 +87,7 @@ func (obj *existingObjectField) IsSet() bool {
 	return true
 }
 
-func (obj *existingObjectField) AsContainer() (PropertySet, bool) {
+func (obj *existingObjectField) AsContainer() (ContainerField, bool) {
 	return obj, true // returns self.
 }
 
@@ -103,7 +104,7 @@ func (field *arrayOfObjectField) NewObjectElement() (ObjectField, int) {
 	return of, of.IndexInParent()
 }
 
-func (field *arrayOfObjectField) NewContainerElement() (PropertySet, int) {
+func (field *arrayOfObjectField) NewContainerElement() (ContainerField, int) {
 	of := field.NewElement().(ObjectField)
 	return of, of.IndexInParent()
 }
@@ -112,13 +113,13 @@ func (field *arrayOfObjectField) AsArrayOfContainer() (ArrayOfContainerField, bo
 	return field, true
 }
 
-func (field *arrayOfObjectField) RangeContainers(cb func(PropertySet) error) error {
+func (field *arrayOfObjectField) RangeContainers(cb func(int, ContainerField) error) error {
 	return field.RangeValues(func(idx int, f Field) error {
 		val, ok := f.(*existingObjectField)
 		if !ok {
 			return nil
 		}
-		return cb(val)
+		return cb(idx, val)
 	})
 }
 

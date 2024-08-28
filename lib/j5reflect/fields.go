@@ -17,6 +17,34 @@ const (
 	FieldTypeScalar  = FieldType("scalar")
 )
 
+type Field interface {
+	Type() FieldType
+	TypeName() string
+	IsSet() bool
+
+	// NameInParent is the name this field has in the context it exists.
+	// Object and Oneof: The property name
+	// Map<string>x, the key
+	// Arrays, the index as a string
+	NameInParent() string
+
+	// IndexInParent returns -1 for non array fields
+	IndexInParent() int
+	ProtoPath() []string
+	FullTypeName() string
+
+	Schema() schema_j5pb.IsField_Type
+	PropertySchema() *schema_j5pb.ObjectProperty
+
+	// Fighting with go typing here, the implementations of these return
+	// themselves and true. Maybe I should have fixated on java instead.
+	AsArray() (ArrayField, bool)
+	AsScalar() (ScalarField, bool)
+	AsContainer() (ContainerField, bool)
+	AsArrayOfContainer() (ArrayOfContainerField, bool)
+	AsArrayOfScalar() (ArrayOfScalarField, bool)
+}
+
 type fieldContext interface {
 	nameInParent() string
 	indexInParent() int
@@ -28,39 +56,6 @@ type fieldContext interface {
 	protoPath() []string
 }
 
-type propertyContext struct {
-	walkedProtoPath []string
-	schema          *j5schema.ObjectProperty
-}
-
-func (c propertyContext) nameInParent() string {
-	return c.schema.JSONName
-}
-
-func (c propertyContext) indexInParent() int {
-	return -1
-}
-
-func (c propertyContext) propertySchema() *schema_j5pb.ObjectProperty {
-	return c.schema.ToJ5Proto()
-}
-
-func (c propertyContext) fieldSchema() schema_j5pb.IsField_Type {
-	return c.schema.Schema.ToJ5Field().Type
-}
-
-func (c propertyContext) typeName() string {
-	return c.schema.Schema.TypeName()
-}
-
-func (c propertyContext) fullTypeName() string {
-	return c.schema.FullName()
-}
-
-func (c propertyContext) protoPath() []string {
-	return c.walkedProtoPath
-}
-
 type fieldDefaults struct {
 	fieldType FieldType
 	context   fieldContext
@@ -70,11 +65,15 @@ func (fd fieldDefaults) Type() FieldType {
 	return fd.fieldType
 }
 
-func (fieldDefaults) AsContainer() (PropertySet, bool) {
+func (fieldDefaults) AsContainer() (ContainerField, bool) {
 	return nil, false
 }
 
 func (fieldDefaults) AsScalar() (ScalarField, bool) {
+	return nil, false
+}
+
+func (fieldDefaults) AsArray() (ArrayField, bool) {
 	return nil, false
 }
 
@@ -114,29 +113,35 @@ func (fd fieldDefaults) FullTypeName() string {
 	return fd.context.fullTypeName()
 }
 
-type Field interface {
-	Type() FieldType
-	TypeName() string
-	IsSet() bool
+type propertyContext struct {
+	walkedProtoPath []string
+	schema          *j5schema.ObjectProperty
+}
 
-	// NameInParent is the name this field has in the context it exists.
-	// Object and Oneof: The property name
-	// Map<string>x, the key
-	// Arrays, the index as a string
-	NameInParent() string
+func (c propertyContext) nameInParent() string {
+	return c.schema.JSONName
+}
 
-	// IndexInParent returns -1 for non array fields
-	IndexInParent() int
-	ProtoPath() []string
-	FullTypeName() string
+func (c propertyContext) indexInParent() int {
+	return -1
+}
 
-	Schema() schema_j5pb.IsField_Type
-	PropertySchema() *schema_j5pb.ObjectProperty
+func (c propertyContext) propertySchema() *schema_j5pb.ObjectProperty {
+	return c.schema.ToJ5Proto()
+}
 
-	// Fighting with go typing here, the implementations of these return
-	// themselves and true.
-	AsScalar() (ScalarField, bool)
-	AsContainer() (PropertySet, bool)
-	AsArrayOfContainer() (ArrayOfContainerField, bool)
-	AsArrayOfScalar() (ArrayOfScalarField, bool)
+func (c propertyContext) fieldSchema() schema_j5pb.IsField_Type {
+	return c.schema.Schema.ToJ5Field().Type
+}
+
+func (c propertyContext) typeName() string {
+	return c.schema.Schema.TypeName()
+}
+
+func (c propertyContext) fullTypeName() string {
+	return c.schema.FullName()
+}
+
+func (c propertyContext) protoPath() []string {
+	return c.walkedProtoPath
 }

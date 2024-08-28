@@ -25,8 +25,8 @@ type MutableArrayField interface {
 
 type ArrayOfContainerField interface {
 	MutableArrayField
-	NewContainerElement() (PropertySet, int)
-	RangeContainers(func(PropertySet) error) error
+	NewContainerElement() (ContainerField, int)
+	RangeContainers(func(int, ContainerField) error) error
 }
 
 /*** Implementation ***/
@@ -270,7 +270,7 @@ func (c *arrayContext) typeName() string {
 }
 
 func (c *arrayContext) fullTypeName() string {
-	return fmt.Sprintf("%s.[]%s", c.schema.FullName(), c.schema.Schema.TypeName())
+	return fmt.Sprintf("%s[%d] (%s)", c.schema.FullName(), c.index, c.schema.Schema.TypeName())
 }
 
 func (c *arrayContext) propertySchema() *schema_j5pb.ObjectProperty {

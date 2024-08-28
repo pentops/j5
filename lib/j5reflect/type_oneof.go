@@ -69,7 +69,7 @@ func newOneofField(context fieldContext, schema *j5schema.OneofField, value *one
 	}
 }
 
-func (field *oneofField) AsContainer() (PropertySet, bool) {
+func (field *oneofField) AsContainer() (ContainerField, bool) {
 	return field, true
 }
 
@@ -95,7 +95,7 @@ func (field *arrayOfOneofField) NewOneofElement() (Oneof, int, error) {
 	return of, of.IndexInParent(), nil
 }
 
-func (field *arrayOfOneofField) NewContainerElement() (PropertySet, int) {
+func (field *arrayOfOneofField) NewContainerElement() (ContainerField, int) {
 	of := field.NewElement().(OneofField)
 	return of, of.IndexInParent()
 }
@@ -104,13 +104,13 @@ func (field *arrayOfOneofField) AsArrayOfContainer() (ArrayOfContainerField, boo
 	return field, true
 }
 
-func (field *arrayOfOneofField) RangeContainers(cb func(PropertySet) error) error {
+func (field *arrayOfOneofField) RangeContainers(cb func(int, ContainerField) error) error {
 	return field.RangeValues(func(idx int, f Field) error {
 		val, ok := f.(*oneofField)
 		if !ok {
 			return nil
 		}
-		return cb(val)
+		return cb(idx, val)
 	})
 }
 
