@@ -2,7 +2,6 @@ package j5reflect
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/pentops/j5/internal/j5schema"
 	"github.com/pentops/j5/internal/patherr"
@@ -322,7 +321,6 @@ func (fs *propSet) buildValue(prop *property, create bool) (Field, bool, error) 
 	walkPath := prop.protoPath[:]
 	for len(walkPath) > 1 {
 		walkField, walkPath = walkPath[0], walkPath[1:]
-		log.Printf("Walk Field %s", walkField.FullName())
 		fieldContext.walkedProtoPath = append(fieldContext.walkedProtoPath, walkField.JSONName())
 		if !create {
 			if !walkMessage.Has(walkField) {
@@ -340,7 +338,6 @@ func (fs *propSet) buildValue(prop *property, create bool) (Field, bool, error) 
 	}
 
 	finalField := walkPath[0]
-	log.Printf("Final Field is %s", finalField.FullName())
 	if !create {
 		if !walkMessage.Has(finalField) {
 			return nil, false, nil

@@ -16,6 +16,8 @@ type RangeArrayCallback func(int, Field) error
 type ArrayField interface {
 	Field
 	RangeValues(RangeArrayCallback) error
+	Length() int
+	Truncate(int)
 }
 
 type MutableArrayField interface {
@@ -33,13 +35,10 @@ type ArrayOfContainerField interface {
 
 type baseArrayField struct {
 	fieldDefaults
-	value protoreflect.List
-	//fieldDescriptor protoreflect.FieldDescriptor
-	schema *j5schema.ArrayField
-}
+	fieldContext
 
-func (array *baseArrayField) Type() FieldType {
-	return FieldTypeArray
+	value  protoreflect.List
+	schema *j5schema.ArrayField
 }
 
 func (array *baseArrayField) IsSet() bool {
@@ -50,14 +49,19 @@ func (array *baseArrayField) ItemSchema() j5schema.FieldSchema {
 	return array.schema.Schema
 }
 
+func (array *baseArrayField) Length() int {
+	return array.value.Len()
+}
+
+func (array *baseArrayField) Truncate(newLen int) {
+	array.value.Truncate(newLen)
+}
+
 func newMessageArrayField(context fieldContext, schema *j5schema.ArrayField, value protoreflect.List, factory messageFieldFactory) (ArrayField, error) {
 	base := baseArrayField{
-		fieldDefaults: fieldDefaults{
-			fieldType: FieldTypeArray,
-			context:   context,
-		},
-		schema: schema,
-		value:  value,
+		fieldContext: context,
+		schema:       schema,
+		value:        value,
 	}
 
 	switch schema.Schema.(type) {
@@ -88,12 +92,9 @@ func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value 
 	}
 
 	base := baseArrayField{
-		fieldDefaults: fieldDefaults{
-			fieldType: FieldTypeArray,
-			context:   context,
-		},
-		schema: schema,
-		value:  value,
+		fieldContext: context,
+		schema:       schema,
+		value:        value,
 	}
 
 	switch st := schema.Schema.(type) {
@@ -135,6 +136,10 @@ func (array *mutableArrayField) NewElement() Field {
 	elem := array.value.AppendMutable().Message()
 	array.lock.Unlock()
 	return array.wrapValue(idx, elem)
+}
+
+func (array *mutableArrayField) AsArray() (ArrayField, bool) {
+	return array, true
 }
 
 func (array *mutableArrayField) RangeValues(cb RangeArrayCallback) error {
@@ -253,30 +258,30 @@ type arrayContext struct {
 
 var _ fieldContext = (*arrayContext)(nil)
 
-func (c *arrayContext) nameInParent() string {
+func (c *arrayContext) NameInParent() string {
 	return fmt.Sprintf("%d", c.index)
 }
 
-func (c *arrayContext) indexInParent() int {
+func (c *arrayContext) IndexInParent() int {
 	return c.index
 }
 
-func (c *arrayContext) fieldSchema() schema_j5pb.IsField_Type {
+func (c *arrayContext) FieldSchema() schema_j5pb.IsField_Type {
 	return c.schema.Schema.ToJ5Field().Type
 }
 
-func (c *arrayContext) typeName() string {
+func (c *arrayContext) TypeName() string {
 	return c.schema.Schema.TypeName()
 }
 
-func (c *arrayContext) fullTypeName() string {
+func (c *arrayContext) FullTypeName() string {
 	return fmt.Sprintf("%s[%d] (%s)", c.schema.FullName(), c.index, c.schema.Schema.TypeName())
 }
 
-func (c *arrayContext) propertySchema() *schema_j5pb.ObjectProperty {
+func (c *arrayContext) PropertySchema() *schema_j5pb.ObjectProperty {
 	return nil
 }
 
-func (c *arrayContext) protoPath() []string {
+func (c *arrayContext) ProtoPath() []string {
 	return []string{fmt.Sprintf("%d", c.index)}
 }

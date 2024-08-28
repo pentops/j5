@@ -95,7 +95,7 @@ func (enc *encoder) encodeValue(field j5reflect.Field) error {
 		return enc.encodeScalarField(ft)
 
 	default:
-		return fmt.Errorf("encode value of type %q, unsupported", field.Type())
+		return fmt.Errorf("encode value of type %q, unsupported", field.FullTypeName())
 	}
 }
 

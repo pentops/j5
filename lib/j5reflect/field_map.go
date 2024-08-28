@@ -31,13 +31,10 @@ type LeafMapField interface {
 
 type baseMapField struct {
 	fieldDefaults
+	fieldContext
 	value protoreflect.Map
 	//fieldDescriptor protoreflect.FieldDescriptor
 	schema *j5schema.MapField
-}
-
-func (mapField *baseMapField) Type() FieldType {
-	return FieldTypeMap
 }
 
 func (mapField *baseMapField) IsSet() bool {
@@ -51,12 +48,9 @@ func (mapField *baseMapField) ItemSchema() j5schema.FieldSchema {
 func newMessageMapField(context fieldContext, schema *j5schema.MapField, value protoreflect.Map, factory messageFieldFactory) (MutableMapField, error) {
 
 	base := baseMapField{
-		fieldDefaults: fieldDefaults{
-			fieldType: FieldTypeMap,
-			context:   context,
-		},
-		value:  value,
-		schema: schema,
+		fieldContext: context,
+		value:        value,
+		schema:       schema,
 	}
 
 	switch schema.Schema.(type) {
@@ -83,12 +77,9 @@ func newMessageMapField(context fieldContext, schema *j5schema.MapField, value p
 func newLeafMapField(context fieldContext, schema *j5schema.MapField, value protoreflect.Map, factory fieldFactory) (LeafMapField, error) {
 
 	base := baseMapField{
-		fieldDefaults: fieldDefaults{
-			fieldType: FieldTypeMap,
-			context:   context,
-		},
-		value:  value,
-		schema: schema,
+		fieldContext: context,
+		value:        value,
+		schema:       schema,
 	}
 
 	switch st := schema.Schema.(type) {
@@ -233,28 +224,29 @@ type mapContext struct {
 
 var _ fieldContext = (*mapContext)(nil)
 
-func (c *mapContext) nameInParent() string {
+func (c *mapContext) NameInParent() string {
 	return c.name
 }
 
-func (c *mapContext) indexInParent() int {
+func (c *mapContext) IndexInParent() int {
 	return -1
 }
 
-func (c *mapContext) fieldSchema() schema_j5pb.IsField_Type {
+func (c *mapContext) FieldSchema() schema_j5pb.IsField_Type {
 	return c.schema.Schema.ToJ5Field().Type
 }
-func (c *mapContext) typeName() string {
+
+func (c *mapContext) TypeName() string {
 	return c.schema.Schema.TypeName()
 }
-func (c *mapContext) propertySchema() *schema_j5pb.ObjectProperty {
+func (c *mapContext) PropertySchema() *schema_j5pb.ObjectProperty {
 	return nil
 }
 
-func (c *mapContext) protoPath() []string {
+func (c *mapContext) ProtoPath() []string {
 	return []string{c.name}
 }
 
-func (c *mapContext) fullTypeName() string {
+func (c *mapContext) FullTypeName() string {
 	return fmt.Sprintf("%s.{}%s", c.schema.FullName(), c.schema.Schema.TypeName())
 }

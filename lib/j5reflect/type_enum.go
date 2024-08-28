@@ -38,17 +38,16 @@ type enumFieldFactory struct {
 
 func (factory *enumFieldFactory) buildField(context fieldContext, value protoContext) Field {
 	return &enumField{
-		value: value,
-		fieldDefaults: fieldDefaults{
-			fieldType: FieldTypeEnum,
-			context:   context,
-		},
-		schema: factory.schema,
+		value:        value,
+		fieldContext: context,
+		schema:       factory.schema,
 	}
 }
 
 type enumField struct {
 	fieldDefaults
+	fieldContext
+
 	value  protoContext
 	schema *j5schema.EnumField
 }
@@ -63,8 +62,8 @@ func (ef *enumField) AsScalar() (ScalarField, bool) {
 	return ef, true
 }
 
-func (ef *enumField) Type() FieldType {
-	return FieldTypeEnum
+func (ef *enumField) AsEnum() (EnumField, bool) {
+	return ef, true
 }
 
 func (ef *enumField) GetValue() (EnumOption, error) {

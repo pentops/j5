@@ -63,32 +63,29 @@ func (f *objectFieldFactory) buildField(context fieldContext, value protoreflect
 
 type existingObjectField struct {
 	fieldDefaults
+	fieldContext
 	*objectImpl
 }
 
 func newObjectField(context fieldContext, obj *objectImpl) ObjectField {
 	return &existingObjectField{
-		objectImpl: obj,
-		fieldDefaults: fieldDefaults{
-			fieldType: FieldTypeObject,
-			context:   context,
-		},
+		objectImpl:   obj,
+		fieldContext: context,
 	}
-}
-
-var _ ObjectField = (*existingObjectField)(nil)
-var _ ContainerField = (*existingObjectField)(nil)
-
-func (obj *existingObjectField) Type() FieldType {
-	return FieldTypeObject
 }
 
 func (obj *existingObjectField) IsSet() bool {
 	return true
 }
 
+/*** Explicitly Implements ***/
+
 func (obj *existingObjectField) AsContainer() (ContainerField, bool) {
-	return obj, true // returns self.
+	return obj, true
+}
+
+func (obj *existingObjectField) AsObject() (ObjectField, bool) {
+	return obj, true
 }
 
 /*** Implement Array Of Object ***/

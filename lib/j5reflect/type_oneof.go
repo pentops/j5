@@ -37,6 +37,7 @@ type oneofImpl struct {
 
 type oneofField struct {
 	fieldDefaults
+	fieldContext
 	schema *j5schema.OneofField
 	oneofImpl
 }
@@ -56,21 +57,12 @@ func (f *oneofFieldFactory) buildField(context fieldContext, value protoreflect.
 	return newOneofField(context, f.schema, oneof)
 }
 
-var _ OneofField = (*oneofField)(nil)
-
 func newOneofField(context fieldContext, schema *j5schema.OneofField, value *oneofImpl) *oneofField {
 	return &oneofField{
-		fieldDefaults: fieldDefaults{
-			fieldType: FieldTypeOneof,
-			context:   context,
-		},
-		oneofImpl: *value,
-		schema:    schema,
+		fieldContext: context,
+		oneofImpl:    *value,
+		schema:       schema,
 	}
-}
-
-func (field *oneofField) AsContainer() (ContainerField, bool) {
-	return field, true
 }
 
 func (field *oneofField) IsSet() bool {
@@ -78,8 +70,14 @@ func (field *oneofField) IsSet() bool {
 	return ok && err == nil
 }
 
-func (field *oneofField) Type() FieldType {
-	return FieldTypeOneof
+/*** Explicitly Implements ***/
+
+func (field *oneofField) AsContainer() (ContainerField, bool) {
+	return field, true
+}
+
+func (field *oneofField) AsOneof() (OneofField, bool) {
+	return field, true
 }
 
 /*** Implement Array Of Oneof ***/

@@ -31,6 +31,7 @@ type MapOfScalarField interface {
 
 type scalarField struct {
 	fieldDefaults
+	fieldContext
 	value  protoContext
 	schema *j5schema.ScalarSchema
 }
@@ -41,12 +42,9 @@ type scalarFieldFactory struct {
 
 func (f *scalarFieldFactory) buildField(field fieldContext, value protoContext) Field {
 	return &scalarField{
-		fieldDefaults: fieldDefaults{
-			fieldType: FieldTypeScalar,
-			context:   field,
-		},
-		value:  value,
-		schema: f.schema,
+		fieldContext: field,
+		value:        value,
+		schema:       f.schema,
 	}
 }
 
@@ -56,10 +54,6 @@ func (sf *scalarField) IsSet() bool {
 
 func (sf *scalarField) AsScalar() (ScalarField, bool) {
 	return sf, true
-}
-
-func (sf *scalarField) Type() FieldType {
-	return FieldTypeScalar
 }
 
 func (sf *scalarField) SetASTValue(value ASTValue) error {
@@ -78,7 +72,7 @@ func (sf *scalarField) setValue(reflectValue protoreflect.Value) error {
 func (sf *scalarField) SetGoValue(value interface{}) error {
 	reflectValue, err := scalarReflectFromGo(sf.schema.Proto, value)
 	if err != nil {
-		return err
+		return fmt.Errorf("setting field %s: %w", sf.FullTypeName(), err)
 	}
 	return sf.setValue(reflectValue)
 }

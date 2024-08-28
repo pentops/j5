@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package j5.sourcedef.v1;
 
+import "buf/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "j5/ext/v1/annotations.proto";
 import "j5/schema/v1/schema.proto";
@@ -33,7 +34,7 @@ message Entity {
   string name = 1;
   string description = 2;
 
-  j5.schema.v1.Enum status = 4;
+  j5.schema.v1.Enum status = 4 [(buf.validate.field).required = true];
 
   repeated j5.schema.v1.ObjectProperty keys = 3 [(j5.ext.v1.field).array.single_form = "key"];
 
@@ -53,10 +54,10 @@ message NestedSchema {
 
 message RootElement {
   oneof type {
+    Entity entity = 4;
     Oneof oneof = 1;
     Object object = 2;
     j5.schema.v1.Enum enum = 3;
-    Entity entity = 4;
     Partial partial = 5;
   }
 }
