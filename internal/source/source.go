@@ -228,11 +228,27 @@ func (src *Source) CombinedSourceImage(ctx context.Context, inputs []*config_j5p
 		return nil, err
 	}
 
-	files, sourceFilenames := combined.getFiles()
+	files, sourceFilenames := combined.GetFiles()
 	fullImage.File = files
 	fullImage.SourceFilenames = sourceFilenames
 
 	return fullImage, nil
+}
+
+func (src *Source) BundleConfig(name string) (*config_j5pb.BundleConfigFile, error) {
+	bs, err := src.BundleSource(name)
+	if err != nil {
+		return nil, err
+	}
+	return bs.J5Config()
+}
+
+func (src *Source) BundleDependencies(ctx context.Context, name string) (DependencySet, error) {
+	bs, err := src.BundleSource(name)
+	if err != nil {
+		return nil, err
+	}
+	return bs.GetDependencies(ctx, src)
 }
 
 func (src *Source) BundleImageSource(ctx context.Context, name string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {

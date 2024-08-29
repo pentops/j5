@@ -34,7 +34,7 @@ message Entity {
   string name = 1;
   string description = 2;
 
-  j5.schema.v1.Enum status = 4 [(buf.validate.field).required = true];
+  repeated j5.schema.v1.Enum.Option status = 4 [(buf.validate.field).required = true];
 
   repeated j5.schema.v1.ObjectProperty keys = 3 [(j5.ext.v1.field).array.single_form = "key"];
 

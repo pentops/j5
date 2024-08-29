@@ -149,6 +149,11 @@ message Enum {
     int32 number = 2;
     string description = 3;
   }
+
+  Docs docs = 5;
+  message Docs {
+    bool table = 2;
+  }
 }
 
 message ArrayField {
@@ -229,7 +234,7 @@ message IntegerField {
     enum: {not_in: 0}
     required: true
   }];
-  Rules rules = 2 [(buf.validate.field) = {required: true}];
+  Rules rules = 2;
   j5.list.v1.IntegerRules list_rules = 3;
   Ext ext = 4;
 

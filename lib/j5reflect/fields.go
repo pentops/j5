@@ -11,14 +11,25 @@ type Field interface {
 
 	// Fighting with go typing here, the implementations of these return
 	// themselves and true. Maybe I should have fixated on java instead.
-	AsArray() (ArrayField, bool)
+
 	AsScalar() (ScalarField, bool)
+	AsEnum() (EnumField, bool)
+
 	AsContainer() (ContainerField, bool)
-	AsArrayOfContainer() (ArrayOfContainerField, bool)
-	AsArrayOfScalar() (ArrayOfScalarField, bool)
 	AsObject() (ObjectField, bool)
 	AsOneof() (OneofField, bool)
-	AsEnum() (EnumField, bool)
+
+	AsArray() (ArrayField, bool)
+	AsArrayOfScalar() (ArrayOfScalarField, bool)
+	AsArrayOfContainer() (ArrayOfContainerField, bool)
+	AsArrayOfOneof() (ArrayOfOneofField, bool)
+	AsArrayOfObject() (ArrayOfObjectField, bool)
+
+	AsMap() (MapField, bool)
+	AsMapOfScalar() (MapOfScalarField, bool)
+	AsMapOfContainer() (MapOfContainerField, bool)
+	AsMapOfObject() (MapOfObjectField, bool)
+	AsMapOfOneof() (MapOfOneofField, bool)
 }
 
 type FieldContext interface {
@@ -37,45 +48,28 @@ type FieldContext interface {
 	ProtoPath() []string
 }
 
-type fieldDefaults struct {
-}
+// fieldDefaults is embedded into all field types to allow easy extension of the
+// 'false' answers here. Individual types implement as 'true'
+type fieldDefaults struct{}
 
-func (fieldDefaults) AsContainer() (ContainerField, bool) {
-	return nil, false
-}
-
-func (fieldDefaults) AsScalar() (ScalarField, bool) {
-	return nil, false
-}
-
-func (fieldDefaults) AsArray() (ArrayField, bool) {
-	return nil, false
-}
-
-func (fieldDefaults) AsArrayOfContainer() (ArrayOfContainerField, bool) {
-	return nil, false
-}
-
-func (fieldDefaults) AsArrayOfScalar() (ArrayOfScalarField, bool) {
-	return nil, false
-}
-
-func (fieldDefaults) AsObject() (ObjectField, bool) {
-	return nil, false
-}
-
-func (fieldDefaults) AsOneof() (OneofField, bool) {
-	return nil, false
-}
-
-func (fieldDefaults) AsEnum() (EnumField, bool) {
-	return nil, false
-}
+func (fieldDefaults) AsScalar() (ScalarField, bool)                     { return nil, false }
+func (fieldDefaults) AsEnum() (EnumField, bool)                         { return nil, false }
+func (fieldDefaults) AsContainer() (ContainerField, bool)               { return nil, false }
+func (fieldDefaults) AsObject() (ObjectField, bool)                     { return nil, false }
+func (fieldDefaults) AsOneof() (OneofField, bool)                       { return nil, false }
+func (fieldDefaults) AsArray() (ArrayField, bool)                       { return nil, false }
+func (fieldDefaults) AsArrayOfContainer() (ArrayOfContainerField, bool) { return nil, false }
+func (fieldDefaults) AsArrayOfScalar() (ArrayOfScalarField, bool)       { return nil, false }
+func (fieldDefaults) AsArrayOfObject() (ArrayOfObjectField, bool)       { return nil, false }
+func (fieldDefaults) AsArrayOfOneof() (ArrayOfOneofField, bool)         { return nil, false }
+func (fieldDefaults) AsMap() (MapField, bool)                           { return nil, false }
+func (fieldDefaults) AsMapOfScalar() (MapOfScalarField, bool)           { return nil, false }
+func (fieldDefaults) AsMapOfContainer() (MapOfContainerField, bool)     { return nil, false }
+func (fieldDefaults) AsMapOfObject() (MapOfObjectField, bool)           { return nil, false }
+func (fieldDefaults) AsMapOfOneof() (MapOfOneofField, bool)             { return nil, false }
 
 type fieldContext interface {
 	FieldContext
-
-	// not exported
 }
 
 type propertyContext struct {

@@ -13,7 +13,7 @@ type fieldable interface {
 }
 
 func (obj *objectImpl) asDetachedField() (Field, error) {
-	return &existingObjectField{
+	return &objectField{
 		objectImpl:    obj,
 		fieldDefaults: fieldDefaults{},
 	}, nil

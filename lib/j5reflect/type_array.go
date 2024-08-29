@@ -15,6 +15,7 @@ type RangeArrayCallback func(int, Field) error
 
 type ArrayField interface {
 	Field
+	ItemSchema() j5schema.FieldSchema
 	RangeValues(RangeArrayCallback) error
 	Length() int
 	Truncate(int)

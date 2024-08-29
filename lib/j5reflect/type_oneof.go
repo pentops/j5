@@ -20,7 +20,7 @@ type OneofField interface {
 }
 
 type MapOfOneofField interface {
-	NewOneofValue(key string) (OneofField, error)
+	NewOneofElement(key string) (OneofField, error)
 }
 
 type ArrayOfOneofField interface {
@@ -65,6 +65,7 @@ func newOneofField(context fieldContext, schema *j5schema.OneofField, value *one
 	}
 }
 
+// IsSet is true for a oneof if the inner type is set.
 func (field *oneofField) IsSet() bool {
 	_, ok, err := field.oneofImpl.GetOne()
 	return ok && err == nil
@@ -86,7 +87,12 @@ type arrayOfOneofField struct {
 	mutableArrayField
 }
 
-var _ ArrayOfOneofField = (*arrayOfOneofField)(nil)
+func (field *arrayOfOneofField) AsArrayOfContainer() (ArrayOfContainerField, bool) {
+	return field, true
+}
+func (field *arrayOfOneofField) AsArrayOfOneof() (ArrayOfOneofField, bool) {
+	return field, true
+}
 
 func (field *arrayOfOneofField) NewOneofElement() (Oneof, int, error) {
 	of := field.NewElement().(OneofField)
@@ -96,10 +102,6 @@ func (field *arrayOfOneofField) NewOneofElement() (Oneof, int, error) {
 func (field *arrayOfOneofField) NewContainerElement() (ContainerField, int) {
 	of := field.NewElement().(OneofField)
 	return of, of.IndexInParent()
-}
-
-func (field *arrayOfOneofField) AsArrayOfContainer() (ArrayOfContainerField, bool) {
-	return field, true
 }
 
 func (field *arrayOfOneofField) RangeContainers(cb func(int, ContainerField) error) error {
@@ -118,11 +120,23 @@ type mapOfOneofField struct {
 	MutableMapField
 }
 
-func (field *mapOfOneofField) NewOneofValue(key string) (OneofField, error) {
+func (field *mapOfOneofField) AsMapOfOneof() (MapOfOneofField, bool) {
+	return field, true
+}
+
+func (field *mapOfOneofField) NewOneofElement(key string) (OneofField, error) {
 	val, err := field.NewElement(key)
 	if err != nil {
 		return nil, err
 	}
 	of := val.(OneofField)
 	return of, nil
+}
+
+func (field *mapOfOneofField) AsMapOfContainer() (MapOfContainerField, bool) {
+	return field, true
+}
+
+func (field *mapOfOneofField) NewContainerElement(key string) (ContainerField, error) {
+	return field.NewOneofElement(key)
 }

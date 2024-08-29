@@ -20,7 +20,7 @@ type ObjectField interface {
 }
 
 type MapOfObjectField interface {
-	NewObjectValue(key string) (ObjectField, error)
+	NewObjectElement(key string) (ObjectField, error)
 }
 
 type ArrayOfObjectField interface {
@@ -61,30 +61,30 @@ func (f *objectFieldFactory) buildField(context fieldContext, value protoreflect
 	return newObjectField(context, obj)
 }
 
-type existingObjectField struct {
+type objectField struct {
 	fieldDefaults
 	fieldContext
 	*objectImpl
 }
 
 func newObjectField(context fieldContext, obj *objectImpl) ObjectField {
-	return &existingObjectField{
+	return &objectField{
 		objectImpl:   obj,
 		fieldContext: context,
 	}
 }
 
-func (obj *existingObjectField) IsSet() bool {
+func (obj *objectField) IsSet() bool {
 	return true
 }
 
 /*** Explicitly Implements ***/
 
-func (obj *existingObjectField) AsContainer() (ContainerField, bool) {
+func (obj *objectField) AsContainer() (ContainerField, bool) {
 	return obj, true
 }
 
-func (obj *existingObjectField) AsObject() (ObjectField, bool) {
+func (obj *objectField) AsObject() (ObjectField, bool) {
 	return obj, true
 }
 
@@ -112,7 +112,7 @@ func (field *arrayOfObjectField) AsArrayOfContainer() (ArrayOfContainerField, bo
 
 func (field *arrayOfObjectField) RangeContainers(cb func(int, ContainerField) error) error {
 	return field.RangeValues(func(idx int, f Field) error {
-		val, ok := f.(*existingObjectField)
+		val, ok := f.(*objectField)
 		if !ok {
 			return nil
 		}
@@ -126,11 +126,23 @@ type mapOfObjectField struct {
 	MutableMapField
 }
 
-func (field *mapOfObjectField) NewObjectValue(key string) (ObjectField, error) {
+func (field *mapOfObjectField) AsMapOfObject() (MapOfObjectField, bool) {
+	return field, true
+}
+
+func (field *mapOfObjectField) NewObjectElement(key string) (ObjectField, error) {
 	val, err := field.NewElement(key)
 	if err != nil {
 		return nil, err
 	}
 	of := val.(ObjectField)
 	return of, nil
+}
+
+func (field *mapOfObjectField) AsMapOfContainer() (MapOfContainerField, bool) {
+	return field, true
+}
+
+func (field *mapOfObjectField) NewContainerElement(key string) (ContainerField, error) {
+	return field.NewObjectElement(key)
 }

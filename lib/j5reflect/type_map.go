@@ -14,8 +14,8 @@ type RangeMapCallback func(string, Field) error
 
 type MapField interface {
 	Field
-	Range(RangeMapCallback) error
 	ItemSchema() j5schema.FieldSchema
+	Range(RangeMapCallback) error
 }
 
 type MutableMapField interface {
@@ -25,6 +25,11 @@ type MutableMapField interface {
 
 type LeafMapField interface {
 	MapField
+}
+
+type MapOfContainerField interface {
+	MutableMapField
+	NewContainerElement(key string) (ContainerField, error)
 }
 
 /*** Implementation ***/

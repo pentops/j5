@@ -297,7 +297,7 @@ func (dec *decoder) decodeMapField(field j5reflect.MapField) error {
 
 	case j5reflect.MapOfObjectField:
 		return dec.jsonObject(func(keyTokenStr string) error {
-			subMsg, err := field.NewObjectValue(keyTokenStr)
+			subMsg, err := field.NewObjectElement(keyTokenStr)
 			if err != nil {
 				return err
 			}
@@ -306,7 +306,7 @@ func (dec *decoder) decodeMapField(field j5reflect.MapField) error {
 
 	case j5reflect.MapOfOneofField:
 		return dec.jsonObject(func(keyTokenStr string) error {
-			subMsg, err := field.NewOneofValue(keyTokenStr)
+			subMsg, err := field.NewOneofElement(keyTokenStr)
 			if err != nil {
 				return err
 			}

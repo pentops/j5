@@ -95,16 +95,6 @@ func (p *property) Field() (Field, error) {
 	return p.value, nil
 }
 
-var _ PropertySet = &propSet{}
-
-type propSet struct {
-	asMap    map[string]*property
-	asSlice  []*property
-	fullName string
-
-	value protoreflect.Message
-}
-
 type propSetFactory struct {
 	properties []*property
 	fullName   string
@@ -130,6 +120,22 @@ func (factory propSetFactory) newMessage(msg protoreflect.Message) *propSet {
 type hasProps interface {
 	FullName() string
 	ClientProperties() []*j5schema.ObjectProperty
+}
+
+var _ PropertySet = &propSet{}
+
+type propSet struct {
+	asMap    map[string]*property
+	asSlice  []*property
+	fullName string
+
+	value protoreflect.Message
+}
+
+// ProtoMessage returns the underlying protoreflect message. From there you are
+// on your own, the schema may not match.
+func (ps *propSet) ProtoReflect() protoreflect.Message {
+	return ps.value
 }
 
 func newPropSet(schema hasProps, rootDesc protoreflect.MessageDescriptor) (propSetFactory, error) {
