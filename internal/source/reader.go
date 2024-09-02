@@ -87,12 +87,11 @@ func readLockFile(root fs.FS, filename string) (*config_j5pb.LockFile, error) {
 	return lockFile, nil
 }
 
-func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver InputSource) (*source_j5pb.SourceImage, error) {
+func (bundle *bundleSource) GetDependencies(ctx context.Context, resolver InputSource) (DependencySet, error) {
 	j5Config, err := bundle.J5Config()
 	if err != nil {
 		return nil, err
 	}
-
 	dependencies := make([]*source_j5pb.SourceImage, 0, len(j5Config.Dependencies))
 	for _, dep := range j5Config.Dependencies {
 		img, err := resolver.GetSourceImage(ctx, dep)
@@ -100,6 +99,20 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 			return nil, err
 		}
 		dependencies = append(dependencies, img)
+	}
+
+	dependencyImage, err := combineSourceImages(dependencies)
+	if err != nil {
+		return nil, err
+	}
+	return dependencyImage, nil
+}
+
+func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver InputSource) (*source_j5pb.SourceImage, error) {
+
+	dependencies, err := bundle.GetDependencies(ctx, resolver)
+	if err != nil {
+		return nil, err
 	}
 
 	img, err := readImageFromDir(ctx, bundle.fs, dependencies)
@@ -124,7 +137,7 @@ type imageFiles struct {
 	dependencies map[string]*descriptorpb.FileDescriptorProto
 }
 
-func (ii *imageFiles) getFile(filename string) (*descriptorpb.FileDescriptorProto, error) {
+func (ii *imageFiles) GetDependencyFile(filename string) (*descriptorpb.FileDescriptorProto, error) {
 	if file, ok := ii.primary[filename]; ok {
 		return file, nil
 	}
@@ -134,7 +147,20 @@ func (ii *imageFiles) getFile(filename string) (*descriptorpb.FileDescriptorProt
 	return nil, fmt.Errorf("could not find file %q", filename)
 }
 
-func (ii *imageFiles) getFiles() ([]*descriptorpb.FileDescriptorProto, []string) {
+func (ii *imageFiles) ListDependencyFiles(prefix string) []string {
+
+	files := make([]string, 0, len(ii.primary))
+	for _, file := range ii.primary {
+		name := file.GetName()
+		if !strings.HasPrefix(name, prefix) {
+			continue
+		}
+		files = append(files, name)
+	}
+	return files
+}
+
+func (ii *imageFiles) AllDependencyFiles() ([]*descriptorpb.FileDescriptorProto, []string) {
 
 	files := make([]*descriptorpb.FileDescriptorProto, 0, len(ii.primary)+len(ii.dependencies))
 	filenames := make([]string, 0, len(ii.primary))
@@ -195,16 +221,17 @@ func combineSourceImages(images []*source_j5pb.SourceImage) (*imageFiles, error)
 	return combined, nil
 }
 
-func readImageFromDir(ctx context.Context, bundleRoot fs.FS, dependencies []*source_j5pb.SourceImage) (*source_j5pb.SourceImage, error) {
+type DependencySet interface {
+	GetDependencyFile(filename string) (*descriptorpb.FileDescriptorProto, error)
+	ListDependencyFiles(prefix string) []string
+	AllDependencyFiles() ([]*descriptorpb.FileDescriptorProto, []string)
+}
 
-	dependencyImage, err := combineSourceImages(dependencies)
-	if err != nil {
-		return nil, err
-	}
+func readImageFromDir(ctx context.Context, bundleRoot fs.FS, dependencies DependencySet) (*source_j5pb.SourceImage, error) {
 
 	proseFiles := []*source_j5pb.ProseFile{}
 	filenames := []string{}
-	err = fs.WalkDir(bundleRoot, ".", func(path string, info fs.DirEntry, err error) error {
+	err := fs.WalkDir(bundleRoot, ".", func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -248,14 +275,13 @@ func readImageFromDir(ctx context.Context, bundleRoot fs.FS, dependencies []*sou
 		LookupImport: func(filename string) (*desc.FileDescriptor, error) {
 			for _, prefix := range []string{"google/protobuf/", "google/api/", "buf/validate/"} {
 				if strings.HasPrefix(filename, prefix) {
-
 					return desc.LoadFileDescriptor(filename)
 				}
 			}
 			return nil, fmt.Errorf("could not find file %q", filename)
 
 		},
-		LookupImportProto: dependencyImage.getFile,
+		LookupImportProto: dependencies.GetDependencyFile,
 
 		Accessor: func(filename string) (io.ReadCloser, error) {
 			return bundleRoot.Open(filename)

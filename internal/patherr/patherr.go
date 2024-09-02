@@ -1,6 +1,7 @@
 package patherr
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -33,9 +34,9 @@ func (v *Error) prefix(prefix ...string) *Error {
 }
 
 func Wrap(err error, path ...string) error {
-	valErr, ok := err.(*Error)
-	if !ok {
+	pe := &Error{}
+	if !errors.As(err, &pe) {
 		return New(err, path...)
 	}
-	return valErr.prefix(path...)
+	return pe.prefix(path...)
 }

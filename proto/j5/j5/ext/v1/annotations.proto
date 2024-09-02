@@ -5,6 +5,7 @@ package j5.ext.v1;
 import "google/protobuf/descriptor.proto";
 import "j5/auth/v1/method.proto";
 import "j5/ext/v1/query_annotations.proto";
+import "j5/schema/v1/schema.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb";
 
@@ -14,13 +15,16 @@ extend google.protobuf.MessageOptions {
 
 message PSMOptions {
   string entity_name = 1;
+
+  // if not set, will be inferred from the message name, e.g. FooKeys is KEYS
+  optional schema.v1.EntityPart entity_part = 2;
 }
 
 extend google.protobuf.FieldOptions {
-  KeyFieldOptions key = 555101;
+  PSMKeyFieldOptions key = 555101;
 }
 
-message KeyFieldOptions {
+message PSMKeyFieldOptions {
   // the field is the primary key of the state, or is one field in a multi-key
   // primary key for the state object. This field must exist on both the event
   // and the state
@@ -57,6 +61,9 @@ extend google.protobuf.MessageOptions {
 message MessageOptions {
   // When true, the message becomes a schema.Oneof.
   bool is_oneof_wrapper = 1;
+
+  // Use instead of comment descriptions for documentation
+  string description = 2;
 }
 
 extend google.protobuf.OneofOptions {
@@ -107,25 +114,29 @@ extend google.protobuf.FieldOptions {
 // directly, and will eventually hold all of the options from the other
 // annotation libraries (validate and list)
 message FieldOptions {
+  // Use instead of comment descriptions for documentation
+  string description = 2;
+
   oneof type {
+    // message != object, this is a proto-level annotation
     MessageFieldOptions message = 1;
 
-    ObjectFieldOptions object = 10;
-    EnumFieldOptions enum = 11;
-    OneofFieldOptions oneof = 12;
+    j5.schema.v1.ObjectField.Ext object = 10;
+    j5.schema.v1.EnumField.Ext enum = 11;
+    j5.schema.v1.OneofField.Ext oneof = 12;
 
-    MapFieldOptions map = 20;
-    ArrayFieldOptions array = 21;
+    j5.schema.v1.MapField.Ext map = 20;
+    j5.schema.v1.ArrayField.Ext array = 21;
 
-    StringFieldOptions string = 30;
-    IntegerFieldOptions integer = 31;
-    FloatFieldOptions float = 32;
-    BooleanFieldOptions boolean = 33;
-    BytesFieldOptions bytes = 34;
-    DecimalFieldOptions decimal = 35;
-    DateFieldOptions date = 36;
-    TimestampFieldOptions timestamp = 37;
-    KeyTypeFieldOptions key = 38;
+    j5.schema.v1.StringField.Ext string = 30;
+    j5.schema.v1.IntegerField.Ext integer = 31;
+    j5.schema.v1.FloatField.Ext float = 32;
+    j5.schema.v1.BoolField.Ext bool = 33;
+    j5.schema.v1.BytesField.Ext bytes = 34;
+    j5.schema.v1.DecimalField.Ext decimal = 35;
+    j5.schema.v1.DateField.Ext date = 36;
+    j5.schema.v1.TimestampField.Ext timestamp = 37;
+    j5.schema.v1.KeyField.Ext key = 38;
   }
 }
 
@@ -134,31 +145,3 @@ message MessageFieldOptions {
   // message, overriding this to not be an object in the client schemas.
   bool flatten = 1;
 }
-
-message ObjectFieldOptions {}
-
-message EnumFieldOptions {}
-
-message OneofFieldOptions {}
-
-message MapFieldOptions {}
-
-message ArrayFieldOptions {}
-
-message StringFieldOptions {}
-
-message IntegerFieldOptions {}
-
-message FloatFieldOptions {}
-
-message BooleanFieldOptions {}
-
-message BytesFieldOptions {}
-
-message DecimalFieldOptions {}
-
-message DateFieldOptions {}
-
-message TimestampFieldOptions {}
-
-message KeyTypeFieldOptions {}

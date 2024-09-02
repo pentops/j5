@@ -78,8 +78,8 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 	case *schema_j5pb.Field_Float:
 		out.SchemaItem.Type = convertFloatItem(t.Float)
 
-	case *schema_j5pb.Field_Boolean:
-		out.SchemaItem.Type = convertBooleanItem(t.Boolean)
+	case *schema_j5pb.Field_Bool:
+		out.SchemaItem.Type = convertBooleanItem(t.Bool)
 
 	case *schema_j5pb.Field_Array:
 		out.SchemaItem.Type, err = convertArrayItem(t.Array)
@@ -200,8 +200,8 @@ func convertFloatItem(item *schema_j5pb.FloatField) *FloatItem {
 	return out
 }
 
-func convertBooleanItem(item *schema_j5pb.BooleanField) *BooleanItem {
-	out := &BooleanItem{}
+func convertBooleanItem(item *schema_j5pb.BoolField) *BoolItem {
+	out := &BoolItem{}
 
 	if item.Rules != nil {
 		out.Const = Maybe(item.Rules.Const)
@@ -261,8 +261,6 @@ func convertObjectItem(item *schema_j5pb.Object) (*Schema, error) {
 		}
 		out.Properties[prop.Name] = &ObjectProperty{
 			Schema:      schema,
-			ReadOnly:    prop.ReadOnly,
-			WriteOnly:   prop.WriteOnly,
 			Description: prop.Description,
 			Optional:    prop.ExplicitlyOptional,
 		}
@@ -292,8 +290,6 @@ func convertOneofItem(item *schema_j5pb.Oneof) (*Schema, error) {
 		}
 		out.Properties[prop.Name] = &ObjectProperty{
 			Schema:      schema,
-			ReadOnly:    prop.ReadOnly,
-			WriteOnly:   prop.WriteOnly,
 			Description: prop.Description,
 			Optional:    prop.ExplicitlyOptional,
 		}

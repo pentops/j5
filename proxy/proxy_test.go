@@ -140,7 +140,7 @@ func TestGetHandlerMapping(t *testing.T) {
 
 		assert.Equal(t, 1, len(reqToService.Query.Filters))
 		assert.Equal(t, "idVal", reqToService.Query.Filters[0].GetField().Name)
-		assert.Equal(t, "f481d62c-72ff-487b-ba03-50a4a6da83b7", reqToService.Query.Filters[0].GetField().GetValue())
+		assert.Equal(t, "f481d62c-72ff-487b-ba03-50a4a6da83b7", reqToService.Query.Filters[0].GetField().Type.GetValue())
 	})
 }
 

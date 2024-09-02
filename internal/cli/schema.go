@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/pentops/j5/codec"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/export"
 	"github.com/pentops/j5/internal/j5client"
 	"github.com/pentops/j5/internal/structure"
@@ -71,7 +72,11 @@ func RunImage(ctx context.Context, cfg BuildConfig) error {
 	return writeBytes(ctx, cfg.Output, bb)
 }
 
-func RunSource(ctx context.Context, cfg BuildConfig) error {
+func RunSource(ctx context.Context, cfg struct {
+	BuildConfig
+	Package string `flag:"package" default:"" description:"Package to show"`
+	Schema  string `flag:"schema" default:"" description:"Schema to show"`
+}) error {
 	image, _, err := cfg.GetBundleImage(ctx)
 	if err != nil {
 		return err
@@ -81,8 +86,23 @@ func RunSource(ctx context.Context, cfg BuildConfig) error {
 	if err != nil {
 		return err
 	}
+	out := sourceAPI.ProtoReflect()
 
-	bb, err := codec.NewCodec().ProtoToJSON(sourceAPI.ProtoReflect())
+	if cfg.Package != "" {
+		var pkg *source_j5pb.Package
+		for _, search := range sourceAPI.Packages {
+			if search.Name == cfg.Package {
+				pkg = search
+				break
+			}
+		}
+		if pkg == nil {
+			return fmt.Errorf("package %q not found", cfg.Package)
+		}
+		out = pkg.ProtoReflect()
+	}
+
+	bb, err := codec.NewCodec().ProtoToJSON(out)
 	if err != nil {
 		return err
 	}

@@ -25,6 +25,14 @@ type RefSchema struct {
 	To      RootSchema
 }
 
+func (ref *RefSchema) check() error {
+	if ref.To.FullName() != ref.FullName() {
+		//panic(fmt.Sprintf("placeholder %q links to %q", ref.FullName(), ref.To.FullName()))
+		return fmt.Errorf("schema %q has wrong name %q", ref.FullName(), ref.To.FullName())
+	}
+	return nil
+}
+
 func (s *RefSchema) FullName() string {
 	return fmt.Sprintf("%s.%s", s.Package.Name, s.Schema)
 }
@@ -65,26 +73,55 @@ func (s *rootSchema) Description() string {
 	return s.description
 }
 
+type EnumOption struct {
+	name        string
+	number      int32
+	description string
+}
+
+func (eo *EnumOption) Name() string {
+	return eo.name
+}
+
+func (eo *EnumOption) Number() int32 {
+	return eo.number
+}
+
+func (eo *EnumOption) Description() string {
+	return eo.description
+}
+
+func (eo *EnumOption) ToJ5EnumValue() *schema_j5pb.Enum_Option {
+	return &schema_j5pb.Enum_Option{
+		Name:        eo.name,
+		Number:      eo.number,
+		Description: eo.description,
+	}
+
+}
+
 type EnumSchema struct {
 	rootSchema
 
 	NamePrefix string
-	Options    []*schema_j5pb.Enum_Value
+	Options    []*EnumOption //schema_j5pb.Enum_Value
 }
 
-func (s *EnumSchema) OptionByName(name string) *schema_j5pb.Enum_Value {
+var _ RootSchema = (*EnumSchema)(nil)
+
+func (s *EnumSchema) OptionByName(name string) *EnumOption {
 	shortName := strings.TrimPrefix(name, s.NamePrefix)
 	for _, opt := range s.Options {
-		if opt.Name == shortName {
+		if opt.name == shortName {
 			return opt
 		}
 	}
 	return nil
 }
 
-func (s *EnumSchema) OptionByNumber(num int32) *schema_j5pb.Enum_Value {
+func (s *EnumSchema) OptionByNumber(num int32) *EnumOption {
 	for _, opt := range s.Options {
-		if opt.Number == num {
+		if opt.number == num {
 			return opt
 		}
 	}
@@ -92,12 +129,16 @@ func (s *EnumSchema) OptionByNumber(num int32) *schema_j5pb.Enum_Value {
 }
 
 func (s *EnumSchema) ToJ5Root() *schema_j5pb.RootSchema {
+	options := make([]*schema_j5pb.Enum_Option, len(s.Options))
+	for idx, opt := range s.Options {
+		options[idx] = opt.ToJ5EnumValue()
+	}
 	return &schema_j5pb.RootSchema{
 		Type: &schema_j5pb.RootSchema_Enum{
 			Enum: &schema_j5pb.Enum{
 				Name:        s.name,
 				Description: s.description,
-				Options:     s.Options,
+				Options:     options,
 				Prefix:      s.NamePrefix,
 			},
 		},
@@ -226,6 +267,10 @@ func (s *OneofSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
 	return s.ToJ5Root()
 }
 
+func (s *OneofSchema) ClientProperties() []*ObjectProperty {
+	return s.Properties
+}
+
 type PropertySet []*ObjectProperty
 
 type ObjectProperty struct {
@@ -244,6 +289,26 @@ type ObjectProperty struct {
 	Description string
 }
 
+func (prop *ObjectProperty) checkValid() error {
+	if prop.Parent == nil {
+		return fmt.Errorf("property %q has no parent", prop.FullName())
+	}
+	if prop.JSONName == "" {
+		return fmt.Errorf("property %q has no JSON name", prop.FullName())
+	}
+	if prop.Schema == nil {
+		return fmt.Errorf("property %q has no schema", prop.FullName())
+	}
+	return nil
+}
+
+func (prop *ObjectProperty) FullName() string {
+	if prop.Parent == nil {
+		return "<root>." + prop.JSONName
+	}
+	return prop.Parent.FullName() + "." + prop.JSONName
+}
+
 func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 	fieldPath := make([]int32, len(prop.ProtoField))
 	for idx, field := range prop.ProtoField {
@@ -254,8 +319,6 @@ func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 		Name:               prop.JSONName,
 		Required:           prop.Required,
 		ExplicitlyOptional: prop.ExplicitlyOptional,
-		ReadOnly:           prop.ReadOnly,
-		WriteOnly:          prop.WriteOnly,
 		Description:        prop.Description,
 		ProtoField:         fieldPath,
 	}

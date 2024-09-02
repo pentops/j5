@@ -121,22 +121,22 @@ func TestUnmarshal(t *testing.T) {
 			name: "nested messages",
 			json: `{
 				"sBar": {
-					"id": "barId"
+					"barId": "barId"
 				},
 				"rBars": [{
-					"id": "bar1"
+					"barId": "bar1"
 				}, {
-					"id": "bar2"
+					"barId": "bar2"
 				}]
 			}`,
 			wantProto: &schema_testpb.FullSchema{
 				SBar: &schema_testpb.Bar{
-					Id: "barId",
+					BarId: "barId",
 				},
 				RBars: []*schema_testpb.Bar{{
-					Id: "bar1",
+					BarId: "bar1",
 				}, {
-					Id: "bar2",
+					BarId: "bar2",
 				}},
 			},
 		}, {
@@ -308,11 +308,7 @@ func TestUnmarshal(t *testing.T) {
 					}
 					t.Logf("SCHEMA: %s", protojson.Format(schema))
 				*/
-				buffer := &bytes.Buffer{}
-				if err := json.Indent(buffer, []byte(input), " | ", "  "); err != nil {
-					t.Fatalf("invalid test case: %s", err)
-				}
-				t.Logf("input: \n | %s\n", buffer.String())
+				logIndent(t, "input", input)
 
 				msg := tc.wantProto.ProtoReflect().New().Interface()
 				if err := codec.JSONToProto([]byte(input), msg.ProtoReflect()); err != nil {
@@ -331,11 +327,23 @@ func TestUnmarshal(t *testing.T) {
 					t.Fatal(err)
 				}
 
+				logIndent(t, "output", string(encoded))
+
 				CompareJSON(t, []byte(tc.json), encoded)
 			}
 
 		})
 	}
+}
+
+func logIndent(t *testing.T, label, jsonStr string) {
+	t.Helper()
+	buffer := &bytes.Buffer{}
+	if err := json.Indent(buffer, []byte(jsonStr), " | ", "  "); err != nil {
+		t.Log(jsonStr)
+		t.Fatalf("invalid test case: %s", err)
+	}
+	t.Logf("%s \n | %s\n", label, buffer.String())
 }
 
 func TestScalars(t *testing.T) {

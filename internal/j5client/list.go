@@ -77,7 +77,7 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 		})
 	}
 
-	if err := j5schema.WalkSchemaFields(rootSchema.Schema(), func(schema j5schema.WalkProperty) error {
+	if err := j5schema.WalkSchemaFields(rootSchema.Schema(), true, func(schema j5schema.WalkProperty) error {
 		switch st := schema.Schema.(type) {
 		case *j5schema.EnumField:
 			if st.ListRules != nil {
@@ -89,7 +89,7 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 						if shortName == nil {
 							return fmt.Errorf("unknown enum value %q", val)
 						}
-						filtering.DefaultFilters[idx] = shortName.Name
+						filtering.DefaultFilters[idx] = shortName.Name()
 					}
 					filter := &client_j5pb.ListRequest_FilterField{
 						Name:           strings.Join(schema.Path, "."),
@@ -109,9 +109,9 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 			case *schema_j5pb.Field_Array:
 				// do nothing
 
-			case *schema_j5pb.Field_Boolean:
-				if scalar.Boolean.ListRules != nil {
-					addFilter(schema, scalar.Boolean.ListRules.Filtering)
+			case *schema_j5pb.Field_Bool:
+				if scalar.Bool.ListRules != nil {
+					addFilter(schema, scalar.Bool.ListRules.Filtering)
 				}
 
 			case *schema_j5pb.Field_Bytes:

@@ -105,7 +105,7 @@ func (pkg *Package) buildRoot(schema *schema_j5pb.RootSchema) (RootSchema, error
 	return nil, fmt.Errorf("expected root schema, got %T", schema.Type)
 }
 
-func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, error) {
+func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Field) (FieldSchema, error) {
 
 	switch st := schema.Type.(type) {
 
@@ -117,16 +117,20 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 				return nil, err
 			}
 			return &ObjectField{
-				Ref:     item.AsRef(),
-				Rules:   st.Object.Rules,
-				Flatten: st.Object.Flatten,
+				fieldContext: context,
+				Ref:          item.AsRef(),
+				Rules:        st.Object.Rules,
+				Flatten:      st.Object.Flatten,
+				Ext:          st.Object.Ext,
 			}, nil
 		case *schema_j5pb.ObjectField_Ref:
 			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
 			return &ObjectField{
-				Ref:     ref,
-				Rules:   st.Object.Rules,
-				Flatten: st.Object.Flatten,
+				fieldContext: context,
+				Ref:          ref,
+				Rules:        st.Object.Rules,
+				Flatten:      st.Object.Flatten,
+				Ext:          st.Object.Ext,
 			}, nil
 		default:
 			return nil, fmt.Errorf("unsupported oneof schema type %T", inner)
@@ -140,14 +144,18 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 				return nil, err
 			}
 			return &OneofField{
-				Ref:   item.AsRef(),
-				Rules: st.Oneof.Rules,
+				fieldContext: context,
+				Ref:          item.AsRef(),
+				Rules:        st.Oneof.Rules,
+				Ext:          st.Oneof.Ext,
 			}, nil
 		case *schema_j5pb.OneofField_Ref:
 			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
 			return &OneofField{
-				Ref:   ref,
-				Rules: st.Oneof.Rules,
+				fieldContext: context,
+				Ref:          ref,
+				Rules:        st.Oneof.Rules,
+				Ext:          st.Oneof.Ext,
 			}, nil
 		default:
 			return nil, fmt.Errorf("unsupported oneof schema type %T", inner)
@@ -160,6 +168,7 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 			return &EnumField{
 				Ref:   item.AsRef(),
 				Rules: st.Enum.Rules,
+				Ext:   st.Enum.Ext,
 			}, nil
 		case *schema_j5pb.EnumField_Ref:
 			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
@@ -167,53 +176,72 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 				Ref:       ref,
 				Rules:     st.Enum.Rules,
 				ListRules: st.Enum.ListRules,
+				Ext:       st.Enum.Ext,
 			}, nil
 		default:
 			return nil, fmt.Errorf("unsupported enum schema type %T", inner)
 		}
 
 	case *schema_j5pb.Field_Array:
-		itemSchema, err := pkg.schemaFromDesc(st.Array.Items)
+		field := &ArrayField{
+			fieldContext: context,
+			Rules:        st.Array.Rules,
+			Ext:          st.Array.Ext,
+		}
+		childContext := fieldContext{
+			parent:       field,
+			nameInParent: "{}",
+		}
+		itemSchema, err := pkg.schemaFromDesc(childContext, st.Array.Items)
 		if err != nil {
 			return nil, patherr.Wrap(err, "items")
 		}
-		return &ArrayField{
-			Rules:  st.Array.Rules,
-			Schema: itemSchema,
-		}, nil
+		field.Schema = itemSchema
+		return field, nil
 
 	case *schema_j5pb.Field_Map:
-		valueSchema, err := pkg.schemaFromDesc(st.Map.ItemSchema)
+		field := &MapField{
+			fieldContext: context,
+			Rules:        st.Map.Rules,
+			Ext:          st.Map.Ext,
+		}
+		childContext := fieldContext{
+			parent:       field,
+			nameInParent: "{}",
+		}
+		valueSchema, err := pkg.schemaFromDesc(childContext, st.Map.ItemSchema)
 		if err != nil {
 			return nil, patherr.Wrap(err, "items")
 		}
-		return &MapField{
-			Rules:  st.Map.Rules,
-			Schema: valueSchema,
-		}, nil
+		field.Schema = valueSchema
+		return field, nil
 
 	case *schema_j5pb.Field_Timestamp:
 		return &ScalarSchema{
-			Proto: schema,
-			Kind:  protoreflect.MessageKind,
+			fieldContext: context,
+			Proto:        schema,
+			Kind:         protoreflect.MessageKind,
 		}, nil
 
-	case *schema_j5pb.Field_Boolean:
+	case *schema_j5pb.Field_Bool:
 		return &ScalarSchema{
-			Proto: schema,
-			Kind:  protoreflect.BoolKind,
+			fieldContext: context,
+			Proto:        schema,
+			Kind:         protoreflect.BoolKind,
 		}, nil
 
 	case *schema_j5pb.Field_String_:
 		return &ScalarSchema{
-			Proto: schema,
-			Kind:  protoreflect.StringKind,
+			fieldContext: context,
+			Proto:        schema,
+			Kind:         protoreflect.StringKind,
 		}, nil
 
 	case *schema_j5pb.Field_Key:
 		return &ScalarSchema{
-			Proto: schema,
-			Kind:  protoreflect.StringKind,
+			fieldContext: context,
+			Proto:        schema,
+			Kind:         protoreflect.StringKind,
 		}, nil
 
 	case *schema_j5pb.Field_Integer:
@@ -222,8 +250,9 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 			return nil, fmt.Errorf("unsupported integer format %v", st.Integer.Format)
 		}
 		return &ScalarSchema{
-			Proto: schema,
-			Kind:  intKind,
+			fieldContext: context,
+			Proto:        schema,
+			Kind:         intKind,
 		}, nil
 
 	case *schema_j5pb.Field_Float:
@@ -232,14 +261,16 @@ func (pkg *Package) schemaFromDesc(schema *schema_j5pb.Field) (FieldSchema, erro
 			return nil, fmt.Errorf("unsupported float format %v", st.Float.Format)
 		}
 		return &ScalarSchema{
-			Proto: schema,
-			Kind:  floatKind,
+			fieldContext: context,
+			Proto:        schema,
+			Kind:         floatKind,
 		}, nil
 
 	case *schema_j5pb.Field_Bytes:
 		return &ScalarSchema{
-			Proto: schema,
-			Kind:  protoreflect.BytesKind,
+			fieldContext: context,
+			Proto:        schema,
+			Kind:         protoreflect.BytesKind,
 		}, nil
 
 	case *schema_j5pb.Field_Any:
@@ -306,6 +337,14 @@ func (pkg *Package) oneofSchemaFromDesc(sch *schema_j5pb.Oneof) (*OneofSchema, e
 }
 
 func (pkg *Package) enumSchemaFromDesc(sch *schema_j5pb.Enum) *EnumSchema {
+	opts := make([]*EnumOption, len(sch.Options))
+	for idx, src := range sch.Options {
+		opts[idx] = &EnumOption{
+			name:        src.Name,
+			description: src.Description,
+			number:      src.Number,
+		}
+	}
 	return &EnumSchema{
 		NamePrefix: sch.Prefix,
 		rootSchema: rootSchema{
@@ -313,7 +352,7 @@ func (pkg *Package) enumSchemaFromDesc(sch *schema_j5pb.Enum) *EnumSchema {
 			name:        sch.Name,
 			pkg:         pkg,
 		},
-		Options: sch.Options,
+		Options: opts,
 	}
 }
 
@@ -322,7 +361,11 @@ func (pkg *Package) objectPropertyFromDesc(parent RootSchema, prop *schema_j5pb.
 	for i, field := range prop.ProtoField {
 		protoField[i] = protoreflect.FieldNumber(field)
 	}
-	propSchema, err := pkg.schemaFromDesc(prop.Schema)
+	context := fieldContext{
+		parent:       parent,
+		nameInParent: prop.Name,
+	}
+	propSchema, err := pkg.schemaFromDesc(context, prop.Schema)
 	if err != nil {
 		return nil, patherr.Wrap(err, "properties", prop.Name)
 	}
@@ -333,8 +376,6 @@ func (pkg *Package) objectPropertyFromDesc(parent RootSchema, prop *schema_j5pb.
 		ProtoField:         protoField,
 		JSONName:           prop.Name,
 		Required:           prop.Required,
-		ReadOnly:           prop.ReadOnly,
-		WriteOnly:          prop.WriteOnly,
 		ExplicitlyOptional: prop.ExplicitlyOptional,
 		Description:        prop.Description,
 	}, nil
