@@ -104,7 +104,3 @@ func (c propertyContext) FullTypeName() string {
 func (c propertyContext) ProtoPath() []string {
 	return c.walkedProtoPath
 }
-
-func (c propertyContext) fieldSchema() schema_j5pb.IsField_Type {
-	return c.schema.Schema.ToJ5Field().Type
-}

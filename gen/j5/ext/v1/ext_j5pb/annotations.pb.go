@@ -30,6 +30,8 @@ type PSMOptions struct {
 	unknownFields protoimpl.UnknownFields
 
 	EntityName string `protobuf:"bytes,1,opt,name=entity_name,json=entityName,proto3" json:"entity_name,omitempty"`
+	// if not set, will be inferred from the message name, e.g. FooKeys is KEYS
+	EntityPart *schema_j5pb.EntityPart `protobuf:"varint,2,opt,name=entity_part,json=entityPart,proto3,enum=j5.schema.v1.EntityPart,oneof" json:"entity_part,omitempty"`
 }
 
 func (x *PSMOptions) Reset() {
@@ -69,6 +71,13 @@ func (x *PSMOptions) GetEntityName() string {
 		return x.EntityName
 	}
 	return ""
+}
+
+func (x *PSMOptions) GetEntityPart() schema_j5pb.EntityPart {
+	if x != nil && x.EntityPart != nil {
+		return *x.EntityPart
+	}
+	return schema_j5pb.EntityPart(0)
 }
 
 type PSMKeyFieldOptions struct {
@@ -1054,9 +1063,14 @@ var file_j5_ext_v1_annotations_proto_rawDesc = []byte{
 	0x75, 0x65, 0x72, 0x79, 0x5f, 0x61, 0x6e, 0x6e, 0x6f, 0x74, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73,
 	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x19, 0x6a, 0x35, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d,
 	0x61, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x22, 0x2d, 0x0a, 0x0a, 0x50, 0x53, 0x4d, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12,
+	0x6f, 0x22, 0x7d, 0x0a, 0x0a, 0x50, 0x53, 0x4d, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12,
 	0x1f, 0x0a, 0x0b, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x5f, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x4e, 0x61, 0x6d, 0x65,
+	0x12, 0x3e, 0x0a, 0x0b, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x5f, 0x70, 0x61, 0x72, 0x74, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x18, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d,
+	0x61, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x50, 0x61, 0x72, 0x74, 0x48,
+	0x00, 0x52, 0x0a, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x50, 0x61, 0x72, 0x74, 0x88, 0x01, 0x01,
+	0x42, 0x0e, 0x0a, 0x0c, 0x5f, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x5f, 0x70, 0x61, 0x72, 0x74,
 	0x22, 0x54, 0x0a, 0x12, 0x50, 0x53, 0x4d, 0x4b, 0x65, 0x79, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x4f,
 	0x70, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x72, 0x69, 0x6d, 0x61, 0x72,
 	0x79, 0x5f, 0x6b, 0x65, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0a, 0x70, 0x72, 0x69,
@@ -1246,72 +1260,74 @@ var file_j5_ext_v1_annotations_proto_goTypes = []any{
 	(*MessageFieldOptions)(nil),            // 9: j5.ext.v1.MessageFieldOptions
 	(*ServiceOptions_StateQuery)(nil),      // 10: j5.ext.v1.ServiceOptions.StateQuery
 	(*ServiceOptions_StateCommand)(nil),    // 11: j5.ext.v1.ServiceOptions.StateCommand
-	(*auth_j5pb.MethodAuthType)(nil),       // 12: j5.auth.v1.MethodAuthType
-	(*ext_j5pb.FilteringConstraint)(nil),   // 13: j5.ext.v1.FilteringConstraint
-	(*schema_j5pb.ObjectField_Ext)(nil),    // 14: j5.schema.v1.ObjectField.Ext
-	(*schema_j5pb.EnumField_Ext)(nil),      // 15: j5.schema.v1.EnumField.Ext
-	(*schema_j5pb.OneofField_Ext)(nil),     // 16: j5.schema.v1.OneofField.Ext
-	(*schema_j5pb.MapField_Ext)(nil),       // 17: j5.schema.v1.MapField.Ext
-	(*schema_j5pb.ArrayField_Ext)(nil),     // 18: j5.schema.v1.ArrayField.Ext
-	(*schema_j5pb.StringField_Ext)(nil),    // 19: j5.schema.v1.StringField.Ext
-	(*schema_j5pb.IntegerField_Ext)(nil),   // 20: j5.schema.v1.IntegerField.Ext
-	(*schema_j5pb.FloatField_Ext)(nil),     // 21: j5.schema.v1.FloatField.Ext
-	(*schema_j5pb.BoolField_Ext)(nil),      // 22: j5.schema.v1.BoolField.Ext
-	(*schema_j5pb.BytesField_Ext)(nil),     // 23: j5.schema.v1.BytesField.Ext
-	(*schema_j5pb.DecimalField_Ext)(nil),   // 24: j5.schema.v1.DecimalField.Ext
-	(*schema_j5pb.DateField_Ext)(nil),      // 25: j5.schema.v1.DateField.Ext
-	(*schema_j5pb.TimestampField_Ext)(nil), // 26: j5.schema.v1.TimestampField.Ext
-	(*schema_j5pb.KeyField_Ext)(nil),       // 27: j5.schema.v1.KeyField.Ext
-	(*descriptorpb.MessageOptions)(nil),    // 28: google.protobuf.MessageOptions
-	(*descriptorpb.FieldOptions)(nil),      // 29: google.protobuf.FieldOptions
-	(*descriptorpb.ServiceOptions)(nil),    // 30: google.protobuf.ServiceOptions
-	(*descriptorpb.OneofOptions)(nil),      // 31: google.protobuf.OneofOptions
-	(*descriptorpb.MethodOptions)(nil),     // 32: google.protobuf.MethodOptions
-	(*descriptorpb.EnumOptions)(nil),       // 33: google.protobuf.EnumOptions
+	(schema_j5pb.EntityPart)(0),            // 12: j5.schema.v1.EntityPart
+	(*auth_j5pb.MethodAuthType)(nil),       // 13: j5.auth.v1.MethodAuthType
+	(*ext_j5pb.FilteringConstraint)(nil),   // 14: j5.ext.v1.FilteringConstraint
+	(*schema_j5pb.ObjectField_Ext)(nil),    // 15: j5.schema.v1.ObjectField.Ext
+	(*schema_j5pb.EnumField_Ext)(nil),      // 16: j5.schema.v1.EnumField.Ext
+	(*schema_j5pb.OneofField_Ext)(nil),     // 17: j5.schema.v1.OneofField.Ext
+	(*schema_j5pb.MapField_Ext)(nil),       // 18: j5.schema.v1.MapField.Ext
+	(*schema_j5pb.ArrayField_Ext)(nil),     // 19: j5.schema.v1.ArrayField.Ext
+	(*schema_j5pb.StringField_Ext)(nil),    // 20: j5.schema.v1.StringField.Ext
+	(*schema_j5pb.IntegerField_Ext)(nil),   // 21: j5.schema.v1.IntegerField.Ext
+	(*schema_j5pb.FloatField_Ext)(nil),     // 22: j5.schema.v1.FloatField.Ext
+	(*schema_j5pb.BoolField_Ext)(nil),      // 23: j5.schema.v1.BoolField.Ext
+	(*schema_j5pb.BytesField_Ext)(nil),     // 24: j5.schema.v1.BytesField.Ext
+	(*schema_j5pb.DecimalField_Ext)(nil),   // 25: j5.schema.v1.DecimalField.Ext
+	(*schema_j5pb.DateField_Ext)(nil),      // 26: j5.schema.v1.DateField.Ext
+	(*schema_j5pb.TimestampField_Ext)(nil), // 27: j5.schema.v1.TimestampField.Ext
+	(*schema_j5pb.KeyField_Ext)(nil),       // 28: j5.schema.v1.KeyField.Ext
+	(*descriptorpb.MessageOptions)(nil),    // 29: google.protobuf.MessageOptions
+	(*descriptorpb.FieldOptions)(nil),      // 30: google.protobuf.FieldOptions
+	(*descriptorpb.ServiceOptions)(nil),    // 31: google.protobuf.ServiceOptions
+	(*descriptorpb.OneofOptions)(nil),      // 32: google.protobuf.OneofOptions
+	(*descriptorpb.MethodOptions)(nil),     // 33: google.protobuf.MethodOptions
+	(*descriptorpb.EnumOptions)(nil),       // 34: google.protobuf.EnumOptions
 }
 var file_j5_ext_v1_annotations_proto_depIdxs = []int32{
-	10, // 0: j5.ext.v1.ServiceOptions.state_query:type_name -> j5.ext.v1.ServiceOptions.StateQuery
-	11, // 1: j5.ext.v1.ServiceOptions.state_command:type_name -> j5.ext.v1.ServiceOptions.StateCommand
-	12, // 2: j5.ext.v1.ServiceOptions.default_auth:type_name -> j5.auth.v1.MethodAuthType
-	13, // 3: j5.ext.v1.OneofOptions.filtering:type_name -> j5.ext.v1.FilteringConstraint
-	6,  // 4: j5.ext.v1.MethodOptions.state_query:type_name -> j5.ext.v1.StateQueryMethodOptions
-	12, // 5: j5.ext.v1.MethodOptions.auth:type_name -> j5.auth.v1.MethodAuthType
-	9,  // 6: j5.ext.v1.FieldOptions.message:type_name -> j5.ext.v1.MessageFieldOptions
-	14, // 7: j5.ext.v1.FieldOptions.object:type_name -> j5.schema.v1.ObjectField.Ext
-	15, // 8: j5.ext.v1.FieldOptions.enum:type_name -> j5.schema.v1.EnumField.Ext
-	16, // 9: j5.ext.v1.FieldOptions.oneof:type_name -> j5.schema.v1.OneofField.Ext
-	17, // 10: j5.ext.v1.FieldOptions.map:type_name -> j5.schema.v1.MapField.Ext
-	18, // 11: j5.ext.v1.FieldOptions.array:type_name -> j5.schema.v1.ArrayField.Ext
-	19, // 12: j5.ext.v1.FieldOptions.string:type_name -> j5.schema.v1.StringField.Ext
-	20, // 13: j5.ext.v1.FieldOptions.integer:type_name -> j5.schema.v1.IntegerField.Ext
-	21, // 14: j5.ext.v1.FieldOptions.float:type_name -> j5.schema.v1.FloatField.Ext
-	22, // 15: j5.ext.v1.FieldOptions.bool:type_name -> j5.schema.v1.BoolField.Ext
-	23, // 16: j5.ext.v1.FieldOptions.bytes:type_name -> j5.schema.v1.BytesField.Ext
-	24, // 17: j5.ext.v1.FieldOptions.decimal:type_name -> j5.schema.v1.DecimalField.Ext
-	25, // 18: j5.ext.v1.FieldOptions.date:type_name -> j5.schema.v1.DateField.Ext
-	26, // 19: j5.ext.v1.FieldOptions.timestamp:type_name -> j5.schema.v1.TimestampField.Ext
-	27, // 20: j5.ext.v1.FieldOptions.key:type_name -> j5.schema.v1.KeyField.Ext
-	28, // 21: j5.ext.v1.psm:extendee -> google.protobuf.MessageOptions
-	29, // 22: j5.ext.v1.key:extendee -> google.protobuf.FieldOptions
-	30, // 23: j5.ext.v1.service:extendee -> google.protobuf.ServiceOptions
-	28, // 24: j5.ext.v1.message:extendee -> google.protobuf.MessageOptions
-	31, // 25: j5.ext.v1.oneof:extendee -> google.protobuf.OneofOptions
-	32, // 26: j5.ext.v1.method:extendee -> google.protobuf.MethodOptions
-	33, // 27: j5.ext.v1.enum:extendee -> google.protobuf.EnumOptions
-	29, // 28: j5.ext.v1.field:extendee -> google.protobuf.FieldOptions
-	0,  // 29: j5.ext.v1.psm:type_name -> j5.ext.v1.PSMOptions
-	1,  // 30: j5.ext.v1.key:type_name -> j5.ext.v1.PSMKeyFieldOptions
-	2,  // 31: j5.ext.v1.service:type_name -> j5.ext.v1.ServiceOptions
-	3,  // 32: j5.ext.v1.message:type_name -> j5.ext.v1.MessageOptions
-	4,  // 33: j5.ext.v1.oneof:type_name -> j5.ext.v1.OneofOptions
-	5,  // 34: j5.ext.v1.method:type_name -> j5.ext.v1.MethodOptions
-	7,  // 35: j5.ext.v1.enum:type_name -> j5.ext.v1.EnumOptions
-	8,  // 36: j5.ext.v1.field:type_name -> j5.ext.v1.FieldOptions
-	37, // [37:37] is the sub-list for method output_type
-	37, // [37:37] is the sub-list for method input_type
-	29, // [29:37] is the sub-list for extension type_name
-	21, // [21:29] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	12, // 0: j5.ext.v1.PSMOptions.entity_part:type_name -> j5.schema.v1.EntityPart
+	10, // 1: j5.ext.v1.ServiceOptions.state_query:type_name -> j5.ext.v1.ServiceOptions.StateQuery
+	11, // 2: j5.ext.v1.ServiceOptions.state_command:type_name -> j5.ext.v1.ServiceOptions.StateCommand
+	13, // 3: j5.ext.v1.ServiceOptions.default_auth:type_name -> j5.auth.v1.MethodAuthType
+	14, // 4: j5.ext.v1.OneofOptions.filtering:type_name -> j5.ext.v1.FilteringConstraint
+	6,  // 5: j5.ext.v1.MethodOptions.state_query:type_name -> j5.ext.v1.StateQueryMethodOptions
+	13, // 6: j5.ext.v1.MethodOptions.auth:type_name -> j5.auth.v1.MethodAuthType
+	9,  // 7: j5.ext.v1.FieldOptions.message:type_name -> j5.ext.v1.MessageFieldOptions
+	15, // 8: j5.ext.v1.FieldOptions.object:type_name -> j5.schema.v1.ObjectField.Ext
+	16, // 9: j5.ext.v1.FieldOptions.enum:type_name -> j5.schema.v1.EnumField.Ext
+	17, // 10: j5.ext.v1.FieldOptions.oneof:type_name -> j5.schema.v1.OneofField.Ext
+	18, // 11: j5.ext.v1.FieldOptions.map:type_name -> j5.schema.v1.MapField.Ext
+	19, // 12: j5.ext.v1.FieldOptions.array:type_name -> j5.schema.v1.ArrayField.Ext
+	20, // 13: j5.ext.v1.FieldOptions.string:type_name -> j5.schema.v1.StringField.Ext
+	21, // 14: j5.ext.v1.FieldOptions.integer:type_name -> j5.schema.v1.IntegerField.Ext
+	22, // 15: j5.ext.v1.FieldOptions.float:type_name -> j5.schema.v1.FloatField.Ext
+	23, // 16: j5.ext.v1.FieldOptions.bool:type_name -> j5.schema.v1.BoolField.Ext
+	24, // 17: j5.ext.v1.FieldOptions.bytes:type_name -> j5.schema.v1.BytesField.Ext
+	25, // 18: j5.ext.v1.FieldOptions.decimal:type_name -> j5.schema.v1.DecimalField.Ext
+	26, // 19: j5.ext.v1.FieldOptions.date:type_name -> j5.schema.v1.DateField.Ext
+	27, // 20: j5.ext.v1.FieldOptions.timestamp:type_name -> j5.schema.v1.TimestampField.Ext
+	28, // 21: j5.ext.v1.FieldOptions.key:type_name -> j5.schema.v1.KeyField.Ext
+	29, // 22: j5.ext.v1.psm:extendee -> google.protobuf.MessageOptions
+	30, // 23: j5.ext.v1.key:extendee -> google.protobuf.FieldOptions
+	31, // 24: j5.ext.v1.service:extendee -> google.protobuf.ServiceOptions
+	29, // 25: j5.ext.v1.message:extendee -> google.protobuf.MessageOptions
+	32, // 26: j5.ext.v1.oneof:extendee -> google.protobuf.OneofOptions
+	33, // 27: j5.ext.v1.method:extendee -> google.protobuf.MethodOptions
+	34, // 28: j5.ext.v1.enum:extendee -> google.protobuf.EnumOptions
+	30, // 29: j5.ext.v1.field:extendee -> google.protobuf.FieldOptions
+	0,  // 30: j5.ext.v1.psm:type_name -> j5.ext.v1.PSMOptions
+	1,  // 31: j5.ext.v1.key:type_name -> j5.ext.v1.PSMKeyFieldOptions
+	2,  // 32: j5.ext.v1.service:type_name -> j5.ext.v1.ServiceOptions
+	3,  // 33: j5.ext.v1.message:type_name -> j5.ext.v1.MessageOptions
+	4,  // 34: j5.ext.v1.oneof:type_name -> j5.ext.v1.OneofOptions
+	5,  // 35: j5.ext.v1.method:type_name -> j5.ext.v1.MethodOptions
+	7,  // 36: j5.ext.v1.enum:type_name -> j5.ext.v1.EnumOptions
+	8,  // 37: j5.ext.v1.field:type_name -> j5.ext.v1.FieldOptions
+	38, // [38:38] is the sub-list for method output_type
+	38, // [38:38] is the sub-list for method input_type
+	30, // [30:38] is the sub-list for extension type_name
+	22, // [22:30] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_j5_ext_v1_annotations_proto_init() }
@@ -1465,6 +1481,7 @@ func file_j5_ext_v1_annotations_proto_init() {
 			}
 		}
 	}
+	file_j5_ext_v1_annotations_proto_msgTypes[0].OneofWrappers = []any{}
 	file_j5_ext_v1_annotations_proto_msgTypes[2].OneofWrappers = []any{
 		(*ServiceOptions_StateQuery_)(nil),
 		(*ServiceOptions_StateCommand_)(nil),

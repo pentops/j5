@@ -10,8 +10,9 @@ import (
 )
 
 type DependencySet interface {
-	GetFile(filename string) (*descriptorpb.FileDescriptorProto, error)
-	GetFiles() ([]*descriptorpb.FileDescriptorProto, []string)
+	GetDependencyFile(filename string) (*descriptorpb.FileDescriptorProto, error)
+	AllDependencyFiles() ([]*descriptorpb.FileDescriptorProto, []string)
+	ListDependencyFiles(prefix string) []string
 }
 
 type Source struct {
@@ -20,6 +21,10 @@ type Source struct {
 
 func (w *Source) BundleConfig(name string) (*config_j5pb.BundleConfigFile, error) {
 	return w.src.BundleConfig(name)
+}
+
+func (w *Source) BundleFS(name string) (fs.FS, error) {
+	return w.src.BundleFS(name)
 }
 
 func (w *Source) BundleDependencies(ctx context.Context, name string) (DependencySet, error) {

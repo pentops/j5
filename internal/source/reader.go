@@ -137,7 +137,7 @@ type imageFiles struct {
 	dependencies map[string]*descriptorpb.FileDescriptorProto
 }
 
-func (ii *imageFiles) GetFile(filename string) (*descriptorpb.FileDescriptorProto, error) {
+func (ii *imageFiles) GetDependencyFile(filename string) (*descriptorpb.FileDescriptorProto, error) {
 	if file, ok := ii.primary[filename]; ok {
 		return file, nil
 	}
@@ -147,7 +147,20 @@ func (ii *imageFiles) GetFile(filename string) (*descriptorpb.FileDescriptorProt
 	return nil, fmt.Errorf("could not find file %q", filename)
 }
 
-func (ii *imageFiles) GetFiles() ([]*descriptorpb.FileDescriptorProto, []string) {
+func (ii *imageFiles) ListDependencyFiles(prefix string) []string {
+
+	files := make([]string, 0, len(ii.primary))
+	for _, file := range ii.primary {
+		name := file.GetName()
+		if !strings.HasPrefix(name, prefix) {
+			continue
+		}
+		files = append(files, name)
+	}
+	return files
+}
+
+func (ii *imageFiles) AllDependencyFiles() ([]*descriptorpb.FileDescriptorProto, []string) {
 
 	files := make([]*descriptorpb.FileDescriptorProto, 0, len(ii.primary)+len(ii.dependencies))
 	filenames := make([]string, 0, len(ii.primary))
@@ -209,8 +222,9 @@ func combineSourceImages(images []*source_j5pb.SourceImage) (*imageFiles, error)
 }
 
 type DependencySet interface {
-	GetFile(filename string) (*descriptorpb.FileDescriptorProto, error)
-	GetFiles() ([]*descriptorpb.FileDescriptorProto, []string)
+	GetDependencyFile(filename string) (*descriptorpb.FileDescriptorProto, error)
+	ListDependencyFiles(prefix string) []string
+	AllDependencyFiles() ([]*descriptorpb.FileDescriptorProto, []string)
 }
 
 func readImageFromDir(ctx context.Context, bundleRoot fs.FS, dependencies DependencySet) (*source_j5pb.SourceImage, error) {
@@ -261,14 +275,13 @@ func readImageFromDir(ctx context.Context, bundleRoot fs.FS, dependencies Depend
 		LookupImport: func(filename string) (*desc.FileDescriptor, error) {
 			for _, prefix := range []string{"google/protobuf/", "google/api/", "buf/validate/"} {
 				if strings.HasPrefix(filename, prefix) {
-
 					return desc.LoadFileDescriptor(filename)
 				}
 			}
 			return nil, fmt.Errorf("could not find file %q", filename)
 
 		},
-		LookupImportProto: dependencies.GetFile,
+		LookupImportProto: dependencies.GetDependencyFile,
 
 		Accessor: func(filename string) (io.ReadCloser, error) {
 			return bundleRoot.Open(filename)

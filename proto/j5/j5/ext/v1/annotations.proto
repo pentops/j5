@@ -15,6 +15,9 @@ extend google.protobuf.MessageOptions {
 
 message PSMOptions {
   string entity_name = 1;
+
+  // if not set, will be inferred from the message name, e.g. FooKeys is KEYS
+  optional schema.v1.EntityPart entity_part = 2;
 }
 
 extend google.protobuf.FieldOptions {

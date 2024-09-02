@@ -64,6 +64,8 @@ message RootElement {
 
 message Oneof {
   j5.schema.v1.Oneof def = 1 [(j5.ext.v1.field).message.flatten = true];
+
+  repeated NestedSchema schemas = 3;
 }
 
 message Object {
