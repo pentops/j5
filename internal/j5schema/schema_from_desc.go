@@ -273,6 +273,21 @@ func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Fie
 			Kind:         protoreflect.BytesKind,
 		}, nil
 
+	case *schema_j5pb.Field_Decimal:
+		return &ScalarSchema{
+			fieldContext:      context,
+			Proto:             schema,
+			Kind:              protoreflect.MessageKind,
+			WellKnownTypeName: "j5.types.decimal.v1",
+		}, nil
+
+	case *schema_j5pb.Field_Date:
+		return &ScalarSchema{
+			fieldContext:      context,
+			Proto:             schema,
+			Kind:              protoreflect.MessageKind,
+			WellKnownTypeName: "j5.types.date.v1",
+		}, nil
 	case *schema_j5pb.Field_Any:
 		return &AnyField{}, nil
 

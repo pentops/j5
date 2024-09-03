@@ -162,6 +162,8 @@ func (sb *sourceBuilder) entitiesFromSource(pkg *Package, schemaPackage *j5schem
 			entity.StateSchema = obj
 		case schema_j5pb.EntityPart_EVENT:
 			entity.EventSchema = obj
+		case schema_j5pb.EntityPart_DATA:
+			// ignore
 		default:
 			return nil, fmt.Errorf("unknown entity part %q", obj.Entity.Part)
 		}

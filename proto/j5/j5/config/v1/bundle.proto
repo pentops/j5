@@ -36,6 +36,16 @@ message PublishConfig {
 
 message PackageOptions {
   repeated SubPackageType sub_packages = 1;
+
+  optional GoPackageOptions go = 2;
+}
+
+message GoPackageOptions {
+  // go_package = "{prefix}/foo/bar/v1/bar{suffix}"
+  // default suffix is '_pb' with some mapping for sub packages. This needs to
+  // be better.
+  string prefix = 1;
+  optional string suffix = 2;
 }
 
 message SubPackageType {
