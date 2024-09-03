@@ -4,6 +4,8 @@ package j5.sourcedef.v1;
 
 import "buf/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
+import "j5/auth/v1/method.proto";
+import "j5/client/v1/client.proto";
 import "j5/ext/v1/annotations.proto";
 import "j5/schema/v1/schema.proto";
 import "j5/sourcedef/v1/annotations.proto";
@@ -39,9 +41,42 @@ message Entity {
   repeated j5.schema.v1.ObjectProperty keys = 3 [(j5.ext.v1.field).array.single_form = "key"];
 
   repeated j5.schema.v1.ObjectProperty data = 5;
+
   repeated Object events = 6;
 
   repeated NestedSchema schemas = 7;
+
+  repeated Service commands = 8 [(j5.ext.v1.field).array.single_form = "command"];
+}
+
+message Method {
+  string name = 1;
+  string http_path = 2;
+  string description = 3;
+
+  j5.client.v1.HTTPMethod http_method = 4 [(buf.validate.field).enum = {
+    not_in: 0
+    defined_only: true
+  }];
+
+  AnonymousObject request = 5 [(buf.validate.field).required = true];
+
+  // The response object for the endpoint, when empty indicates a raw http
+  // response.
+  AnonymousObject response = 6 [(buf.validate.field).required = false];
+
+  j5.auth.v1.MethodAuthType auth = 7;
+}
+
+message AnonymousObject {
+  repeated j5.schema.v1.ObjectProperty properties = 1 [(j5.ext.v1.field).array.single_form = "field"];
+}
+
+message Service {
+  string name = 1;
+  string base_path = 2;
+  string description = 3;
+  repeated Method methods = 4 [(j5.ext.v1.field).array.single_form = "method"];
 }
 
 message NestedSchema {

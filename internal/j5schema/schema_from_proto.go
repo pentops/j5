@@ -254,16 +254,24 @@ func findPSMOptions(srcMsg protoreflect.MessageDescriptor) (*schema_j5pb.EntityO
 	if psmExt == nil {
 		return nil, nil
 	}
+
 	var part schema_j5pb.EntityPart
-	msgName := string(srcMsg.Name())
-	if strings.HasSuffix(msgName, "Keys") {
-		part = schema_j5pb.EntityPart_KEYS
-	} else if strings.HasSuffix(msgName, "State") {
-		part = schema_j5pb.EntityPart_STATE
-	} else if strings.HasSuffix(msgName, "Event") {
-		part = schema_j5pb.EntityPart_EVENT
+
+	if psmExt.EntityPart != nil {
+		part = *psmExt.EntityPart
 	} else {
-		return nil, fmt.Errorf("unknown PSM type suffix for %q", msgName)
+		msgName := string(srcMsg.Name())
+		if strings.HasSuffix(msgName, "Keys") {
+			part = schema_j5pb.EntityPart_KEYS
+		} else if strings.HasSuffix(msgName, "State") {
+			part = schema_j5pb.EntityPart_STATE
+		} else if strings.HasSuffix(msgName, "Event") {
+			part = schema_j5pb.EntityPart_EVENT
+		} else if strings.HasSuffix(msgName, "Data") {
+			part = schema_j5pb.EntityPart_DATA
+		} else {
+			return nil, fmt.Errorf("unknown PSM type suffix for %q", msgName)
+		}
 	}
 
 	return &schema_j5pb.EntityObject{
