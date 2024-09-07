@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/internal/j5schema"
+	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 

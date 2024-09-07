@@ -1,7 +1,7 @@
 package j5reflect
 
 import (
-	"github.com/pentops/j5/internal/j5schema"
+	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
