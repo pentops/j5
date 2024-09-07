@@ -73,8 +73,12 @@ message ObjectField {
   message Ext {}
 }
 
+message InlineObject {
+  repeated ObjectProperty properties = 1;
+}
+
 message Object {
-  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
+  string name = 1; // [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
 
   string description = 2; // brief text description, will not contain markdown.
 
@@ -325,7 +329,7 @@ message KeyFormat {
     Informal informal = 1;
     Custom custom = 2;
     UUID uuid = 3;
-    UUID62 uuid62 = 4;
+    ID62 id62 = 4;
   }
 
   message Informal {}
@@ -333,7 +337,7 @@ message KeyFormat {
     string pattern = 1;
   }
   message UUID {}
-  message UUID62 {}
+  message ID62 {}
 }
 
 message ObjectProperty {

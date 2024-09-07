@@ -3,8 +3,8 @@ package j5reflect
 import (
 	"fmt"
 
-	"github.com/pentops/j5/internal/j5schema"
-	"github.com/pentops/j5/internal/patherr"
+	"github.com/pentops/j5/lib/j5schema"
+	"github.com/pentops/j5/lib/patherr"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 

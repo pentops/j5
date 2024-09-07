@@ -45,7 +45,8 @@ message GoPackageOptions {
   // default suffix is '_pb' with some mapping for sub packages. This needs to
   // be better.
   string prefix = 1;
-  optional string suffix = 2;
+  repeated string trim_prefixes = 2;
+  optional string suffix = 3;
 }
 
 message SubPackageType {
