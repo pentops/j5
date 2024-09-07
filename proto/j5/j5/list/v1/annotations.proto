@@ -103,6 +103,7 @@ message ForeignKeyRules {
   oneof type {
     KeyRules unique_string = 1;
     KeyRules uuid = 2;
+    KeyRules id62 = 3;
   }
 }
 

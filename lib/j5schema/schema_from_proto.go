@@ -1183,6 +1183,16 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 				stringItem.Format = Ptr("natural_key")
 			}
 
+		case *list_j5pb.ForeignKeyRules_Id62:
+			looksLikeKey = true
+			fkRules = fkt.Id62
+			if stringItem.Format != nil || *stringItem.Format != "id62" {
+				return nil, fmt.Errorf("string format %q is not compatible with list.id62", *stringItem.Format)
+			}
+			if stringItem.Format == nil {
+				stringItem.Format = Ptr("id62")
+			}
+
 		case *list_j5pb.ForeignKeyRules_Uuid:
 			looksLikeKey = true
 			fkRules = fkt.Uuid
@@ -1251,6 +1261,14 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 					Uuid: &schema_j5pb.KeyFormat_UUID{},
 				},
 			}
+
+		case "id62":
+			keyField.Format = &schema_j5pb.KeyFormat{
+				Type: &schema_j5pb.KeyFormat_Id62{
+					Id62: &schema_j5pb.KeyFormat_ID62{},
+				},
+			}
+
 		case "natural_key":
 			keyField.Format = &schema_j5pb.KeyFormat{
 				Type: &schema_j5pb.KeyFormat_Informal_{
