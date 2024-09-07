@@ -19,6 +19,10 @@ func New() UUID {
 	return UUID(id[:])
 }
 
+func NewString() string {
+	return New().String()
+}
+
 func (id UUID) String() string {
 	return base62String(id[:])
 }

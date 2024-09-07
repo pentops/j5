@@ -11,6 +11,7 @@ import (
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/lib/id62"
 	"github.com/pentops/j5/lib/patherr"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -504,6 +505,7 @@ func buildComment(sourceLocation protoreflect.SourceLocation, fallback string) s
 var wellKnownStringPatterns = map[string]string{
 	`^\d{4}-\d{2}-\d{2}$`: "date",
 	`^\d(.?\d)?$`:         "number",
+	id62.PatternString:    "id62",
 }
 
 type protoFieldExtensions struct {
@@ -1186,7 +1188,7 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		case *list_j5pb.ForeignKeyRules_Id62:
 			looksLikeKey = true
 			fkRules = fkt.Id62
-			if stringItem.Format != nil || *stringItem.Format != "id62" {
+			if stringItem.Format != nil && *stringItem.Format != "id62" {
 				return nil, fmt.Errorf("string format %q is not compatible with list.id62", *stringItem.Format)
 			}
 			if stringItem.Format == nil {
