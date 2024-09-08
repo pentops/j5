@@ -11,3 +11,8 @@ message RequestMetadata {
   // caller likes, e.g. an encoded proto message
   bytes context = 2;
 }
+
+message SimpleContext {
+  string id = 1;
+  string name = 2;
+}

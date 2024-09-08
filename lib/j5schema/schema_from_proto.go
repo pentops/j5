@@ -593,6 +593,12 @@ func (pkg *Package) buildSchema(context fieldContext, src protoreflect.FieldDesc
 	return scalar, nil
 }
 
+func ScalarSchemaFromProto(src protoreflect.FieldDescriptor) (schema_j5pb.IsField_Type, bool, error) {
+	ext := getProtoFieldExtensions(src)
+	t, err := buildScalarType(src, ext)
+	return t, ext.validate.Required, err
+}
+
 func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
 
 	switch src.Kind() {

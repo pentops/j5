@@ -228,6 +228,10 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 			return protoreflect.ValueOfMessage(val.ProtoReflect()), nil
 
 		case *decimal.Decimal:
+			msg := decimal_j5t.FromShop(*val)
+			return protoreflect.ValueOfMessage(msg.ProtoReflect()), nil
+
+		case decimal.Decimal:
 			msg := decimal_j5t.FromShop(val)
 
 			return protoreflect.ValueOfMessage(msg.ProtoReflect()), nil
