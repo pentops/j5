@@ -334,7 +334,7 @@ message KeyFormat {
 
   message Informal {}
   message Custom {
-    string pattern = 1;
+    string pattern = 1 [(buf.validate.field).required = true];
   }
   message UUID {}
   message ID62 {}

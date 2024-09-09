@@ -27,6 +27,21 @@ message Package {
   string name = 1;
 }
 
+message Import {
+  string path = 1;
+  string alias = 2;
+}
+
+message RootElement {
+  oneof type {
+    Entity entity = 4;
+    Oneof oneof = 1;
+    Object object = 2;
+    j5.schema.v1.Enum enum = 3;
+    Topic topic = 5;
+  }
+}
+
 message Entity {
   string name = 1;
   string description = 2;
@@ -84,16 +99,6 @@ message NestedSchema {
   }
 }
 
-message RootElement {
-  oneof type {
-    Entity entity = 4;
-    Oneof oneof = 1;
-    Object object = 2;
-    j5.schema.v1.Enum enum = 3;
-    Partial partial = 5;
-  }
-}
-
 message Oneof {
   j5.schema.v1.Oneof def = 1 [(j5.ext.v1.field).message.flatten = true];
 
@@ -110,17 +115,39 @@ message EntityElement {
   Entity entity = 1 [(j5.ext.v1.field).message.flatten = true];
 }
 
-message Partial {
+message Topic {
+  string name = 1;
+  string description = 2;
+
+  TopicType type = 3;
+}
+
+message TopicType {
   oneof type {
-    Field field = 1;
+    Publish publish = 1;
+    ReqRes reqres = 2;
+    Upsert upsert = 3;
   }
 
-  message Field {
-    j5.schema.v1.ObjectProperty def = 1 [(j5.ext.v1.field).message.flatten = true];
+  message Publish {
+    repeated NamedTopicMessage messages = 1 [(j5.ext.v1.field).array.single_form = "message"];
+  }
+
+  message ReqRes {
+    AnonTopicMessage request = 2 [(buf.validate.field).required = true];
+    AnonTopicMessage reply = 3 [(buf.validate.field).required = true];
+  }
+
+  message Upsert {
+    AnonTopicMessage message = 2 [(buf.validate.field).required = true];
   }
 }
 
-message Import {
-  string path = 1;
-  string alias = 2;
+message NamedTopicMessage {
+  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][A-Za-zA-Z0-9]+$"];
+  repeated j5.schema.v1.ObjectProperty fields = 5 [(j5.ext.v1.field).array.single_form = "field"];
+}
+
+message AnonTopicMessage {
+  repeated j5.schema.v1.ObjectProperty fields = 5 [(j5.ext.v1.field).array.single_form = "field"];
 }
