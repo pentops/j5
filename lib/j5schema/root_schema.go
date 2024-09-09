@@ -221,21 +221,25 @@ func (s *ObjectSchema) ClientProperties() []*ObjectProperty {
 }
 
 func (s *ObjectSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
+	return &schema_j5pb.RootSchema{
+		Type: &schema_j5pb.RootSchema_Object{
+			Object: s.ToJ5ClientObject(),
+		},
+	}
+}
+
+func (s *ObjectSchema) ToJ5ClientObject() *schema_j5pb.Object {
 	clientProperties := s.ClientProperties()
 	properties := make([]*schema_j5pb.ObjectProperty, 0, len(clientProperties))
-	for _, prop := range s.Properties {
+	for _, prop := range clientProperties {
 		property := prop.ToJ5Proto()
 		properties = append(properties, property)
 	}
-	return &schema_j5pb.RootSchema{
-		Type: &schema_j5pb.RootSchema_Object{
-			Object: &schema_j5pb.Object{
-				Description: s.description,
-				Name:        s.name,
-				Properties:  properties,
-				Entity:      s.Entity,
-			},
-		},
+	return &schema_j5pb.Object{
+		Description: s.description,
+		Name:        s.name,
+		Properties:  properties,
+		Entity:      s.Entity,
 	}
 }
 

@@ -563,6 +563,7 @@ func (pkg *Package) buildSchemaProperty(context fieldContext, src protoreflect.F
 		return nil, err
 	}
 	prop.Schema = fieldSchema
+
 	return prop, nil
 }
 
@@ -1183,7 +1184,8 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		case *list_j5pb.ForeignKeyRules_UniqueString:
 			looksLikeKey = true
 
-			if stringItem.Format != nil || *stringItem.Format == "uuid" {
+			if stringItem.Format != nil {
+				// no formats should be set for these, there is no validate equivalent.
 				return nil, fmt.Errorf("string format %q is not compatible with list.unique_string", *stringItem.Format)
 			}
 			fkRules = fkt.UniqueString
@@ -1259,9 +1261,7 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		ListRules: fkRules,
 	}
 
-	if stringItem.Format == nil {
-
-	} else {
+	if stringItem.Format != nil {
 		switch *stringItem.Format {
 		case "uuid":
 			keyField.Format = &schema_j5pb.KeyFormat{
