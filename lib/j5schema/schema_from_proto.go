@@ -1247,18 +1247,26 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		}, nil
 	}
 
-	if psmKeyExt == nil {
-		psmKeyExt = &ext_j5pb.PSMKeyFieldOptions{}
-	}
 	if keyFieldOpt == nil {
 		keyFieldOpt = &schema_j5pb.KeyField_Ext{}
 	}
 
-	keyFieldOpt.PrimaryKey = keyFieldOpt.PrimaryKey || psmKeyExt.PrimaryKey
-
 	keyField := &schema_j5pb.KeyField{
 		Ext:       keyFieldOpt,
 		ListRules: fkRules,
+	}
+	if psmKeyExt != nil {
+		ee := &schema_j5pb.EntityKey{}
+		if psmKeyExt.PrimaryKey {
+			ee.Type = &schema_j5pb.EntityKey_PrimaryKey{
+				PrimaryKey: true,
+			}
+		} else if psmKeyExt.ForeignKey != nil {
+			ee.Type = &schema_j5pb.EntityKey_ForeignKey{
+				ForeignKey: psmKeyExt.ForeignKey,
+			}
+		}
+		keyField.Entity = ee
 	}
 
 	if stringItem.Format != nil {
