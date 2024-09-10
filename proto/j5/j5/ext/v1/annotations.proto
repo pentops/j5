@@ -117,22 +117,22 @@ message FieldOptions {
     // message != object, this is a proto-level annotation
     MessageFieldOptions message = 1;
 
-    j5.schema.v1.ObjectField.Ext object = 10;
-    j5.schema.v1.EnumField.Ext enum = 11;
-    j5.schema.v1.OneofField.Ext oneof = 12;
+    ObjectField object = 10;
+    EnumField enum = 11;
+    OneofField oneof = 12;
 
-    j5.schema.v1.MapField.Ext map = 20;
-    j5.schema.v1.ArrayField.Ext array = 21;
+    MapField map = 20;
+    ArrayField array = 21;
 
-    j5.schema.v1.StringField.Ext string = 30;
-    j5.schema.v1.IntegerField.Ext integer = 31;
-    j5.schema.v1.FloatField.Ext float = 32;
-    j5.schema.v1.BoolField.Ext bool = 33;
-    j5.schema.v1.BytesField.Ext bytes = 34;
-    j5.schema.v1.DecimalField.Ext decimal = 35;
-    j5.schema.v1.DateField.Ext date = 36;
-    j5.schema.v1.TimestampField.Ext timestamp = 37;
-    j5.schema.v1.KeyField.Ext key = 38;
+    StringField string = 30;
+    IntegerField integer = 31;
+    FloatField float = 32;
+    BoolField bool = 33;
+    BytesField bytes = 34;
+    DecimalField decimal = 35;
+    DateField date = 36;
+    TimestampField timestamp = 37;
+    KeyField key = 38;
   }
 }
 
@@ -140,4 +140,50 @@ message MessageFieldOptions {
   // When true, the fields of the child message are flattened into the parent
   // message, overriding this to not be an object in the client schemas.
   bool flatten = 1;
+}
+
+message ObjectField {}
+
+message EnumField {}
+
+message OneofField {}
+
+message MapField {
+  // The name of the singular form of the map key, used in documentation and
+  // block parsing.
+  optional string key_single_form = 3;
+}
+
+message ArrayField {
+  // The name of the singular form of the array item, used in documentation and
+  // block parsing.
+  optional string single_form = 3;
+}
+
+message StringField {}
+
+message IntegerField {}
+
+message FloatField {}
+
+message BoolField {}
+
+message BytesField {}
+
+message DecimalField {}
+
+message DateField {}
+
+message TimestampField {}
+
+message KeyField {
+  oneof type {
+    Format format = 1;
+    string pattern = 2; // custom with pattern.
+  }
+  enum Format {
+    FORMAT_UNSPECIFIED = 0; // informal
+    FORMAT_UUID = 2;
+    FORMAT_ID62 = 3;
+  }
 }

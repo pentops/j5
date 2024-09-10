@@ -343,7 +343,12 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 
 			arrayField := &ArrayField{
 				fieldContext: context,
-				Ext:          ext.j5.GetArray(),
+			}
+
+			if ext := ext.j5.GetArray(); ext != nil {
+				arrayField.Ext = &schema_j5pb.ArrayField_Ext{
+					SingleForm: ext.SingleForm,
+				}
 			}
 
 			childContext := fieldContext{
@@ -391,7 +396,12 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 
 			mapField := &MapField{
 				fieldContext: context,
-				Ext:          ext.j5.GetMap(),
+			}
+
+			if ext := ext.j5.GetMap(); ext != nil {
+				mapField.Ext = &schema_j5pb.MapField_Ext{
+					KeySingleForm: ext.KeySingleForm,
+				}
 			}
 
 			childContext := fieldContext{
@@ -1247,13 +1257,45 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		}, nil
 	}
 
-	if keyFieldOpt == nil {
-		keyFieldOpt = &schema_j5pb.KeyField_Ext{}
+	keyField := &schema_j5pb.KeyField{
+		ListRules: fkRules,
 	}
 
-	keyField := &schema_j5pb.KeyField{
-		Ext:       keyFieldOpt,
-		ListRules: fkRules,
+	if keyFieldOpt != nil {
+		if keyFieldOpt.Type != nil {
+			switch keyType := keyFieldOpt.Type.(type) {
+			case *ext_j5pb.KeyField_Pattern:
+				keyField.Format = &schema_j5pb.KeyFormat{
+					Type: &schema_j5pb.KeyFormat_Custom_{
+						Custom: &schema_j5pb.KeyFormat_Custom{
+							Pattern: keyType.Pattern,
+						},
+					},
+				}
+			case *ext_j5pb.KeyField_Format_:
+				switch keyType.Format {
+				case ext_j5pb.KeyField_FORMAT_ID62:
+					keyField.Format = &schema_j5pb.KeyFormat{
+						Type: &schema_j5pb.KeyFormat_Id62{
+							Id62: &schema_j5pb.KeyFormat_ID62{},
+						},
+					}
+				case ext_j5pb.KeyField_FORMAT_UUID:
+					keyField.Format = &schema_j5pb.KeyFormat{
+						Type: &schema_j5pb.KeyFormat_Uuid{
+							Uuid: &schema_j5pb.KeyFormat_UUID{},
+						},
+					}
+				default:
+					return nil, fmt.Errorf("unknown key format %q", keyType.Format)
+				}
+			default:
+				return nil, fmt.Errorf("unknown key type %T", keyFieldOpt.Type)
+
+			}
+
+		}
+
 	}
 	if psmKeyExt != nil {
 		ee := &schema_j5pb.EntityKey{}

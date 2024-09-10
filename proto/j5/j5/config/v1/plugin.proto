@@ -23,27 +23,38 @@ message BuildPlugin {
 
   // For non-docker, an executable in $PATH, also serves as the 'name' of the
   // command for logging. Not passed in when using docker comtainers.
-  string cmd = 5;
-
-  repeated string args = 6; // CLI Arguments, passed as specified
-
-  // Environment Variables for the command or
-  // container, Expansion of runtime variables is performed, the available
-  // variables are set by the context calling the build,
-  repeated string env = 7;
+  CommandSpec local = 5;
 
   // a docker container to replace the local $PATH executable.
   DockerSpec docker = 8;
+}
 
-  message DockerSpec {
-    string image = 1;
+message DockerSpec {
+  string image = 1;
 
-    // passed as-is to the docker API, does not default to or reference Command.cmd
-    repeated string entrypoint = 2;
+  // passed as-is to the docker API, does not default to or reference Command.cmd
+  repeated string entrypoint = 2;
 
-    // passed as-is to the docker API, does not default to or reference Command.cmd
-    repeated string cmd = 3;
-  }
+  // passed as-is to the docker API, does not default to or reference Command.cmd
+  repeated string cmd = 3;
+
+  repeated string args = 6; // CLI Arguments, passed as specified
+
+  // Environment Variables for the container.
+  // Expansion of runtime variables is performed, the available
+  // variables are set by the context calling the build,
+  repeated string env = 7;
+}
+
+message CommandSpec {
+  string cmd = 1;
+
+  repeated string args = 6; // CLI Arguments, passed as specified
+
+  // Environment Variables for the command
+  // Expansion of runtime variables is performed, the available
+  // variables are set by the context calling the build,
+  repeated string env = 7;
 }
 
 // TODO: This currently floats without a config, we need to decide if it belongs
@@ -81,4 +92,17 @@ enum Plugin {
   PLUGIN_UNSPECIFIED = 0;
   PLUGIN_PROTO = 1;
   PLUGIN_J5_CLIENT = 2;
+}
+
+// Override the plugin globally for temporary development of plugins.
+message PluginOverride {
+  // The name of the plugin to override
+  string name = 1;
+
+  // For non-docker, an executable in $PATH, also serves as the 'name' of the
+  // command for logging. Not passed in when using docker comtainers.
+  CommandSpec local = 5;
+
+  // a docker container to replace the local $PATH executable.
+  DockerSpec docker = 8;
 }

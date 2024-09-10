@@ -11,6 +11,7 @@ option go_package = "github.com/pentops/j5/gen/j5/config/v1/config_j5pb";
 // Config represents the config file (j5.yaml) for a repo.
 message RepoConfigFile {
   repeated BuildPlugin plugins = 3;
+  repeated PluginOverride plugin_overrides = 2;
   repeated GenerateConfig generate = 4;
   repeated BundleReference bundles = 6;
 
