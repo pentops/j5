@@ -21,7 +21,12 @@ message PSMOptions {
 }
 
 extend google.protobuf.FieldOptions {
-  j5.schema.v1.EntityKey key = 555101;
+  PSMKeyFieldOptions key = 555101;
+}
+
+message PSMKeyFieldOptions {
+  bool primary_key = 1;
+  j5.schema.v1.EntityRef foreign_key = 2;
 }
 
 extend google.protobuf.ServiceOptions {
