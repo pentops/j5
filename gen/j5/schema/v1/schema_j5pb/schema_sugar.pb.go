@@ -12,6 +12,7 @@ type IsField_Type = isField_Type
 type IsObjectField_Schema = isObjectField_Schema
 type IsOneofField_Schema = isOneofField_Schema
 type IsEnumField_Schema = isEnumField_Schema
+type IsEntityKey_Type = isEntityKey_Type
 type IsKeyFormat_Type = isKeyFormat_Type
 
 // EntityPart
@@ -21,6 +22,8 @@ const (
 	EntityPart_STATE       EntityPart = 2
 	EntityPart_EVENT       EntityPart = 3
 	EntityPart_DATA        EntityPart = 4
+	EntityPart_REFERENCES  EntityPart = 5
+	EntityPart_DERIVED     EntityPart = 6
 )
 
 var (
@@ -30,6 +33,8 @@ var (
 		2: "STATE",
 		3: "EVENT",
 		4: "DATA",
+		5: "REFERENCES",
+		6: "DERIVED",
 	}
 	EntityPart_value_short = map[string]int32{
 		"UNSPECIFIED": 0,
@@ -37,6 +42,8 @@ var (
 		"STATE":       2,
 		"EVENT":       3,
 		"DATA":        4,
+		"REFERENCES":  5,
+		"DERIVED":     6,
 	}
 	EntityPart_value_either = map[string]int32{
 		"UNSPECIFIED":             0,
@@ -49,6 +56,10 @@ var (
 		"ENTITY_PART_EVENT":       3,
 		"DATA":                    4,
 		"ENTITY_PART_DATA":        4,
+		"REFERENCES":              5,
+		"ENTITY_PART_REFERENCES":  5,
+		"DERIVED":                 6,
+		"ENTITY_PART_DERIVED":     6,
 	}
 )
 

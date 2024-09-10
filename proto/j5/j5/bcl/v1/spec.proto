@@ -19,10 +19,15 @@ message Tag {
   Path path = 1;
   bool is_block = 2;
 
+  bool optional = 3;
+
   // When set, a leading '!' on the tag sets a boolean to true at the given
   // path. (e.g. setting required=true). When not set, bang is illegal. You
   // shouldn't bang where it's illegal.
-  Path bang_bool = 3;
+  Path bang_bool = 4;
+
+  // Same as bang_bool, but for a ?. Still 'true', e.g. 'optional=true)
+  Path question_bool = 5;
 }
 
 message Child {
