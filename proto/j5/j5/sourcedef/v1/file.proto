@@ -45,6 +45,7 @@ message RootElement {
 message Entity {
   string name = 1;
   string description = 2;
+  string base_url_path = 9; // The entire path from the root to the beginning of the entity.
 
   repeated j5.schema.v1.Enum.Option status = 4 [(buf.validate.field).required = true];
 
@@ -84,8 +85,9 @@ message AnonymousObject {
 }
 
 message Service {
-  string name = 1;
-  string base_path = 2;
+  optional string name = 1; // Defaults to FooCommand
+  optional string base_path = 2; // appended to the entity's base_url_path, defaults to `/c`
+
   string description = 3;
   repeated Method methods = 4 [(j5.ext.v1.field).array.single_form = "method"];
   j5.ext.v1.ServiceOptions options = 5;

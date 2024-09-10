@@ -21,16 +21,7 @@ message PSMOptions {
 }
 
 extend google.protobuf.FieldOptions {
-  PSMKeyFieldOptions key = 555101;
-}
-
-message PSMKeyFieldOptions {
-  // the field is the primary key of the state, or is one field in a multi-key
-  // primary key for the state object. This field must exist on both the event
-  // and the state
-  bool primary_key = 1;
-
-  string tenant_key = 2;
+  j5.schema.v1.EntityKey key = 555101;
 }
 
 extend google.protobuf.ServiceOptions {

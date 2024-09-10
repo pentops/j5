@@ -44,9 +44,17 @@ message Field {
   }
 }
 
+// Ref is a reference to a RootSchema (object, oneof or enum) which is used in
+// fields.
 message Ref {
-  string package = 1;
-  string schema = 2;
+  string package = 1; // Dot notation, 'j5.schema.v1'
+  string schema = 2; // Schema name, 'Ref'
+}
+
+// Like Ref but to an entity rather than a schema
+message EntityRef {
+  string package = 1; // Dot notation, 'foo.bar.v1'
+  string entity = 2; // The *entity* name, not schema, 'foo' not 'FooState'
 }
 
 // Allows anything
@@ -66,11 +74,35 @@ message ObjectField {
   // message in JSON encoding and client schemas.
   bool flatten = 7;
 
+  // Valid only in entity state objects, this field references another entity.
+  // The states of the entities are independent, the content of this field will
+  // change through events in the referenced entity only.
+  // The content of this field should not be stored with the state.
+  EntityJoin entity = 8;
+
   message Rules {
     optional uint64 min_properties = 1;
     optional uint64 max_properties = 2;
   }
+
   message Ext {}
+
+  message EntityJoin {
+    // The reference to the entity. This does not effect the schema of the
+    // field, use ref or object as usual.
+    EntityRef entity = 1;
+
+    // Later. Same database, but unsure how the commitment
+    // will work over time.
+    // bool atomic = 2;
+
+    // Which part of the entity is being referenced.
+    // STATE means a full state copy
+    // DATA is just the data object.
+    // DERIVED is used when a custom representation is used in the reference,
+    // i.e. a summary of the parts important to this representation.
+    EntityPart entity_part = 3;
+  }
 }
 
 message InlineObject {
@@ -96,10 +128,12 @@ message EntityObject {
 
 enum EntityPart {
   ENTITY_PART_UNSPECIFIED = 0;
-  ENTITY_PART_KEYS = 1;
-  ENTITY_PART_STATE = 2;
-  ENTITY_PART_EVENT = 3;
-  ENTITY_PART_DATA = 4;
+  ENTITY_PART_KEYS = 1; // Contains the immutable keys of the entity, primary, foreign and natural.
+  ENTITY_PART_STATE = 2; // The full state object containing Keys, Data, Status and References.
+  ENTITY_PART_EVENT = 3; // The event object, wrapping the event types.
+  ENTITY_PART_DATA = 4; // The mutable and non-key data of an entity.
+  ENTITY_PART_REFERENCES = 5; // A collection of references to other state entites.
+  ENTITY_PART_DERIVED = 6; // one of potentially many derived representations of the entity.
 }
 
 message OneofField {
@@ -317,10 +351,23 @@ message KeyField {
   KeyFormat format = 2;
   j5.list.v1.KeyRules list_rules = 3;
   Ext ext = 4;
+  EntityKey entity = 5;
 
   message Rules {}
-  message Ext {
-    bool primary_key = 4;
+  message Ext {}
+}
+
+message EntityKey {
+  //# unexposed oneof, mainly because of the circular dependency between ext and
+  //# schema, but also to avoid further clutter in the proto tags.
+  oneof type {
+    // the field is the primary key of the state entity. It is only valid in the
+    // keys object of an entity.
+    bool primary_key = 1;
+
+    // When set, this key should be in the keys of an entity, and references the
+    // primary key of another entity.
+    EntityRef foreign_key = 2;
   }
 }
 
