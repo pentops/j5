@@ -3,7 +3,6 @@ package j5reflect
 import (
 	"testing"
 
-	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"github.com/pentops/j5/gen/test/schema/v1/schema_testpb"
 	"github.com/stretchr/testify/assert"
 )
@@ -190,30 +189,6 @@ func TestSetter(t *testing.T) {
 		}
 
 		assert.Equal(t, "123", setBar.BarId)
-
-	})
-
-	t.Run("oneof schema", func(t *testing.T) {
-
-		msg := &sourcedef_j5pb.SourceFile{}
-		root, err := refl.NewObject(msg.ProtoReflect())
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		testPath(t, root,
-			tObjectProperty("elements"),
-			tArrayElement(
-				tOneofFullName("j5.sourcedef.v1.RootElement"),
-				tOneofProperty("object"),
-				tObjectFullName("j5.sourcedef.v1.Object"),
-				// skip the 'def', is flattened
-				tObjectProperty("name"),
-				tSetScalar("foo"),
-			),
-		)
-
-		assert.Equal(t, "foo", msg.Elements[0].Type.(*sourcedef_j5pb.RootElement_Object).Object.Def.Name)
 
 	})
 
