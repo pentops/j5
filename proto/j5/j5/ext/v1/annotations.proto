@@ -136,13 +136,18 @@ message FieldOptions {
   }
 }
 
+// DEPRECATED: Use ObjectField instead.
 message MessageFieldOptions {
   // When true, the fields of the child message are flattened into the parent
   // message, overriding this to not be an object in the client schemas.
   bool flatten = 1;
 }
 
-message ObjectField {}
+message ObjectField {
+  // When true, the fields of the child message are flattened into the parent
+  // message, overriding this to not be an object in the client schemas.
+  bool flatten = 1;
+}
 
 message EnumField {}
 

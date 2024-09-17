@@ -1031,6 +1031,15 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 				flatten = true
 			}
 		}
+		if objOptions := ext.j5.GetObject(); objOptions != nil {
+			if src.Kind() != protoreflect.MessageKind {
+				return nil, fmt.Errorf("field %s is not a message but has a object annotation", src.Name())
+			}
+
+			if objOptions.Flatten {
+				flatten = true
+			}
+		}
 	}
 	wktschema, ok := wktSchema(src.Message(), ext.list)
 	if ok {
