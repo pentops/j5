@@ -186,11 +186,14 @@ message Enum {
     string name = 1;
     int32 number = 2;
     string description = 3;
+    map<string, string> info = 4;
   }
 
-  Docs docs = 5;
-  message Docs {
-    bool table = 2;
+  repeated OptionInfoField info = 6;
+  message OptionInfoField {
+    string name = 1;
+    string label = 2;
+    string description = 3;
   }
 }
 
@@ -224,9 +227,9 @@ message MapField {
   }
 
   message Ext {
-    // The name of the singular form of the map key, used in documentation and
+    // The name of the singular form of the map pairs, used in documentation and
     // block parsing.
-    optional string key_single_form = 3;
+    optional string single_form = 3;
   }
 }
 

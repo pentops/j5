@@ -3,6 +3,7 @@ package j5reflect
 import (
 	"fmt"
 
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/lib/j5schema"
 	"github.com/pentops/j5/lib/patherr"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -12,6 +13,7 @@ import (
 
 type RangeValuesCallback func(Field) error
 type RangePropertiesCallback func(Property) error
+type RangePropertySchemasCallback func(name string, required bool, schema *schema_j5pb.Field) error
 
 type Property interface {
 	IsSet() bool
@@ -27,6 +29,7 @@ type PropertySet interface {
 	SchemaName() string // Returns the full name of the entity wrapping the properties.
 
 	RangeProperties(RangePropertiesCallback) error
+	RangePropertySchemas(RangePropertySchemasCallback) error
 	RangeValues(RangeValuesCallback) error
 
 	// HasProperty returns true if there is a property with the given name in
@@ -241,6 +244,17 @@ func (fs *propSet) RangeProperties(callback RangePropertiesCallback) error {
 	var err error
 	for _, prop := range fs.asSlice {
 		err = callback(prop)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (fs *propSet) RangePropertySchemas(callback RangePropertySchemasCallback) error {
+	var err error
+	for _, prop := range fs.asSlice {
+		err = callback(prop.schema.JSONName, prop.schema.Required, prop.schema.ToJ5Proto().Schema)
 		if err != nil {
 			return err
 		}

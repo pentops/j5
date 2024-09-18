@@ -100,6 +100,25 @@ extend google.protobuf.EnumOptions {
 message EnumOptions {
   // bool inline = 1;
   bool no_default = 2; // Disallows the default 0 value.
+
+  repeated EnumInfoField info_fields = 10;
+}
+
+message EnumInfoField {
+  string name = 1; // key in the map of each option
+  string label = 2; // user friendly name
+  string description = 3; // longer text description
+}
+
+extend google.protobuf.EnumValueOptions {
+  EnumValueOptions enum_value = 555000;
+}
+
+message EnumValueOptions {
+  // Use instead of comment descriptions for documentation
+  string description = 2;
+
+  map<string, string> info = 10;
 }
 
 extend google.protobuf.FieldOptions {
@@ -154,9 +173,9 @@ message EnumField {}
 message OneofField {}
 
 message MapField {
-  // The name of the singular form of the map key, used in documentation and
+  // The name of the singular form of the map pairs, used in documentation and
   // block parsing.
-  optional string key_single_form = 3;
+  optional string single_form = 3;
 }
 
 message ArrayField {

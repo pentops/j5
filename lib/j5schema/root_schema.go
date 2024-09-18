@@ -77,6 +77,7 @@ type EnumOption struct {
 	name        string
 	number      int32
 	description string
+	Info        map[string]string
 }
 
 func (eo *EnumOption) Name() string {
@@ -96,6 +97,7 @@ func (eo *EnumOption) ToJ5EnumValue() *schema_j5pb.Enum_Option {
 		Name:        eo.name,
 		Number:      eo.number,
 		Description: eo.description,
+		Info:        eo.Info,
 	}
 
 }
@@ -105,6 +107,8 @@ type EnumSchema struct {
 
 	NamePrefix string
 	Options    []*EnumOption //schema_j5pb.Enum_Value
+
+	InfoFields []*schema_j5pb.Enum_OptionInfoField
 }
 
 var _ RootSchema = (*EnumSchema)(nil)
@@ -148,6 +152,7 @@ func (s *EnumSchema) ToJ5Root() *schema_j5pb.RootSchema {
 				Description: s.description,
 				Options:     options,
 				Prefix:      s.NamePrefix,
+				Info:        s.InfoFields,
 			},
 		},
 	}

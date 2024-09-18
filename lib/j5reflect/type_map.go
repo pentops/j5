@@ -16,11 +16,12 @@ type MapField interface {
 	Field
 	ItemSchema() j5schema.FieldSchema
 	Range(RangeMapCallback) error
+	NewElement(key string) (Field, error)
+	GetOrCreateElement(key string) (Field, error)
 }
 
 type MutableMapField interface {
 	MapField
-	NewElement(key string) (Field, error)
 }
 
 type LeafMapField interface {
@@ -119,6 +120,20 @@ type mutableMapField struct {
 
 var _ MutableMapField = (*mutableMapField)(nil)
 
+func (mapField *mutableMapField) AsMap() (MapField, bool) {
+	return mapField, true
+}
+
+func (mapField *mutableMapField) GetOrCreateElement(key string) (Field, error) {
+	mapKey := protoreflect.ValueOfString(key).MapKey()
+	if mapField.value.Has(mapKey) {
+		existing := mapField.value.Get(mapKey)
+		return mapField.wrapValue(key, existing), nil
+	}
+	itemVal := mapField.value.Mutable(mapKey)
+	return mapField.wrapValue(key, itemVal), nil
+}
+
 func (mapField *mutableMapField) Range(cb RangeMapCallback) error {
 	if !mapField.value.IsValid() {
 		return nil // empty map, probably invalid anyway, but has no keys.
@@ -158,6 +173,39 @@ type leafMapField struct {
 }
 
 var _ LeafMapField = (*leafMapField)(nil)
+
+func (mapField *leafMapField) AsMap() (MapField, bool) {
+	return mapField, true
+}
+
+func (mapField *leafMapField) NewElement(name string) (Field, error) {
+	if !mapField.value.IsValid() {
+		return nil, fmt.Errorf("map is not set")
+	}
+	key := protoreflect.ValueOfString(name).MapKey()
+	if mapField.value.Has(key) {
+		return nil, fmt.Errorf("key %q already exists in map", name)
+	}
+
+	itemVal := mapField.value.NewValue()
+	mapField.value.Set(key, itemVal)
+	return mapField.wrapValue(name), nil
+}
+
+func (mapField *leafMapField) GetOrCreateElement(name string) (Field, error) {
+	if !mapField.value.IsValid() {
+		return nil, fmt.Errorf("map is not set")
+	}
+
+	key := protoreflect.ValueOfString(name).MapKey()
+	if mapField.value.Has(key) {
+		return mapField.wrapValue(name), nil
+	}
+
+	itemVal := mapField.value.NewValue()
+	mapField.setKey(name, itemVal)
+	return mapField.wrapValue(name), nil
+}
 
 func (mapField *leafMapField) Range(cb RangeMapCallback) error {
 	if !mapField.value.IsValid() {

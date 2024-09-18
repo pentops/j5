@@ -400,7 +400,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 
 			if ext := ext.j5.GetMap(); ext != nil {
 				mapField.Ext = &schema_j5pb.MapField_Ext{
-					KeySingleForm: ext.KeySingleForm,
+					SingleForm: ext.SingleForm,
 				}
 			}
 
@@ -921,10 +921,18 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 		option := sourceValues.Get(ii)
 		number := int32(option.Number())
 
+		var info map[string]string
+
+		optExt := proto.GetExtension(option.Options(), ext_j5pb.E_EnumValue).(*ext_j5pb.EnumValueOptions)
+		if optExt != nil && optExt.Info != nil {
+			info = optExt.Info
+		}
+
 		values = append(values, &EnumOption{
 			name:        string(option.Name()),
 			number:      number,
 			description: commentDescription(option),
+			Info:        info,
 		})
 	}
 
@@ -943,10 +951,21 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 	if ext != nil && ext.NoDefault {
 		values = values[1:]
 	}
+	infoFields := []*schema_j5pb.Enum_OptionInfoField{}
+	if ext != nil {
+		for _, field := range ext.InfoFields {
+			infoFields = append(infoFields, &schema_j5pb.Enum_OptionInfoField{
+				Name:        field.Name,
+				Label:       field.Label,
+				Description: field.Description,
+			})
+		}
+	}
 	return &EnumSchema{
 		rootSchema: pkg.schemaRootFromProto(enumDescriptor),
 		Options:    values,
 		NamePrefix: trimPrefix,
+		InfoFields: infoFields,
 
 		//descriptor:  enumDescriptor,
 	}, nil
