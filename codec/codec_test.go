@@ -105,6 +105,21 @@ func TestUnmarshal(t *testing.T) {
 				},
 			},
 		}, {
+			name: "mapObject",
+			json: `{ 
+				"mapStringBar": {
+					"k1": {"barId": "id"}
+				}
+			}`,
+			// TODO: Can only test one key this way while maps are unordered
+			wantProto: &schema_testpb.FullSchema{
+				MapStringBar: map[string]*schema_testpb.Bar{
+					"k1": {
+						BarId: "id",
+					},
+				},
+			},
+		}, {
 			name: "well known types",
 			json: `{
 				"ts": "2020-01-01T00:00:00Z",

@@ -30,7 +30,7 @@ const (
 	EntityPart_ENTITY_PART_STATE       EntityPart = 2 // The full state object containing Keys, Data, Status and References.
 	EntityPart_ENTITY_PART_EVENT       EntityPart = 3 // The event object, wrapping the event types.
 	EntityPart_ENTITY_PART_DATA        EntityPart = 4 // The mutable and non-key data of an entity.
-	EntityPart_ENTITY_PART_REFERENCES  EntityPart = 5 // A collection of references to other state entites.
+	EntityPart_ENTITY_PART_REFERENCES  EntityPart = 5 // A collection of references to other state entities.
 	EntityPart_ENTITY_PART_DERIVED     EntityPart = 6 // one of potentially many derived representations of the entity.
 )
 

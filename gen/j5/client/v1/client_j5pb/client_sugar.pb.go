@@ -7,6 +7,101 @@ import (
 	fmt "fmt"
 )
 
+// MethodType is a oneof wrapper
+type MethodTypeKey string
+
+const (
+	Method_StateQuery MethodTypeKey = "stateQuery"
+)
+
+func (x *MethodType) TypeKey() (MethodTypeKey, bool) {
+	switch x.Type.(type) {
+	case *MethodType_StateQuery_:
+		return Method_StateQuery, true
+	default:
+		return "", false
+	}
+}
+
+type IsMethodTypeWrappedType interface {
+	TypeKey() MethodTypeKey
+}
+
+func (x *MethodType) Set(val IsMethodTypeWrappedType) {
+	switch v := val.(type) {
+	case *MethodType_StateQuery:
+		x.Type = &MethodType_StateQuery_{StateQuery: v}
+	}
+}
+func (x *MethodType) Get() IsMethodTypeWrappedType {
+	switch v := x.Type.(type) {
+	case *MethodType_StateQuery_:
+		return v.StateQuery
+	default:
+		return nil
+	}
+}
+func (x *MethodType_StateQuery) TypeKey() MethodTypeKey {
+	return Method_StateQuery
+}
+
+type IsMethodType_Type = isMethodType_Type
+
+// StateQueryPart
+const (
+	StateQueryPart_UNSPECIFIED StateQueryPart = 0
+	StateQueryPart_GET         StateQueryPart = 1
+	StateQueryPart_LIST        StateQueryPart = 2
+	StateQueryPart_LIST_EVENTS StateQueryPart = 3
+)
+
+var (
+	StateQueryPart_name_short = map[int32]string{
+		0: "UNSPECIFIED",
+		1: "GET",
+		2: "LIST",
+		3: "LIST_EVENTS",
+	}
+	StateQueryPart_value_short = map[string]int32{
+		"UNSPECIFIED": 0,
+		"GET":         1,
+		"LIST":        2,
+		"LIST_EVENTS": 3,
+	}
+	StateQueryPart_value_either = map[string]int32{
+		"UNSPECIFIED":                  0,
+		"STATE_QUERY_PART_UNSPECIFIED": 0,
+		"GET":                          1,
+		"STATE_QUERY_PART_GET":         1,
+		"LIST":                         2,
+		"STATE_QUERY_PART_LIST":        2,
+		"LIST_EVENTS":                  3,
+		"STATE_QUERY_PART_LIST_EVENTS": 3,
+	}
+)
+
+// ShortString returns the un-prefixed string representation of the enum value
+func (x StateQueryPart) ShortString() string {
+	return StateQueryPart_name_short[int32(x)]
+}
+func (x StateQueryPart) Value() (driver.Value, error) {
+	return []uint8(x.ShortString()), nil
+}
+func (x *StateQueryPart) Scan(value interface{}) error {
+	var strVal string
+	switch vt := value.(type) {
+	case []uint8:
+		strVal = string(vt)
+	case string:
+		strVal = vt
+	default:
+		return fmt.Errorf("invalid type %T", value)
+	}
+	val := StateQueryPart_value_either[strVal]
+	*x = StateQueryPart(val)
+	return nil
+}
+
 // HTTPMethod
 const (
 	HTTPMethod_UNSPECIFIED HTTPMethod = 0

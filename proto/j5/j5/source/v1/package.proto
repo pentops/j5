@@ -22,6 +22,12 @@ message Package {
   // markdown formatted prose
   string prose = 3;
 
+  // indicates the package is not a part of the API or bundle, but other
+  // packages in the bundle refer to schemas in this package.
+  // The package will be a partial representation, only including referenced
+  // schemas.
+  bool indirect = 9;
+
   repeated SubPackage sub_packages = 4;
   map<string, j5.schema.v1.RootSchema> schemas = 8;
 }
@@ -41,6 +47,8 @@ message Service {
   ServiceType type = 4;
 
   j5.auth.v1.MethodAuthType default_auth = 5;
+
+  repeated string audience = 6;
 }
 
 message ServiceType {
@@ -71,6 +79,8 @@ message Method {
   string request_schema = 6 [(buf.validate.field).required = true];
   string response_schema = 7 [(buf.validate.field).required = true];
   j5.auth.v1.MethodAuthType auth = 8;
+
+  j5.client.v1.MethodType method_type = 9;
 }
 
 message Topic {

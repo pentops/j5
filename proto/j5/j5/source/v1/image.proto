@@ -5,7 +5,6 @@ package j5.source.v1;
 import "buf/validate/validate.proto";
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
-import "j5/config/v1/bundle.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/source/v1/source_j5pb";
 
@@ -13,9 +12,8 @@ option go_package = "github.com/pentops/j5/gen/j5/source/v1/source_j5pb";
 // with the J5 config, and some non-proto files
 message SourceImage {
   repeated google.protobuf.FileDescriptorProto file = 1;
-  repeated j5.config.v1.PackageConfig packages = 2;
+  repeated PackageInfo packages = 2;
   repeated ProseFile prose = 3;
-  j5.config.v1.PackageOptions options = 4;
 
   repeated string source_filenames = 6;
   string source_name = 8;
@@ -34,4 +32,10 @@ message CommitInfo {
 
   google.protobuf.Timestamp time = 4 [(buf.validate.field).required = true];
   repeated string aliases = 5;
+}
+
+message PackageInfo {
+  string label = 1;
+  string name = 2;
+  string prose = 3;
 }
