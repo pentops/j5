@@ -34,6 +34,8 @@ message FullSchema {
 
   map<string, string> map_string_string = 15;
 
+  map<string, Bar> map_string_bar = 26;
+
   oneof anon_oneof {
     string a_oneof_string = 100;
     Bar a_oneof_bar = 101;
@@ -95,7 +97,7 @@ enum Enum {
 }
 
 message Bar {
-  string bar_id = 1;
+  string bar_id = 10; // not using 1 or 2 to force any bugs relating to MapEntry which does have fields 1 and 2
 }
 
 message Baz {

@@ -138,6 +138,43 @@ func TestSetter(t *testing.T) {
 
 		assert.Equal(t, "value", msg.MapStringString["key"])
 	})
+	t.Run("map object", func(t *testing.T) {
+		root, msg := newRoot(t)
+
+		// Set a map scalar field
+		sMapProp, err := root.NewValue("mapStringBar")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		sMap, ok := sMapProp.(MapOfObjectField)
+		if !ok {
+			t.Fatalf("Wrong type for field: %T", sMapProp)
+		}
+
+		ele, err := sMap.NewObjectElement("key")
+		if err != nil {
+			t.Fatal(err)
+		}
+		id, err := ele.GetOrCreateValue("barId")
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids, ok := id.AsScalar()
+		if !ok {
+			t.Fatalf("Wrong type for field: %T", id)
+		}
+
+		if err := ids.SetGoValue("123"); err != nil {
+			t.Fatal(err)
+		}
+
+		bar := msg.MapStringBar["key"]
+		if bar == nil {
+			t.Fatal("missing bar")
+		}
+		assert.Equal(t, "123", bar.BarId)
+	})
 
 	t.Run("array of enum", func(t *testing.T) {
 		root, msg := newRoot(t)

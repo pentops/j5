@@ -48,6 +48,8 @@ message ServiceOptions {
   }
 
   j5.auth.v1.MethodAuthType default_auth = 10;
+
+  repeated string audience = 20;
 }
 
 extend google.protobuf.MessageOptions {

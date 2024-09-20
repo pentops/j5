@@ -6,6 +6,7 @@ import (
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/lib/j5schema"
 	"github.com/pentops/j5/lib/patherr"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -147,19 +148,28 @@ func newPropSet(schema hasProps, rootDesc protoreflect.MessageDescriptor) (propS
 		return propSetFactory{}, fmt.Errorf("propSet root is not a message")
 	}
 
+	if rootDesc.IsMapEntry() {
+		return propSetFactory{}, fmt.Errorf("propSet root is a map entry (virtual message)")
+	}
+
 	props := schema.ClientProperties()
 
 	builtProps := make([]*property, 0, len(props))
 	for _, propSchema := range props {
 		prop := &property{
 			schema:    propSchema,
-			protoPath: make([]protoreflect.FieldDescriptor, len(propSchema.ProtoField)),
+			protoPath: make([]protoreflect.FieldDescriptor, 0),
 		}
 
 		walk := rootDesc
 		for idx, fieldNumber := range propSchema.ProtoField {
 			fieldDesc := walk.Fields().ByNumber(fieldNumber)
-			prop.protoPath[idx] = fieldDesc
+			if fieldDesc == nil {
+				fmt.Printf("NO FIELD: %s\n", prototext.Format(propSchema.ToJ5Proto()))
+
+				return propSetFactory{}, fmt.Errorf("newPropSet: field %d not found in %s (%v)", fieldNumber, walk.FullName(), propSchema.ProtoField)
+			}
+			prop.protoPath = append(prop.protoPath, fieldDesc)
 			if idx < len(propSchema.ProtoField)-1 {
 				if fieldDesc.Kind() != protoreflect.MessageKind {
 					return propSetFactory{}, fmt.Errorf("field %s is not a message but has nested types", fieldDesc.FullName())
@@ -308,6 +318,9 @@ func (fs *propSet) GetOne() (Field, bool, error) {
 func (fs *propSet) buildValue(prop *property, create bool) (Field, bool, error) {
 
 	msg := fs.value
+	if msg == nil {
+		return nil, false, fmt.Errorf("Reflection Bug: no fs.value in buildValue")
+	}
 
 	fieldContext := &propertyContext{
 		schema: prop.schema,
@@ -431,7 +444,7 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 		mapVal := valVal.Map()
 
 		if st.Schema.Mutable() {
-			ff, err := newMessageFieldFactory(st.Schema, value.fieldInParent.Message())
+			ff, err := newMessageFieldFactory(st.Schema, value.fieldInParent.MapValue().Message())
 			if err != nil {
 				return nil, err
 			}

@@ -132,7 +132,7 @@ enum EntityPart {
   ENTITY_PART_STATE = 2; // The full state object containing Keys, Data, Status and References.
   ENTITY_PART_EVENT = 3; // The event object, wrapping the event types.
   ENTITY_PART_DATA = 4; // The mutable and non-key data of an entity.
-  ENTITY_PART_REFERENCES = 5; // A collection of references to other state entites.
+  ENTITY_PART_REFERENCES = 5; // A collection of references to other state entities.
   ENTITY_PART_DERIVED = 6; // one of potentially many derived representations of the entity.
 }
 

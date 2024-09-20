@@ -25,6 +25,12 @@ message Package {
   // markdown formatted prose
   string prose = 3;
 
+  // indicates the package is not a part of the API or bundle, but other
+  // packages in the bundle refer to schemas in this package.
+  // The package will be a partial representation, only including referenced
+  // schemas.
+  bool indirect = 4;
+
   repeated Service services = 5;
   repeated StateEntity state_entities = 6;
   map<string, j5.schema.v1.RootSchema> schemas = 8;
@@ -33,6 +39,8 @@ message Package {
 message Service {
   string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
   repeated Method methods = 3;
+
+  repeated string audience = 4;
 }
 
 message Method {
@@ -57,6 +65,26 @@ message Method {
 
     ListRequest list = 4;
   }
+
+  MethodType method_type = 9;
+}
+
+message MethodType {
+  oneof type {
+    StateQuery state_query = 1;
+  }
+
+  message StateQuery {
+    string entity_name = 1;
+    StateQueryPart query_part = 2;
+  }
+}
+
+enum StateQueryPart {
+  STATE_QUERY_PART_UNSPECIFIED = 0;
+  STATE_QUERY_PART_GET = 1;
+  STATE_QUERY_PART_LIST = 2;
+  STATE_QUERY_PART_LIST_EVENTS = 3;
 }
 
 message ListRequest {
