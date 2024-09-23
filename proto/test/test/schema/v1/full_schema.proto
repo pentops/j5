@@ -2,8 +2,11 @@ syntax = "proto3";
 
 package test.schema.v1;
 
+import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
+import "j5/types/date/v1/date.proto";
+import "j5/types/decimal/v1/decimal.proto";
 
 option go_package = "github.com/pentops/j5/gen/test/schema/v1/schema_testpb";
 
@@ -61,6 +64,14 @@ message FullSchema {
 
   ImplicitOneof s_implicit_oneof = 24;
   repeated ImplicitOneof r_implicit_oneofs = 25;
+
+  google.protobuf.Any any = 27;
+
+  j5.types.date.v1.Date date = 28;
+  repeated j5.types.date.v1.Date r_date = 29;
+
+  j5.types.decimal.v1.Decimal decimal = 30;
+  repeated j5.types.decimal.v1.Decimal r_decimal = 31;
 }
 
 message WrappedOneof {

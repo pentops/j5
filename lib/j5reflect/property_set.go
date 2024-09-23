@@ -529,6 +529,9 @@ func newMessageFieldFactory(schema j5schema.FieldSchema, desc protoreflect.Messa
 			propSet: propSetFactory,
 		}, nil
 
+	case *j5schema.AnyField:
+		return &anyFieldFactory{schema: st}, nil
+
 	default:
 		panic(fmt.Sprintf("invalid schema for message field: %T", schema))
 	}
