@@ -51,7 +51,7 @@ func (s *AnyField) TypeName() string {
 }
 
 func (s *AnyField) Mutable() bool {
-	return false
+	return true
 }
 
 type EnumField struct {

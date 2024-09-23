@@ -14,7 +14,7 @@ message UpsertMetadata {
   string event_id = 2;
 
   // Safe ordered timestamp of the event. The event with the
-  // newest timestamp is current and superseeds all events.
+  // newest timestamp is current and superceeds all events.
   // Upsert processors should ignore old events.
   google.protobuf.Timestamp timestamp = 3;
 }

@@ -224,6 +224,15 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 
 	case *schema_j5pb.Field_Decimal:
 		switch val := value.(type) {
+		case string:
+			return decimalFromString(val)
+
+		case *string:
+			if val == nil {
+				return protoreflect.Value{}, nil
+			}
+			return decimalFromString(*val)
+
 		case *decimal_j5t.Decimal:
 			return protoreflect.ValueOfMessage(val.ProtoReflect()), nil
 
@@ -268,6 +277,15 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 	default:
 		return pv, fmt.Errorf("unsupported scalar type %T", schema.Type)
 	}
+}
+
+func decimalFromString(val string) (protoreflect.Value, error) {
+	d, err := decimal.NewFromString(val)
+	if err != nil {
+		return protoreflect.Value{}, err
+	}
+	msg := decimal_j5t.FromShop(d)
+	return protoreflect.ValueOfMessage(msg.ProtoReflect()), nil
 }
 
 func timestampFromString(val string) (protoreflect.Value, error) {

@@ -14,7 +14,8 @@ func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 	dec := json.NewDecoder(bytes.NewReader(jsonData))
 	dec.UseNumber()
 	d2 := &decoder{
-		jd: dec,
+		jd:    dec,
+		codec: c,
 	}
 
 	root, err := j5reflect.NewWithCache(c.schemaSet).NewRoot(msg)
@@ -33,8 +34,9 @@ func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 }
 
 type decoder struct {
-	jd   *json.Decoder
-	next json.Token
+	jd    *json.Decoder
+	codec *Codec
+	next  json.Token
 }
 
 func (d *decoder) Token() (json.Token, error) {
@@ -94,6 +96,14 @@ func (dec *decoder) jsonObject(callback func(key string) error) error {
 		}
 	}
 	return dec.expectDelim('}')
+}
+
+func (dec *decoder) popValueAsBytes() (json.RawMessage, error) {
+	raw := &json.RawMessage{}
+	if err := dec.jd.Decode(raw); err != nil {
+		return nil, err
+	}
+	return *raw, nil
 }
 
 type fieldError struct {
@@ -181,6 +191,9 @@ func (dec *decoder) decodeValue(field j5reflect.Field) error {
 
 		return ft.SetGoValue(tok)
 
+	case j5reflect.AnyField:
+		return dec.decodeAny(ft)
+
 	default:
 		return fmt.Errorf("unknown field schema type %T", ft)
 	}
@@ -198,6 +211,55 @@ func (dec *decoder) decodeEnum(field j5reflect.EnumField) error {
 	}
 
 	return field.SetFromString(stringVal)
+}
+
+func (dec *decoder) decodeAny(field j5reflect.AnyField) error {
+	var valueBytes []byte
+	var constrainType *string
+
+	if err := dec.jsonObject(func(keyTokenStr string) error {
+
+		// !type is an optional parameter, when the consumer sets it we validate
+		// it matches the type they actually sent.
+		if keyTokenStr == "!type" {
+			tok, err := dec.Token()
+			if err != nil {
+				return err
+			}
+			str, ok := tok.(string)
+			if !ok {
+				return unexpectedTokenError(tok, "string")
+			}
+			constrainType = &str
+			return nil
+		}
+
+		if valueBytes != nil {
+			return newFieldError(keyTokenStr, "multiple keys found in Any")
+		}
+
+		var err error
+		valueBytes, err = dec.popValueAsBytes()
+		if err != nil {
+			return err
+		}
+
+		return nil
+
+	}); err != nil {
+		return err
+	}
+
+	if constrainType == nil {
+		return newFieldError("value", "no type found in Any")
+	}
+	if valueBytes == nil {
+		return newFieldError("value", "no value found in Any")
+	}
+
+	// This code assumes the schema has been pre-loaded
+
+	return nil
 }
 
 func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {

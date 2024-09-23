@@ -18,8 +18,18 @@ import (
 	"github.com/pentops/flowtest/prototest"
 	"github.com/pentops/j5/gen/test/schema/v1/schema_testpb"
 	"github.com/pentops/j5/j5types/date_j5t"
+	"github.com/pentops/j5/j5types/decimal_j5t"
 )
 
+/*
+	func mustAny(t testing.TB, msg proto.Message) *anypb.Any {
+		a, err := anypb.New(msg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return a
+	}
+*/
 func TestUnmarshal(t *testing.T) {
 
 	testTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
@@ -309,7 +319,37 @@ func TestUnmarshal(t *testing.T) {
 					},
 				}},
 			},
-		}} {
+		}, {
+			name: "decimal",
+			json: `{
+				"decimal": "1.1",
+				"rDecimal": ["2.2", "3.3"]
+			}`,
+			wantProto: &schema_testpb.FullSchema{
+				Decimal: &decimal_j5t.Decimal{Value: "1.1"},
+				RDecimal: []*decimal_j5t.Decimal{{
+					Value: "2.2",
+				}, {
+					Value: "3.3",
+				}},
+			},
+		},
+		/*{
+			name: "any",
+			json: `{
+				"any": {
+					"!type": "test.v1.Bar",
+					"bar": {
+						"barId": "barId"
+					}
+				}
+			}`,
+			wantProto: &schema_testpb.FullSchema{
+				Any: mustAny(t, &schema_testpb.Bar{
+					BarId: "barId",
+				}),
+			},
+		}*/} {
 		t.Run(tc.name, func(t *testing.T) {
 
 			allInputs := append(tc.altInputJSON, tc.json)
@@ -327,7 +367,7 @@ func TestUnmarshal(t *testing.T) {
 
 				msg := tc.wantProto.ProtoReflect().New().Interface()
 				if err := codec.JSONToProto([]byte(input), msg.ProtoReflect()); err != nil {
-					t.Fatal(err)
+					t.Fatalf("JSONToProto: %s", err)
 				}
 
 				t.Logf("got decoded proto: %s \n%v\n", msg.ProtoReflect().Descriptor().FullName(), prototext.Format(msg))
@@ -339,7 +379,7 @@ func TestUnmarshal(t *testing.T) {
 
 				encoded, err := codec.ProtoToJSON(msg.ProtoReflect())
 				if err != nil {
-					t.Fatal(err)
+					t.Fatalf("ProtoToJSON: %s", err)
 				}
 
 				logIndent(t, "output", string(encoded))
