@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
 	"github.com/pentops/j5/lib/j5reflect"
@@ -101,11 +100,9 @@ func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
 		return err
 	}
 
-	typeSuffix := strcase.ToLowerCamel(typeName[strings.LastIndex(typeName, ".")+1:])
-
 	enc.fieldSep()
 
-	err = enc.fieldLabel(typeSuffix)
+	err = enc.fieldLabel("value")
 	if err != nil {
 		return err
 	}
