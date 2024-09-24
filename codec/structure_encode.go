@@ -3,8 +3,10 @@ package codec
 import (
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
 	"github.com/pentops/j5/lib/j5reflect"
@@ -73,6 +75,47 @@ func (enc *encoder) encodeObject(object j5reflect.Object) error {
 	return enc.encodeObjectBody(object)
 }
 
+func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
+	protoAny := anyField.GetProtoAny()
+	msg, err := protoAny.UnmarshalNew()
+	if err != nil {
+		return err
+	}
+
+	innerBytes, err := enc.codec.encode(msg.ProtoReflect())
+	if err != nil {
+		return err
+	}
+
+	enc.openObject()
+	defer enc.closeObject()
+
+	err = enc.fieldLabel("!type")
+	if err != nil {
+		return err
+	}
+
+	typeName := strings.TrimPrefix(protoAny.TypeUrl, anyPrefix)
+	err = enc.addString(typeName)
+	if err != nil {
+		return err
+	}
+
+	typeSuffix := strcase.ToLowerCamel(typeName[strings.LastIndex(typeName, ".")+1:])
+
+	enc.fieldSep()
+
+	err = enc.fieldLabel(typeSuffix)
+	if err != nil {
+		return err
+	}
+
+	enc.add(innerBytes)
+
+	return nil
+
+}
+
 func (enc *encoder) encodeValue(field j5reflect.Field) error {
 
 	switch ft := field.(type) {
@@ -93,6 +136,9 @@ func (enc *encoder) encodeValue(field j5reflect.Field) error {
 
 	case j5reflect.ScalarField:
 		return enc.encodeScalarField(ft)
+
+	case j5reflect.AnyField:
+		return enc.encodeAny(ft)
 
 	default:
 		return fmt.Errorf("encode value of type %q, unsupported", field.FullTypeName())

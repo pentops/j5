@@ -7,7 +7,10 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/lib/j5reflect"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
@@ -18,7 +21,7 @@ func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 		codec: c,
 	}
 
-	root, err := j5reflect.NewWithCache(c.schemaSet).NewRoot(msg)
+	root, err := c.refl.NewRoot(msg)
 	if err != nil {
 		return err
 	}
@@ -33,6 +36,7 @@ func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 	}
 }
 
+// decoder is an instance for decoding a single message, not reusable.
 type decoder struct {
 	jd    *json.Decoder
 	codec *Codec
@@ -180,16 +184,7 @@ func (dec *decoder) decodeValue(field j5reflect.Field) error {
 		return dec.decodeEnum(ft)
 
 	case j5reflect.ScalarField:
-		tok, err := dec.Token()
-		if err != nil {
-			return err
-		}
-
-		if _, ok := tok.(json.Delim); ok {
-			return unexpectedTokenError(tok, "scalar")
-		}
-
-		return ft.SetGoValue(tok)
+		return dec.decodeScalar(ft)
 
 	case j5reflect.AnyField:
 		return dec.decodeAny(ft)
@@ -197,6 +192,19 @@ func (dec *decoder) decodeValue(field j5reflect.Field) error {
 	default:
 		return fmt.Errorf("unknown field schema type %T", ft)
 	}
+}
+
+func (dec *decoder) decodeScalar(field j5reflect.ScalarField) error {
+	tok, err := dec.Token()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := tok.(json.Delim); ok {
+		return unexpectedTokenError(tok, "scalar")
+	}
+
+	return field.SetGoValue(tok)
 }
 
 func (dec *decoder) decodeEnum(field j5reflect.EnumField) error {
@@ -257,10 +265,36 @@ func (dec *decoder) decodeAny(field j5reflect.AnyField) error {
 		return newFieldError("value", "no value found in Any")
 	}
 
-	// This code assumes the schema has been pre-loaded
+	// takes the PROTO name, which should match the encoder.
+	innerDesc, err := dec.codec.resolver.FindMessageByName(protoreflect.FullName(*constrainType))
+	if err != nil {
+		if err == protoregistry.NotFound {
+			return newFieldError(*constrainType, fmt.Sprintf("no type %q in registry", *constrainType))
+		}
+		return newFieldError(*constrainType, err.Error())
+	}
+	msg := innerDesc.New()
+
+	if err := dec.codec.decode(valueBytes, msg); err != nil {
+		return newFieldError(*constrainType, err.Error())
+	}
+
+	protoBytes, err := proto.Marshal(msg.Interface())
+	if err != nil {
+		return newFieldError(*constrainType, err.Error())
+	}
+
+	anyVal := &anypb.Any{
+		Value:   protoBytes,
+		TypeUrl: anyPrefix + *constrainType,
+	}
+
+	field.SetProtoAny(anyVal)
 
 	return nil
 }
+
+const anyPrefix = "type.googleapis.com/"
 
 func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 

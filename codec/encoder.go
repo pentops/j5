@@ -11,10 +11,11 @@ import (
 
 func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
 	enc := &encoder{
-		b: &bytes.Buffer{},
+		codec: c,
+		b:     &bytes.Buffer{},
 	}
 
-	root, err := j5reflect.NewWithCache(c.schemaSet).NewRoot(msg)
+	root, err := c.refl.NewRoot(msg)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +36,8 @@ func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
 }
 
 type encoder struct {
-	b *bytes.Buffer
+	b     *bytes.Buffer
+	codec *Codec
 }
 
 func (enc *encoder) add(b []byte) {
