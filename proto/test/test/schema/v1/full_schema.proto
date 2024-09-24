@@ -72,6 +72,8 @@ message FullSchema {
 
   j5.types.decimal.v1.Decimal decimal = 30;
   repeated j5.types.decimal.v1.Decimal r_decimal = 31;
+
+  string key_string = 32 [(j5.ext.v1.field).key = {}];
 }
 
 message WrappedOneof {

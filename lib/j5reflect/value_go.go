@@ -19,8 +19,6 @@ import (
 
 type AnyValue interface{}
 
-type KeyValue string
-
 func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoreflect.Value, error) {
 	var pv protoreflect.Value
 	switch st := schema.Type.(type) {
@@ -73,16 +71,6 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 			return protoreflect.ValueOfString(string(val)), nil
 
 		case *string:
-			if val == nil {
-				return protoreflect.Value{}, nil
-			}
-
-			return protoreflect.ValueOfString(string(*val)), nil
-
-		case KeyValue:
-			return protoreflect.ValueOfString(string(val)), nil
-
-		case *KeyValue:
 			if val == nil {
 				return protoreflect.Value{}, nil
 			}
@@ -330,7 +318,7 @@ func scalarGoFromReflect(schema *schema_j5pb.Field, val protoreflect.Value) (int
 		return val.String(), nil
 
 	case *schema_j5pb.Field_Key:
-		return KeyValue(val.String()), nil
+		return val.String(), nil
 
 	case *schema_j5pb.Field_Integer:
 		switch st.Integer.Format {

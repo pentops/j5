@@ -333,6 +333,12 @@ func TestUnmarshal(t *testing.T) {
 					Value: "3.3",
 				}},
 			},
+		}, {
+			name: "key",
+			json: `{"keyString": "keyVal"}`,
+			wantProto: &schema_testpb.FullSchema{
+				KeyString: "keyVal",
+			},
 		},
 		/*{
 			name: "any",
