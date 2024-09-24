@@ -347,7 +347,7 @@ func TestUnmarshal(t *testing.T) {
 			json: `{
 				"any": {
 					"!type": "test.schema.v1.Bar",
-					"bar": {
+					"value": {
 						"barId": "barId"
 					}
 				}
