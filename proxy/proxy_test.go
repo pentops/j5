@@ -19,6 +19,7 @@ import (
 	"google.golang.org/genproto/googleapis/api/httpbody"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 func TestGetHandlerMapping(t *testing.T) {
@@ -26,7 +27,7 @@ func TestGetHandlerMapping(t *testing.T) {
 	serviceDesc := foo_testspb.File_test_foo_v1_service_foo_service_proto.
 		Services().ByName("FooQueryService")
 
-	rr := NewRouter(codec.NewCodec())
+	rr := NewRouter(codec.NewCodec(protoregistry.GlobalTypes))
 	rr.globalAuth = AuthHeadersFunc(func(ctx context.Context, req *http.Request) (map[string]string, error) {
 		return map[string]string{}, nil
 	})
@@ -150,7 +151,7 @@ func TestBodyHandlerMapping(t *testing.T) {
 		Services().ByName("FooCommandService").
 		Methods().ByName("PostFoo")
 
-	rr := NewRouter(codec.NewCodec())
+	rr := NewRouter(codec.NewCodec(protoregistry.GlobalTypes))
 	method, err := rr.buildMethod(fd, nil, &auth_j5pb.MethodAuthType_None{})
 	if err != nil {
 		t.Fatal(err)
@@ -299,7 +300,7 @@ func TestRawBodyHandler(t *testing.T) {
 	fd := foo_testspb.File_test_foo_v1_service_foo_service_proto.
 		Services().ByName("FooDownloadService")
 
-	rr := NewRouter(codec.NewCodec())
+	rr := NewRouter(codec.NewCodec(protoregistry.GlobalTypes))
 
 	bodyData, err := proto.Marshal(&httpbody.HttpBody{
 		ContentType: "application/octet-stream",
@@ -332,7 +333,7 @@ func TestAuthMethods(t *testing.T) {
 	authHeaders := map[string]string{}
 
 	called := false
-	rr := NewRouter(codec.NewCodec())
+	rr := NewRouter(codec.NewCodec(protoregistry.GlobalTypes))
 	rr.globalAuth = AuthHeadersFunc(func(ctx context.Context, req *http.Request) (map[string]string, error) {
 		called = true
 		return authHeaders, nil

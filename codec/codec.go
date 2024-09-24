@@ -6,9 +6,14 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
+// MessageTypeResolver is a subset of protoregistry.MessageTypeResolver
+type MessageTypeResolver interface {
+	FindMessageByName(message protoreflect.FullName) (protoreflect.MessageType, error)
+}
+
 type Codec struct {
 	refl     *j5reflect.Reflector
-	resolver protoregistry.MessageTypeResolver
+	resolver MessageTypeResolver
 }
 
 func NewCodec(resolver protoregistry.MessageTypeResolver) *Codec {
