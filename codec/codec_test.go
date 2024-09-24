@@ -12,7 +12,9 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pentops/flowtest/prototest"
@@ -21,16 +23,17 @@ import (
 	"github.com/pentops/j5/j5types/decimal_j5t"
 )
 
-/*
-	func mustAny(t testing.TB, msg proto.Message) *anypb.Any {
-		a, err := anypb.New(msg)
-		if err != nil {
-			t.Fatal(err)
-		}
-		return a
+func mustAny(t testing.TB, msg proto.Message) *anypb.Any {
+	a, err := anypb.New(msg)
+	if err != nil {
+		t.Fatal(err)
 	}
-*/
+	return a
+}
+
 func TestUnmarshal(t *testing.T) {
+
+	codec := NewCodec(protoregistry.GlobalTypes)
 
 	testTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -339,12 +342,11 @@ func TestUnmarshal(t *testing.T) {
 			wantProto: &schema_testpb.FullSchema{
 				KeyString: "keyVal",
 			},
-		},
-		/*{
+		}, {
 			name: "any",
 			json: `{
 				"any": {
-					"!type": "test.v1.Bar",
+					"!type": "test.schema.v1.Bar",
 					"bar": {
 						"barId": "barId"
 					}
@@ -355,20 +357,12 @@ func TestUnmarshal(t *testing.T) {
 					BarId: "barId",
 				}),
 			},
-		}*/} {
+		}} {
 		t.Run(tc.name, func(t *testing.T) {
 
 			allInputs := append(tc.altInputJSON, tc.json)
 
-			codec := NewCodec()
 			for _, input := range allInputs {
-				/*
-					schema, err := codec.schemaSet.SchemaObject(tc.wantProto.ProtoReflect().Descriptor())
-					if err != nil {
-						t.Fatal(err)
-					}
-					t.Logf("SCHEMA: %s", protojson.Format(schema))
-				*/
 				logIndent(t, "input", input)
 
 				msg := tc.wantProto.ProtoReflect().New().Interface()
@@ -376,16 +370,16 @@ func TestUnmarshal(t *testing.T) {
 					t.Fatalf("JSONToProto: %s", err)
 				}
 
-				t.Logf("got decoded proto: %s \n%v\n", msg.ProtoReflect().Descriptor().FullName(), prototext.Format(msg))
+				t.Logf("GOT proto: %s \n%v\n", msg.ProtoReflect().Descriptor().FullName(), prototext.Format(msg))
 
 				if !proto.Equal(tc.wantProto, msg) {
 					a := prototext.Format(tc.wantProto)
-					t.Fatalf("expected proto %s\n%v\n", tc.wantProto.ProtoReflect().Descriptor().FullName(), string(a))
+					t.Fatalf("FATAL: Expected proto %s\n%v\n", tc.wantProto.ProtoReflect().Descriptor().FullName(), string(a))
 				}
 
 				encoded, err := codec.ProtoToJSON(msg.ProtoReflect())
 				if err != nil {
-					t.Fatalf("ProtoToJSON: %s", err)
+					t.Fatalf("FATAL: ProtoToJSON: %s", err)
 				}
 
 				logIndent(t, "output", string(encoded))
@@ -419,7 +413,7 @@ func TestScalars(t *testing.T) {
 
 	runTest := func(t testing.TB, tc testCase) {
 
-		codec := NewCodec()
+		codec := NewCodec(protoregistry.GlobalTypes)
 
 		msgIn := dynamicpb.NewMessage(tc.desc)
 

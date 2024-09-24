@@ -1,17 +1,21 @@
 package codec
 
 import (
-	"github.com/pentops/j5/lib/j5schema"
+	"github.com/pentops/j5/lib/j5reflect"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
 type Codec struct {
-	schemaSet *j5schema.SchemaCache
+	refl     *j5reflect.Reflector
+	resolver protoregistry.MessageTypeResolver
 }
 
-func NewCodec() *Codec {
+func NewCodec(resolver protoregistry.MessageTypeResolver) *Codec {
+	refl := j5reflect.New()
 	return &Codec{
-		schemaSet: j5schema.NewSchemaCache(),
+		refl:     refl,
+		resolver: resolver,
 	}
 }
 
