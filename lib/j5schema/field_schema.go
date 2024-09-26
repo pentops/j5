@@ -35,13 +35,18 @@ func (s *ScalarSchema) TypeName() string {
 
 type AnyField struct {
 	fieldContext
-	Description *string
+
+	OnlyDefined bool
+	Types       []protoreflect.FullName
 }
 
 func (s *AnyField) ToJ5Field() *schema_j5pb.Field {
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Any{
-			Any: &schema_j5pb.AnyField{},
+			Any: &schema_j5pb.AnyField{
+				OnlyDefined: s.OnlyDefined,
+				Types:       stringSliceConvert[protoreflect.FullName, string](s.Types),
+			},
 		},
 	}
 }

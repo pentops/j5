@@ -19,11 +19,21 @@ import (
 
 	"github.com/pentops/flowtest/prototest"
 	"github.com/pentops/j5/gen/test/schema/v1/schema_testpb"
+	"github.com/pentops/j5/j5types/any_j5t"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
 )
 
-func mustAny(t testing.TB, msg proto.Message) *anypb.Any {
+func mustJ5Any(t testing.TB, msg proto.Message, asJSON []byte) *any_j5t.Any {
+	a, err := any_j5t.FromProto(msg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	a.J5Json = asJSON
+	return a
+}
+
+func mustProtoAny(t testing.TB, msg proto.Message) *anypb.Any {
 	a, err := anypb.New(msg)
 	if err != nil {
 		t.Fatal(err)
@@ -343,9 +353,9 @@ func TestUnmarshal(t *testing.T) {
 				KeyString: "keyVal",
 			},
 		}, {
-			name: "any",
+			name: "j5any",
 			json: `{
-				"any": {
+				"j5any": {
 					"!type": "test.schema.v1.Bar",
 					"value": {
 						"barId": "barId"
@@ -353,7 +363,22 @@ func TestUnmarshal(t *testing.T) {
 				}
 			}`,
 			wantProto: &schema_testpb.FullSchema{
-				Any: mustAny(t, &schema_testpb.Bar{
+				J5Any: mustJ5Any(t, &schema_testpb.Bar{
+					BarId: "barId",
+				}, []byte(`{"barId":"barId"}`)),
+			},
+		}, {
+			name: "protoAny",
+			json: `{
+				"pbany": {
+					"!type": "test.schema.v1.Bar",
+					"value": {
+						"barId": "barId"
+					}
+				}
+			}`,
+			wantProto: &schema_testpb.FullSchema{
+				Pbany: mustProtoAny(t, &schema_testpb.Bar{
 					BarId: "barId",
 				}),
 			},

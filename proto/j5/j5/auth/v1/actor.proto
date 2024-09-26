@@ -25,7 +25,7 @@ message Fingerprint {
 message Actor {
   // The unique identifier of the actor, derived from the various actor type
   // methods.
-  string subject_id = 1 [(buf.validate.field).string.uuid = true];
+  string subject_id = 1;
 
   // Free string identifying the type of the actor, e.g. 'user', 'service',
   // defined by the authenticating system. (subject IDs must still be unique without
@@ -80,8 +80,8 @@ message AuthenticationMethod {
 // A Claim is a Realm Tenant + Scope, identifying the tenant the user belongs
 // to, and what they can do.
 message Claim {
-  string realm_id = 1 [(buf.validate.field).string.uuid = true];
+  string realm_id = 1;
   string tenant_type = 2 [(buf.validate.field).string.pattern = "^[a-z0-9_]+$"];
-  string tenant_id = 3 [(buf.validate.field).string.uuid = true];
+  string tenant_id = 3;
   repeated string scopes = 4;
 }

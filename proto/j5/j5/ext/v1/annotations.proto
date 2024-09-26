@@ -138,6 +138,7 @@ message FieldOptions {
     // message != object, this is a proto-level annotation
     MessageFieldOptions message = 1;
 
+    AnyField any = 9;
     ObjectField object = 10;
     EnumField enum = 11;
     OneofField oneof = 12;
@@ -162,6 +163,21 @@ message MessageFieldOptions {
   // When true, the fields of the child message are flattened into the parent
   // message, overriding this to not be an object in the client schemas.
   bool flatten = 1;
+}
+
+// AnyField is valid for j5.types.embed.v1.Any and google.protobuf.Any
+message AnyField {
+  // When false, this is fully 'any', in that it can contain any message type
+  // value.
+  // When true, only the types listed are permitted in the field, making it a
+  // constrained any, or a detached oneof.
+  // Note that even with only_defined, schemas may be added in the future, which
+  // is not considered a breaking change, even when the field is required.
+  bool only_defined = 1;
+
+  // The full proto name of the messages which may be encoded into the field.
+  // With 'only_defined', setting other messages is invalid.
+  repeated string types = 2;
 }
 
 message ObjectField {

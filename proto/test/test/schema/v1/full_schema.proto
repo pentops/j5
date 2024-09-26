@@ -5,6 +5,7 @@ package test.schema.v1;
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
+import "j5/types/any/v1/any.proto";
 import "j5/types/date/v1/date.proto";
 import "j5/types/decimal/v1/decimal.proto";
 
@@ -65,8 +66,17 @@ message FullSchema {
   ImplicitOneof s_implicit_oneof = 24;
   repeated ImplicitOneof r_implicit_oneofs = 25;
 
-  google.protobuf.Any any = 27;
+  google.protobuf.Any pbany = 27;
 
+  j5.types.any.v1.Any j5any = 33; /* [(j5.ext.v1.field).any = {
+       only_defined: true
+       types: [
+         "test.schema.v1.Bar",
+         "test.schema.v1.Baz",
+         "this.does.not.exist.and.that.is.fine"
+       ]
+     }];
+  */
   j5.types.date.v1.Date date = 28;
   repeated j5.types.date.v1.Date r_date = 29;
 

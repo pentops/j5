@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package j5.types.any.v1;
+
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/pentops/j5/j5types/any_j5t";
+
+// Embed wraps a message from outside of the schema.
+// It works like an 'any' field in proto, but with pre-encoded J5-JSON.
+//
+// Applications can work with either the Proto or J5-JSON encoded format.
+// producers will usually only set one, but if both are set they MUST be
+// the same data.
+//
+// gRPC applications should set the proto encoding, allowing Infra-level
+// Adapters to fill the j5_json encoding, using the gRPC reflection API.
+//
+// Client facing 'edge adapters' will include the J5 json inline.
+message Any {
+  // proto fullName (package.name) (not the type URL)
+  string type_name = 1 [(buf.validate.field).string.pattern = "^([a-z][a-z0-9_]*\\.)+([A-Z][A-Za-z0-9]*)$"];
+
+  // Proto encoded message
+  bytes proto = 2;
+
+  // J5 JSON encoded message
+  bytes j5_json = 3;
+}

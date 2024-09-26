@@ -975,7 +975,8 @@ func Ptr[T any](val T) *T {
 	return &val
 }
 
-func wktSchema(src protoreflect.MessageDescriptor, listConstraint *list_j5pb.FieldConstraint) (FieldSchema, bool) {
+func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (FieldSchema, bool) {
+	listConstraint := ext.list
 	fullName := src.FullName()
 
 	switch string(fullName) {
@@ -1031,8 +1032,17 @@ func wktSchema(src protoreflect.MessageDescriptor, listConstraint *list_j5pb.Fie
 			Schema: &AnyField{},
 		}, true
 
-	case "google.protobuf.Any":
-		return &AnyField{}, true
+	case "j5.types.any.v1.Any", "google.protobuf.Any":
+		field := &AnyField{}
+		if ext.j5 != nil {
+			anyExt := ext.j5.GetAny()
+			if anyExt != nil {
+				field.OnlyDefined = anyExt.OnlyDefined
+				field.Types = stringSliceConvert[string, protoreflect.FullName](anyExt.Types)
+			}
+		}
+		return field, true
+
 	}
 
 	return nil, false
@@ -1060,7 +1070,7 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 			}
 		}
 	}
-	wktschema, ok := wktSchema(src.Message(), ext.list)
+	wktschema, ok := wktSchema(src.Message(), ext)
 	if ok {
 		return wktschema, nil
 	}

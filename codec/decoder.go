@@ -6,11 +6,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pentops/j5/j5types/any_j5t"
 	"github.com/pentops/j5/lib/j5reflect"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
@@ -107,7 +107,11 @@ func (dec *decoder) popValueAsBytes() (json.RawMessage, error) {
 	if err := dec.jd.Decode(raw); err != nil {
 		return nil, err
 	}
-	return *raw, nil
+	buf := &bytes.Buffer{}
+	if err := json.Compact(buf, *raw); err != nil {
+		return nil, newFieldError("value", err.Error())
+	}
+	return json.RawMessage(buf.Bytes()), nil
 }
 
 type fieldError struct {
@@ -265,36 +269,36 @@ func (dec *decoder) decodeAny(field j5reflect.AnyField) error {
 		return newFieldError("value", "no value found in Any")
 	}
 
-	// takes the PROTO name, which should match the encoder.
-	innerDesc, err := dec.codec.resolver.FindMessageByName(protoreflect.FullName(*constrainType))
-	if err != nil {
-		if err == protoregistry.NotFound {
-			return newFieldError(*constrainType, fmt.Sprintf("no type %q in registry", *constrainType))
+	anyVal := &any_j5t.Any{
+		J5Json:   valueBytes,
+		TypeName: *constrainType,
+	}
+
+	if dec.codec.resolver != nil {
+		// takes the PROTO name, which should match the encoder.
+		innerDesc, err := dec.codec.resolver.FindMessageByName(protoreflect.FullName(*constrainType))
+		if err != nil {
+			if err == protoregistry.NotFound {
+				return newFieldError(*constrainType, fmt.Sprintf("no type %q in registry", *constrainType))
+			}
+			return newFieldError(*constrainType, err.Error())
 		}
-		return newFieldError(*constrainType, err.Error())
-	}
-	msg := innerDesc.New()
+		msg := innerDesc.New()
 
-	if err := dec.codec.decode(valueBytes, msg); err != nil {
-		return newFieldError(*constrainType, err.Error())
-	}
+		if err := dec.codec.decode(valueBytes, msg); err != nil {
+			return newFieldError(*constrainType, err.Error())
+		}
 
-	protoBytes, err := proto.Marshal(msg.Interface())
-	if err != nil {
-		return newFieldError(*constrainType, err.Error())
-	}
+		protoBytes, err := proto.Marshal(msg.Interface())
+		if err != nil {
+			return newFieldError(*constrainType, err.Error())
+		}
 
-	anyVal := &anypb.Any{
-		Value:   protoBytes,
-		TypeUrl: anyPrefix + *constrainType,
+		anyVal.Proto = protoBytes
 	}
 
-	field.SetProtoAny(anyVal)
-
-	return nil
+	return field.SetJ5Any(anyVal)
 }
-
-const anyPrefix = "type.googleapis.com/"
 
 func (dec *decoder) decodeOneof(oneof j5reflect.Oneof) error {
 

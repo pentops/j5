@@ -57,8 +57,18 @@ message EntityRef {
   string entity = 2; // The *entity* name, not schema, 'foo' not 'FooState'
 }
 
-// Allows anything
-message AnyField {}
+// Allows anything... Almost
+message AnyField {
+  // When false, this is fully 'any', in that it can contain any message type
+  // value.
+  // When true, only the types listed are permitted in the field, making it a
+  // constrained any, or a detached oneof.
+  // Note that even with only_defined, schemas may be added in the future, which
+  // is not considered a breaking change, even when the field is required.
+  bool only_defined = 1;
+
+  repeated string types = 2;
+}
 
 // ObjectAsField is an object as-a-field in an ObjectProperty
 message ObjectField {

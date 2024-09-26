@@ -3,7 +3,6 @@ package codec
 import (
 	"encoding/base64"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/pentops/j5/j5types/date_j5t"
@@ -75,15 +74,29 @@ func (enc *encoder) encodeObject(object j5reflect.Object) error {
 }
 
 func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
-	protoAny := anyField.GetProtoAny()
-	msg, err := protoAny.UnmarshalNew()
+	val, err := anyField.GetJ5Any()
 	if err != nil {
 		return err
 	}
 
-	innerBytes, err := enc.codec.encode(msg.ProtoReflect())
-	if err != nil {
-		return err
+	var jsonData []byte
+	if val.J5Json != nil {
+		jsonData = val.J5Json
+	} else {
+		protoAny, err := anyField.GetProtoAny()
+		if err != nil {
+			return err
+		}
+		msg, err := protoAny.UnmarshalNew()
+		if err != nil {
+			return err
+		}
+
+		innerBytes, err := enc.codec.encode(msg.ProtoReflect())
+		if err != nil {
+			return err
+		}
+		jsonData = innerBytes
 	}
 
 	enc.openObject()
@@ -94,8 +107,7 @@ func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
 		return err
 	}
 
-	typeName := strings.TrimPrefix(protoAny.TypeUrl, anyPrefix)
-	err = enc.addString(typeName)
+	err = enc.addString(val.TypeName)
 	if err != nil {
 		return err
 	}
@@ -107,7 +119,7 @@ func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
 		return err
 	}
 
-	enc.add(innerBytes)
+	enc.add(jsonData)
 
 	return nil
 

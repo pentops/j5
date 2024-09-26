@@ -289,7 +289,11 @@ func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Fie
 			WellKnownTypeName: "j5.types.date.v1",
 		}, nil
 	case *schema_j5pb.Field_Any:
-		return &AnyField{}, nil
+		return &AnyField{
+			fieldContext: context,
+			OnlyDefined:  st.Any.OnlyDefined,
+			Types:        stringSliceConvert[string, protoreflect.FullName](st.Any.Types),
+		}, nil
 
 	default:
 		return nil, fmt.Errorf("unsupported descriptor schema type %T", st)
