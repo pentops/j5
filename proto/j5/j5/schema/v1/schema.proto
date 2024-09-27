@@ -129,6 +129,11 @@ message Object {
   EntityObject entity = 3;
 
   repeated ObjectProperty properties = 4;
+
+  // The names of any Any messages this object is a member of.
+  // Setting this field forces the object to appear in packages even if
+  // not referenced by services or topics.
+  repeated string any_member = 5;
 }
 
 message EntityObject {
