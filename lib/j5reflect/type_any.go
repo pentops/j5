@@ -27,9 +27,14 @@ type anyField struct {
 	fieldDefaults
 	fieldContext
 
-	schema    *j5schema.AnyField
-	value     protoreflect.Message
-	valueType protoreflect.FullName
+	schema *j5schema.AnyField
+
+	implType anyImpl
+}
+
+type anyImpl interface {
+	setAny(*any_j5t.Any) error
+	getAny() (*any_j5t.Any, error)
 }
 
 var _ AnyField = (*anyField)(nil)
@@ -39,101 +44,122 @@ func (field *anyField) IsSet() bool {
 	return true
 }
 
-var j5AnyType protoreflect.FullName
-var j5AnyTypeField protoreflect.FieldDescriptor
-var j5AnyProtoField protoreflect.FieldDescriptor
-var j5AnyJ5JSONField protoreflect.FieldDescriptor
-
-var pbAnyType protoreflect.FullName
-var pbAnyTypeField protoreflect.FieldDescriptor
-var pbAnyValueField protoreflect.FieldDescriptor
-
-const anyPrefix = "type.googleapis.com/"
-
-func init() {
-	desc := (&any_j5t.Any{}).ProtoReflect().Descriptor()
-	j5AnyType = desc.FullName()
-	j5AnyTypeField = desc.Fields().ByName("type_name")
-	j5AnyProtoField = desc.Fields().ByName("proto")
-	j5AnyJ5JSONField = desc.Fields().ByName("j5_json")
-
-	pbAnyDesc := (&anypb.Any{}).ProtoReflect().Descriptor()
-	pbAnyType = pbAnyDesc.FullName()
-	pbAnyTypeField = pbAnyDesc.Fields().ByName("type_url")
-	pbAnyValueField = pbAnyDesc.Fields().ByName("value")
-}
-
 func (field *anyField) SetJ5Any(val *any_j5t.Any) error {
-	return field.set(val.TypeName, val.Proto, val.J5Json)
+	return field.implType.setAny(val)
 }
 
 func (field *anyField) SetProtoAny(val *anypb.Any) error {
 	typeName := strings.TrimPrefix(val.TypeUrl, anyPrefix)
-	return field.set(typeName, val.Value, nil)
-}
+	return field.implType.setAny(&any_j5t.Any{
+		TypeName: typeName,
+		Proto:    val.Value,
+	})
 
-func (field *anyField) set(typeName string, proto, j5json []byte) error {
-	switch field.valueType {
-	case pbAnyType:
-		field.value.Set(pbAnyTypeField, protoreflect.ValueOfString(anyPrefix+typeName))
-		if proto == nil {
-			return fmt.Errorf("proto is required for PB Any type %s", typeName)
-		}
-		field.value.Set(pbAnyValueField, protoreflect.ValueOfBytes(proto))
-		return nil
-	case j5AnyType:
-		field.value.Set(j5AnyTypeField, protoreflect.ValueOfString(typeName))
-		if proto != nil {
-			field.value.Set(j5AnyProtoField, protoreflect.ValueOfBytes(proto))
-		}
-		if j5json != nil {
-			field.value.Set(j5AnyJ5JSONField, protoreflect.ValueOfBytes(j5json))
-		}
-		return nil
-	default:
-		return fmt.Errorf("unsupported Any type %s", field.valueType)
-	}
 }
 
 func (field *anyField) GetJ5Any() (*any_j5t.Any, error) {
-	switch field.valueType {
-	case pbAnyType:
-		typeName := strings.TrimPrefix(field.value.Get(pbAnyTypeField).String(), anyPrefix)
-		return &any_j5t.Any{
-			TypeName: typeName,
-			Proto:    field.value.Get(pbAnyValueField).Bytes(),
-		}, nil
-	case j5AnyType:
-		return &any_j5t.Any{
-			TypeName: field.value.Get(j5AnyTypeField).String(),
-			Proto:    field.value.Get(j5AnyProtoField).Bytes(),
-			J5Json:   field.value.Get(j5AnyJ5JSONField).Bytes(),
-		}, nil
-	default:
-		return nil, fmt.Errorf("unsupported Any type %s", field.valueType)
+	val, err := field.implType.getAny()
+	if err != nil {
+		return nil, err
 	}
+	return val, nil
 }
 
 func (field *anyField) GetProtoAny() (*anypb.Any, error) {
-	switch field.valueType {
-	case pbAnyType:
-		return &anypb.Any{
-			TypeUrl: field.value.Get(pbAnyTypeField).String(),
-			Value:   field.value.Get(pbAnyValueField).Bytes(),
-		}, nil
-	case j5AnyType:
-		typeName := field.value.Get(j5AnyTypeField).String()
-		if !field.value.Has(j5AnyProtoField) {
-			return nil, fmt.Errorf("cannot convert from j5 any (%s) to proto without proto encoding", typeName)
-		}
-		return &anypb.Any{
-			TypeUrl: anyPrefix + typeName,
-			Value:   field.value.Get(j5AnyProtoField).Bytes(),
-		}, nil
-	default:
-		return nil, fmt.Errorf("unsupported Any type %s", field.valueType)
+	val, err := field.implType.getAny()
+	if err != nil {
+		return nil, err
+	}
+	if val.Proto == nil {
+		return nil, fmt.Errorf("proto is required for PB Any type %s", val.TypeName)
+	}
+	return &anypb.Any{
+		TypeUrl: anyPrefix + val.TypeName,
+		Value:   val.Proto,
+	}, nil
+}
+
+type pbAnyImpl struct {
+	value        protoreflect.Message
+	typeUrlField protoreflect.FieldDescriptor
+	valueField   protoreflect.FieldDescriptor
+}
+
+func newPbAnyImpl(value protoreflect.Message) anyImpl {
+	desc := value.Descriptor()
+	typeUrlField := desc.Fields().ByName("type_url")
+	valueField := desc.Fields().ByName("value")
+	return &pbAnyImpl{
+		value:        value,
+		typeUrlField: typeUrlField,
+		valueField:   valueField,
+	}
+}
+
+const anyPrefix = "type.googleapis.com/"
+
+func (impl *pbAnyImpl) setAny(val *any_j5t.Any) error {
+	impl.value.Set(impl.typeUrlField, protoreflect.ValueOfString(anyPrefix+val.TypeName))
+	if val.Proto == nil {
+		return fmt.Errorf("proto is required for PB Any type %s", val.TypeName)
+	}
+	impl.value.Set(impl.valueField, protoreflect.ValueOfBytes(val.Proto))
+	return nil
+}
+
+func (impl *pbAnyImpl) getAny() (*any_j5t.Any, error) {
+	typeUrl := impl.value.Get(impl.typeUrlField).String()
+	typeName := strings.TrimPrefix(typeUrl, anyPrefix)
+	return &any_j5t.Any{
+		TypeName: typeName,
+		Proto:    impl.value.Get(impl.valueField).Bytes(),
+	}, nil
+}
+
+type j5AnyImpl struct {
+	value         protoreflect.Message
+	typeNameField protoreflect.FieldDescriptor
+	protoField    protoreflect.FieldDescriptor
+	j5JsonField   protoreflect.FieldDescriptor
+}
+
+func newJ5AnyImpl(value protoreflect.Message) anyImpl {
+	desc := value.Descriptor()
+	typeNameField := desc.Fields().ByName("type_name")
+	protoField := desc.Fields().ByName("proto")
+	j5JsonField := desc.Fields().ByName("j5_json")
+	return &j5AnyImpl{
+		value:         value,
+		typeNameField: typeNameField,
+		protoField:    protoField,
+		j5JsonField:   j5JsonField,
+	}
+}
+
+func (impl *j5AnyImpl) setAny(val *any_j5t.Any) error {
+	impl.value.Set(impl.typeNameField, protoreflect.ValueOfString(val.TypeName))
+	if val.Proto != nil {
+		impl.value.Set(impl.protoField, protoreflect.ValueOfBytes(val.Proto))
+	}
+	if val.J5Json != nil {
+		impl.value.Set(impl.j5JsonField, protoreflect.ValueOfBytes(val.J5Json))
+	}
+	return nil
+}
+
+func (impl *j5AnyImpl) getAny() (*any_j5t.Any, error) {
+	typeName := impl.value.Get(impl.typeNameField).String()
+	out := &any_j5t.Any{
+		TypeName: typeName,
+	}
+	if impl.value.Has(impl.protoField) {
+		out.Proto = impl.value.Get(impl.protoField).Bytes()
 	}
 
+	if impl.value.Has(impl.j5JsonField) {
+		out.J5Json = impl.value.Get(impl.j5JsonField).Bytes()
+	}
+	return out, nil
 }
 
 var _ AnyField = (*anyField)(nil)
@@ -144,10 +170,19 @@ type anyFieldFactory struct {
 
 func (factory *anyFieldFactory) buildField(context fieldContext, value protoreflect.Message) Field {
 	valueType := value.Descriptor().FullName()
+	var impl anyImpl
+	switch valueType {
+	case "google.protobuf.Any":
+		impl = newPbAnyImpl(value)
+	case "j5.types.any.v1.Any":
+		impl = newJ5AnyImpl(value)
+	default:
+		panic(fmt.Sprintf("unsupported Any type %s", valueType))
+	}
+
 	return &anyField{
 		schema:       factory.schema,
-		value:        value,
 		fieldContext: context,
-		valueType:    valueType,
+		implType:     impl,
 	}
 }

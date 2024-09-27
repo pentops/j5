@@ -8,6 +8,8 @@ import (
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
 	"github.com/pentops/j5/lib/j5reflect"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
@@ -82,17 +84,19 @@ func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
 	var jsonData []byte
 	if val.J5Json != nil {
 		jsonData = val.J5Json
-	} else {
-		protoAny, err := anyField.GetProtoAny()
+	} else if val.Proto != nil {
+
+		mt, err := enc.codec.resolver.FindMessageByName(protoreflect.FullName(val.TypeName))
 		if err != nil {
-			return err
-		}
-		msg, err := protoAny.UnmarshalNew()
-		if err != nil {
-			return err
+			return fmt.Errorf("decoding any type %q: %w", val.TypeName, err)
 		}
 
-		innerBytes, err := enc.codec.encode(msg.ProtoReflect())
+		dst := mt.New()
+		if err := proto.Unmarshal(val.Proto, dst.Interface()); err != nil {
+			return fmt.Errorf("decoding any type %q: %w", val.TypeName, err)
+		}
+
+		innerBytes, err := enc.codec.encode(dst)
 		if err != nil {
 			return err
 		}
