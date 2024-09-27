@@ -18,11 +18,20 @@ type Codec struct {
 	resolver MessageTypeResolver
 }
 
-func NewCodec(resolver protoregistry.MessageTypeResolver) *Codec {
+type CodecOption func(*Codec)
+
+// WithResolver sets a custom resolver for decoding any types.
+func WithResolver(resolver protoregistry.MessageTypeResolver) CodecOption {
+	return func(c *Codec) {
+		c.resolver = resolver
+	}
+}
+
+func NewCodec(...CodecOption) *Codec {
 	refl := j5reflect.New()
 	return &Codec{
 		refl:     refl,
-		resolver: resolver,
+		resolver: protoregistry.GlobalTypes,
 	}
 }
 

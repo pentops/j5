@@ -12,7 +12,6 @@ import (
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/dynamicpb"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -43,7 +42,7 @@ func mustProtoAny(t testing.TB, msg proto.Message) *anypb.Any {
 
 func TestUnmarshal(t *testing.T) {
 
-	codec := NewCodec(protoregistry.GlobalTypes)
+	codec := NewCodec()
 
 	testTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -438,7 +437,7 @@ func TestScalars(t *testing.T) {
 
 	runTest := func(t testing.TB, tc testCase) {
 
-		codec := NewCodec(protoregistry.GlobalTypes)
+		codec := NewCodec()
 
 		msgIn := dynamicpb.NewMessage(tc.desc)
 
