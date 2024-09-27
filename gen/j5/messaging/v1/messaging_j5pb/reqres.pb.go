@@ -26,6 +26,8 @@ type RequestMetadata struct {
 	unknownFields protoimpl.UnknownFields
 
 	ReplyTo string `protobuf:"bytes,1,opt,name=reply_to,json=replyTo,proto3" json:"reply_to,omitempty"`
+	// Context is the responsibility of the requester, it can be whatever the
+	// caller likes, e.g. an encoded proto message
 	Context []byte `protobuf:"bytes,2,opt,name=context,proto3" json:"context,omitempty"`
 }
 

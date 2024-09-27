@@ -23,6 +23,8 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Image is a parsed source image, similar to google.protobuf.Descriptor but
+// with the J5 config, and some non-proto files
 type SourceImage struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -118,6 +120,7 @@ func (x *SourceImage) GetVersion() string {
 	return ""
 }
 
+// DEPRECATED: This isn't required.
 type FakeOptions struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

@@ -76,9 +76,15 @@ type Package struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Label       string                             `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
-	Name        string                             `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Prose       string                             `protobuf:"bytes,3,opt,name=prose,proto3" json:"prose,omitempty"`
+	Label string `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	// name of the versioned parent package, e.g. "j5.source.v1"
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// markdown formatted prose
+	Prose string `protobuf:"bytes,3,opt,name=prose,proto3" json:"prose,omitempty"`
+	// indicates the package is not a part of the API or bundle, but other
+	// packages in the bundle refer to schemas in this package.
+	// The package will be a partial representation, only including referenced
+	// schemas.
 	Indirect    bool                               `protobuf:"varint,9,opt,name=indirect,proto3" json:"indirect,omitempty"`
 	SubPackages []*SubPackage                      `protobuf:"bytes,4,rep,name=sub_packages,json=subPackages,proto3" json:"sub_packages,omitempty"`
 	Schemas     map[string]*schema_j5pb.RootSchema `protobuf:"bytes,8,rep,name=schemas,proto3" json:"schemas,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
@@ -497,6 +503,7 @@ type Topic struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// name as specified in proto, e.g. "FooTopic"
 	Name     string          `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	Messages []*TopicMessage `protobuf:"bytes,3,rep,name=messages,proto3" json:"messages,omitempty"`
 }

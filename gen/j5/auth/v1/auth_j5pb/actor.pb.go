@@ -90,7 +90,9 @@ type Fingerprint struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The IP address of the client as best as can be determined
 	IpAddress *string `protobuf:"bytes,1,opt,name=ip_address,json=ipAddress,proto3,oneof" json:"ip_address,omitempty"`
+	// The provided user agent string of the client.
 	UserAgent *string `protobuf:"bytes,2,opt,name=user_agent,json=userAgent,proto3,oneof" json:"user_agent,omitempty"`
 }
 
@@ -145,11 +147,20 @@ type Actor struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SubjectId            string                `protobuf:"bytes,1,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
+	// The unique identifier of the actor, derived from the various actor type
+	// methods.
+	SubjectId string `protobuf:"bytes,1,opt,name=subject_id,json=subjectId,proto3" json:"subject_id,omitempty"`
+	// Free string identifying the type of the actor, e.g. 'user', 'service',
+	// defined by the authenticating system. (subject IDs must still be unique without
+	// considering subject_type)
 	SubjectType          string                `protobuf:"bytes,2,opt,name=subject_type,json=subjectType,proto3" json:"subject_type,omitempty"`
 	AuthenticationMethod *AuthenticationMethod `protobuf:"bytes,3,opt,name=authentication_method,json=authenticationMethod,proto3" json:"authentication_method,omitempty"`
 	Claim                *Claim                `protobuf:"bytes,4,opt,name=claim,proto3" json:"claim,omitempty"`
-	ActorTags            map[string]string     `protobuf:"bytes,5,rep,name=actor_tags,json=actorTags,proto3" json:"actor_tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	// Arbitrary tags that are defined by the authorizing system to quickly
+	// identify the user e.g. the user's email address, API Key Name, etc.
+	// Must not be used in authorization logic, and should not be used as a
+	// the primary source of the actor's identity.
+	ActorTags map[string]string `protobuf:"bytes,5,rep,name=actor_tags,json=actorTags,proto3" json:"actor_tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
 func (x *Actor) Reset() {
@@ -314,6 +325,8 @@ func (*AuthenticationMethod_Session_) isAuthenticationMethod_Type() {}
 
 func (*AuthenticationMethod_External_) isAuthenticationMethod_Type() {}
 
+// A Claim is a Realm Tenant + Scope, identifying the tenant the user belongs
+// to, and what they can do.
 type Claim struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -453,9 +466,14 @@ type AuthenticationMethod_Session struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	SessionManager  string                 `protobuf:"bytes,1,opt,name=session_manager,json=sessionManager,proto3" json:"session_manager,omitempty"`
-	SessionId       string                 `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
-	VerifiedAt      *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=verified_at,json=verifiedAt,proto3" json:"verified_at,omitempty"`
+	// The identity of the system which stored and evaluated the session.
+	SessionManager string `protobuf:"bytes,1,opt,name=session_manager,json=sessionManager,proto3" json:"session_manager,omitempty"`
+	// The session ID as defined by the session manager
+	SessionId string `protobuf:"bytes,2,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	// The time at which the session was verified by the session manager.
+	VerifiedAt *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=verified_at,json=verifiedAt,proto3" json:"verified_at,omitempty"`
+	// The time at which the session began at the session manager. (e.g. the
+	// time a refresh token was used to create a new session)
 	AuthenticatedAt *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=authenticated_at,json=authenticatedAt,proto3" json:"authenticated_at,omitempty"`
 }
 

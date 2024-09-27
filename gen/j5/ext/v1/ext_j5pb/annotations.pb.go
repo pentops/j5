@@ -27,7 +27,7 @@ const (
 type KeyField_Format int32
 
 const (
-	KeyField_FORMAT_UNSPECIFIED KeyField_Format = 0
+	KeyField_FORMAT_UNSPECIFIED KeyField_Format = 0 // informal
 	KeyField_FORMAT_UUID        KeyField_Format = 2
 	KeyField_FORMAT_ID62        KeyField_Format = 3
 )
@@ -78,7 +78,8 @@ type PSMOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	EntityName string                  `protobuf:"bytes,1,opt,name=entity_name,json=entityName,proto3" json:"entity_name,omitempty"`
+	EntityName string `protobuf:"bytes,1,opt,name=entity_name,json=entityName,proto3" json:"entity_name,omitempty"`
+	// if not set, will be inferred from the message name, e.g. FooKeys is KEYS
 	EntityPart *schema_j5pb.EntityPart `protobuf:"varint,2,opt,name=entity_part,json=entityPart,proto3,enum=j5.schema.v1.EntityPart,oneof" json:"entity_part,omitempty"`
 }
 
@@ -285,8 +286,10 @@ type MessageOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	IsOneofWrapper bool   `protobuf:"varint,1,opt,name=is_oneof_wrapper,json=isOneofWrapper,proto3" json:"is_oneof_wrapper,omitempty"`
-	Description    string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	// When true, the message becomes a schema.Oneof.
+	IsOneofWrapper bool `protobuf:"varint,1,opt,name=is_oneof_wrapper,json=isOneofWrapper,proto3" json:"is_oneof_wrapper,omitempty"`
+	// Use instead of comment descriptions for documentation
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 }
 
 func (x *MessageOptions) Reset() {
@@ -340,6 +343,9 @@ type OneofOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// When true, the oneof is exposed as a field in the parent message, rather
+	// than being a validation rule.
+	// Will show in json-schema as an object with the x-oneof flag set.
 	Expose    bool                          `protobuf:"varint,1,opt,name=expose,proto3" json:"expose,omitempty"`
 	Filtering *ext_j5pb.FilteringConstraint `protobuf:"bytes,10,opt,name=filtering,proto3" json:"filtering,omitempty"`
 }
@@ -529,7 +535,8 @@ type EnumOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	NoDefault  bool             `protobuf:"varint,2,opt,name=no_default,json=noDefault,proto3" json:"no_default,omitempty"`
+	// bool inline = 1;
+	NoDefault  bool             `protobuf:"varint,2,opt,name=no_default,json=noDefault,proto3" json:"no_default,omitempty"` // Disallows the default 0 value.
 	InfoFields []*EnumInfoField `protobuf:"bytes,10,rep,name=info_fields,json=infoFields,proto3" json:"info_fields,omitempty"`
 }
 
@@ -584,9 +591,9 @@ type EnumInfoField struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name        string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	Label       string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+	Name        string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`               // key in the map of each option
+	Label       string `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`             // user friendly name
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"` // longer text description
 }
 
 func (x *EnumInfoField) Reset() {
@@ -647,6 +654,7 @@ type EnumValueOptions struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Use instead of comment descriptions for documentation
 	Description string            `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	Info        map[string]string `protobuf:"bytes,10,rep,name=info,proto3" json:"info,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
@@ -697,11 +705,15 @@ func (x *EnumValueOptions) GetInfo() map[string]string {
 	return nil
 }
 
+// Field Type matching j5.schema.v1.Field types, these indicate the type more
+// directly, and will eventually hold all of the options from the other
+// annotation libraries (validate and list)
 type FieldOptions struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// Use instead of comment descriptions for documentation
 	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 	// Types that are assignable to Type:
 	//
@@ -887,6 +899,7 @@ type isFieldOptions_Type interface {
 }
 
 type FieldOptions_Message struct {
+	// message != object, this is a proto-level annotation
 	Message *MessageFieldOptions `protobuf:"bytes,1,opt,name=message,proto3,oneof"`
 }
 
@@ -982,11 +995,14 @@ func (*FieldOptions_Timestamp) isFieldOptions_Type() {}
 
 func (*FieldOptions_Key) isFieldOptions_Type() {}
 
+// DEPRECATED: Use ObjectField instead.
 type MessageFieldOptions struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// When true, the fields of the child message are flattened into the parent
+	// message, overriding this to not be an object in the client schemas.
 	Flatten bool `protobuf:"varint,1,opt,name=flatten,proto3" json:"flatten,omitempty"`
 }
 
@@ -1029,13 +1045,22 @@ func (x *MessageFieldOptions) GetFlatten() bool {
 	return false
 }
 
+// AnyField is valid for j5.types.embed.v1.Any and google.protobuf.Any
 type AnyField struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	OnlyDefined bool     `protobuf:"varint,1,opt,name=only_defined,json=onlyDefined,proto3" json:"only_defined,omitempty"`
-	Types       []string `protobuf:"bytes,2,rep,name=types,proto3" json:"types,omitempty"`
+	// When false, this is fully 'any', in that it can contain any message type
+	// value.
+	// When true, only the types listed are permitted in the field, making it a
+	// constrained any, or a detached oneof.
+	// Note that even with only_defined, schemas may be added in the future, which
+	// is not considered a breaking change, even when the field is required.
+	OnlyDefined bool `protobuf:"varint,1,opt,name=only_defined,json=onlyDefined,proto3" json:"only_defined,omitempty"`
+	// The full proto name of the messages which may be encoded into the field.
+	// With 'only_defined', setting other messages is invalid.
+	Types []string `protobuf:"bytes,2,rep,name=types,proto3" json:"types,omitempty"`
 }
 
 func (x *AnyField) Reset() {
@@ -1089,6 +1114,8 @@ type ObjectField struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// When true, the fields of the child message are flattened into the parent
+	// message, overriding this to not be an object in the client schemas.
 	Flatten bool `protobuf:"varint,1,opt,name=flatten,proto3" json:"flatten,omitempty"`
 }
 
@@ -1212,6 +1239,8 @@ type MapField struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The name of the singular form of the map pairs, used in documentation and
+	// block parsing.
 	SingleForm *string `protobuf:"bytes,3,opt,name=single_form,json=singleForm,proto3,oneof" json:"single_form,omitempty"`
 }
 
@@ -1259,6 +1288,8 @@ type ArrayField struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// The name of the singular form of the array item, used in documentation and
+	// block parsing.
 	SingleForm *string `protobuf:"bytes,3,opt,name=single_form,json=singleForm,proto3,oneof" json:"single_form,omitempty"`
 }
 
@@ -1679,7 +1710,7 @@ type KeyField_Format_ struct {
 }
 
 type KeyField_Pattern struct {
-	Pattern string `protobuf:"bytes,2,opt,name=pattern,proto3,oneof"`
+	Pattern string `protobuf:"bytes,2,opt,name=pattern,proto3,oneof"` // custom with pattern.
 }
 
 func (*KeyField_Format_) isKeyField_Type() {}
