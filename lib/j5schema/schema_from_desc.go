@@ -316,6 +316,7 @@ func (pkg *Package) objectSchemaFromDesc(sch *schema_j5pb.Object) (*ObjectSchema
 	object := &ObjectSchema{
 		Properties: make([]*ObjectProperty, len(sch.Properties)),
 		Entity:     sch.Entity,
+		AnyMember:  sch.AnyMember,
 		rootSchema: rootSchema{
 			description: sch.Description,
 			name:        sch.Name,

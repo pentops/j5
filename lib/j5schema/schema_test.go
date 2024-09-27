@@ -580,6 +580,34 @@ func TestSchemaTypesComplex(t *testing.T) {
 		})
 
 	})
+
+	t.Run("any member", func(t *testing.T) {
+		base := &descriptorpb.FileDescriptorProto{
+			Name:    proto.String("test.proto"),
+			Package: proto.String("test"),
+			MessageType: []*descriptorpb.DescriptorProto{{
+				Name:  proto.String("TestMessage"),
+				Field: []*descriptorpb.FieldDescriptorProto{},
+				Options: extend(&descriptorpb.MessageOptions{}, ext_j5pb.E_Message, &ext_j5pb.MessageOptions{
+					Type: &ext_j5pb.MessageOptions_Object{
+						Object: &ext_j5pb.ObjectMessageOptions{
+							AnyMember: []string{"foo"},
+						},
+					},
+				}),
+			}},
+		}
+
+		base.Dependency = []string{"j5/ext/v1/annotations.proto"}
+		runTestCase(t, testCase{
+			proto: base,
+			expected: map[string]interface{}{
+				"object.anyMember": []interface{}{"foo"},
+			},
+		})
+
+	})
+
 }
 
 func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constraints *validate.FieldConstraints) *descriptorpb.FieldDescriptorProto {

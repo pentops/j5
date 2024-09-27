@@ -3,6 +3,8 @@ package j5schema
 import (
 	"fmt"
 
+	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -36,12 +38,13 @@ func (sc *SchemaCache) Schema(src protoreflect.MessageDescriptor) (RootSchema, e
 	}
 	schemaPackage.Schemas[nameInPackage] = placeholder
 
-	isOneofWrapper := isOneofWrapper(src)
+	msgOptions := proto.GetExtension(src.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+	isOneofWrapper := isOneofWrapper(src, msgOptions)
 	var err error
 	if isOneofWrapper {
-		placeholder.To, err = schemaPackage.buildOneofSchema(src)
+		placeholder.To, err = schemaPackage.buildOneofSchema(src, msgOptions.GetOneof())
 	} else {
-		placeholder.To, err = schemaPackage.buildObjectSchema(src)
+		placeholder.To, err = schemaPackage.buildObjectSchema(src, msgOptions.GetObject())
 	}
 	if err != nil {
 		return nil, err

@@ -86,14 +86,17 @@ func (ps *SchemaSet) messageSchema(src protoreflect.MessageDescriptor) (RootSche
 		Package: schemaPackage,
 		Schema:  nameInPackage,
 	}
+
 	schemaPackage.Schemas[nameInPackage] = placeholder
 
-	isOneofWrapper := isOneofWrapper(src)
+	msgOptions := proto.GetExtension(src.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+
+	isOneofWrapper := isOneofWrapper(src, msgOptions)
 	var err error
 	if isOneofWrapper {
-		placeholder.To, err = schemaPackage.buildOneofSchema(src)
+		placeholder.To, err = schemaPackage.buildOneofSchema(src, msgOptions.GetOneof())
 	} else {
-		placeholder.To, err = schemaPackage.buildObjectSchema(src)
+		placeholder.To, err = schemaPackage.buildObjectSchema(src, msgOptions.GetObject())
 	}
 	if err != nil {
 		return nil, err
@@ -141,13 +144,20 @@ func jsonFieldName(s protoreflect.Name) string {
 	return strcase.ToLowerCamel(string(s))
 }
 
-func isOneofWrapper(src protoreflect.MessageDescriptor) bool {
-	options := proto.GetExtension(src.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+func isOneofWrapper(src protoreflect.MessageDescriptor, options *ext_j5pb.MessageOptions) bool {
 	if options != nil {
+
 		if options.IsOneofWrapper {
+			// this is deprecated.
 			return true
 		}
-		// TODO: Allow explicit false, allowing overriding the auto function
+
+		switch options.Type.(type) {
+		case *ext_j5pb.MessageOptions_Oneof:
+			return true
+		case *ext_j5pb.MessageOptions_Object:
+			return false
+		}
 	}
 
 	oneofs := src.Oneofs()
@@ -185,7 +195,7 @@ func isOneofWrapper(src protoreflect.MessageDescriptor) bool {
 	return true
 }
 
-func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*OneofSchema, error) {
+func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor, opts *ext_j5pb.OneofMessageOptions) (*OneofSchema, error) {
 	oneofSchema := &OneofSchema{
 		rootSchema: ss.schemaRootFromProto(srcMsg),
 		// TODO: Rules
@@ -207,7 +217,7 @@ func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor) (*One
 	return oneofSchema, nil
 }
 
-func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*ObjectSchema, error) {
+func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts *ext_j5pb.ObjectMessageOptions) (*ObjectSchema, error) {
 	objectSchema := &ObjectSchema{
 		rootSchema: ss.schemaRootFromProto(srcMsg),
 		// TODO: Rules
@@ -230,6 +240,10 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor) (*Ob
 	}
 	if entity != nil {
 		objectSchema.Entity = entity
+	}
+
+	if opts != nil {
+		objectSchema.AnyMember = opts.AnyMember
 	}
 
 	return objectSchema, nil
@@ -1078,15 +1092,17 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 		return nil, fmt.Errorf("unsupported google type %s", src.Message().FullName())
 	}
 	msg := src.Message()
-	isOneofWrapper := isOneofWrapper(msg)
+	msgOptions := proto.GetExtension(msg.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+
+	isOneofWrapper := isOneofWrapper(msg, msgOptions)
 
 	ref, didExist := newRefPlaceholder(pkg.PackageSet, msg)
 	if !didExist {
 		var err error
 		if isOneofWrapper {
-			ref.To, err = pkg.buildOneofSchema(msg)
+			ref.To, err = pkg.buildOneofSchema(msg, msgOptions.GetOneof())
 		} else {
-			ref.To, err = pkg.buildObjectSchema(msg)
+			ref.To, err = pkg.buildObjectSchema(msg, msgOptions.GetObject())
 		}
 		if err != nil {
 			return nil, err
@@ -1103,6 +1119,7 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 			Ref:          ref,
 		}, nil
 	}
+
 	return &ObjectField{
 		fieldContext: context,
 		Ref:          ref,

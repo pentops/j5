@@ -3,5 +3,6 @@
 package ext_j5pb
 
 type IsServiceOptions_Type = isServiceOptions_Type
+type IsMessageOptions_Type = isMessageOptions_Type
 type IsFieldOptions_Type = isFieldOptions_Type
 type IsKeyField_Type = isKeyField_Type

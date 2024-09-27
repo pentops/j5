@@ -57,12 +57,25 @@ extend google.protobuf.MessageOptions {
 }
 
 message MessageOptions {
+  // DEPRECATED: Use type.oneof.
   // When true, the message becomes a schema.Oneof.
+
   bool is_oneof_wrapper = 1;
 
   // Use instead of comment descriptions for documentation
   string description = 2;
+
+  oneof type {
+    ObjectMessageOptions object = 10;
+    OneofMessageOptions oneof = 11;
+  }
 }
+
+message ObjectMessageOptions {
+  repeated string any_member = 3;
+}
+
+message OneofMessageOptions {}
 
 extend google.protobuf.OneofOptions {
   OneofOptions oneof = 555000;
