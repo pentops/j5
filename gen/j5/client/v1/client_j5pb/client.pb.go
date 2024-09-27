@@ -290,14 +290,9 @@ type Package struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Label string `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
-	Name  string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	// markdown formatted prose
-	Prose string `protobuf:"bytes,3,opt,name=prose,proto3" json:"prose,omitempty"`
-	// indicates the package is not a part of the API or bundle, but other
-	// packages in the bundle refer to schemas in this package.
-	// The package will be a partial representation, only including referenced
-	// schemas.
+	Label         string                             `protobuf:"bytes,1,opt,name=label,proto3" json:"label,omitempty"`
+	Name          string                             `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Prose         string                             `protobuf:"bytes,3,opt,name=prose,proto3" json:"prose,omitempty"`
 	Indirect      bool                               `protobuf:"varint,4,opt,name=indirect,proto3" json:"indirect,omitempty"`
 	Services      []*Service                         `protobuf:"bytes,5,rep,name=services,proto3" json:"services,omitempty"`
 	StateEntities []*StateEntity                     `protobuf:"bytes,6,rep,name=state_entities,json=stateEntities,proto3" json:"state_entities,omitempty"`
@@ -686,11 +681,9 @@ type StateEntity struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name     string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	FullName string `protobuf:"bytes,2,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
-	// an entry in the current package's schema map
-	SchemaName string `protobuf:"bytes,3,opt,name=schema_name,json=schemaName,proto3" json:"schema_name,omitempty"`
-	// markdown formatted prose
+	Name            string        `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	FullName        string        `protobuf:"bytes,2,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
+	SchemaName      string        `protobuf:"bytes,3,opt,name=schema_name,json=schemaName,proto3" json:"schema_name,omitempty"`
 	Overview        string        `protobuf:"bytes,4,opt,name=overview,proto3" json:"overview,omitempty"`
 	PrimaryKey      []string      `protobuf:"bytes,5,rep,name=primary_key,json=primaryKey,proto3" json:"primary_key,omitempty"`
 	QueryService    *Service      `protobuf:"bytes,6,opt,name=query_service,json=queryService,proto3" json:"query_service,omitempty"`

@@ -238,7 +238,6 @@ func (*ReplyMethod) Descriptor() ([]byte, []int) {
 	return file_j5_messaging_v1_annotations_proto_rawDescGZIP(), []int{3}
 }
 
-// Deprecated, use ServiceConfig instead
 type Config struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -447,7 +446,6 @@ type RequestConfig struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// name of the queue group (i.e. prefix), should match ReplyConfig.name
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -495,7 +493,6 @@ type ReplyConfig struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// name of the queue group (i.e. prefix), should match RequestConfig.name
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
@@ -543,9 +540,6 @@ type FieldConfig struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Designates the field as the primary message ID, which will be mapped to the
-	// infra message_id field.
-	// When no message ID field is set, the ID must be explicitly set at runtime.
 	MessageId bool `protobuf:"varint,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 }
 

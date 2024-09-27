@@ -30,12 +30,9 @@ type StateMetadata struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Time of the first event on the state machine
-	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	// Time of the most recent event on the state machine
-	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	// Sequcence number of the most recent event on the state machine
-	LastSequence uint64 `protobuf:"varint,3,opt,name=last_sequence,json=lastSequence,proto3" json:"last_sequence,omitempty"`
+	CreatedAt    *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	LastSequence uint64                 `protobuf:"varint,3,opt,name=last_sequence,json=lastSequence,proto3" json:"last_sequence,omitempty"`
 }
 
 func (x *StateMetadata) Reset() {
@@ -96,8 +93,7 @@ type EventMetadata struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	EventId string `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
-	// Sequence within the state machine. Discrete, 1,2,3
+	EventId   string                 `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
 	Sequence  uint64                 `protobuf:"varint,2,opt,name=sequence,proto3" json:"sequence,omitempty"`
 	Timestamp *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Cause     *Cause                 `protobuf:"bytes,4,opt,name=cause,proto3" json:"cause,omitempty"`
@@ -168,8 +164,7 @@ type EventPublishMetadata struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	EventId string `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
-	// Sequence within the state machine. Discrete, 1,2,3
+	EventId   string                 `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
 	Sequence  uint64                 `protobuf:"varint,2,opt,name=sequence,proto3" json:"sequence,omitempty"`
 	Timestamp *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	Cause     *Cause                 `protobuf:"bytes,4,opt,name=cause,proto3" json:"cause,omitempty"`
@@ -235,8 +230,6 @@ func (x *EventPublishMetadata) GetCause() *Cause {
 	return nil
 }
 
-// Events are caused by either an actor external to the boundary, an application
-// within the boundary, the state machine itself,
 type Cause struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -346,18 +339,12 @@ func (*Cause_ExternalEvent) isCause_Type() {}
 
 func (*Cause_Reply) isCause_Type() {}
 
-// The event was caused by a transition in this or another state machine
 type PSMEventCause struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The ID of the event that caused this event
-	EventId string `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
-	// The identity of the state machine for the event.
-	// {package}.{name}, where name is the annotated name in
-	// j5.state.v1.(State|Event)ObjectOptions.name
-	// e.g. "foo.bar.v1.foobar" (not foo.bar.v1.FooBarState)
+	EventId      string `protobuf:"bytes,1,opt,name=event_id,json=eventId,proto3" json:"event_id,omitempty"`
 	StateMachine string `protobuf:"bytes,2,opt,name=state_machine,json=stateMachine,proto3" json:"state_machine,omitempty"`
 }
 
@@ -407,19 +394,13 @@ func (x *PSMEventCause) GetStateMachine() string {
 	return ""
 }
 
-// An external system replying to a side-effect request, e.g. where the
-// application sends a request to a vendor system, and the vendor replies.
 type ReplyCause struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	Request *PSMEventCause `protobuf:"bytes,1,opt,name=request,proto3" json:"request,omitempty"`
-	// When true, the reply was via an event input from the external system, rather than
-	// a simple request-reply like a HTTP call. This means the event was matched
-	// using lookup keys in the vendor's event, and therefore not guaranteed to be
-	// linked to the correct state machine.
-	Async bool `protobuf:"varint,2,opt,name=async,proto3" json:"async,omitempty"`
+	Async   bool           `protobuf:"varint,2,opt,name=async,proto3" json:"async,omitempty"`
 }
 
 func (x *ReplyCause) Reset() {
@@ -468,21 +449,13 @@ func (x *ReplyCause) GetAsync() bool {
 	return false
 }
 
-// The event was caused by an external event, e.g. a webhook, a message from a queue, etc.
 type ExternalEventCause struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The name of the external system that caused the event. No specific format
-	// or rules.
-	SystemName string `protobuf:"bytes,1,opt,name=system_name,json=systemName,proto3" json:"system_name,omitempty"`
-	// The name of the event in the external system. No specific format or rules.
-	EventName string `protobuf:"bytes,2,opt,name=event_name,json=eventName,proto3" json:"event_name,omitempty"`
-	// The ID of the event in the external system as defined by that system.
-	// ID generation must consistently derivable from the source event.
-	// Do not make up IDs from the// current system time or random
-	// Leave nil if an acceptable unique ID is not available.
+	SystemName string  `protobuf:"bytes,1,opt,name=system_name,json=systemName,proto3" json:"system_name,omitempty"`
+	EventName  string  `protobuf:"bytes,2,opt,name=event_name,json=eventName,proto3" json:"event_name,omitempty"`
 	ExternalId *string `protobuf:"bytes,3,opt,name=external_id,json=externalId,proto3,oneof" json:"external_id,omitempty"`
 }
 
