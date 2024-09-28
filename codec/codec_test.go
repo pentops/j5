@@ -155,7 +155,7 @@ func TestUnmarshal(t *testing.T) {
 				},
 			},
 		}, {
-			name: "nested messages",
+			name: "objects",
 			json: `{
 				"sBar": {
 					"barId": "barId"
@@ -175,6 +175,20 @@ func TestUnmarshal(t *testing.T) {
 				}, {
 					BarId: "bar2",
 				}},
+			},
+		}, {
+			name: "objects: Null",
+			json: `{}`,
+			altInputJSON: []string{
+				`{}`,
+				`{"sBar": null}`,
+			},
+			wantProto: &schema_testpb.FullSchema{},
+		}, {
+			name: "objects: Empty",
+			json: `{ "sBar": {} }`,
+			wantProto: &schema_testpb.FullSchema{
+				SBar: &schema_testpb.Bar{},
 			},
 		}, {
 

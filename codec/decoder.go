@@ -40,17 +40,47 @@ func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
 type decoder struct {
 	jd    *json.Decoder
 	codec *Codec
-	next  json.Token
 }
 
 func (d *decoder) Token() (json.Token, error) {
-	if d.next != nil {
-		tok := d.next
-		d.next = nil
-		return tok, nil
+	return d.jd.Token()
+}
+
+// working backwards from the standard library... I'm scared there is a really
+// good reason they didn't expose Peek() on the decoder.
+
+func isSpace(c byte) bool {
+	return c <= ' ' && (c == ' ' || c == '\t' || c == '\r' || c == '\n')
+}
+func (dec *decoder) nextIsNull() (bool, error) {
+	rd := dec.jd.Buffered()
+
+	expect := []byte{':', 'n', 'u', 'l', 'l'}
+	offset := 0
+
+	dd := make([]byte, 1)
+	for {
+		ll, err := rd.Read(dd)
+		if err != nil {
+			return false, err
+		}
+		fmt.Printf("dd %d %s %d\n", ll, dd, offset)
+		if ll == 0 {
+			return false, nil
+		}
+		if isSpace(dd[0]) {
+			continue
+		}
+		if dd[0] != expect[offset] {
+			return false, nil
+		}
+		offset++
+		if offset == len(expect) {
+			fmt.Printf("found null\n")
+			return true, nil
+		}
 	}
 
-	return d.jd.Token()
 }
 
 func (dec *decoder) expectDelim(delim rune) error {
@@ -93,6 +123,18 @@ func (dec *decoder) jsonObject(callback func(key string) error) error {
 		keyTokenStr, ok := keyToken.(string)
 		if !ok {
 			return unexpectedTokenError(keyToken, "string (object key)")
+		}
+
+		isNul, err := dec.nextIsNull()
+		if err != nil {
+			return err
+		}
+		if isNul {
+			_, err := dec.Token()
+			if err != nil {
+				return err
+			}
+			continue
 		}
 
 		if err := callback(keyTokenStr); err != nil {
