@@ -16,6 +16,13 @@ type FieldSchema interface {
 	// true for ArrayField and MapField
 	// false for AnyField special case
 	Mutable() bool
+
+	AsContainer() (Container, bool)
+}
+
+type Container interface {
+	PropertyField(name string) FieldSchema
+	WalkToProperty(name ...string) (FieldSchema, error)
 }
 
 type ContainerSchema interface {

@@ -29,6 +29,8 @@ type Property interface {
 type PropertySet interface {
 	SchemaName() string // Returns the full name of the entity wrapping the properties.
 
+	ContainerSchema() j5schema.Container
+
 	RangeProperties(RangePropertiesCallback) error
 	RangePropertySchemas(RangePropertySchemasCallback) error
 	RangeValues(RangeValuesCallback) error
@@ -101,14 +103,14 @@ func (p *property) Field() (Field, error) {
 
 type propSetFactory struct {
 	properties []*property
-	fullName   string
+	schema     hasProps
 }
 
 func (factory propSetFactory) newMessage(msg protoreflect.Message) *propSet {
 	ps := &propSet{
-		asMap:    map[string]*property{},
-		fullName: factory.fullName,
-		value:    msg,
+		asMap:  map[string]*property{},
+		schema: factory.schema,
+		value:  msg,
 	}
 
 	for _, prop := range factory.properties {
@@ -129,9 +131,9 @@ type hasProps interface {
 var _ PropertySet = &propSet{}
 
 type propSet struct {
-	asMap    map[string]*property
-	asSlice  []*property
-	fullName string
+	asMap   map[string]*property
+	asSlice []*property
+	schema  hasProps
 
 	value protoreflect.Message
 }
@@ -182,7 +184,7 @@ func newPropSet(schema hasProps, rootDesc protoreflect.MessageDescriptor) (propS
 	}
 
 	return propSetFactory{
-		fullName:   schema.FullName(),
+		schema:     schema,
 		properties: builtProps,
 	}, nil
 
@@ -191,7 +193,11 @@ func newPropSet(schema hasProps, rootDesc protoreflect.MessageDescriptor) (propS
 func (*propSet) implementsPropertySet() {}
 
 func (fs *propSet) SchemaName() string {
-	return fs.fullName
+	return fs.schema.FullName()
+}
+
+func (fs *propSet) ContainerSchema() j5schema.Container {
+	return j5schema.PropertySet(fs.schema.ClientProperties())
 }
 
 func (fs *propSet) ListPropertyNames() []string {
@@ -211,7 +217,7 @@ func (fs *propSet) HasProperty(name string) bool {
 func (fs *propSet) GetProperty(name string) (Property, error) {
 	prop, ok := fs.asMap[name]
 	if !ok {
-		return nil, fmt.Errorf("%s has no property %s", fs.fullName, name)
+		return nil, fmt.Errorf("%s has no property %s", fs.schema.FullName(), name)
 	}
 	return prop, nil
 }
@@ -219,7 +225,7 @@ func (fs *propSet) GetProperty(name string) (Property, error) {
 func (fs *propSet) GetOrCreateValue(name string) (Field, error) {
 	prop, ok := fs.asMap[name]
 	if !ok {
-		return nil, fmt.Errorf("%s has no property %s", fs.fullName, name)
+		return nil, fmt.Errorf("%s has no property %s", fs.schema.FullName(), name)
 	}
 	if prop.value != nil {
 		return prop.value, nil
@@ -230,7 +236,7 @@ func (fs *propSet) GetOrCreateValue(name string) (Field, error) {
 func (fs *propSet) GetValue(name string) (Field, bool, error) {
 	prop, ok := fs.asMap[name]
 	if !ok {
-		return nil, false, fmt.Errorf("%q has no property %q", fs.fullName, name)
+		return nil, false, fmt.Errorf("%q has no property %q", fs.schema.FullName(), name)
 	}
 	if prop.value != nil {
 		return prop.value, true, nil
@@ -242,7 +248,7 @@ func (fs *propSet) GetValue(name string) (Field, bool, error) {
 func (fs *propSet) NewValue(name string) (Field, error) {
 	prop, ok := fs.asMap[name]
 	if !ok {
-		return nil, fmt.Errorf("%q has no property %q", fs.fullName, name)
+		return nil, fmt.Errorf("%q has no property %q", fs.schema.FullName(), name)
 	}
 	if prop.value != nil {
 		return prop.value, fmt.Errorf("field %s is already set", name)

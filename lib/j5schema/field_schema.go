@@ -29,6 +29,10 @@ func (s *ScalarSchema) Mutable() bool {
 	return false
 }
 
+func (s *ScalarSchema) AsContainer() (Container, bool) {
+	return nil, false
+}
+
 func (s *ScalarSchema) TypeName() string {
 	return baseTypeName(s.Proto.Type)
 }
@@ -39,6 +43,8 @@ type AnyField struct {
 	OnlyDefined bool
 	Types       []protoreflect.FullName
 }
+
+var _ FieldSchema = (*AnyField)(nil)
 
 func (s *AnyField) ToJ5Field() *schema_j5pb.Field {
 	return &schema_j5pb.Field{
@@ -53,6 +59,10 @@ func (s *AnyField) ToJ5Field() *schema_j5pb.Field {
 
 func (s *AnyField) TypeName() string {
 	return "any"
+}
+
+func (s *AnyField) AsContainer() (Container, bool) {
+	return nil, false
 }
 
 func (s *AnyField) Mutable() bool {
@@ -71,6 +81,10 @@ var _ FieldSchema = (*EnumField)(nil)
 
 func (s *EnumField) Mutable() bool {
 	return false
+}
+
+func (s *EnumField) AsContainer() (Container, bool) {
+	return nil, false
 }
 
 func (s *EnumField) Schema() *EnumSchema {
@@ -113,6 +127,10 @@ func (s *ObjectField) TypeName() string {
 	return fmt.Sprintf("object(%s)", s.Ref.FullName())
 }
 
+func (s *ObjectField) AsContainer() (Container, bool) {
+	return s.Ref.To.(*ObjectSchema).Properties, true
+}
+
 func (s *ObjectField) Mutable() bool {
 	return true
 }
@@ -153,6 +171,10 @@ func (s *OneofField) Mutable() bool {
 	return true
 }
 
+func (s *OneofField) AsContainer() (Container, bool) {
+	return s.Ref.To.(*OneofSchema).Properties, true
+}
+
 func (s *OneofField) TypeName() string {
 	return fmt.Sprintf("oneof(%s)", s.Ref.FullName())
 }
@@ -188,6 +210,10 @@ type MapField struct {
 
 var _ FieldSchema = (*MapField)(nil)
 
+func (s *MapField) AsContainer() (Container, bool) {
+	return nil, false
+}
+
 func (s *MapField) Mutable() bool {
 	return true
 }
@@ -222,6 +248,10 @@ var _ FieldSchema = (*ArrayField)(nil)
 
 func (s *ArrayField) Mutable() bool {
 	return true
+}
+
+func (s *ArrayField) AsContainer() (Container, bool) {
+	return nil, false
 }
 
 func (s *ArrayField) TypeName() string {

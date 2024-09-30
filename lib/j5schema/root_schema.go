@@ -162,15 +162,6 @@ func (s *EnumSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
 	return s.ToJ5Root()
 }
 
-func (ps PropertySet) ByJSONName(name string) *ObjectProperty {
-	for _, prop := range ps {
-		if prop.JSONName == name {
-			return prop
-		}
-	}
-	return nil
-}
-
 type ObjectSchema struct {
 	rootSchema
 	Entity     *schema_j5pb.EntityObject
@@ -291,6 +282,43 @@ func (s *OneofSchema) ClientProperties() []*ObjectProperty {
 }
 
 type PropertySet []*ObjectProperty
+
+var _ Container = PropertySet{}
+
+func (ps PropertySet) ByJSONName(name string) *ObjectProperty {
+	for _, prop := range ps {
+		if prop.JSONName == name {
+			return prop
+		}
+	}
+	return nil
+}
+
+func (ps PropertySet) PropertyField(name string) FieldSchema {
+	val := ps.ByJSONName(name)
+	if val == nil {
+		return nil
+	}
+	return val.Schema
+}
+
+func (ps PropertySet) WalkToProperty(name ...string) (FieldSchema, error) {
+	if len(name) == 0 {
+		return nil, fmt.Errorf("empty property path")
+	}
+	prop := ps.ByJSONName(name[0])
+	if prop == nil {
+		return nil, fmt.Errorf("property %q not found", name[0])
+	}
+	if len(name) == 1 {
+		return prop.Schema, nil
+	}
+	propContainer, ok := prop.Schema.AsContainer()
+	if !ok {
+		return nil, fmt.Errorf("property %q is not a container", name[0])
+	}
+	return propContainer.WalkToProperty(name[1:]...)
+}
 
 type ObjectProperty struct {
 	Parent RootSchema
