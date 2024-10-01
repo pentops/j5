@@ -498,8 +498,13 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 }
 
 func copyReflect(a, b protoreflect.Message) {
+	bFields := b.Descriptor().Fields()
 	a.Range(func(fd protoreflect.FieldDescriptor, val protoreflect.Value) bool {
-		b.Set(fd, val)
+		bField := bFields.ByNumber(fd.Number())
+		if bField == nil || bField.Kind() != fd.Kind() || bField.Name() != fd.Name() {
+			panic(fmt.Sprintf("CopyReflect: field %s not found in %s", fd.FullName(), b.Descriptor().FullName()))
+		}
+		b.Set(bField, val)
 		return true
 	})
 }

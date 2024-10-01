@@ -64,7 +64,6 @@ func (dec *decoder) nextIsNull() (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		fmt.Printf("dd %d %s %d\n", ll, dd, offset)
 		if ll == 0 {
 			return false, nil
 		}
@@ -76,7 +75,6 @@ func (dec *decoder) nextIsNull() (bool, error) {
 		}
 		offset++
 		if offset == len(expect) {
-			fmt.Printf("found null\n")
 			return true, nil
 		}
 	}
