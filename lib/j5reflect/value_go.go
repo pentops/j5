@@ -91,42 +91,158 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 				return protoreflect.Value{}, nil
 			}
 			rv = rv.Elem()
+			value = rv.Interface()
+		}
+
+		if numVal, ok := value.(json.Number); ok {
+			i64, err := numVal.Int64()
+			if err != nil {
+				return pv, err
+			}
+			value = i64
 		}
 
 		switch st.Integer.Format {
 		case schema_j5pb.IntegerField_FORMAT_INT32:
-			if !rv.CanInt() {
+			switch val := value.(type) {
+			case uint:
+				if val > math.MaxInt32 {
+					return pv, fmt.Errorf("int value %v is out of range for int32", val)
+				}
+				return protoreflect.ValueOfInt32(int32(val)), nil
+			case uint16:
+				return protoreflect.ValueOfInt32(int32(val)), nil
+			case uint32:
+				if val > math.MaxInt32 {
+					return pv, fmt.Errorf("int value %v is out of range for int32", val)
+				}
+				return protoreflect.ValueOfInt32(int32(val)), nil
+			case uint64:
+				if val > math.MaxInt32 {
+					return pv, fmt.Errorf("int value %v is out of range for int32", val)
+				}
+				return protoreflect.ValueOfInt32(int32(val)), nil
+			case int:
+				if val > math.MaxInt32 || val < math.MinInt32 {
+					return pv, fmt.Errorf("int value %v is out of range for int32", val)
+				}
+				return protoreflect.ValueOfInt32(int32(val)), nil
+			case int16:
+				return protoreflect.ValueOfInt32(int32(val)), nil
+			case int32:
+				return protoreflect.ValueOfInt32(val), nil
+			case int64:
+				if val > math.MaxInt32 || val < math.MinInt32 {
+					return pv, fmt.Errorf("int value %v is out of range for int32", val)
+				}
+				return protoreflect.ValueOfInt32(int32(val)), nil
+			default:
 				return pv, fmt.Errorf("expected int, got %T", value)
 			}
-			val := rv.Int()
-			if val > math.MaxInt32 || val < math.MinInt32 {
-				return pv, fmt.Errorf("int value %v is out of range for int32", val)
-			}
-			return protoreflect.ValueOfInt32(int32(val)), nil
 
 		case schema_j5pb.IntegerField_FORMAT_INT64:
-			if !rv.CanInt() {
+			switch val := value.(type) {
+			case uint:
+				return protoreflect.ValueOfInt64(int64(val)), nil
+			case uint16:
+				return protoreflect.ValueOfInt64(int64(val)), nil
+			case uint32:
+				return protoreflect.ValueOfInt64(int64(val)), nil
+			case uint64:
+				return protoreflect.ValueOfInt64(int64(val)), nil
+			case int:
+				return protoreflect.ValueOfInt64(int64(val)), nil
+			case int16:
+				return protoreflect.ValueOfInt64(int64(val)), nil
+			case int32:
+				return protoreflect.ValueOfInt64(int64(val)), nil
+			case int64:
+				return protoreflect.ValueOfInt64(val), nil
+			default:
 				return pv, fmt.Errorf("expected int, got %T", value)
 			}
-			val := rv.Int()
-			return protoreflect.ValueOfInt64(val), nil
 
 		case schema_j5pb.IntegerField_FORMAT_UINT32:
-			if !rv.CanUint() {
-				return pv, fmt.Errorf("expected int, got %T", value)
+			switch val := value.(type) {
+			case uint:
+				if val > math.MaxUint32 {
+					return pv, fmt.Errorf("int value %v is out of range for uint32", val)
+				}
+				return protoreflect.ValueOfUint32(uint32(val)), nil
+			case uint16:
+				return protoreflect.ValueOfUint32(uint32(val)), nil
+			case uint32:
+				return protoreflect.ValueOfUint32(val), nil
+			case uint64:
+				if val > math.MaxUint32 {
+					return pv, fmt.Errorf("int value %v is out of range for uint32", val)
+				}
+				return protoreflect.ValueOfUint32(uint32(val)), nil
+			case int:
+				if val < 0 {
+					return pv, fmt.Errorf("int value %v is out of range for uint32", val)
+				}
+				if val > math.MaxUint32 {
+					return pv, fmt.Errorf("int value %v is out of range for uint32", val)
+				}
+				return protoreflect.ValueOfUint32(uint32(val)), nil
+			case int16:
+				if val < 0 {
+					return pv, fmt.Errorf("int value %v is out of range for uint32", val)
+				}
+				return protoreflect.ValueOfUint32(uint32(val)), nil
+			case int32:
+				if val < 0 {
+					return pv, fmt.Errorf("int value %v is out of range for uint32", val)
+				}
+				return protoreflect.ValueOfUint32(uint32(val)), nil
+			case int64:
+				if val < 0 {
+					return pv, fmt.Errorf("int value %v is out of range for uint32", val)
+				}
+				if val > math.MaxUint32 {
+					return pv, fmt.Errorf("int value %v is out of range for uint32", val)
+				}
+				return protoreflect.ValueOfUint32(uint32(val)), nil
+
+			default:
+				return pv, fmt.Errorf("expected uint32, got %T", value)
 			}
-			val := rv.Uint()
-			if val > math.MaxUint32 {
-				return pv, fmt.Errorf("int value %v is out of range for uint32", val)
-			}
-			return protoreflect.ValueOfUint32(uint32(val)), nil
 
 		case schema_j5pb.IntegerField_FORMAT_UINT64:
-			if !rv.CanUint() {
-				return pv, fmt.Errorf("expected int, got %T", value)
+			switch val := value.(type) {
+			case uint:
+				return protoreflect.ValueOfUint64(uint64(val)), nil
+			case uint16:
+				return protoreflect.ValueOfUint64(uint64(val)), nil
+			case uint32:
+				return protoreflect.ValueOfUint64(uint64(val)), nil
+			case uint64:
+				return protoreflect.ValueOfUint64(val), nil
+			case int:
+				if val < 0 {
+					return pv, fmt.Errorf("int value %v is out of range for uint64", val)
+				}
+				return protoreflect.ValueOfUint64(uint64(val)), nil
+			case int16:
+				if val < 0 {
+					return pv, fmt.Errorf("int value %v is out of range for uint64", val)
+				}
+				return protoreflect.ValueOfUint64(uint64(val)), nil
+			case int32:
+				if val < 0 {
+					return pv, fmt.Errorf("int value %v is out of range for uint64", val)
+				}
+				return protoreflect.ValueOfUint64(uint64(val)), nil
+			case int64:
+				if val < 0 {
+					return pv, fmt.Errorf("int value %v is out of range for uint64", val)
+				}
+				return protoreflect.ValueOfUint64(uint64(val)), nil
+
+			default:
+				return pv, fmt.Errorf("expected uint64, got %T", value)
 			}
-			val := rv.Uint()
-			return protoreflect.ValueOfUint64(val), nil
 
 		default:
 			return pv, fmt.Errorf("unsupported integer format %v", st.Integer.Format)

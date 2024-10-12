@@ -53,26 +53,61 @@ func TestUnmarshal(t *testing.T) {
 		altInputJSON []string // when set, the output can be different to the input, but all outputs should be the same
 	}{
 		{
-			name: "scalars",
+			name: "strings",
 
 			json: `{
 				"sString": "nameVal",
 				"oString": "otherNameVal",
-				"rString": ["r1", "r2"],
-				"sFloat": 1.1,
-				"oFloat": 2.2,
-				"rFloat": [3.3, 4.4],
-				"enum": "VALUE1",
-				"rEnum": ["VALUE1", "VALUE2"]
+				"rString": ["r1", "r2"]
 			}`,
 			wantProto: &schema_testpb.FullSchema{
 				SString: "nameVal",
 				OString: proto.String("otherNameVal"),
 				RString: []string{"r1", "r2"},
-
+			},
+		}, {
+			name: "floats",
+			json: `{
+				"sFloat": 1.1,
+				"oFloat": 2.2,
+				"rFloat": [3.3, 4.4]
+			}`,
+			wantProto: &schema_testpb.FullSchema{
 				SFloat: 1.1,
 				OFloat: proto.Float32(2.2),
 				RFloat: []float32{3.3, 4.4},
+			},
+		}, {
+			name: "integers",
+			json: `{
+				"sInt32": -1,
+				"sUint32": 1,
+				"sSint32": -1,
+				"sInt64": -1,
+				"sUint64": 2
+			}`,
+			wantProto: &schema_testpb.FullSchema{
+				SInt32:  -1,
+				SUint32: 1,
+				SSint32: -1,
+				SInt64:  -1,
+				SUint64: 2,
+			},
+		}, {
+			name: "bool",
+			json: `{
+				"sBool": true
+			}`,
+			wantProto: &schema_testpb.FullSchema{
+				SBool: true,
+			},
+		}, {
+			name: "enum",
+			json: `{
+				"enum": "VALUE1",
+				"rEnum": ["VALUE1", "VALUE2"]
+			}`,
+			wantProto: &schema_testpb.FullSchema{
 
 				Enum: schema_testpb.Enum_ENUM_VALUE1,
 				REnum: []schema_testpb.Enum{
