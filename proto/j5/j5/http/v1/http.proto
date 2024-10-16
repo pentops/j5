@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package j5.http.v1;
+
+option go_package = "github.com/pentops/j5/gen/j5/http/v1/http_j5pb";
+
+// Temporary Redirect (HTTP 302) with the specified URL in the Location header.
+message RedirectResponse {
+  string redirect_url = 1;
+}
+
+message RawBodyResponse {
+  int32 status_code = 1;
+  string content_type = 2;
+  bytes body = 3;
+}
+
+message RawBodyRequest {
+  bytes body = 1;
+}
