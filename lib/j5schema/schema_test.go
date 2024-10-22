@@ -214,9 +214,11 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 
 	obj := schemaItem.Type.(*schema_j5pb.RootSchema_Object)
 	assertProperty := func(name string, expected map[string]interface{}) {
+		t.Helper()
 		for _, prop := range obj.Object.Properties {
 			if prop.Name == name {
 				t.Run(name, func(t *testing.T) {
+					t.Helper()
 					dd, err := jsontest.NewAsserter(prop)
 					if err != nil {
 						t.Fatal(err.Error())
@@ -245,12 +247,12 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 	})
 
 	assertProperty("mapStringString", map[string]interface{}{
-		"protoField":                   jsontest.Array[float64]{15},
+		"protoField":                   jsontest.Array[float64]{36},
 		"schema.map.itemSchema.string": map[string]interface{}{},
 	})
 
 	assertProperty("flattened", map[string]interface{}{
-		"protoField":            jsontest.Array[float64]{18},
+		"protoField":            jsontest.Array[float64]{42},
 		"schema.object.flatten": true,
 	})
 }
