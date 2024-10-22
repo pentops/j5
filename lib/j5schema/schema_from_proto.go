@@ -540,7 +540,7 @@ type protoFieldExtensions struct {
 
 func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensions {
 	validateConstraint := proto.GetExtension(src.Options(), validate.E_Field).(*validate.FieldConstraints)
-	if validateConstraint != nil && validateConstraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
+	if validateConstraint != nil && validateConstraint.Ignore != nil && *validateConstraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
 		// constraint.IgnoreEmpty doesn't really apply
 
 		// if the constraint is repeated, unwrap it
@@ -576,7 +576,7 @@ func (pkg *Package) buildSchemaProperty(context fieldContext, src protoreflect.F
 	}
 
 	ext := getProtoFieldExtensions(src)
-	prop.Required = ext.validate.Required
+	prop.Required = ext.validate.Required != nil && *ext.validate.Required
 
 	if !prop.Required && src.HasOptionalKeyword() {
 		prop.ExplicitlyOptional = true
@@ -621,7 +621,8 @@ func (pkg *Package) buildSchema(context fieldContext, src protoreflect.FieldDesc
 func ScalarSchemaFromProto(src protoreflect.FieldDescriptor) (schema_j5pb.IsField_Type, bool, error) {
 	ext := getProtoFieldExtensions(src)
 	t, err := buildScalarType(src, ext)
-	return t, ext.validate.Required, err
+	required := ext.validate.Required != nil && *ext.validate.Required
+	return t, required, err
 }
 
 func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
