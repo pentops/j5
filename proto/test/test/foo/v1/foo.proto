@@ -12,7 +12,10 @@ option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testpb";
 message FooKeys {
   option (j5.ext.v1.psm).entity_name = "foo";
 
-  string foo_id = 1 [(j5.ext.v1.key).primary_key = true];
+  string foo_id = 1 [
+    (j5.ext.v1.field).key = {},
+    (j5.ext.v1.key).primary_key = true
+  ];
 }
 
 message FooState {
