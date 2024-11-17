@@ -1169,10 +1169,16 @@ func buildEnumFieldSchema(pkg *Package, context fieldContext, src protoreflect.F
 }
 
 var wellKnownStringPatterns = map[string]string{
-	`^\d{4}-\d{2}-\d{2}$`: "date",
-	`^\d(.?\d)?$`:         "number",
-	id62.PatternString:    "id62",
+	`^\d{4}-\d{2}-\d{2}$`: dateFormat,
+	`^\d(.?\d)?$`:         numberFormat,
+	id62.PatternString:    id62Format,
 }
+
+const (
+	id62Format   = "id62"
+	dateFormat   = "date"
+	numberFormat = "number"
+)
 
 func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
 	stringItem := &schema_j5pb.StringField{}
@@ -1298,7 +1304,7 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		looksLikeKey = true
 	} else if psmKeyExt != nil {
 		looksLikeKey = true
-	} else if stringItem.Format != nil && *stringItem.Format == "j5s" {
+	} else if stringItem.Format != nil && *stringItem.Format == id62Format {
 		looksLikeKey = true
 	}
 
