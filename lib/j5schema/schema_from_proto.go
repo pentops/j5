@@ -526,12 +526,6 @@ func buildComment(sourceLocation protoreflect.SourceLocation, fallback string) s
 	return strings.Join(commentsOut, "\n")
 }
 
-var wellKnownStringPatterns = map[string]string{
-	`^\d{4}-\d{2}-\d{2}$`: "date",
-	`^\d(.?\d)?$`:         "number",
-	id62.PatternString:    "id62",
-}
-
 type protoFieldExtensions struct {
 	validate *validate.FieldConstraints
 	list     *list_j5pb.FieldConstraint
@@ -1174,6 +1168,12 @@ func buildEnumFieldSchema(pkg *Package, context fieldContext, src protoreflect.F
 	}, nil
 }
 
+var wellKnownStringPatterns = map[string]string{
+	`^\d{4}-\d{2}-\d{2}$`: "date",
+	`^\d(.?\d)?$`:         "number",
+	id62.PatternString:    "id62",
+}
+
 func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
 	stringItem := &schema_j5pb.StringField{}
 
@@ -1296,9 +1296,9 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 
 	if fkRules != nil {
 		looksLikeKey = true
-	}
-
-	if psmKeyExt != nil {
+	} else if psmKeyExt != nil {
+		looksLikeKey = true
+	} else if stringItem.Format != nil && *stringItem.Format == "j5s" {
 		looksLikeKey = true
 	}
 
