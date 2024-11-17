@@ -3,6 +3,7 @@ package codec
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -162,7 +163,7 @@ type fieldError struct {
 func newFieldError(field, message string) error {
 	return fieldError{
 		pathToField: []string{field},
-		err:         fmt.Errorf(message),
+		err:         errors.New(message),
 	}
 }
 
