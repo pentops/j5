@@ -86,6 +86,14 @@ func TestStringSchemaTypes(t *testing.T) {
 		expected: map[string]interface{}{
 			"schema.key.format": jsontest.IsOneofKey("uuid"),
 		},
+	}, {
+		name: "id62",
+		constraint: &validate.StringRules{
+			Pattern: proto.String(`^[0-9A-Za-z]{22}$`),
+		},
+		expected: map[string]interface{}{
+			"schema.key.format": jsontest.IsOneofKey("id62"),
+		},
 	}} {
 		t.Run(tt.name, func(t *testing.T) {
 			dd := buildFieldSchema(t, &descriptorpb.FieldDescriptorProto{
