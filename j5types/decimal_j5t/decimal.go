@@ -33,6 +33,20 @@ func (d *Decimal) Sub(d2 *Decimal) *Decimal {
 	return FromShop(sd)
 }
 
+func (d *Decimal) Mul(d2 *Decimal) (*Decimal, error) {
+	s1, err := d.ToShop()
+	if err != nil {
+		return nil, fmt.Errorf("error converting %v to decimal", s1.String())
+	}
+
+	s2, err := d2.ToShop()
+	if err != nil {
+		return nil, fmt.Errorf("error converting %v to decimal", s2.String())
+	}
+
+	return FromShop(s1.Mul(s2)), nil
+}
+
 func FromShop(d decimal.Decimal) *Decimal {
 	return &Decimal{
 		Value: d.String(),
