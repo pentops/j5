@@ -42,7 +42,7 @@ func mustProtoAny(t testing.TB, msg proto.Message) *anypb.Any {
 
 func TestUnmarshal(t *testing.T) {
 
-	codec := NewCodec()
+	codec := NewCodec(WithProtoToAny())
 
 	testTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 

@@ -16,6 +16,8 @@ type MessageTypeResolver interface {
 type Codec struct {
 	refl     *j5reflect.Reflector
 	resolver MessageTypeResolver
+
+	addProtoToAny bool
 }
 
 type CodecOption func(*Codec)
@@ -24,6 +26,13 @@ type CodecOption func(*Codec)
 func WithResolver(resolver MessageTypeResolver) CodecOption {
 	return func(c *Codec) {
 		c.resolver = resolver
+	}
+}
+
+// WithProtoToAny adds a proto encoding to j5.any.v1 messages using the resolver
+func WithProtoToAny() CodecOption {
+	return func(c *Codec) {
+		c.addProtoToAny = true
 	}
 }
 

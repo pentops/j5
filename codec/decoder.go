@@ -315,7 +315,7 @@ func (dec *decoder) decodeAny(field j5reflect.AnyField) error {
 		TypeName: *constrainType,
 	}
 
-	if dec.codec.resolver != nil {
+	if dec.codec.addProtoToAny && dec.codec.resolver != nil {
 		// takes the PROTO name, which should match the encoder.
 		innerDesc, err := dec.codec.resolver.FindMessageByName(protoreflect.FullName(*constrainType))
 		if err != nil {
