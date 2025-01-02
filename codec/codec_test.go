@@ -21,6 +21,7 @@ import (
 	"github.com/pentops/j5/j5types/any_j5t"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
+	"github.com/pentops/registry/gen/j5/registry/v1/registry_tpb"
 )
 
 func mustJ5Any(t testing.TB, msg proto.Message, asJSON []byte) *any_j5t.Any {
@@ -464,6 +465,20 @@ func TestUnmarshal(t *testing.T) {
 	}
 }
 
+func TestNullHack(t *testing.T) {
+
+	// See nextIsNull() code for what this is testing.
+	// A failing test for the edgier edge case is even harder to pin down.
+	input := []byte(`{"request":{"context":"YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE="},"commit":{"owner":"foo"}}`)
+
+	codec := NewCodec()
+
+	msg := &registry_tpb.PublishMessage{}
+	if err := codec.JSONToProto(input, msg.ProtoReflect()); err != nil {
+		t.Fatalf("JSONToProto: %s", err)
+	}
+
+}
 func logIndent(t *testing.T, label, jsonStr string) {
 	t.Helper()
 	buffer := &bytes.Buffer{}
