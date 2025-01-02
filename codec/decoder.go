@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/pentops/j5/j5types/any_j5t"
@@ -53,6 +54,7 @@ func (d *decoder) Token() (json.Token, error) {
 func isSpace(c byte) bool {
 	return c <= ' ' && (c == ' ' || c == '\t' || c == '\r' || c == '\n')
 }
+
 func (dec *decoder) nextIsNull() (bool, error) {
 	rd := dec.jd.Buffered()
 
@@ -63,6 +65,19 @@ func (dec *decoder) nextIsNull() (bool, error) {
 	for {
 		ll, err := rd.Read(dd)
 		if err != nil {
+			// TODO: Buffered only returns the bytes which have been read
+			// by the decoder from the underlying reader... even though the underlying
+			// reader is also a byte slice... anyway.
+			// If the 'null' is split across two reads, it will return false
+			// incorrectly.
+			// This is better than the alternative which is to return the EOF
+			// error even when the next value is not 'null' which comes up far
+			// more often.
+			// The fix involves a rethink of how objects are parsed and is
+			// fairly urgent.
+			if err == io.EOF {
+				return false, nil
+			}
 			return false, err
 		}
 		if ll == 0 {
