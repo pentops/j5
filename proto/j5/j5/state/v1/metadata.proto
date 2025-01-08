@@ -41,6 +41,8 @@ message EventMetadata {
   Cause cause = 4;
 }
 
+// EventPublishMetadata is like EventMetadata but used in publish messages, and
+// doesn't cause protostate/psm parsers to think the message is an event.
 message EventPublishMetadata {
   string event_id = 1 [(buf.validate.field).string.uuid = true];
 

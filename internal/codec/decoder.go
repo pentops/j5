@@ -139,18 +139,19 @@ func (dec *decoder) jsonObject(callback func(key string) error) error {
 			return unexpectedTokenError(keyToken, "string (object key)")
 		}
 
-		isNul, err := dec.nextIsNull()
-		if err != nil {
-			return err
-		}
-		if isNul {
-			_, err := dec.Token()
+		/*
+			isNul, err := dec.nextIsNull()
 			if err != nil {
 				return err
 			}
-			continue
-		}
-
+			if isNul {
+				_, err := dec.Token()
+				if err != nil {
+					return err
+				}
+				continue
+			}
+		*/
 		if err := callback(keyTokenStr); err != nil {
 			return passUpError(keyTokenStr, err)
 		}
