@@ -1,6 +1,7 @@
 package id62
 
 import (
+	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
 	"math/big"
@@ -17,6 +18,19 @@ type UUID [16]byte
 func New() UUID {
 	id := uuid.Must(uuid.NewV7())
 	return UUID(id[:])
+}
+
+func NewHash(namespace string, inputs ...string) UUID {
+	h := sha1.New()
+	h.Reset()
+	h.Write([]byte(namespace)[:]) //nolint:errcheck
+	for _, input := range inputs {
+		h.Write([]byte(input)[:]) //nolint:errcheck
+	}
+	s := h.Sum(nil)
+	var uuid UUID
+	copy(uuid[:], s)
+	return uuid
 }
 
 func NewString() string {
