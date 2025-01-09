@@ -570,7 +570,7 @@ func (pkg *Package) buildSchemaProperty(context fieldContext, src protoreflect.F
 	}
 
 	ext := getProtoFieldExtensions(src)
-	prop.Required = ext.validate.Required != nil && *ext.validate.Required
+	prop.Required = (ext.validate.Required != nil && *ext.validate.Required) || (src.IsList() && ext.validate.GetRepeated().GetMinItems() > 0)
 
 	if !prop.Required && src.HasOptionalKeyword() {
 		prop.ExplicitlyOptional = true
