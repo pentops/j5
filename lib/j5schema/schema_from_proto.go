@@ -476,7 +476,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 
 		oneof.Properties = append(oneof.Properties, prop)
 
-		// deferrs adding the oneof to the property array until the first
+		// defers adding the oneof to the property array until the first
 		// field is encountered, i.e. preserves ordering
 		pending, ok := pendingOneofProps[name]
 		if ok {
