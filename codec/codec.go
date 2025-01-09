@@ -1,6 +1,8 @@
 package codec
 
 import (
+	"fmt"
+
 	"github.com/pentops/j5/j5types/any_j5t"
 	"github.com/pentops/j5/lib/j5reflect"
 	"google.golang.org/protobuf/proto"
@@ -74,4 +76,22 @@ func (c *Codec) EncodeAsEmbed(msg protoreflect.Message) (*any_j5t.Any, error) {
 		J5Json:   jsonData,
 		Proto:    protoData,
 	}, nil
+}
+
+func (c *Codec) DecodeEmbed(a *any_j5t.Any, msg proto.Message) error {
+	if a.TypeName != string(msg.ProtoReflect().Descriptor().FullName()) {
+		return fmt.Errorf("type mismatch: %s != %s", a.TypeName, msg.ProtoReflect().Descriptor().FullName())
+	}
+
+	if a.Proto != nil {
+		return proto.Unmarshal(a.Proto, msg)
+	}
+
+	if a.J5Json != nil {
+		return c.JSONToProto(a.J5Json, msg.ProtoReflect())
+
+	}
+
+	return fmt.Errorf("unmarshal type %s, proto and J5Json are nil", a.TypeName)
+
 }
