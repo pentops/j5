@@ -401,6 +401,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			continue
 
 		}
+
 		if field.IsMap() {
 			if field.MapKey().Kind() != protoreflect.StringKind {
 				return nil, fmt.Errorf("map keys must be strings for J5")
@@ -562,7 +563,6 @@ func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensi
 }
 
 func (pkg *Package) buildSchemaProperty(context fieldContext, src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
-
 	prop := &ObjectProperty{
 		JSONName:    string(src.JSONName()),
 		ProtoField:  []protoreflect.FieldNumber{src.Number()},
@@ -586,7 +586,6 @@ func (pkg *Package) buildSchemaProperty(context fieldContext, src protoreflect.F
 }
 
 func (pkg *Package) buildSchema(context fieldContext, src protoreflect.FieldDescriptor, ext protoFieldExtensions) (FieldSchema, error) {
-
 	switch src.Kind() {
 	case protoreflect.MessageKind:
 		return buildMessageFieldSchema(pkg, context, src, ext)
