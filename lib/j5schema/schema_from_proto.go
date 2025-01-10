@@ -195,7 +195,7 @@ func isOneofWrapper(src protoreflect.MessageDescriptor, options *ext_j5pb.Messag
 	return true
 }
 
-func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor, opts *ext_j5pb.OneofMessageOptions) (*OneofSchema, error) {
+func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor, _ *ext_j5pb.OneofMessageOptions) (*OneofSchema, error) {
 	oneofSchema := &OneofSchema{
 		rootSchema: ss.schemaRootFromProto(srcMsg),
 		// TODO: Rules
@@ -393,7 +393,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 				Parent:      parent,
 				ProtoField:  []protoreflect.FieldNumber{field.Number()},
 				JSONName:    string(field.JSONName()),
-				Description: commentDescription(src),
+				Description: commentDescription(field),
 				Schema:      arrayField,
 			}
 
@@ -447,7 +447,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			prop := &ObjectProperty{
 				ProtoField:  []protoreflect.FieldNumber{field.Number()},
 				JSONName:    string(field.JSONName()),
-				Description: commentDescription(src),
+				Description: commentDescription(field),
 				Schema:      mapField,
 				Parent:      parent,
 			}
