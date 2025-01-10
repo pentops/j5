@@ -60,7 +60,7 @@ func (c *Codec) ProtoToJSON(msg protoreflect.Message) ([]byte, error) {
 	return c.encode(msg)
 }
 
-func (c *Codec) EncodeAsEmbed(msg protoreflect.Message) (*any_j5t.Any, error) {
+func (c *Codec) EncodeAny(msg protoreflect.Message) (*any_j5t.Any, error) {
 	jsonData, err := c.ProtoToJSON(msg)
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (c *Codec) EncodeAsEmbed(msg protoreflect.Message) (*any_j5t.Any, error) {
 	}, nil
 }
 
-func (c *Codec) DecodeEmbed(a *any_j5t.Any, msg proto.Message) error {
+func (c *Codec) DecodeAnyTo(a *any_j5t.Any, msg proto.Message) error {
 	if a.TypeName != string(msg.ProtoReflect().Descriptor().FullName()) {
 		return fmt.Errorf("type mismatch: %s != %s", a.TypeName, msg.ProtoReflect().Descriptor().FullName())
 	}
@@ -93,5 +93,4 @@ func (c *Codec) DecodeEmbed(a *any_j5t.Any, msg proto.Message) error {
 	}
 
 	return fmt.Errorf("unmarshal type %s, proto and J5Json are nil", a.TypeName)
-
 }
