@@ -1,7 +1,7 @@
 package j5codec
 
 import (
-	"github.com/pentops/j5/codec"
+	"github.com/pentops/j5/internal/codec"
 )
 
 type Codec = codec.Codec
