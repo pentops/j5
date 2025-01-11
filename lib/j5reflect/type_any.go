@@ -44,6 +44,10 @@ func (field *anyField) IsSet() bool {
 	return true
 }
 
+func (field *anyField) AsAny() (AnyField, bool) {
+	return field, true
+}
+
 func (field *anyField) SetJ5Any(val *any_j5t.Any) error {
 	return field.implType.setAny(val)
 }

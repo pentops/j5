@@ -87,6 +87,10 @@ type arrayOfOneofField struct {
 	mutableArrayField
 }
 
+func (field *arrayOfOneofField) AsArray() (ArrayField, bool) {
+	return field, true
+}
+
 func (field *arrayOfOneofField) AsArrayOfContainer() (ArrayOfContainerField, bool) {
 	return field, true
 }
@@ -118,6 +122,10 @@ func (field *arrayOfOneofField) RangeContainers(cb func(int, ContainerField) err
 
 type mapOfOneofField struct {
 	MutableMapField
+}
+
+func (field *mapOfOneofField) AsMap() (MapField, bool) {
+	return field, true
 }
 
 func (field *mapOfOneofField) AsMapOfOneof() (MapOfOneofField, bool) {

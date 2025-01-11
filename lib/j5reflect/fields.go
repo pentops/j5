@@ -14,6 +14,7 @@ type Field interface {
 
 	AsScalar() (ScalarField, bool)
 	AsEnum() (EnumField, bool)
+	AsAny() (AnyField, bool)
 
 	AsContainer() (ContainerField, bool)
 	AsObject() (ObjectField, bool)
@@ -54,6 +55,7 @@ type fieldDefaults struct{}
 
 func (fieldDefaults) AsScalar() (ScalarField, bool)                     { return nil, false }
 func (fieldDefaults) AsEnum() (EnumField, bool)                         { return nil, false }
+func (fieldDefaults) AsAny() (AnyField, bool)                           { return nil, false }
 func (fieldDefaults) AsContainer() (ContainerField, bool)               { return nil, false }
 func (fieldDefaults) AsObject() (ObjectField, bool)                     { return nil, false }
 func (fieldDefaults) AsOneof() (OneofField, bool)                       { return nil, false }

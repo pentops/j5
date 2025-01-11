@@ -92,6 +92,10 @@ type arrayOfScalarField struct {
 
 var _ ArrayOfScalarField = (*arrayOfScalarField)(nil)
 
+func (array *arrayOfScalarField) AsArray() (ArrayField, bool) {
+	return array, true
+}
+
 func (array *arrayOfScalarField) AsArrayOfScalar() (ArrayOfScalarField, bool) {
 	return array, true
 }
@@ -118,6 +122,10 @@ type mapOfScalarField struct {
 }
 
 var _ MapOfScalarField = (*mapOfScalarField)(nil)
+
+func (mapField *mapOfScalarField) AsMap() (MapField, bool) {
+	return mapField, true
+}
 
 func (mapField *mapOfScalarField) SetGoValue(key string, value interface{}) error {
 	reflVal, err := scalarReflectFromGo(mapField.itemSchema.Proto, value)

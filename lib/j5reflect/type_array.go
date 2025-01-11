@@ -139,10 +139,6 @@ func (array *mutableArrayField) NewElement() Field {
 	return array.wrapValue(idx, elem)
 }
 
-func (array *mutableArrayField) AsArray() (ArrayField, bool) {
-	return array, true
-}
-
 func (array *mutableArrayField) RangeValues(cb RangeArrayCallback) error {
 	if !array.value.IsValid() {
 		return nil // TODO: return an error? Ranging a nil array means there's certainly nothing to range
