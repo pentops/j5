@@ -106,7 +106,15 @@ func (field *arrayOfObjectField) NewContainerElement() (ContainerField, int) {
 	return of, of.IndexInParent()
 }
 
+func (field *arrayOfObjectField) AsArray() (ArrayField, bool) {
+	return field, true
+}
+
 func (field *arrayOfObjectField) AsArrayOfContainer() (ArrayOfContainerField, bool) {
+	return field, true
+}
+
+func (field *arrayOfObjectField) AsArrayOfObject() (ArrayOfObjectField, bool) {
 	return field, true
 }
 
@@ -124,6 +132,10 @@ func (field *arrayOfObjectField) RangeContainers(cb func(int, ContainerField) er
 
 type mapOfObjectField struct {
 	MutableMapField
+}
+
+func (field *mapOfObjectField) AsMap() (MapField, bool) {
+	return field, true
 }
 
 func (field *mapOfObjectField) AsMapOfObject() (MapOfObjectField, bool) {

@@ -213,7 +213,7 @@ func TestUnmarshal(t *testing.T) {
 				}},
 			},
 		}, {
-			name: "objects: Null",
+			name: "objects null",
 			json: `{}`,
 			altInputJSON: []string{
 				`{}`,
@@ -221,10 +221,20 @@ func TestUnmarshal(t *testing.T) {
 			},
 			wantProto: &schema_testpb.FullSchema{},
 		}, {
-			name: "objects: Empty",
+			name: "objects empty",
 			json: `{ "sBar": {} }`,
 			wantProto: &schema_testpb.FullSchema{
 				SBar: &schema_testpb.Bar{},
+			},
+		}, {
+			name: "empty object with bools",
+			json: `{
+				"bools": {}
+				}`,
+			wantProto: &schema_testpb.Baz{
+				Bools: &schema_testpb.Bools{
+					B1: false,
+				},
 			},
 		}, {
 
@@ -477,8 +487,8 @@ func TestNullHack(t *testing.T) {
 	if err := codec.JSONToProto(input, msg.ProtoReflect()); err != nil {
 		t.Fatalf("JSONToProto: %s", err)
 	}
-
 }
+
 func logIndent(t *testing.T, label, jsonStr string) {
 	t.Helper()
 	buffer := &bytes.Buffer{}

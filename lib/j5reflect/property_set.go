@@ -19,11 +19,26 @@ type RangePropertySchemasCallback func(name string, required bool, schema *schem
 type Property interface {
 	IsSet() bool
 	Schema() *j5schema.ObjectProperty
+	CreateField() (Field, error)
 	Field() (Field, error)
 
 	IsArray() bool
 	IsMap() bool
+
+	PropertyType() PropertyType
 }
+
+type PropertyType int
+
+const (
+	MapProperty PropertyType = iota
+	ArrayProperty
+	ObjectProperty
+	OneofProperty
+	EnumProperty
+	ScalarProperty
+	AnyProperty
+)
 
 // PropertySet is implemented by Oneofs, Objects and Maps with String keys.
 type PropertySet interface {
@@ -59,19 +74,26 @@ type ContainerField interface {
 
 /*** Implementation ***/
 
-type property struct {
+type propertyStub struct {
 	schema    *j5schema.ObjectProperty
 	protoPath []protoreflect.FieldDescriptor
-
-	hasValue bool
-	value    Field
 }
 
-func (p *property) newEmpty() *property {
+func (p *propertyStub) newEmpty(ps *propSet) *property {
 	return &property{
 		schema:    p.schema,
 		protoPath: p.protoPath,
+		propSet:   ps,
 	}
+}
+
+type property struct {
+	schema    *j5schema.ObjectProperty
+	protoPath []protoreflect.FieldDescriptor
+	propSet   *propSet
+
+	hasValue bool
+	value    Field
 }
 
 var _ Property = &property{}
@@ -90,8 +112,44 @@ func (p *property) IsMap() bool {
 	return ok
 }
 
+func (p *property) PropertyType() PropertyType {
+	switch p.schema.Schema.(type) {
+	case *j5schema.ArrayField:
+		return ArrayProperty
+	case *j5schema.MapField:
+		return MapProperty
+	case *j5schema.ObjectField:
+		return ObjectProperty
+	case *j5schema.OneofField:
+		return OneofProperty
+	case *j5schema.EnumField:
+		return EnumProperty
+	case *j5schema.ScalarSchema:
+		return ScalarProperty
+	case *j5schema.AnyField:
+		return AnyProperty
+	default:
+		return -1
+	}
+}
+
 func (p *property) Schema() *j5schema.ObjectProperty {
 	return p.schema
+}
+
+// CreateField assigns a new empty value to the property in the parent property
+// set
+func (p *property) CreateField() (Field, error) {
+	if p.hasValue {
+		return nil, fmt.Errorf("field %s is already set", p.schema.JSONName)
+	}
+	vv, err := p.propSet.buildOrCreate(p)
+	if err != nil {
+		return nil, err
+	}
+	p.value = vv
+	p.hasValue = true
+	return vv, nil
 }
 
 func (p *property) Field() (Field, error) {
@@ -102,7 +160,7 @@ func (p *property) Field() (Field, error) {
 }
 
 type propSetFactory struct {
-	properties []*property
+	properties []*propertyStub
 	schema     hasProps
 }
 
@@ -114,7 +172,7 @@ func (factory propSetFactory) newMessage(msg protoreflect.Message) *propSet {
 	}
 
 	for _, prop := range factory.properties {
-		cloned := prop.newEmpty()
+		cloned := prop.newEmpty(ps)
 
 		ps.asMap[prop.schema.JSONName] = cloned
 		ps.asSlice = append(ps.asSlice, cloned)
@@ -156,9 +214,9 @@ func newPropSet(schema hasProps, rootDesc protoreflect.MessageDescriptor) (propS
 
 	props := schema.ClientProperties()
 
-	builtProps := make([]*property, 0, len(props))
+	builtProps := make([]*propertyStub, 0, len(props))
 	for _, propSchema := range props {
-		prop := &property{
+		prop := &propertyStub{
 			schema:    propSchema,
 			protoPath: make([]protoreflect.FieldDescriptor, 0),
 		}

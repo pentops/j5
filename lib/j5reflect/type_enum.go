@@ -125,6 +125,14 @@ type arrayOfEnumField struct {
 var _ ArrayOfEnumField = (*arrayOfEnumField)(nil)
 var _ ArrayOfScalarField = (*arrayOfEnumField)(nil)
 
+func (field *arrayOfEnumField) AsArray() (ArrayField, bool) {
+	return field, true
+}
+
+func (field *arrayOfEnumField) AsArrayOfScalar() (ArrayOfScalarField, bool) {
+	return field, true
+}
+
 func (field *arrayOfEnumField) AppendEnumFromString(name string) (int, error) {
 	option := field.itemSchema.OptionByName(name)
 	if option == nil {
@@ -161,6 +169,10 @@ func (ef *arrayOfEnumField) AppendGoValue(value interface{}) (int, error) {
 type mapOfEnumField struct {
 	leafMapField
 	itemSchema *j5schema.EnumSchema
+}
+
+func (field *mapOfEnumField) AsMap() (MapField, bool) {
+	return field, true
 }
 
 func (field *mapOfEnumField) SetEnum(key string, value string) error {
