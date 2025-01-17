@@ -50,6 +50,8 @@ message FieldConstraint {
     EnumRules enum = 20;
 
     TimestampRules timestamp = 30;
+    DateRules date = 31;
+    DecimalRules decimal = 32;
   }
 }
 
@@ -120,6 +122,11 @@ message EnumRules {
 }
 
 message TimestampRules {
+  FilteringConstraint filtering = 10;
+  SortingConstraint sorting = 11;
+}
+
+message DecimalRules {
   FilteringConstraint filtering = 10;
   SortingConstraint sorting = 11;
 }
