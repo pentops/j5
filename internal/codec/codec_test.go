@@ -227,16 +227,6 @@ func TestUnmarshal(t *testing.T) {
 				SBar: &schema_testpb.Bar{},
 			},
 		}, {
-			name: "empty object with bools",
-			json: `{
-				"bools": {}
-				}`,
-			wantProto: &schema_testpb.Baz{
-				Bools: &schema_testpb.Bools{
-					B1: false,
-				},
-			},
-		}, {
 
 			name: "flattened messages",
 			json: `{

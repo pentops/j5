@@ -68,7 +68,12 @@ message Cause {
     j5.auth.v1.Action command = 2;
     ExternalEventCause external_event = 3;
     ReplyCause reply = 4;
+    InitCause init = 5;
   }
+}
+
+message InitCause {
+  // The event was caused by the state machine being initialized
 }
 
 // The event was caused by a transition in this or another state machine
