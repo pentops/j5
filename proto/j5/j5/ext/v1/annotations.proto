@@ -225,9 +225,25 @@ message BoolField {}
 
 message BytesField {}
 
-message DecimalField {}
+message DecimalField {
+  Rules rules = 1;
+  message Rules {
+    optional string minimum = 1;
+    optional string maximum = 2;
+    optional bool exclusive_minimum = 3;
+    optional bool exclusive_maximum = 4;
+  }
+}
 
-message DateField {}
+message DateField {
+  Rules rules = 1;
+  message Rules {
+    optional string minimum = 1;
+    optional string maximum = 2;
+    optional bool exclusive_minimum = 3;
+    optional bool exclusive_maximum = 4;
+  }
+}
 
 message TimestampField {}
 

@@ -42,6 +42,8 @@ type AnyField struct {
 
 	OnlyDefined bool
 	Types       []protoreflect.FullName
+
+	ListRules *list_j5pb.AnyRules
 }
 
 var _ FieldSchema = (*AnyField)(nil)
@@ -52,6 +54,7 @@ func (s *AnyField) ToJ5Field() *schema_j5pb.Field {
 			Any: &schema_j5pb.AnyField{
 				OnlyDefined: s.OnlyDefined,
 				Types:       stringSliceConvert[protoreflect.FullName, string](s.Types),
+				ListRules:   s.ListRules,
 			},
 		},
 	}

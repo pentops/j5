@@ -3,6 +3,7 @@ syntax = "proto3";
 package j5.schema.v1;
 
 import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
 import "j5/list/v1/annotations.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
@@ -66,6 +67,8 @@ message AnyField {
   // Note that even with only_defined, schemas may be added in the future, which
   // is not considered a breaking change, even when the field is required.
   bool only_defined = 1;
+
+  j5.list.v1.AnyRules list_rules = 5;
 
   repeated string types = 2;
 }
@@ -339,19 +342,29 @@ message BytesField {
 
 message DecimalField {
   Rules rules = 1;
-  // TODO: List
+  j5.list.v1.DecimalRules list_rules = 2;
   Ext ext = 3;
 
-  message Rules {}
+  message Rules {
+    optional string minimum = 1;
+    optional string maximum = 2;
+    optional bool exclusive_minimum = 3;
+    optional bool exclusive_maximum = 4;
+  }
   message Ext {}
 }
 
 message DateField {
   Rules rules = 1;
-  // TODO: List
+  j5.list.v1.DateRules list_rules = 2;
   Ext ext = 3;
 
-  message Rules {}
+  message Rules {
+    optional string minimum = 1;
+    optional string maximum = 2;
+    optional bool exclusive_minimum = 3;
+    optional bool exclusive_maximum = 4;
+  }
   message Ext {}
 }
 
@@ -360,7 +373,12 @@ message TimestampField {
   j5.list.v1.TimestampRules list_rules = 2;
   Ext ext = 3;
 
-  message Rules {}
+  message Rules {
+    optional google.protobuf.Timestamp minimum = 1;
+    optional google.protobuf.Timestamp maximum = 2;
+    optional bool exclusive_minimum = 3;
+    optional bool exclusive_maximum = 4;
+  }
   message Ext {}
 }
 

@@ -222,6 +222,7 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts
 		rootSchema: ss.schemaRootFromProto(srcMsg),
 		// TODO: Rules
 	}
+
 	properties, err := ss.messageProperties(objectSchema, srcMsg)
 	if err != nil {
 		return nil, fmt.Errorf("properties of %s: %w", srcMsg.FullName(), err)
@@ -636,6 +637,11 @@ func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions)
 			}
 		}
 
+		boolList := ext.list.GetBool()
+		if boolList != nil {
+			boolItem.ListRules = boolList
+		}
+
 		return &schema_j5pb.Field_Bool{
 			Bool: boolItem,
 		}, nil
@@ -983,22 +989,56 @@ func Ptr[T any](val T) *T {
 	return &val
 }
 
-func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (FieldSchema, bool) {
-	listConstraint := ext.list
+func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (FieldSchema, bool, error) {
 	fullName := src.FullName()
 
 	switch string(fullName) {
 	case "google.protobuf.Timestamp":
+		var rules *schema_j5pb.TimestampField_Rules
+
+		if constraint := ext.validate.GetTimestamp(); constraint != nil {
+			rules = &schema_j5pb.TimestampField_Rules{}
+
+			if constraint.Const != nil {
+				return nil, false, fmt.Errorf("'const' not supported for Timestamp")
+			}
+
+			if constraint.Within != nil {
+				return nil, false, fmt.Errorf("'within' not supported for Timestamp")
+			}
+
+			if constraint.LessThan != nil {
+				switch cType := constraint.LessThan.(type) {
+				case *validate.TimestampRules_Lt:
+					rules.Maximum = cType.Lt
+					rules.ExclusiveMaximum = Ptr(true)
+				case *validate.TimestampRules_Lte:
+					rules.Maximum = cType.Lte
+				}
+			}
+
+			if constraint.GreaterThan != nil {
+				switch cType := constraint.GreaterThan.(type) {
+				case *validate.TimestampRules_Gt:
+					rules.Minimum = cType.Gt
+					rules.ExclusiveMinimum = Ptr(true)
+				case *validate.TimestampRules_Gte:
+					rules.Minimum = cType.Gte
+				}
+			}
+
+		}
 		return &ScalarSchema{
 			WellKnownTypeName: fullName,
 			Proto: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Timestamp{
 					Timestamp: &schema_j5pb.TimestampField{
-						ListRules: listConstraint.GetTimestamp(),
+						Rules:     rules,
+						ListRules: ext.list.GetTimestamp(),
 					},
 				},
 			},
-		}, true
+		}, true, nil
 
 	case "google.protobuf.Duration":
 		return &ScalarSchema{
@@ -1011,37 +1051,70 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 					},
 				},
 			},
-		}, true
+		}, true, nil
 
 	case "j5.types.date.v1.Date":
+		var rules *schema_j5pb.DateField_Rules
+
+		if dateExt := ext.j5.GetDate(); dateExt != nil {
+			if dateExt.Rules != nil {
+				rules = &schema_j5pb.DateField_Rules{
+					Minimum:          dateExt.Rules.Minimum,
+					Maximum:          dateExt.Rules.Maximum,
+					ExclusiveMinimum: dateExt.Rules.ExclusiveMinimum,
+					ExclusiveMaximum: dateExt.Rules.ExclusiveMaximum,
+				}
+			}
+		}
+
 		return &ScalarSchema{
 			Kind:              protoreflect.MessageKind,
 			WellKnownTypeName: fullName,
 			Proto: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Date{
-					Date: &schema_j5pb.DateField{},
+					Date: &schema_j5pb.DateField{
+						Rules:     rules,
+						ListRules: ext.list.GetDate(),
+					},
 				},
 			},
-		}, true
+		}, true, nil
 
 	case "j5.types.decimal.v1.Decimal":
+		var rules *schema_j5pb.DecimalField_Rules
+
+		if dateExt := ext.j5.GetDate(); dateExt != nil {
+			if dateExt.Rules != nil {
+				rules = &schema_j5pb.DecimalField_Rules{
+					Minimum:          dateExt.Rules.Minimum,
+					Maximum:          dateExt.Rules.Maximum,
+					ExclusiveMinimum: dateExt.Rules.ExclusiveMinimum,
+					ExclusiveMaximum: dateExt.Rules.ExclusiveMaximum,
+				}
+			}
+		}
 		return &ScalarSchema{
 			Kind:              protoreflect.MessageKind,
 			WellKnownTypeName: fullName,
 			Proto: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Decimal{
-					Decimal: &schema_j5pb.DecimalField{},
+					Decimal: &schema_j5pb.DecimalField{
+						Rules:     rules,
+						ListRules: ext.list.GetDecimal(),
+					},
 				},
 			},
-		}, true
+		}, true, nil
 
 	case "google.protobuf.Struct":
 		return &MapField{
 			Schema: &AnyField{},
-		}, true
+		}, true, nil
 
 	case "j5.types.any.v1.Any", "google.protobuf.Any":
-		field := &AnyField{}
+		field := &AnyField{
+			ListRules: ext.list.GetAny(),
+		}
 		if ext.j5 != nil {
 			anyExt := ext.j5.GetAny()
 			if anyExt != nil {
@@ -1049,11 +1122,11 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 				field.Types = stringSliceConvert[string, protoreflect.FullName](anyExt.Types)
 			}
 		}
-		return field, true
+		return field, true, nil
 
 	}
 
-	return nil, false
+	return nil, false, nil
 }
 
 func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflect.FieldDescriptor, ext protoFieldExtensions) (FieldSchema, error) {
@@ -1078,7 +1151,10 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 			}
 		}
 	}
-	wktschema, ok := wktSchema(src.Message(), ext)
+	wktschema, ok, err := wktSchema(src.Message(), ext)
+	if err != nil {
+		return nil, err
+	}
 	if ok {
 		return wktschema, nil
 	}
