@@ -52,6 +52,7 @@ message FieldConstraint {
     TimestampRules timestamp = 30;
     DateRules date = 31;
     DecimalRules decimal = 32;
+    AnyRules any = 50;
   }
 }
 
@@ -129,4 +130,8 @@ message TimestampRules {
 message DecimalRules {
   FilteringConstraint filtering = 10;
   SortingConstraint sorting = 11;
+}
+
+message AnyRules {
+  FilteringConstraint filtering = 10;
 }
