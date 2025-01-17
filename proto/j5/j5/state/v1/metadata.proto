@@ -35,6 +35,9 @@ message EventMetadata {
     (j5.list.v1.field).timestamp.sorting = {
       sortable: true
       default_sort: true
+    },
+    (j5.list.v1.field).timestamp.filtering = {
+      filterable: true
     }
   ];
 
