@@ -60,6 +60,8 @@ message FooEventType {
   option (j5.ext.v1.message).is_oneof_wrapper = true;
 
   oneof type {
+    option (j5.list.v1.oneof).filtering.filterable = true;
+
     Created created = 1;
     Updated updated = 2;
   }
