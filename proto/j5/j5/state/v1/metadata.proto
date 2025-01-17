@@ -69,6 +69,7 @@ message Cause {
     ExternalEventCause external_event = 3;
     ReplyCause reply = 4;
     InitCause init = 5;
+    MessageCause message = 6;
   }
 }
 
@@ -114,4 +115,17 @@ message ExternalEventCause {
   // Do not make up IDs from the// current system time or random
   // Leave nil if an acceptable unique ID is not available.
   optional string external_id = 3;
+}
+
+// The event was caused by an o5 message
+message MessageCause {
+  string method = 1 [(buf.validate.field).required = true];
+
+  string message_id = 2;
+
+  // Then o5.application.name which sent the message
+  string source_app = 3;
+
+  // The o5.environment.full_name which sent the message
+  string source_env = 4;
 }
