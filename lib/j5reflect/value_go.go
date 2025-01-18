@@ -252,11 +252,7 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 				if err != nil {
 					return pv, nil
 				}
-
-				if valAsInt < 0 {
-					return pv, fmt.Errorf("int value %v is out of range for uint64", val)
-				}
-
+				
 				return protoreflect.ValueOfUint64(valAsInt), nil
 
 			default:
