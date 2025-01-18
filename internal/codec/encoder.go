@@ -83,11 +83,6 @@ func (enc *encoder) addString(unclean string) error {
 	return nil
 }
 
-func (enc *encoder) addFloat(val float64, bitSize int) {
-	str := strconv.FormatFloat(val, 'g', -1, bitSize)
-	enc.add([]byte(str))
-}
-
 func (enc *encoder) addInt(val int64) {
 	v := strconv.FormatInt(val, 10)
 	enc.add([]byte(v))
