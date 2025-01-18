@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
 
@@ -158,6 +159,13 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 				return protoreflect.ValueOfInt64(int64(val)), nil
 			case int64:
 				return protoreflect.ValueOfInt64(val), nil
+			case string:
+				valAsInt, err := strconv.ParseInt(val, 10, 64)
+				if err != nil {
+					return pv, nil
+				}
+
+				return protoreflect.ValueOfInt64(valAsInt), nil
 			default:
 				return pv, fmt.Errorf("expected int, got %T", value)
 			}
@@ -239,6 +247,17 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 					return pv, fmt.Errorf("int value %v is out of range for uint64", val)
 				}
 				return protoreflect.ValueOfUint64(uint64(val)), nil
+			case string:
+				valAsInt, err := strconv.ParseUint(val, 10, 64)
+				if err != nil {
+					return pv, nil
+				}
+
+				if valAsInt < 0 {
+					return pv, fmt.Errorf("int value %v is out of range for uint64", val)
+				}
+
+				return protoreflect.ValueOfUint64(valAsInt), nil
 
 			default:
 				return pv, fmt.Errorf("expected uint64, got %T", value)
@@ -249,13 +268,21 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 		}
 
 	case *schema_j5pb.Field_Float:
-		if number, ok := value.(json.Number); ok {
+		switch val := value.(type) {
+		case json.Number:
 			var err error
-			value, err = number.Float64()
+			value, err = val.Float64()
+			if err != nil {
+				return pv, err
+			}
+		case string:
+			var err error
+			value, err = strconv.ParseFloat(val, 64)
 			if err != nil {
 				return pv, err
 			}
 		}
+
 		rv := reflect.ValueOf(value)
 		if rv.Kind() == reflect.Ptr {
 			if rv.IsNil() {

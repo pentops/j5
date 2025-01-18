@@ -70,7 +70,7 @@ func TestUnmarshal(t *testing.T) {
 			name: "floats",
 			json: `{
 				"sFloat": "1.1",
-				"oFloat": "2.2"",
+				"oFloat": "2.2",
 				"rFloat": ["3.3", "4.4"]
 			}`,
 			wantProto: &schema_testpb.FullSchema{
