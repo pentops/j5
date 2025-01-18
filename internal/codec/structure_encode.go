@@ -3,7 +3,6 @@ package codec
 import (
 	"encoding/base64"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/pentops/j5/j5types/date_j5t"
@@ -212,19 +211,23 @@ func (enc *encoder) encodeScalarField(scalar j5reflect.ScalarField) error {
 		enc.addBool(vt)
 		return nil
 	case int32:
-		enc.addInt(int64(vt))
+		enc.addInt32(vt)
 		return nil
 	case int64:
-		return enc.addString(strconv.FormatInt(vt, 10))
+		enc.addInt64(vt)
+		return nil
 	case uint32:
-		enc.addUint(uint64(vt))
+		enc.addUint32(vt)
 		return nil
 	case uint64:
-		return enc.addString(strconv.FormatUint(vt, 10))
+		enc.addUint64(vt)
+		return nil
 	case float32:
-		return enc.addString(strconv.FormatFloat(float64(vt), 'g', -1, 32))
+		enc.addFloat(float64(vt), 32)
+		return nil
 	case float64:
-		return enc.addString(strconv.FormatFloat(vt, 'g', -1, 64))
+		enc.addFloat(vt, 64)
+		return nil
 	case []byte:
 		vv := base64.StdEncoding.EncodeToString(vt)
 		return enc.addString(vv)

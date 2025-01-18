@@ -15,6 +15,39 @@ rules, allowing far more flexibility in designing an API for a Client.
 In the future it should be possible to use any number of wire formats, including
 XML, Avro... and even Proto as a full round-trip.
 
+Data Types
+----------
+
+J5 data types must be translate-able to Proto and JSON, and representeable in
+the majority of programming languages.
+
+
+| J5 Type         | Proto Type                  | JSON Type           | 
+| --------------- | --------------------------- | ------------------- | 
+| String          | string                      | string              |
+| Bool            | bool                        | bool (true,false)   |
+| Integer:INT32   | int32                       | unquoted literal    |
+| Integer:INT64   | int64                       | quoted string       |
+| Integer:UINT32  | uint32                      | unquoted literal    |
+| Integer:UINT64  | uint64                      | quoted string       |
+| Float:FLOAT32   | float                       | unquoted literal    |
+| Float:FLOAT64   | double                      | unquoted literal    |
+| Bytes           | bytes                       | base64 std string   |
+| Timestamp       | google.protobuf.Timestamp   | RFC3339 string      |
+| Date            | j5.types.date.v1.Date       | string "YYYY-MM-DD" |
+| Decimal         | j5.types.decimal.v1.Decimal | quoted string       |
+| Key             | string (with annotation)    | string              |
+
+
+'quoted literal' means a numerical string with quotes, e.g. `"123"`, and
+'unquoted literal' means a numerical string without quotes, e.g. `123`.
+
+The J5 Codec translates between JSON and Proto representations. It produces the
+representations above, but accepts a more flexible range of inputs:
+
+- All number types (ints, floats, decimal) can be represented as a quoted or unquoted
+- Base64 can be encoded with either URL or Standard encoding, with or without
+  padding
 
 Configuration Files
 -------------------
