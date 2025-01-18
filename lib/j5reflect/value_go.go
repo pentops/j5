@@ -252,7 +252,7 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 				if err != nil {
 					return pv, nil
 				}
-				
+
 				return protoreflect.ValueOfUint64(valAsInt), nil
 
 			default:
