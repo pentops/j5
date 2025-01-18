@@ -69,9 +69,9 @@ func TestUnmarshal(t *testing.T) {
 		}, {
 			name: "floats",
 			json: `{
-				"sFloat": 1.1,
-				"oFloat": 2.2,
-				"rFloat": [3.3, 4.4]
+				"sFloat": "1.1",
+				"oFloat": "2.2"",
+				"rFloat": ["3.3", "4.4"]
 			}`,
 			wantProto: &schema_testpb.FullSchema{
 				SFloat: 1.1,
@@ -84,8 +84,8 @@ func TestUnmarshal(t *testing.T) {
 				"sInt32": -1,
 				"sUint32": 1,
 				"sSint32": -1,
-				"sInt64": -1,
-				"sUint64": 2
+				"sInt64": "-1",
+				"sUint64": "2"
 			}`,
 			wantProto: &schema_testpb.FullSchema{
 				SInt32:  -1,
