@@ -23,23 +23,6 @@ import (
 	"github.com/pentops/j5/j5types/decimal_j5t"
 )
 
-func TestBase64(t *testing.T) {
-
-	// 111110 is +
-	// 111111 is /
-	// 11111011 11110000
-	for _, in := range [][]byte{
-		{0xff, 0x00, 0xfe},
-		{0x00, 0x00, 0x00},
-		{0xff},
-		{0b11111011, 0b11110000},
-	} {
-		out := base64.StdEncoding.EncodeToString(in)
-		url := base64.URLEncoding.EncodeToString(in)
-		t.Logf("in: %0X, std: %s, url: %s", in, out, url)
-	}
-}
-
 func mustJ5Any(t testing.TB, msg proto.Message, asJSON []byte) *any_j5t.Any {
 	a, err := any_j5t.FromProto(msg)
 	if err != nil {
