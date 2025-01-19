@@ -83,14 +83,30 @@ func (enc *encoder) addString(unclean string) error {
 	return nil
 }
 
-func (enc *encoder) addInt(val int64) {
-	v := strconv.FormatInt(val, 10)
+func (enc *encoder) addQuoted(b []byte) {
+	enc.add([]byte(`"`))
+	enc.add(b)
+	enc.add([]byte(`"`))
+}
+
+func (enc *encoder) addInt32(val int32) {
+	v := strconv.FormatInt(int64(val), 10)
 	enc.add([]byte(v))
 }
 
-func (enc *encoder) addUint(val uint64) {
-	v := strconv.FormatUint(val, 10)
+func (enc *encoder) addUint32(val uint32) {
+	v := strconv.FormatUint(uint64(val), 10)
 	enc.add([]byte(v))
+}
+
+func (enc *encoder) addInt64(val int64) {
+	v := strconv.FormatInt(val, 10)
+	enc.addQuoted([]byte(v))
+}
+
+func (enc *encoder) addUint64(val uint64) {
+	v := strconv.FormatUint(val, 10)
+	enc.addQuoted([]byte(v))
 }
 
 func (enc *encoder) addBool(val bool) {
@@ -99,6 +115,11 @@ func (enc *encoder) addBool(val bool) {
 	} else {
 		enc.add([]byte("false"))
 	}
+}
+
+func (enc *encoder) addFloat(val float64, bitSize int) {
+	str := strconv.FormatFloat(val, 'g', -1, bitSize)
+	enc.add([]byte(str))
 }
 
 /*

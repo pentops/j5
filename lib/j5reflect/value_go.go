@@ -137,6 +137,13 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 					return pv, fmt.Errorf("int value %v is out of range for int32", val)
 				}
 				return protoreflect.ValueOfInt32(int32(val)), nil
+			case string:
+				valAsInt, err := strconv.ParseInt(val, 10, 32)
+				if err != nil {
+					return pv, nil
+				}
+
+				return protoreflect.ValueOfInt32(int32(valAsInt)), nil
 			default:
 				return pv, fmt.Errorf("expected int, got %T", value)
 			}
@@ -212,6 +219,13 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoref
 					return pv, fmt.Errorf("int value %v is out of range for uint32", val)
 				}
 				return protoreflect.ValueOfUint32(uint32(val)), nil
+			case string:
+				valAsInt, err := strconv.ParseUint(val, 10, 32)
+				if err != nil {
+					return pv, nil
+				}
+
+				return protoreflect.ValueOfUint32(uint32(valAsInt)), nil
 
 			default:
 				return pv, fmt.Errorf("expected uint32, got %T", value)
@@ -429,16 +443,14 @@ func byteValueFromString(val string) (protoreflect.Value, error) {
 	// is base64, could be url or standard
 	// Luck would have it, they are the same bar those two characters, so even if
 	// it doesn't contain either it should work.
-	if strings.ContainsAny(val, "+/") {
-		// url
-		b, err := base64.StdEncoding.DecodeString(val)
-		if err != nil {
-			return protoreflect.Value{}, err
-		}
-		return protoreflect.ValueOfBytes(b), nil
+	val = strings.ReplaceAll(val, "-", "+")
+	val = strings.ReplaceAll(val, "_", "/")
+
+	if len(val)%4 != 0 {
+		val += strings.Repeat("=", 4-len(val)%4)
 	}
 
-	b, err := base64.URLEncoding.DecodeString(val)
+	b, err := base64.StdEncoding.DecodeString(val)
 	if err != nil {
 		return protoreflect.Value{}, err
 	}
