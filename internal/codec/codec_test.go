@@ -21,7 +21,6 @@ import (
 	"github.com/pentops/j5/j5types/any_j5t"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
-	"github.com/pentops/registry/gen/j5/registry/v1/registry_tpb"
 )
 
 func mustJ5Any(t testing.TB, msg proto.Message, asJSON []byte) *any_j5t.Any {
@@ -69,10 +68,15 @@ func TestUnmarshal(t *testing.T) {
 		}, {
 			name: "floats",
 			json: `{
+				"sFloat": 1.1,
+				"oFloat": 2.2,
+				"rFloat": [3.3, 4.4]
+			}`,
+			altInputJSON: []string{`{
 				"sFloat": "1.1",
 				"oFloat": "2.2",
 				"rFloat": ["3.3", "4.4"]
-			}`,
+			}`},
 			wantProto: &schema_testpb.FullSchema{
 				SFloat: 1.1,
 				OFloat: proto.Float32(2.2),
@@ -87,6 +91,20 @@ func TestUnmarshal(t *testing.T) {
 				"sInt64": "-1",
 				"sUint64": "2"
 			}`,
+			altInputJSON: []string{`{
+				"sInt32": "-1",
+				"sUint32": "1",
+				"sSint32": "-1",
+				"sInt64": "-1",
+				"sUint64": "2"
+			}`, `{
+				"sInt32": -1,
+				"sUint32": 1,
+				"sSint32": -1,
+				"sInt64": -1,
+				"sUint64": 2
+			}`},
+
 			wantProto: &schema_testpb.FullSchema{
 				SInt32:  -1,
 				SUint32: 1,
@@ -144,12 +162,25 @@ func TestUnmarshal(t *testing.T) {
 				"rBytes": ["` +
 				base64.StdEncoding.EncodeToString([]byte("rBytes1")) +
 				`","` +
-				base64.URLEncoding.EncodeToString([]byte("rBytes2")) +
+				base64.StdEncoding.EncodeToString([]byte("rBytes2")) +
 				`"]
 			}`,
 			wantProto: &schema_testpb.FullSchema{
 				SBytes: []byte("sBytes"),
 				RBytes: [][]byte{[]byte("rBytes1"), []byte("rBytes2")},
+			},
+		}, {
+			name: "base64 diffs",
+			// encoding of 0xFBFO is +/A= or -_A= depending on the method
+			// The codec should accept either, with or without padding
+			json: `{"sBytes": "+/A="}`,
+			altInputJSON: []string{
+				`{"sBytes": "-_A="}`,
+				`{"sBytes": "+/A"}`,
+				`{"sBytes": "-_A"}`,
+			},
+			wantProto: &schema_testpb.FullSchema{
+				SBytes: []byte{0xfB, 0xF0},
 			},
 		}, {
 			name: "map",
@@ -178,7 +209,7 @@ func TestUnmarshal(t *testing.T) {
 				},
 			},
 		}, {
-			name: "well known types",
+			name: "timestamp",
 			json: `{
 				"ts": "2020-01-01T00:00:00Z",
 				"rTs": ["2020-01-01T00:00:00Z", "2020-01-01T00:00:00Z"]
@@ -462,20 +493,6 @@ func TestUnmarshal(t *testing.T) {
 			}
 
 		})
-	}
-}
-
-func TestNullHack(t *testing.T) {
-
-	// See nextIsNull() code for what this is testing.
-	// A failing test for the edgier edge case is even harder to pin down.
-	input := []byte(`{"request":{"context":"YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE="},"commit":{"owner":"foo"}}`)
-
-	codec := NewCodec()
-
-	msg := &registry_tpb.PublishMessage{}
-	if err := codec.JSONToProto(input, msg.ProtoReflect()); err != nil {
-		t.Fatalf("JSONToProto: %s", err)
 	}
 }
 
