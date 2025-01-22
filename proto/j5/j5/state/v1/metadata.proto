@@ -54,9 +54,12 @@ message EventPublishMetadata {
 
   google.protobuf.Timestamp timestamp = 3 [
     (buf.validate.field).required = true,
-    (j5.list.v1.field).timestamp.sorting = {
-      sortable: true
-      default_sort: true
+    (j5.list.v1.field).timestamp = {
+      sorting: {
+        sortable: true
+        default_sort: true
+      }
+      filtering: {filterable: true}
     }
   ];
 
