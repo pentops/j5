@@ -70,7 +70,6 @@ baz package, regardless of the file name.
 
 A j5s source can import a proto source, and v/v. In proto, imports specify the filename of the schema. These are converted on the fly. The filename for a j5s file, when imported from proto, is the full j5s filename followed by `.proto`, e.g. `/foo/v1/bar.j5s` can be imported as `import "/foo/v1/bar.j5s.proto".
 
-
 Schemas
 =======
 
