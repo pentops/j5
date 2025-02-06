@@ -5,12 +5,13 @@ J5 is a data schema structure, language and toolkit for defining Event-Driven AP
 
 As with all pentops tools, it is very opinionated. J5 definitions are intended to work within the wider pentops ecosystem, especially for [Messaging](https://github.com/pentops/o5-messaging) and [State Machines](https://github.com/pentops/protostate)
 
-J5 wraps a **subset** of the data types and schemas of [Protocol Buffers](https://protobuf.dev/). The goal of the project is different to Protocol Buffers, and different trade-offs are made. J5 schemas are based on [proto descriptors](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto), (leaning heavily on annotations), and can be fully represented in .proto files, but not all Protocol Buffer structures can be represented in J5.
+J5 wraps a **subset** of the data types and schemas of [Protocol Buffers](https://protobuf.dev/). The goal of the project is different to Protocol Buffers, and different trade-offs are made. J5 schemas are based on [proto descriptors](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto), 
+and can be fully represented in .proto files, (leaning heavily on annotations), but not all Protocol Buffer structures can be represented in J5.
 
 Files
 =====
 
-J5 APIs can be defined in either  `.proto` files using [proto3 syntax](https://protobuf.dev/programming-guides/proto3/), or in `.j5s` files, a config format designed specifically for designing J5 schemas and configuration.
+J5 APIs can be defined in either  `.proto` files using [proto3 syntax](https://protobuf.dev/programming-guides/proto3/), or in `.j5s` files, based on [bcl](https://github.com/pentops/bcl.go), a config format designed specifically for defining J5 schemas and configuration.
 
 J5 does not support all proto structures, so .proto files must be structured according to the rigid rules of J5, including annotations.
 
@@ -44,22 +45,30 @@ The package declaration should be the first non-comment line in the file.
 package foo.bar.v1
 ```
 
-Should be in the directory `foo/bar/v1/`.
+The file should be in the directory `/foo/bar/v1/` relative to the 'bundle
+root'.
 
-Imports are defined at the top of the file, and are relative to the package root.
+An Import declaration at the top of a file names an entire package and brings
+the package into scope by either the package name ('bar' not 'v1') or by the
+alias name.
 
-`import <package>:<alias>` imports a package, and can be aliased with a colon.
+`import <package>:<alias>`
 
 
 ```j5s
 package foo.bar.v1
 
 import foo.baz.v1:baz
+
+object Foo {
+    field bar baz.Bar
+}
 ```
 
 The prefix 'baz' can then be used to refer to Objects, Oneof and Enums in the
-baz package, regardless of the file name. (In proto, this is mapped to the file
-name which defines the type).
+baz package, regardless of the file name.
+
+A j5s source can import a proto source, and v/v. In proto, imports specify the filename of the schema. These are converted on the fly. The filename for a j5s file, when imported from proto, is the full j5s filename followed by `.proto`, e.g. `/foo/v1/bar.j5s` can be imported as `import "/foo/v1/bar.j5s.proto".
 
 
 Schemas
@@ -156,6 +165,10 @@ field fooId key:id62 {
 }
 ```
 
+When a field is an object type, the field can have the `flatten = true`
+attribute, which makes the JSON encoding of the inner object act as fields of
+the outer object. This can be used to create an 'extends' sort of pattern.
+
 #### Inline Types
 
 When a field has a type of `object`, `oneof` or `enum`, the type can be defined
@@ -237,18 +250,18 @@ oneof Foo {
 
 ```proto
 message Foo {
-    oneof type {
-        Bar bar = 1;
-        Baz baz = 2;
-    }
+  oneof type {
+    Bar bar = 1;
+    Baz baz = 2;
+  }
 
-    message Bar {
-        ...
-    }
+  message Bar {
+    ...
+  }
 
-    message Baz {
-        ...
-    }
+  message Baz {
+    ...
+  }
 }
 ```
 
@@ -284,9 +297,9 @@ These map to proto enums following the Buf rules.
 
 ```proto
 enum Status {
-    STATUS_UNSPECIFIED = 0;
-    STATUS_ACTIVE = 1;
-    STATUS_INACTIVE = 2;
+  STATUS_UNSPECIFIED = 0;
+  STATUS_ACTIVE = 1;
+  STATUS_INACTIVE = 2;
 }
 ```
 
@@ -303,9 +316,9 @@ enum Status {
 
 ```proto
 enum Status {
-    // Initial Status
-    STATUS_UNSPECIFIED = 0;
-    STATUS_ACTIVE = 1;
+  // Initial Status
+  STATUS_UNSPECIFIED = 0;
+  STATUS_ACTIVE = 1;
 }
 ```
 
@@ -377,20 +390,18 @@ over HTTP requests from the outside, and to gRPC calls internally.
 package foo.v1;
 
 service Foo {
+  basePath = "/foo/v1"
+  method Bar {
+    httpMethod = "GET"
+    httpPath = "/bar"
 
-	basePath = "/foo/v1"
+    request {
+    }
 
-	method Bar {
-		httpMethod = "GET"
-		httpPath = "/bar"
-
-		request {
-		}
-
-		response {
-            field name string
-		}
-	}
+    response {
+      field name string
+    }
+  }
 }
 ```
 
@@ -409,7 +420,7 @@ message BarRequest {
 }
 
 message BarResponse {
-    string name = 1;
+  string name = 1;
 }
 ```
 
@@ -429,9 +440,9 @@ message from one application to another.
 
 ```j5s
 topic Foo publish {
-	message PostFoo {
-		field fooId key:id62
-    }
+  message PostFoo {
+    field fooId key:id62
+  }
 }
 ```
 
@@ -498,7 +509,7 @@ service FooReplyTopic {
   rpc FooReply(FooReplyMessage) returns (google.protobuf.Empty) {}
 }
 
-ssage FooRequestMessage {
+message FooRequestMessage {
   option (j5.ext.v1.message).object = {};
 
   j5.messaging.v1.RequestMetadata request = 1 [
@@ -601,9 +612,33 @@ An Enum representing the fixed statuses the entity can be in.
 
 This becomes the `FooStatus` enum.
 
+```j5s
+entity Foo {
+  ...
+  status ACTIVE
+  status INACTIVE
+}
+```
+
+```proto
+enum FooStatus {
+  FOO_STATUS_UNSPECIFIED = 0;
+  FOO_STATUS_ACTIVE = 1;
+  FOO_STATUS_INACTIVE = 2;
+}
+```
+
 ### Events
 
 The event shapes which modify the state.
+
+Each event is specified as an object.
+
+```j5s
+event Create {
+  field name string
+}
+```
 
 The event types are represented as a single oneof 'FooEventType'.
 
@@ -845,6 +880,7 @@ service FooPublishTopic {
   rpc FooEvent(FooEventMessage) returns (google.protobuf.Empty) {}
 
 }
+
 message FooEventMessage {
   option (j5.ext.v1.message).object = {};
 
