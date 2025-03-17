@@ -31,13 +31,13 @@ message ServiceConfig {
   // The main event publishing topic for a state machine.
   message Event {
     // full name of the state machine publishing to the topic, as package.v1.name.
-    string state_machine = 1;
+    string entity_name = 1;
   }
 
   // Derived data for sharing state machine state.
   message Upsert {
     // full name of the state machine publishing the event, as package.v1.name.
-    string state_machine = 1;
+    string entity_name = 1;
   }
 }
 

@@ -44,9 +44,9 @@ func PrintServerInfo(server InfoProvider) error {
 			case *messaging_j5pb.ServiceConfig_Reply_:
 				role = "reply"
 			case *messaging_j5pb.ServiceConfig_Event_:
-				role = fmt.Sprintf("event %s", rr.Event.StateMachine)
+				role = fmt.Sprintf("event %s", rr.Event.EntityName)
 			case *messaging_j5pb.ServiceConfig_Upsert_:
-				role = fmt.Sprintf("upsert %s", rr.Upsert.StateMachine)
+				role = fmt.Sprintf("upsert %s", rr.Upsert.EntityName)
 			}
 
 			var topic string

@@ -62,8 +62,6 @@ message EventPublishMetadata {
       filtering: {filterable: true}
     }
   ];
-
-  Cause cause = 4;
 }
 
 // Events are caused by either an actor external to the boundary, an application
