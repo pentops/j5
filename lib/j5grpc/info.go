@@ -36,13 +36,17 @@ func PrintServerInfo(server InfoProvider) error {
 		serviceOpt := proto.GetExtension(desc.Options(), messaging_j5pb.E_Service).(*messaging_j5pb.ServiceConfig)
 		if serviceOpt != nil {
 			var role string
-			switch serviceOpt.Role.(type) {
+			switch rr := serviceOpt.Role.(type) {
 			case *messaging_j5pb.ServiceConfig_Publish_:
 				role = "publish"
 			case *messaging_j5pb.ServiceConfig_Request_:
 				role = "request"
 			case *messaging_j5pb.ServiceConfig_Reply_:
 				role = "reply"
+			case *messaging_j5pb.ServiceConfig_Event_:
+				role = fmt.Sprintf("event %s", rr.Event.StateMachine)
+			case *messaging_j5pb.ServiceConfig_Upsert_:
+				role = fmt.Sprintf("upsert %s", rr.Upsert.StateMachine)
 			}
 
 			var topic string
