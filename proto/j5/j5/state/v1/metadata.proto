@@ -71,7 +71,6 @@ message Cause {
     PSMEventCause psm_event = 1;
     j5.auth.v1.Action command = 2;
     ExternalEventCause external_event = 3;
-    ReplyCause reply = 4;
     InitCause init = 5;
     MessageCause message = 6;
   }
@@ -91,18 +90,6 @@ message PSMEventCause {
   // j5.state.v1.(State|Event)ObjectOptions.name
   // e.g. "foo.bar.v1.foobar" (not foo.bar.v1.FooBarState)
   string state_machine = 2;
-}
-
-// An external system replying to a side-effect request, e.g. where the
-// application sends a request to a vendor system, and the vendor replies.
-message ReplyCause {
-  PSMEventCause request = 1;
-
-  // When true, the reply was via an event input from the external system, rather than
-  // a simple request-reply like a HTTP call. This means the event was matched
-  // using lookup keys in the vendor's event, and therefore not guaranteed to be
-  // linked to the correct state machine.
-  bool async = 2;
 }
 
 // The event was caused by an external event, e.g. a webhook, a message from a queue, etc.
