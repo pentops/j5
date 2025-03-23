@@ -220,8 +220,8 @@ message StringField {}
 message IntegerField {
   Rules rules = 1;
   message Rules {
-    optional string minimum = 1;
-    optional string maximum = 2;
+    optional int64 minimum = 1;
+    optional int64 maximum = 2;
     optional bool exclusive_minimum = 3;
     optional bool exclusive_maximum = 4;
   }
