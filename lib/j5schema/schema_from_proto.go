@@ -1262,7 +1262,7 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 
 	if ext.validate != nil && ext.validate.Type != nil {
 		stringItem.Rules = &schema_j5pb.StringField_Rules{}
-		constraint := ext.validate.GetString_()
+		constraint := ext.validate.GetString()
 		if constraint == nil {
 			return nil, fmt.Errorf("constraint for string is %T", ext.validate.Type)
 		}
