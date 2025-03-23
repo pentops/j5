@@ -1,4 +1,0 @@
-version: v1
-directories:
-  - proto/j5
-  - proto/test
