@@ -1,8 +1,6 @@
 module github.com/pentops/j5
 
-go 1.23.2
-
-toolchain go1.23.4
+go 1.24
 
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.35.1-20240920164238-5a7b106cbb87.1
