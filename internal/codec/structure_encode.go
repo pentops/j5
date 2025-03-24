@@ -239,7 +239,7 @@ func (enc *encoder) encodeScalarField(scalar j5reflect.ScalarField) error {
 		return enc.addString(vt.Value)
 
 	case time.Time:
-		return enc.addString(vt.In(time.UTC).Format(time.RFC3339))
+		return enc.addString(vt.In(time.UTC).Format(time.RFC3339Nano))
 
 	default:
 		return fmt.Errorf("unsupported scalar type %T", vt)
