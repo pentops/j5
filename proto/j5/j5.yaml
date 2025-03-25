@@ -2,13 +2,14 @@
 
 packages:
   - name: j5.auth.v1
-  - name: j5.list.v1
   - name: j5.client.v1
-  - name: j5.config.v1
+  # ext contains only annotations
+  - name: j5.list.v1
+  - name: j5.messaging.v1
+  - name: j5.plugin.v1
   - name: j5.schema.v1
-  - name: j5.types.v1
+  - name: j5.source.v1
   - name: j5.state.v1
-  - name: j5.sourcedef.v1
 
 options:
   subPackages: []

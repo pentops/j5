@@ -405,6 +405,10 @@ message EntityKey {
     // primary key of another entity.
     EntityRef foreign_key = 2;
   }
+
+  // Marks the field as containing a tenant_id for the given tenant. Copies to
+  // j5.state.v1.PublishAuth.tenant_keys on publish
+  optional string tenant_key = 5;
 }
 
 message KeyFormat {
