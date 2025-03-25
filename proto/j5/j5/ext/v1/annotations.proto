@@ -24,9 +24,17 @@ extend google.protobuf.FieldOptions {
   PSMKeyFieldOptions key = 555101;
 }
 
+// Annotations for j5.schema.v1.EntityKey on a KeyField
 message PSMKeyFieldOptions {
+  // Marks the key as participating in the primary key of this entity
   bool primary_key = 1;
+
+  // Marks the field as a foreign key to the given entity.
   j5.schema.v1.EntityRef foreign_key = 2;
+
+  // Marks the field as containing a tenant_id for the given tenant. Copies to
+  // j5.state.v1.PublishAuth.tenant_keys on publish
+  optional string tenant_type = 3;
 }
 
 extend google.protobuf.ServiceOptions {

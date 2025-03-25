@@ -736,7 +736,7 @@ type ServiceConfig_Event struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// full name of the state machine publishing to the topic, as package.v1.name.
+	// full name of the state machine publishing to the topic, as package.v1.Name.
 	EntityName string `protobuf:"bytes,1,opt,name=entity_name,json=entityName,proto3" json:"entity_name,omitempty"`
 }
 
@@ -785,7 +785,7 @@ type ServiceConfig_Upsert struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// full name of the state machine publishing the event, as package.v1.name.
+	// full name of the state machine publishing the event, as package.v1.Name.
 	EntityName string `protobuf:"bytes,1,opt,name=entity_name,json=entityName,proto3" json:"entity_name,omitempty"`
 }
 

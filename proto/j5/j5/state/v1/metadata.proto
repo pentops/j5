@@ -62,6 +62,31 @@ message EventPublishMetadata {
       filtering: {filterable: true}
     }
   ];
+
+  PublishAuth auth = 4;
+}
+
+// Access control for j5.auth.v1.Claim
+message PublishAuth {
+  // matches j5.auth.v1.Claim.realm_id - the realm defines the available tenant types
+  string realm_id = 1;
+
+  // The claim must match ALL of these scopes (empty matches all claims)
+  repeated string required_scopes = 3;
+
+  // Generic event routers use custom logic for tenant heirarchy. This may be a
+  // simple filter, or could contain 'parent child' relationships where the
+  // parent may access any children, in which case both the parent and child
+  // tenant is included.
+  repeated EventTenant tenant_keys = 5;
+}
+
+message EventTenant {
+  // Matches j5.auth.v1.Claim.tenant_type
+  string tenant_type = 1;
+
+  // Matches j5.auth.v1.Claim.tenant_id
+  string tenant_id = 2;
 }
 
 // Events are caused by either an actor external to the boundary, an application
