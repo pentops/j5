@@ -1,0 +1,7 @@
+---
+packages:
+  - name: test.foo.v1
+
+options:
+  subPackages:
+    - name: "service"

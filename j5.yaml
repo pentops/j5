@@ -3,8 +3,21 @@
 bundles:
   - name: j5
     dir: proto/j5
+
   - name: test
     dir: proto/test
+
+  - name: buildtest
+    dir: proto/buildtest
+
+  - name: j5build
+    dir: proto/j5build
+
+  - name: bcl
+    dir: proto/bcl
+
+  - name: bcltest
+    dir: proto/bcltest
 
 generate:
   - name: base
@@ -20,8 +33,75 @@ generate:
       - base: go-sugar
       - base: go-grpc
 
+  - name: j5build
+    inputs:
+      - local: j5build
+      - local: buildtest
+
+    output: .
+    mods:
+      - goPackageNames: 
+          prefix: github.com/pentops/j5build/gen
+          suffixes:
+            "": "_j5pb"
+    opts:
+      paths: import
+      module: github.com/pentops/j5build
+    plugins:
+      - base: go
+      - base: go-sugar
+
+  - name: bcl
+    inputs:
+      - local: j5
+      - local: test
+    output: .
+    opts:
+      paths: import
+      module: github.com/pentops/j5
+    plugins:
+      - base: go
+      - base: go-sugar
+      - base: go-grpc
+
+  - name: j5build
+    inputs:
+      - local: j5build
+      - local: buildtest
+
+    output: .
+    mods:
+      - goPackageNames: 
+          prefix: github.com/pentops/j5build/gen
+          suffixes:
+            "": "_j5pb"
+    opts:
+      paths: import
+      module: github.com/pentops/j5build
+    plugins:
+      - base: go
+      - base: go-sugar
+
+  - name: bcl
+    inputs:
+      - local: bcl
+      - local: bcltest
+    output: .
+    mods:
+      - goPackageNames: 
+          prefix: github.com/pentops/j5build/internal/bcl/gen
+          suffixes:
+            "": "_j5pb"
+    opts:
+      paths: import
+      module: github.com/pentops/j5build
+    plugins:
+      - base: go
+      - base: go-sugar
+
 managedPaths:
  - gen
+ - internal/bcl/gen
 
 plugins:
   - name: go
@@ -37,5 +117,5 @@ plugins:
   - name: go-sugar
     type: PLUGIN_PROTO
     docker:
-      image: ghcr.io/pentops/protoc-gen-go-sugar:19495b5f5ac3fd3964a03031396d83f1bc1341ca
+      image: ghcr.io/pentops/protoc-gen-go-sugar:b1e769eeea97192209ab5a4e8fc560bf72ce5ba7
 
