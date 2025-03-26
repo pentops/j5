@@ -11,7 +11,7 @@ and can be fully represented in .proto files, (leaning heavily on annotations), 
 J5 Tool
 =======
 
-## Installation
+*Installation*:
 
 ```bash
 go install github.com/pentops/j5build/cmd/j5@latest
@@ -990,16 +990,3 @@ which relate to bundles, an optput path and a list of plugins to run.
 Each Plugin is either a PLUGIN_PROTO - meaning a protoc plugin, or J5_CLIENT
 which is j5's own version of protoc, taking the a J5 schema instead.
 
-=======
-J5 Builder
-==========
-
-Build library and CLI for J5
-
-## Installation
-
-```bash
-go install github.com/pentops/j5build/cmd/j5@latest
-go install github.com/pentops/j5build/cmd/j5-gen-go-client@latest
-```
->>>>>>> j5build/j5-merge
