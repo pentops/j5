@@ -41,43 +41,12 @@ generate:
     output: .
     mods:
       - goPackageNames: 
-          prefix: github.com/pentops/j5build/gen
+          prefix: github.com/pentops/j5/gen
           suffixes:
             "": "_j5pb"
-    opts:
-      paths: import
-      module: github.com/pentops/j5build
-    plugins:
-      - base: go
-      - base: go-sugar
-
-  - name: bcl
-    inputs:
-      - local: j5
-      - local: test
-    output: .
     opts:
       paths: import
       module: github.com/pentops/j5
-    plugins:
-      - base: go
-      - base: go-sugar
-      - base: go-grpc
-
-  - name: j5build
-    inputs:
-      - local: j5build
-      - local: buildtest
-
-    output: .
-    mods:
-      - goPackageNames: 
-          prefix: github.com/pentops/j5build/gen
-          suffixes:
-            "": "_j5pb"
-    opts:
-      paths: import
-      module: github.com/pentops/j5build
     plugins:
       - base: go
       - base: go-sugar
@@ -89,12 +58,12 @@ generate:
     output: .
     mods:
       - goPackageNames: 
-          prefix: github.com/pentops/j5build/internal/bcl/gen
+          prefix: github.com/pentops/j5/internal/bcl/gen
           suffixes:
             "": "_j5pb"
     opts:
       paths: import
-      module: github.com/pentops/j5build
+      module: github.com/pentops/j5
     plugins:
       - base: go
       - base: go-sugar

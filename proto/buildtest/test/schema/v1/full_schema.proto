@@ -5,7 +5,7 @@ package test.schema.v1;
 import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
 
-option go_package = "github.com/pentops/j5build/gen/test/schema/v1/schema_testpb";
+option go_package = "github.com/pentops/j5/gen/test/schema/v1/schema_testpb";
 
 message FullSchema {
   string s_string = 1;

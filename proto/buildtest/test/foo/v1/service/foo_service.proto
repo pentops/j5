@@ -10,7 +10,7 @@ import "j5/list/v1/page.proto";
 import "j5/list/v1/query.proto";
 import "test/foo/v1/foo.proto";
 
-option go_package = "github.com/pentops/j5build/gen/test/foo/v1/foo_testspb";
+option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testspb";
 
 service FooQueryService {
   option (j5.ext.v1.service).state_query.entity = "test.foo.v1/foo";

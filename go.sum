@@ -135,8 +135,6 @@ github.com/pentops/flowtest v0.0.0-20241110231021-42663ac00b63 h1:c/Km4mfvR35s9u
 github.com/pentops/flowtest v0.0.0-20241110231021-42663ac00b63/go.mod h1:vNp8crAKcH0f/sZU9frkmQLUeDsTIgMqV14kQtkAqC0=
 github.com/pentops/golib v0.0.0-20250107012216-1b5307b3bfe0 h1:GA2C2velp/AoojR+fsf4kFXhJ1MLg0y3H84Z2yJ6/+Q=
 github.com/pentops/golib v0.0.0-20250107012216-1b5307b3bfe0/go.mod h1:I58JIVvL1/nP4CEHGKGbBhvWIEA9mVkGeoviemaqanU=
-github.com/pentops/j5build v0.0.0-20250326050955-a75a95e0b104 h1:Zc5m0dVHcDuR/C6FfbMen4r8hWLeEtXdK03FyBQ0y1s=
-github.com/pentops/j5build v0.0.0-20250326050955-a75a95e0b104/go.mod h1:GoFko6SDFQNZoeKFulIzGcHz+v0Uii71nCphz1Kynvc=
 github.com/pentops/log.go v0.0.0-20250304233315-e0210b7a6dc3 h1:KA7Sit7rxlgdeQPGMmD/7PSnBVwjY50+C4HuWAkV3vU=
 github.com/pentops/log.go v0.0.0-20250304233315-e0210b7a6dc3/go.mod h1:yR34x8aMlvhdGvqgIU4+0MiLjJTKt0vpcgUnVN2nZV4=
 github.com/pentops/o5-messaging v0.0.0-20250317182016-de51c0e702a3 h1:xlKXoYV+A7xFxg1O4HyBSb4/k6hVc+exlEVKeoGXzCc=
@@ -261,7 +259,6 @@ golang.org/x/sys v0.0.0-20190215142949-d0b11bdaac8a/go.mod h1:STP8DvDyc/dI5b8T5h
 golang.org/x/sys v0.0.0-20190412213103-97732733099d/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20190422165155-953cdadca894/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20200930185726-fdedc70b468f/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20210616094352-59db8d763f22/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20211025201205-69cdffdb9359/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.31.0 h1:ioabZlmFYtWhL+TRYpcnNlLwhyxaM9kWTDEmfnprqik=

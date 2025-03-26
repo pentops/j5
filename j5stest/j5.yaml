@@ -7,14 +7,14 @@ generate:
   - name: test
     mods:
       - goPackageNames:
-          prefix: "github.com/pentops/j5build/j5stest/gen"
+          prefix: "github.com/pentops/j5/j5stest/gen"
           trimPrefixes: []
     inputs:
       - local: j5stest
     output: .
     opts:
       paths: import
-      module: github.com/pentops/j5build/j5stest
+      module: github.com/pentops/j5/j5stest
     plugins:
       - base: go
       - base: go-sugar

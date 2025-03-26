@@ -14,7 +14,7 @@ J5 Tool
 *Installation*:
 
 ```bash
-go install github.com/pentops/j5build/cmd/j5@latest
+go install github.com/pentops/j5/cmd/j5@latest
 ```
 
 `j5 --help` for brief usage

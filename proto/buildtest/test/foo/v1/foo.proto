@@ -7,7 +7,7 @@ import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
 import "j5/list/v1/annotations.proto";
 
-option go_package = "github.com/pentops/j5build/gen/test/foo/v1/foo_testpb";
+option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testpb";
 
 message FooKeys {
   option (j5.ext.v1.psm).entity_name = "foo";
