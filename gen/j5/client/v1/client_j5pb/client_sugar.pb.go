@@ -5,6 +5,7 @@ package client_j5pb
 import (
 	driver "database/sql/driver"
 	fmt "fmt"
+	proto "google.golang.org/protobuf/proto"
 )
 
 // MethodType is a oneof wrapper
@@ -25,6 +26,7 @@ func (x *MethodType) TypeKey() (MethodTypeKey, bool) {
 
 type IsMethodTypeWrappedType interface {
 	TypeKey() MethodTypeKey
+	proto.Message
 }
 
 func (x *MethodType) Set(val IsMethodTypeWrappedType) {

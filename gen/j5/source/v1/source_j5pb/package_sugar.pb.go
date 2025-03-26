@@ -2,6 +2,10 @@
 
 package source_j5pb
 
+import (
+	proto "google.golang.org/protobuf/proto"
+)
+
 // ServiceType is a oneof wrapper
 type ServiceTypeKey string
 
@@ -23,6 +27,7 @@ func (x *ServiceType) TypeKey() (ServiceTypeKey, bool) {
 
 type IsServiceTypeWrappedType interface {
 	TypeKey() ServiceTypeKey
+	proto.Message
 }
 
 func (x *ServiceType) Set(val IsServiceTypeWrappedType) {

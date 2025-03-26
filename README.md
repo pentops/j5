@@ -8,6 +8,17 @@ As with all pentops tools, it is very opinionated. J5 definitions are intended t
 J5 wraps a **subset** of the data types and schemas of [Protocol Buffers](https://protobuf.dev/). The goal of the project is different to Protocol Buffers, and different trade-offs are made. J5 schemas are based on [proto descriptors](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto), 
 and can be fully represented in .proto files, (leaning heavily on annotations), but not all Protocol Buffer structures can be represented in J5.
 
+J5 Tool
+=======
+
+*Installation*:
+
+```bash
+go install github.com/pentops/j5/cmd/j5@latest
+```
+
+`j5 --help` for brief usage
+
 Files
 =====
 

@@ -2,6 +2,10 @@
 
 package auth_j5pb
 
+import (
+	proto "google.golang.org/protobuf/proto"
+)
+
 // MethodAuthType is a oneof wrapper
 type MethodAuthTypeKey string
 
@@ -29,6 +33,7 @@ func (x *MethodAuthType) TypeKey() (MethodAuthTypeKey, bool) {
 
 type IsMethodAuthTypeWrappedType interface {
 	TypeKey() MethodAuthTypeKey
+	proto.Message
 }
 
 func (x *MethodAuthType) Set(val IsMethodAuthTypeWrappedType) {
