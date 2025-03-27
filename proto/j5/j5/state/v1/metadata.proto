@@ -70,9 +70,6 @@ message EventPublishMetadata {
 
 // Access control for j5.auth.v1.Claim
 message PublishAuth {
-  // matches j5.auth.v1.Claim.realm_id - the realm defines the available tenant types
-  string realm_id = 1;
-
   // The claim must match ALL of these scopes (empty matches all claims)
   repeated string required_scopes = 3;
 
