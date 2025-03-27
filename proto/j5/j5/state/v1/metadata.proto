@@ -64,7 +64,8 @@ message EventPublishMetadata {
     }
   ];
 
-  PublishAuth auth = 4;
+  Cause cause = 4;
+  PublishAuth auth = 5;
 }
 
 // Access control for j5.auth.v1.Claim
