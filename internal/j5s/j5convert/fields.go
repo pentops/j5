@@ -611,6 +611,9 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 			case *schema_j5pb.EntityKey_ForeignKey:
 				entityExt.ForeignKey = et.ForeignKey
 			}
+			if st.Key.Entity.TenantKey != nil {
+				entityExt.TenantType = st.Key.Entity.TenantKey
+			}
 			proto.SetExtension(desc.Options, ext_j5pb.E_Key, entityExt)
 		}
 
