@@ -9,6 +9,7 @@ import (
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
+	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 )
@@ -156,6 +157,7 @@ func (ent *entityNode) acceptStatus(visitor FileVisitor) error {
 	if err != nil {
 		return wrapErr(ent.Source, err)
 	}
+
 	return visitor.VisitEnum(node)
 }
 
@@ -163,11 +165,61 @@ func (ent *entityNode) innerRef(name string) *schema_j5pb.Field {
 	return schemaRefField("", ent.componentName(name))
 }
 
+func (ent *entityNode) findStatus(end string) (string, bool) {
+	for _, status := range ent.Schema.Status {
+		if status.Name == end {
+			return fmt.Sprintf("%s_STATUS_%s",
+				strcase.ToScreamingSnake(ent.Schema.Name),
+				strcase.ToScreamingSnake(status.Name),
+			), true
+		}
+	}
+	return "", false
+}
+
 func (ent *entityNode) acceptState(visitor FileVisitor) error {
 	entity := ent.Schema
 
 	objKeys := schemaRefField("", ent.componentName("Keys"))
 	objKeys.GetObject().Flatten = true
+
+	statusEnumField := &schema_j5pb.EnumField{
+		Schema: &schema_j5pb.EnumField_Ref{
+			Ref: &schema_j5pb.Ref{
+				Schema: ent.componentName("Status"),
+			},
+		},
+		ListRules: &list_j5pb.EnumRules{
+			Filtering: &list_j5pb.FilteringConstraint{
+				Filterable: true,
+			},
+		},
+	}
+
+	if ent.Schema.Query != nil {
+		filters := make([]string, 0, len(ent.Schema.Query.DefaultStatusFilter))
+		for _, filter := range ent.Schema.Query.DefaultStatusFilter {
+			status, ok := ent.findStatus(filter)
+			if !ok {
+				return walkerErrorf("status %q not found in entity %q", filter, entity.Name)
+			}
+			filters = append(filters, status)
+		}
+		if len(ent.Schema.Query.DefaultStatusFilter) > 0 {
+			statusEnumField.ListRules.Filtering.DefaultFilters = filters
+		}
+	}
+
+	statusField := &schema_j5pb.ObjectProperty{
+		Name:       "status",
+		ProtoField: []int32{4},
+		Required:   true,
+		Schema: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_Enum{
+				Enum: statusEnumField,
+			},
+		},
+	}
 
 	state := &schema_j5pb.Object{
 		Name: strcase.ToCamel(entity.Name + "State"),
@@ -190,23 +242,9 @@ func (ent *entityNode) acceptState(visitor FileVisitor) error {
 			ProtoField: []int32{3},
 			Required:   true,
 			Schema:     ent.innerRef("Data"),
-		}, {
-			Name:       "status",
-			ProtoField: []int32{4},
-			Required:   true,
-			Schema: &schema_j5pb.Field{
-				Type: &schema_j5pb.Field_Enum{
-					Enum: &schema_j5pb.EnumField{
-						Schema: &schema_j5pb.EnumField_Ref{
-							Ref: &schema_j5pb.Ref{
-								Schema: ent.componentName("Status"),
-							},
-						},
-					},
-				},
-			},
-		}},
-	}
+		},
+			statusField,
+		}}
 
 	node, err := newObjectSchemaNode(ent.Source.child("state"), nil, state)
 	if err != nil {
@@ -304,6 +342,11 @@ func (ent *entityNode) acceptEvent(visitor FileVisitor) error {
 						Schema: &schema_j5pb.OneofField_Ref{
 							Ref: &schema_j5pb.Ref{
 								Schema: ent.componentName("EventType"),
+							},
+						},
+						ListRules: &list_j5pb.OneofRules{
+							Filtering: &list_j5pb.FilteringConstraint{
+								Filterable: true,
 							},
 						},
 					},
@@ -533,107 +576,140 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 		}
 
 	}
+	getMethod := &sourcedef_j5pb.APIMethod{
+		Name:       fmt.Sprintf("%sGet", strcase.ToCamel(name)),
+		HttpPath:   strings.Join(httpPath, "/"),
+		HttpMethod: client_j5pb.HTTPMethod_GET,
+		Request: &sourcedef_j5pb.AnonymousObject{
+			Properties: getKeys,
+		},
+
+		Response: &sourcedef_j5pb.AnonymousObject{
+			Properties: []*schema_j5pb.ObjectProperty{{
+				Name:       strcase.ToLowerCamel(name),
+				ProtoField: []int32{1},
+				Schema:     ent.innerRef("State"),
+				Required:   true,
+			}},
+		},
+		Options: &ext_j5pb.MethodOptions{
+			StateQuery: &ext_j5pb.StateQueryMethodOptions{
+				Get: true,
+			},
+		},
+	}
+
+	listMethod := &sourcedef_j5pb.APIMethod{
+		Name:       fmt.Sprintf("%sList", strcase.ToCamel(name)),
+		HttpPath:   strings.Join(listHttpPath, "/"),
+		HttpMethod: client_j5pb.HTTPMethod_GET,
+		Request: &sourcedef_j5pb.AnonymousObject{
+			Properties: append(listKeys, &schema_j5pb.ObjectProperty{
+				Name:       "page",
+				ProtoField: []int32{100},
+				Schema:     schemaRefField("j5.list.v1", "PageRequest"),
+			}, &schema_j5pb.ObjectProperty{
+				Name:       "query",
+				ProtoField: []int32{101},
+				Schema:     schemaRefField("j5.list.v1", "QueryRequest"),
+			}),
+		},
+		Response: &sourcedef_j5pb.AnonymousObject{
+			Properties: []*schema_j5pb.ObjectProperty{{
+				Name:       strcase.ToLowerCamel(name),
+				ProtoField: []int32{1},
+				Schema: &schema_j5pb.Field{
+					Type: &schema_j5pb.Field_Array{
+						Array: &schema_j5pb.ArrayField{
+							Items: ent.innerRef("State"),
+						},
+					},
+				},
+				Required: true,
+			}, {
+				Name:       "page",
+				ProtoField: []int32{100},
+				Schema:     schemaRefField("j5.list.v1", "PageResponse"),
+			}},
+		},
+		Options: &ext_j5pb.MethodOptions{
+			StateQuery: &ext_j5pb.StateQueryMethodOptions{
+				List: true,
+			},
+		},
+	}
+
+	eventsMethod := &sourcedef_j5pb.APIMethod{
+		Name:       fmt.Sprintf("%sEvents", strcase.ToCamel(name)),
+		HttpPath:   strings.Join(append(httpPath, "events"), "/"),
+		HttpMethod: client_j5pb.HTTPMethod_GET,
+		Request: &sourcedef_j5pb.AnonymousObject{
+			Properties: append(getKeys, &schema_j5pb.ObjectProperty{
+				Name:       "page",
+				ProtoField: []int32{100},
+				Schema:     schemaRefField("j5.list.v1", "PageRequest"),
+			}, &schema_j5pb.ObjectProperty{
+				Name:       "query",
+				ProtoField: []int32{101},
+				Schema:     schemaRefField("j5.list.v1", "QueryRequest"),
+			}),
+		},
+		Response: &sourcedef_j5pb.AnonymousObject{
+			Properties: []*schema_j5pb.ObjectProperty{{
+				Name:       "events",
+				ProtoField: []int32{1},
+				Schema: &schema_j5pb.Field{
+					Type: &schema_j5pb.Field_Array{
+						Array: &schema_j5pb.ArrayField{
+							Items: ent.innerRef("Event"),
+						},
+					},
+				},
+			}, {
+				Name:       "page",
+				ProtoField: []int32{100},
+				Schema:     schemaRefField("j5.list.v1", "PageResponse"),
+			}},
+		},
+		Options: &ext_j5pb.MethodOptions{
+			StateQuery: &ext_j5pb.StateQueryMethodOptions{
+				ListEvents: true,
+			},
+		},
+	}
+
+	if ent.Schema.Query != nil {
+		if ent.Schema.Query.EventsInGet {
+			getMethod.Response.Properties = append(getMethod.Response.Properties, &schema_j5pb.ObjectProperty{
+				Name:       "events",
+				ProtoField: []int32{2},
+				Schema: &schema_j5pb.Field{
+					Type: &schema_j5pb.Field_Array{
+						Array: &schema_j5pb.ArrayField{
+							Items: ent.innerRef("Event"),
+						},
+					},
+				},
+			})
+		}
+
+		if ent.Schema.Query.ListRequest != nil {
+			listMethod.ListRequest = ent.Schema.Query.ListRequest
+		}
+
+		if ent.Schema.Query.EventsListRequest != nil {
+			eventsMethod.ListRequest = ent.Schema.Query.EventsListRequest
+		}
+	}
 
 	query := &sourcedef_j5pb.Service{
 		BasePath: gl.Ptr(fmt.Sprintf("/%s/q", entity.BaseUrlPath)),
 		Name:     gl.Ptr(fmt.Sprintf("%sQuery", strcase.ToCamel(name))),
-		Methods: []*sourcedef_j5pb.APIMethod{{
-			Name:       fmt.Sprintf("%sGet", strcase.ToCamel(name)),
-			HttpPath:   strings.Join(httpPath, "/"),
-			HttpMethod: client_j5pb.HTTPMethod_GET,
-			Request: &sourcedef_j5pb.AnonymousObject{
-				Properties: getKeys,
-			},
-
-			Response: &sourcedef_j5pb.AnonymousObject{
-				Properties: []*schema_j5pb.ObjectProperty{{
-					Name:       strcase.ToLowerCamel(name),
-					ProtoField: []int32{1},
-					Schema:     ent.innerRef("State"),
-					Required:   true,
-				}},
-			},
-			Options: &ext_j5pb.MethodOptions{
-				StateQuery: &ext_j5pb.StateQueryMethodOptions{
-					Get: true,
-				},
-			},
-		}, {
-			Name:       fmt.Sprintf("%sList", strcase.ToCamel(name)),
-			HttpPath:   strings.Join(listHttpPath, "/"),
-			HttpMethod: client_j5pb.HTTPMethod_GET,
-			Request: &sourcedef_j5pb.AnonymousObject{
-				Properties: append(listKeys, &schema_j5pb.ObjectProperty{
-					Name:       "page",
-					ProtoField: []int32{100},
-					Schema:     schemaRefField("j5.list.v1", "PageRequest"),
-				}, &schema_j5pb.ObjectProperty{
-					Name:       "query",
-					ProtoField: []int32{101},
-					Schema:     schemaRefField("j5.list.v1", "QueryRequest"),
-				}),
-			},
-			Response: &sourcedef_j5pb.AnonymousObject{
-				Properties: []*schema_j5pb.ObjectProperty{{
-					Name:       strcase.ToLowerCamel(name),
-					ProtoField: []int32{1},
-					Schema: &schema_j5pb.Field{
-						Type: &schema_j5pb.Field_Array{
-							Array: &schema_j5pb.ArrayField{
-								Items: ent.innerRef("State"),
-							},
-						},
-					},
-					Required: true,
-				}, {
-					Name:       "page",
-					ProtoField: []int32{100},
-					Schema:     schemaRefField("j5.list.v1", "PageResponse"),
-				}},
-			},
-			Options: &ext_j5pb.MethodOptions{
-				StateQuery: &ext_j5pb.StateQueryMethodOptions{
-					List: true,
-				},
-			},
-		}, {
-			Name:       fmt.Sprintf("%sEvents", strcase.ToCamel(name)),
-			HttpPath:   strings.Join(append(httpPath, "events"), "/"),
-			HttpMethod: client_j5pb.HTTPMethod_GET,
-			Request: &sourcedef_j5pb.AnonymousObject{
-				Properties: append(getKeys, &schema_j5pb.ObjectProperty{
-					Name:       "page",
-					ProtoField: []int32{100},
-					Schema:     schemaRefField("j5.list.v1", "PageRequest"),
-				}, &schema_j5pb.ObjectProperty{
-					Name:       "query",
-					ProtoField: []int32{101},
-					Schema:     schemaRefField("j5.list.v1", "QueryRequest"),
-				}),
-			},
-			Response: &sourcedef_j5pb.AnonymousObject{
-				Properties: []*schema_j5pb.ObjectProperty{{
-					Name:       "events",
-					ProtoField: []int32{1},
-					Schema: &schema_j5pb.Field{
-						Type: &schema_j5pb.Field_Array{
-							Array: &schema_j5pb.ArrayField{
-								Items: ent.innerRef("Event"),
-							},
-						},
-					},
-				}, {
-					Name:       "page",
-					ProtoField: []int32{100},
-					Schema:     schemaRefField("j5.list.v1", "PageResponse"),
-				}},
-			},
-			Options: &ext_j5pb.MethodOptions{
-				StateQuery: &ext_j5pb.StateQueryMethodOptions{
-					ListEvents: true,
-				},
-			},
-		}},
+		Methods: []*sourcedef_j5pb.APIMethod{
+			getMethod,
+			listMethod,
+			eventsMethod,
+		},
 		Options: &ext_j5pb.ServiceOptions{
 			Type: &ext_j5pb.ServiceOptions_StateQuery_{
 				StateQuery: &ext_j5pb.ServiceOptions_StateQuery{

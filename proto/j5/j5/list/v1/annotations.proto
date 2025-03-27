@@ -48,6 +48,7 @@ message FieldConstraint {
     StringRules string = 14;
 
     EnumRules enum = 20;
+    OneofRules oneof = 21;
 
     TimestampRules timestamp = 30;
     DateRules date = 31;

@@ -217,6 +217,15 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 			ww.file.ensureImport(bufValidateImport)
 		}
 
+		if st.Oneof.ListRules != nil {
+			ww.file.ensureImport(j5ListAnnotationsImport)
+			proto.SetExtension(desc.Options, list_j5pb.E_Field, &list_j5pb.FieldConstraint{
+				Type: &list_j5pb.FieldConstraint_Oneof{
+					Oneof: st.Oneof.ListRules,
+				},
+			})
+		}
+
 		return desc, nil
 
 	case *schema_j5pb.Field_Enum:
@@ -555,7 +564,35 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		}
 
 		if st.Integer.ListRules != nil {
-			return nil, fmt.Errorf("TODO: integer list rules not implemented")
+			ww.file.ensureImport(j5ListAnnotationsImport)
+			switch st.Integer.Format {
+			case schema_j5pb.IntegerField_FORMAT_INT32:
+				proto.SetExtension(desc.Options, list_j5pb.E_Field, &list_j5pb.FieldConstraint{
+					Type: &list_j5pb.FieldConstraint_Int32{
+						Int32: st.Integer.ListRules,
+					},
+				})
+			case schema_j5pb.IntegerField_FORMAT_INT64:
+				proto.SetExtension(desc.Options, list_j5pb.E_Field, &list_j5pb.FieldConstraint{
+					Type: &list_j5pb.FieldConstraint_Int64{
+						Int64: st.Integer.ListRules,
+					},
+				})
+			case schema_j5pb.IntegerField_FORMAT_UINT32:
+				proto.SetExtension(desc.Options, list_j5pb.E_Field, &list_j5pb.FieldConstraint{
+					Type: &list_j5pb.FieldConstraint_Uint32{
+						Uint32: st.Integer.ListRules,
+					},
+				})
+			case schema_j5pb.IntegerField_FORMAT_UINT64:
+				proto.SetExtension(desc.Options, list_j5pb.E_Field, &list_j5pb.FieldConstraint{
+					Type: &list_j5pb.FieldConstraint_Uint64{
+						Uint64: st.Integer.ListRules,
+					},
+				})
+			default:
+				return nil, fmt.Errorf("unknown integer format %v", st.Integer.Format)
+			}
 		}
 
 		return desc, nil
@@ -665,6 +702,19 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				},
 			}
 			proto.SetExtension(desc.Options, validate.E_Field, rules)
+		}
+
+		if st.String_.ListRules != nil {
+			ww.file.ensureImport(j5ListAnnotationsImport)
+			proto.SetExtension(desc.Options, list_j5pb.E_Field, &list_j5pb.FieldConstraint{
+				Type: &list_j5pb.FieldConstraint_String_{
+					String_: &list_j5pb.StringRules{
+						WellKnown: &list_j5pb.StringRules_OpenText{
+							OpenText: st.String_.ListRules,
+						},
+					},
+				},
+			})
 		}
 		return desc, nil
 

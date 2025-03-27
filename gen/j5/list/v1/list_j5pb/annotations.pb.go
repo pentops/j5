@@ -183,6 +183,7 @@ type FieldConstraint struct {
 	//	*FieldConstraint_Bool
 	//	*FieldConstraint_String_
 	//	*FieldConstraint_Enum
+	//	*FieldConstraint_Oneof
 	//	*FieldConstraint_Timestamp
 	//	*FieldConstraint_Date
 	//	*FieldConstraint_Decimal
@@ -334,6 +335,13 @@ func (x *FieldConstraint) GetEnum() *EnumRules {
 	return nil
 }
 
+func (x *FieldConstraint) GetOneof() *OneofRules {
+	if x, ok := x.GetType().(*FieldConstraint_Oneof); ok {
+		return x.Oneof
+	}
+	return nil
+}
+
 func (x *FieldConstraint) GetTimestamp() *TimestampRules {
 	if x, ok := x.GetType().(*FieldConstraint_Timestamp); ok {
 		return x.Timestamp
@@ -426,6 +434,10 @@ type FieldConstraint_Enum struct {
 	Enum *EnumRules `protobuf:"bytes,20,opt,name=enum,proto3,oneof"`
 }
 
+type FieldConstraint_Oneof struct {
+	Oneof *OneofRules `protobuf:"bytes,21,opt,name=oneof,proto3,oneof"`
+}
+
 type FieldConstraint_Timestamp struct {
 	Timestamp *TimestampRules `protobuf:"bytes,30,opt,name=timestamp,proto3,oneof"`
 }
@@ -471,6 +483,8 @@ func (*FieldConstraint_Bool) isFieldConstraint_Type() {}
 func (*FieldConstraint_String_) isFieldConstraint_Type() {}
 
 func (*FieldConstraint_Enum) isFieldConstraint_Type() {}
+
+func (*FieldConstraint_Oneof) isFieldConstraint_Type() {}
 
 func (*FieldConstraint_Timestamp) isFieldConstraint_Type() {}
 
@@ -1459,7 +1473,7 @@ var file_j5_list_v1_annotations_proto_rawDesc = []byte{
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76,
 	0x31, 0x2e, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67, 0x43, 0x6f, 0x6e, 0x73, 0x74,
 	0x72, 0x61, 0x69, 0x6e, 0x74, 0x52, 0x09, 0x66, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x69, 0x6e, 0x67,
-	0x22, 0xe1, 0x07, 0x0a, 0x0f, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x43, 0x6f, 0x6e, 0x73, 0x74, 0x72,
+	0x22, 0x91, 0x08, 0x0a, 0x0f, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x43, 0x6f, 0x6e, 0x73, 0x74, 0x72,
 	0x61, 0x69, 0x6e, 0x74, 0x12, 0x30, 0x0a, 0x06, 0x64, 0x6f, 0x75, 0x62, 0x6c, 0x65, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76,
 	0x31, 0x2e, 0x46, 0x6c, 0x6f, 0x61, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x48, 0x00, 0x52, 0x06,
@@ -1508,7 +1522,10 @@ var file_j5_list_v1_annotations_proto_rawDesc = []byte{
 	0x73, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x12, 0x2b, 0x0a, 0x04, 0x65, 0x6e, 0x75, 0x6d, 0x18, 0x14,
 	0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76,
 	0x31, 0x2e, 0x45, 0x6e, 0x75, 0x6d, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x48, 0x00, 0x52, 0x04, 0x65,
-	0x6e, 0x75, 0x6d, 0x12, 0x3a, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70,
+	0x6e, 0x75, 0x6d, 0x12, 0x2e, 0x0a, 0x05, 0x6f, 0x6e, 0x65, 0x6f, 0x66, 0x18, 0x15, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x16, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e,
+	0x4f, 0x6e, 0x65, 0x6f, 0x66, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x48, 0x00, 0x52, 0x05, 0x6f, 0x6e,
+	0x65, 0x6f, 0x66, 0x12, 0x3a, 0x0a, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70,
 	0x18, 0x1e, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74,
 	0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x75, 0x6c,
 	0x65, 0x73, 0x48, 0x00, 0x52, 0x09, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x12,
@@ -1714,44 +1731,45 @@ var file_j5_list_v1_annotations_proto_depIdxs = []int32{
 	9,  // 13: j5.list.v1.FieldConstraint.bool:type_name -> j5.list.v1.BoolRules
 	10, // 14: j5.list.v1.FieldConstraint.string:type_name -> j5.list.v1.StringRules
 	16, // 15: j5.list.v1.FieldConstraint.enum:type_name -> j5.list.v1.EnumRules
-	17, // 16: j5.list.v1.FieldConstraint.timestamp:type_name -> j5.list.v1.TimestampRules
-	12, // 17: j5.list.v1.FieldConstraint.date:type_name -> j5.list.v1.DateRules
-	18, // 18: j5.list.v1.FieldConstraint.decimal:type_name -> j5.list.v1.DecimalRules
-	19, // 19: j5.list.v1.FieldConstraint.any:type_name -> j5.list.v1.AnyRules
-	4,  // 20: j5.list.v1.IntegerRules.filtering:type_name -> j5.list.v1.FilteringConstraint
-	5,  // 21: j5.list.v1.IntegerRules.sorting:type_name -> j5.list.v1.SortingConstraint
-	4,  // 22: j5.list.v1.FloatRules.filtering:type_name -> j5.list.v1.FilteringConstraint
-	5,  // 23: j5.list.v1.FloatRules.sorting:type_name -> j5.list.v1.SortingConstraint
-	4,  // 24: j5.list.v1.BoolRules.filtering:type_name -> j5.list.v1.FilteringConstraint
-	11, // 25: j5.list.v1.StringRules.open_text:type_name -> j5.list.v1.OpenTextRules
-	12, // 26: j5.list.v1.StringRules.date:type_name -> j5.list.v1.DateRules
-	13, // 27: j5.list.v1.StringRules.foreign_key:type_name -> j5.list.v1.ForeignKeyRules
-	6,  // 28: j5.list.v1.OpenTextRules.searching:type_name -> j5.list.v1.SearchingConstraint
-	4,  // 29: j5.list.v1.DateRules.filtering:type_name -> j5.list.v1.FilteringConstraint
-	15, // 30: j5.list.v1.ForeignKeyRules.unique_string:type_name -> j5.list.v1.KeyRules
-	15, // 31: j5.list.v1.ForeignKeyRules.uuid:type_name -> j5.list.v1.KeyRules
-	15, // 32: j5.list.v1.ForeignKeyRules.id62:type_name -> j5.list.v1.KeyRules
-	4,  // 33: j5.list.v1.UniqueStringRules.filtering:type_name -> j5.list.v1.FilteringConstraint
-	4,  // 34: j5.list.v1.KeyRules.filtering:type_name -> j5.list.v1.FilteringConstraint
-	4,  // 35: j5.list.v1.EnumRules.filtering:type_name -> j5.list.v1.FilteringConstraint
-	4,  // 36: j5.list.v1.TimestampRules.filtering:type_name -> j5.list.v1.FilteringConstraint
-	5,  // 37: j5.list.v1.TimestampRules.sorting:type_name -> j5.list.v1.SortingConstraint
-	4,  // 38: j5.list.v1.DecimalRules.filtering:type_name -> j5.list.v1.FilteringConstraint
-	5,  // 39: j5.list.v1.DecimalRules.sorting:type_name -> j5.list.v1.SortingConstraint
-	4,  // 40: j5.list.v1.AnyRules.filtering:type_name -> j5.list.v1.FilteringConstraint
-	20, // 41: j5.list.v1.message:extendee -> google.protobuf.MessageOptions
-	20, // 42: j5.list.v1.list_request:extendee -> google.protobuf.MessageOptions
-	21, // 43: j5.list.v1.field:extendee -> google.protobuf.FieldOptions
-	22, // 44: j5.list.v1.oneof:extendee -> google.protobuf.OneofOptions
-	0,  // 45: j5.list.v1.message:type_name -> j5.list.v1.MessageConstraint
-	1,  // 46: j5.list.v1.list_request:type_name -> j5.list.v1.ListRequestMessage
-	3,  // 47: j5.list.v1.field:type_name -> j5.list.v1.FieldConstraint
-	2,  // 48: j5.list.v1.oneof:type_name -> j5.list.v1.OneofRules
-	49, // [49:49] is the sub-list for method output_type
-	49, // [49:49] is the sub-list for method input_type
-	45, // [45:49] is the sub-list for extension type_name
-	41, // [41:45] is the sub-list for extension extendee
-	0,  // [0:41] is the sub-list for field type_name
+	2,  // 16: j5.list.v1.FieldConstraint.oneof:type_name -> j5.list.v1.OneofRules
+	17, // 17: j5.list.v1.FieldConstraint.timestamp:type_name -> j5.list.v1.TimestampRules
+	12, // 18: j5.list.v1.FieldConstraint.date:type_name -> j5.list.v1.DateRules
+	18, // 19: j5.list.v1.FieldConstraint.decimal:type_name -> j5.list.v1.DecimalRules
+	19, // 20: j5.list.v1.FieldConstraint.any:type_name -> j5.list.v1.AnyRules
+	4,  // 21: j5.list.v1.IntegerRules.filtering:type_name -> j5.list.v1.FilteringConstraint
+	5,  // 22: j5.list.v1.IntegerRules.sorting:type_name -> j5.list.v1.SortingConstraint
+	4,  // 23: j5.list.v1.FloatRules.filtering:type_name -> j5.list.v1.FilteringConstraint
+	5,  // 24: j5.list.v1.FloatRules.sorting:type_name -> j5.list.v1.SortingConstraint
+	4,  // 25: j5.list.v1.BoolRules.filtering:type_name -> j5.list.v1.FilteringConstraint
+	11, // 26: j5.list.v1.StringRules.open_text:type_name -> j5.list.v1.OpenTextRules
+	12, // 27: j5.list.v1.StringRules.date:type_name -> j5.list.v1.DateRules
+	13, // 28: j5.list.v1.StringRules.foreign_key:type_name -> j5.list.v1.ForeignKeyRules
+	6,  // 29: j5.list.v1.OpenTextRules.searching:type_name -> j5.list.v1.SearchingConstraint
+	4,  // 30: j5.list.v1.DateRules.filtering:type_name -> j5.list.v1.FilteringConstraint
+	15, // 31: j5.list.v1.ForeignKeyRules.unique_string:type_name -> j5.list.v1.KeyRules
+	15, // 32: j5.list.v1.ForeignKeyRules.uuid:type_name -> j5.list.v1.KeyRules
+	15, // 33: j5.list.v1.ForeignKeyRules.id62:type_name -> j5.list.v1.KeyRules
+	4,  // 34: j5.list.v1.UniqueStringRules.filtering:type_name -> j5.list.v1.FilteringConstraint
+	4,  // 35: j5.list.v1.KeyRules.filtering:type_name -> j5.list.v1.FilteringConstraint
+	4,  // 36: j5.list.v1.EnumRules.filtering:type_name -> j5.list.v1.FilteringConstraint
+	4,  // 37: j5.list.v1.TimestampRules.filtering:type_name -> j5.list.v1.FilteringConstraint
+	5,  // 38: j5.list.v1.TimestampRules.sorting:type_name -> j5.list.v1.SortingConstraint
+	4,  // 39: j5.list.v1.DecimalRules.filtering:type_name -> j5.list.v1.FilteringConstraint
+	5,  // 40: j5.list.v1.DecimalRules.sorting:type_name -> j5.list.v1.SortingConstraint
+	4,  // 41: j5.list.v1.AnyRules.filtering:type_name -> j5.list.v1.FilteringConstraint
+	20, // 42: j5.list.v1.message:extendee -> google.protobuf.MessageOptions
+	20, // 43: j5.list.v1.list_request:extendee -> google.protobuf.MessageOptions
+	21, // 44: j5.list.v1.field:extendee -> google.protobuf.FieldOptions
+	22, // 45: j5.list.v1.oneof:extendee -> google.protobuf.OneofOptions
+	0,  // 46: j5.list.v1.message:type_name -> j5.list.v1.MessageConstraint
+	1,  // 47: j5.list.v1.list_request:type_name -> j5.list.v1.ListRequestMessage
+	3,  // 48: j5.list.v1.field:type_name -> j5.list.v1.FieldConstraint
+	2,  // 49: j5.list.v1.oneof:type_name -> j5.list.v1.OneofRules
+	50, // [50:50] is the sub-list for method output_type
+	50, // [50:50] is the sub-list for method input_type
+	46, // [46:50] is the sub-list for extension type_name
+	42, // [42:46] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_j5_list_v1_annotations_proto_init() }
@@ -2017,6 +2035,7 @@ func file_j5_list_v1_annotations_proto_init() {
 		(*FieldConstraint_Bool)(nil),
 		(*FieldConstraint_String_)(nil),
 		(*FieldConstraint_Enum)(nil),
+		(*FieldConstraint_Oneof)(nil),
 		(*FieldConstraint_Timestamp)(nil),
 		(*FieldConstraint_Date)(nil),
 		(*FieldConstraint_Decimal)(nil),

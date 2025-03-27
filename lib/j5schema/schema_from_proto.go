@@ -144,6 +144,11 @@ func jsonFieldName(s protoreflect.Name) string {
 	return strcase.ToLowerCamel(string(s))
 }
 
+func IsOneofWrapper(msg protoreflect.MessageDescriptor) bool {
+	msgOptions := proto.GetExtension(msg.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+	return isOneofWrapper(msg, msgOptions)
+}
+
 func isOneofWrapper(src protoreflect.MessageDescriptor, options *ext_j5pb.MessageOptions) bool {
 	if options != nil {
 
