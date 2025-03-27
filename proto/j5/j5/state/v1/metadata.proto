@@ -7,6 +7,7 @@ import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/auth/v1/actor.proto";
 import "j5/list/v1/annotations.proto";
+import "j5/messaging/v1/cause.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/state/v1/psm_j5pb";
 
@@ -95,9 +96,10 @@ message Cause {
   oneof type {
     PSMEventCause psm_event = 1;
     j5.auth.v1.Action command = 2;
-    ExternalEventCause external_event = 3;
+    j5.messaging.v1.MessageCause message = 3;
+
+    ExternalEventCause external_event = 4;
     InitCause init = 5;
-    MessageCause message = 6;
   }
 }
 
@@ -131,17 +133,4 @@ message ExternalEventCause {
   // Do not make up IDs from the// current system time or random
   // Leave nil if an acceptable unique ID is not available.
   optional string external_id = 3;
-}
-
-// The event was caused by an o5 message
-message MessageCause {
-  string method = 1 [(buf.validate.field).required = true];
-
-  string message_id = 2;
-
-  // Then o5.application.name which sent the message
-  string source_app = 3;
-
-  // The o5.environment.full_name which sent the message
-  string source_env = 4;
 }
