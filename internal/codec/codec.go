@@ -2,6 +2,7 @@ package codec
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/pentops/j5/j5types/any_j5t"
 	"github.com/pentops/j5/lib/j5reflect"
@@ -54,6 +55,10 @@ func NewCodec(opts ...CodecOption) *Codec {
 
 func (c *Codec) JSONToProto(jsonData []byte, msg protoreflect.Message) error {
 	return c.decode(jsonData, msg)
+}
+
+func (c *Codec) QueryToProto(queryString url.Values, msg protoreflect.Message) error {
+	return c.decodeQuery(queryString, msg)
 }
 
 func (c *Codec) ProtoToJSON(msg protoreflect.Message) ([]byte, error) {
