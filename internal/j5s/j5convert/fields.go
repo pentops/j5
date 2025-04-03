@@ -112,6 +112,10 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 		ww.setJ5Ext(node.Source, fieldDesc.Options, "array", st.Array.Ext)
 
 		validateExt := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldConstraints)
+
+		// Add validation rules based on the type of the array regardless of array
+		// rules being specified. This is specifically to cover cases where types
+		// are created from other primitives, like id62 having a string validation.
 		if validateExt != nil {
 			repeated := &validate.RepeatedRules{
 				Items: validateExt,
