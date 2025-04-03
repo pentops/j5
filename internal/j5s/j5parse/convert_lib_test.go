@@ -192,6 +192,31 @@ func basicKey() *schema_j5pb.Field_Key {
 	}
 }
 
+func basicId62Key() *schema_j5pb.Field_Key {
+	return &schema_j5pb.Field_Key{
+		Key: &schema_j5pb.KeyField{
+			Format: &schema_j5pb.KeyFormat{
+				Type: &schema_j5pb.KeyFormat_Id62{
+					Id62: &schema_j5pb.KeyFormat_ID62{},
+				},
+			},
+		},
+	}
+}
+
+func basicArrayOf(itemSchema *schema_j5pb.Field, mod ...func(s *schema_j5pb.ArrayField)) *schema_j5pb.Field_Array {
+	base := &schema_j5pb.Field_Array{
+		Array: &schema_j5pb.ArrayField{
+			Items: itemSchema,
+		},
+	}
+	for _, m := range mod {
+		m(base.Array)
+	}
+
+	return base
+}
+
 func (f *fieldBuild) refObject(pkg string, name string) {
 	f.prop.Schema = &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Object{

@@ -111,16 +111,28 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 
 		ww.setJ5Ext(node.Source, fieldDesc.Options, "array", st.Array.Ext)
 
-		if st.Array.Rules != nil {
+		validateExt := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldConstraints)
+
+		// Add validation rules based on the type of the array regardless of array
+		// rules being specified. This is specifically to cover cases where types
+		// are created from other primitives, like id62 having a string validation.
+		if validateExt != nil {
+			repeated := &validate.RepeatedRules{
+				Items: validateExt,
+			}
+
+			if st.Array.Rules != nil {
+				repeated.MinItems = st.Array.Rules.MinItems
+				repeated.MaxItems = st.Array.Rules.MaxItems
+				repeated.Unique = st.Array.Rules.UniqueItems
+			}
+
 			rules := &validate.FieldConstraints{
 				Type: &validate.FieldConstraints_Repeated{
-					Repeated: &validate.RepeatedRules{
-						MinItems: st.Array.Rules.MinItems,
-						MaxItems: st.Array.Rules.MaxItems,
-						Unique:   st.Array.Rules.UniqueItems,
-					},
+					Repeated: repeated,
 				},
 			}
+
 			proto.SetExtension(fieldDesc.Options, validate.E_Field, rules)
 			ww.file.ensureImport(bufValidateImport)
 		}
