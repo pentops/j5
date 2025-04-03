@@ -238,17 +238,23 @@ func TestUnmarshal(t *testing.T) {
 			name: "object",
 			json: `{
 				"sBar": {
-					"barId": "barId"
+					"barId": "barId",
+					"barField": "field"
 				}
 			}`,
 			queries: []url.Values{{
-				"sBar.barId": []string{"barId"},
+				"sBar.barId":    []string{"barId"},
+				"sBar.barField": []string{"field"},
 			}, {
-				"sBar": []string{`{"barId": "barId"}`},
+				"sBar": []string{`{"barId": "barId", "barField": "field"}`},
+			}, {
+				"s_bar.bar_id":    []string{"barId"},
+				"s_bar.bar_field": []string{"field"},
 			}},
 			wantProto: &schema_testpb.FullSchema{
 				SBar: &schema_testpb.Bar{
-					BarId: "barId",
+					BarId:    "barId",
+					BarField: "field",
 				},
 			},
 		}, {

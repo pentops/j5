@@ -127,6 +127,7 @@ enum Enum {
 
 message Bar {
   string bar_id = 10; // not using 1 or 2 to force any bugs relating to MapEntry which does have fields 1 and 2
+  string bar_field = 11;
 }
 
 message Baz {

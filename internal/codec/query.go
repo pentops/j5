@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/lib/j5reflect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -14,14 +15,24 @@ import (
 func propertyAtPath(root j5reflect.Root, path string) (j5reflect.Property, error) {
 	parts := strings.Split(path, ".")
 	pathParts, tail := parts[:len(parts)-1], parts[len(parts)-1]
+	tail = strcase.ToLowerCamel(tail)
 	for _, part := range pathParts {
+		part = strcase.ToLowerCamel(part)
 		prop, err := root.GetProperty(part)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("unknown property %q", part))
 		}
-		field, err := prop.CreateField()
-		if err != nil {
-			return nil, err
+		var field j5reflect.Field
+		if prop.IsSet() {
+			field, err = prop.Field()
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			field, err = prop.CreateField()
+			if err != nil {
+				return nil, err
+			}
 		}
 
 		if propSet, ok := field.AsContainer(); ok {
