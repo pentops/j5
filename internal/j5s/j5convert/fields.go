@@ -114,11 +114,9 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 		var rules *validate.RepeatedRules
 		validateExt := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldConstraints)
 		if validateExt != nil {
-			if rules == nil {
-				rules = &validate.RepeatedRules{}
+			rules = &validate.RepeatedRules{
+				Items: validateExt,
 			}
-
-			rules.Items = validateExt
 		}
 
 		if st.Array.Rules != nil {
