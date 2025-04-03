@@ -78,6 +78,20 @@ func TestObjectField(t *testing.T) {
 
 }
 
+func TestArrayObjectField(t *testing.T) {
+	file := build()
+	obj := file.addObject("FooListRequest")
+	fooIDs := obj.addField("foo_ids")
+	fooIDs.setSchema(basicArrayOf(&schema_j5pb.Field{Type: basicId62Key()}))
+	fooIDs.setRequired()
+
+	file.run(t, strings.Join([]string{
+		`object FooListRequest {`,
+		`  field foo_ids ! array:key:id62`,
+		`}`,
+	}, "\n"))
+}
+
 func TestEmptyOneofBody(t *testing.T) {
 
 	file := build()

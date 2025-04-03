@@ -111,17 +111,34 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 
 		ww.setJ5Ext(node.Source, fieldDesc.Options, "array", st.Array.Ext)
 
+		var rules *validate.RepeatedRules
+		validateExt := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldConstraints)
+		if validateExt != nil {
+			if rules == nil {
+				rules = &validate.RepeatedRules{}
+			}
+
+			rules.Items = validateExt
+		}
+
 		if st.Array.Rules != nil {
-			rules := &validate.FieldConstraints{
+			if rules == nil {
+				rules = &validate.RepeatedRules{}
+			}
+
+			rules.MinItems = st.Array.Rules.MinItems
+			rules.MaxItems = st.Array.Rules.MaxItems
+			rules.Unique = st.Array.Rules.UniqueItems
+		}
+
+		if rules != nil {
+			constraints := &validate.FieldConstraints{
 				Type: &validate.FieldConstraints_Repeated{
-					Repeated: &validate.RepeatedRules{
-						MinItems: st.Array.Rules.MinItems,
-						MaxItems: st.Array.Rules.MaxItems,
-						Unique:   st.Array.Rules.UniqueItems,
-					},
+					Repeated: rules,
 				},
 			}
-			proto.SetExtension(fieldDesc.Options, validate.E_Field, rules)
+
+			proto.SetExtension(fieldDesc.Options, validate.E_Field, constraints)
 			ww.file.ensureImport(bufValidateImport)
 		}
 
