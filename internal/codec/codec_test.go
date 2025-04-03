@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -51,6 +52,8 @@ func TestUnmarshal(t *testing.T) {
 		wantProto    proto.Message
 		json         string
 		altInputJSON []string // when set, the output can be different to the input, but all outputs should be the same
+
+		queries []url.Values
 	}{
 		{
 			name: "strings",
@@ -60,6 +63,11 @@ func TestUnmarshal(t *testing.T) {
 				"oString": "otherNameVal",
 				"rString": ["r1", "r2"]
 			}`,
+			queries: []url.Values{{
+				"sString": []string{"nameVal"},
+				"oString": []string{"otherNameVal"},
+				"rString": []string{"r1", "r2"},
+			}},
 			wantProto: &schema_testpb.FullSchema{
 				SString: "nameVal",
 				OString: proto.String("otherNameVal"),
@@ -77,6 +85,11 @@ func TestUnmarshal(t *testing.T) {
 				"oFloat": "2.2",
 				"rFloat": ["3.3", "4.4"]
 			}`},
+			queries: []url.Values{{
+				"sFloat": []string{"1.1"},
+				"oFloat": []string{"2.2"},
+				"rFloat": []string{"3.3", "4.4"},
+			}},
 			wantProto: &schema_testpb.FullSchema{
 				SFloat: 1.1,
 				OFloat: proto.Float32(2.2),
@@ -222,11 +235,25 @@ func TestUnmarshal(t *testing.T) {
 				},
 			},
 		}, {
-			name: "objects",
+			name: "object",
 			json: `{
 				"sBar": {
 					"barId": "barId"
+				}
+			}`,
+			queries: []url.Values{{
+				"sBar.barId": []string{"barId"},
+			}, {
+				"sBar": []string{`{"barId": "barId"}`},
+			}},
+			wantProto: &schema_testpb.FullSchema{
+				SBar: &schema_testpb.Bar{
+					BarId: "barId",
 				},
+			},
+		}, {
+			name: "array of objects",
+			json: `{
 				"rBars": [{
 					"barId": "bar1"
 				}, {
@@ -234,9 +261,6 @@ func TestUnmarshal(t *testing.T) {
 				}]
 			}`,
 			wantProto: &schema_testpb.FullSchema{
-				SBar: &schema_testpb.Bar{
-					BarId: "barId",
-				},
 				RBars: []*schema_testpb.Bar{{
 					BarId: "bar1",
 				}, {
@@ -490,6 +514,28 @@ func TestUnmarshal(t *testing.T) {
 				logIndent(t, "output", string(encoded))
 
 				CompareJSON(t, []byte(tc.json), encoded)
+			}
+
+			for _, query := range tc.queries {
+
+				msg := tc.wantProto.ProtoReflect().New().Interface()
+				if err := codec.QueryToProto(query, msg.ProtoReflect()); err != nil {
+					t.Fatalf("JSONToProto: %s", err)
+				}
+
+				t.Logf("GOT proto: %s \n%v\n", msg.ProtoReflect().Descriptor().FullName(), prototext.Format(msg))
+
+				if !proto.Equal(tc.wantProto, msg) {
+					a := prototext.Format(tc.wantProto)
+					t.Fatalf("FATAL: Expected proto %s\n%v\n", tc.wantProto.ProtoReflect().Descriptor().FullName(), string(a))
+				}
+
+				encoded, err := codec.ProtoToJSON(msg.ProtoReflect())
+				if err != nil {
+					t.Fatalf("FATAL: ProtoToJSON: %s", err)
+				}
+
+				logIndent(t, "output", string(encoded))
 			}
 
 		})

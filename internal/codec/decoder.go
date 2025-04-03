@@ -15,16 +15,20 @@ import (
 )
 
 func (c *Codec) decode(jsonData []byte, msg protoreflect.Message) error {
+	root, err := c.refl.NewRoot(msg)
+	if err != nil {
+		return err
+	}
+
+	return c.decodeRoot(jsonData, root)
+}
+
+func (c *Codec) decodeRoot(jsonData []byte, root j5reflect.Root) error {
 	dec := json.NewDecoder(bytes.NewReader(jsonData))
 	dec.UseNumber()
 	d2 := &decoder{
 		jd:    dec,
 		codec: c,
-	}
-
-	root, err := c.refl.NewRoot(msg)
-	if err != nil {
-		return err
 	}
 
 	switch schema := root.(type) {
