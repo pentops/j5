@@ -144,29 +144,51 @@ func TestSchemaToProto(t *testing.T) {
 				Def: &schema_j5pb.Object{
 					Name:        "Referenced",
 					Description: "Message Comment",
-					Properties: []*schema_j5pb.ObjectProperty{{
-						Name:        "field1",
-						Description: "Field Comment",
-						Schema: &schema_j5pb.Field{
-							Type: &schema_j5pb.Field_String_{
-								String_: &schema_j5pb.StringField{},
+					Properties: []*schema_j5pb.ObjectProperty{
+						{
+							Name:        "field1",
+							Description: "Field Comment",
+							Schema: &schema_j5pb.Field{
+								Type: &schema_j5pb.Field_String_{
+									String_: &schema_j5pb.StringField{},
+								},
 							},
 						},
-					}, {
-						Name: "enum",
-						Schema: &schema_j5pb.Field{
-							Type: &schema_j5pb.Field_Enum{
-								Enum: &schema_j5pb.EnumField{
-									Schema: &schema_j5pb.EnumField_Ref{
-										Ref: &schema_j5pb.Ref{
-											Package: "",
-											Schema:  "TestEnum",
+						{
+							Name: "enum",
+							Schema: &schema_j5pb.Field{
+								Type: &schema_j5pb.Field_Enum{
+									Enum: &schema_j5pb.EnumField{
+										Schema: &schema_j5pb.EnumField_Ref{
+											Ref: &schema_j5pb.Ref{
+												Package: "",
+												Schema:  "TestEnum",
+											},
 										},
 									},
 								},
 							},
 						},
-					}},
+						{
+							Name:        "array",
+							Description: "Field Comment",
+							Schema: &schema_j5pb.Field{
+								Type: &schema_j5pb.Field_Array{
+									Array: &schema_j5pb.ArrayField{
+										Items: &schema_j5pb.Field{
+											Type: &schema_j5pb.Field_String_{
+												String_: &schema_j5pb.StringField{
+													Rules: &schema_j5pb.StringField_Rules{
+														MinLength: proto.Uint64(1),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
@@ -177,13 +199,16 @@ func TestSchemaToProto(t *testing.T) {
 			Enum: &schema_j5pb.Enum{
 				Name:   "TestEnum",
 				Prefix: "TEST_ENUM_",
-				Options: []*schema_j5pb.Enum_Option{{
-					Name:   "UNSPECIFIED",
-					Number: 0,
-				}, {
-					Name:   "FOO",
-					Number: 1,
-				}},
+				Options: []*schema_j5pb.Enum_Option{
+					{
+						Name:   "UNSPECIFIED",
+						Number: 0,
+					},
+					{
+						Name:   "FOO",
+						Number: 1,
+					},
+				},
 			},
 		},
 	}
@@ -210,26 +235,49 @@ func TestSchemaToProto(t *testing.T) {
 		Package: proto.String("test.v1"),
 		MessageType: []*descriptorpb.DescriptorProto{{
 			Name: proto.String("Referenced"),
-			Field: []*descriptorpb.FieldDescriptorProto{{
-				Name:     proto.String("field_1"),
-				Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
-				Number:   proto.Int32(1),
-				Options:  tEmptyTypeExt(t, "string"),
-				JsonName: proto.String("field1"),
-			}, {
-				Name:     proto.String("enum"),
-				Type:     descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
-				Number:   proto.Int32(2),
-				TypeName: proto.String(".test.v1.TestEnum"),
-				Options: withOption(tEmptyTypeExt(t, "enum"), validate.E_Field, &validate.FieldConstraints{
-					Type: &validate.FieldConstraints_Enum{
-						Enum: &validate.EnumRules{
-							DefinedOnly: gl.Ptr(true),
+			Field: []*descriptorpb.FieldDescriptorProto{
+				{
+					Name:     proto.String("field_1"),
+					Type:     descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+					Number:   proto.Int32(1),
+					Options:  tEmptyTypeExt(t, "string"),
+					JsonName: proto.String("field1"),
+				},
+				{
+					Name:     proto.String("enum"),
+					Type:     descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
+					Number:   proto.Int32(2),
+					TypeName: proto.String(".test.v1.TestEnum"),
+					Options: withOption(tEmptyTypeExt(t, "enum"), validate.E_Field, &validate.FieldConstraints{
+						Type: &validate.FieldConstraints_Enum{
+							Enum: &validate.EnumRules{
+								DefinedOnly: gl.Ptr(true),
+							},
 						},
-					},
-				}),
-				JsonName: proto.String("enum"),
-			}},
+					}),
+					JsonName: proto.String("enum"),
+				},
+				{
+					Name:   proto.String("array"),
+					Type:   descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
+					Label:  descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
+					Number: proto.Int32(3),
+					Options: withOption(tEmptyTypeExt(t, "array"), validate.E_Field, &validate.FieldConstraints{
+						Type: &validate.FieldConstraints_Repeated{
+							Repeated: &validate.RepeatedRules{
+								Items: &validate.FieldConstraints{
+									Type: &validate.FieldConstraints_String_{
+										String_: &validate.StringRules{
+											MinLen: proto.Uint64(1),
+										},
+									},
+								},
+							},
+						},
+					}),
+					JsonName: proto.String("array"),
+				},
+			},
 			Options: emptyObjectOption,
 		}},
 		EnumType: []*descriptorpb.EnumDescriptorProto{{
