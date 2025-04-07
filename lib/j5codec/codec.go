@@ -4,6 +4,8 @@ import (
 	"github.com/pentops/j5/internal/codec"
 )
 
+var GlobalCodec = codec.GlobalCodec
+
 type Codec = codec.Codec
 
 type Option = codec.CodecOption
