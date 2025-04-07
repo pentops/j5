@@ -11,7 +11,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
-var GlobalCodec = NewCodec()
+var Global = NewCodec()
 
 // MessageTypeResolver is a subset of protoregistry.MessageTypeResolver
 type MessageTypeResolver interface {
