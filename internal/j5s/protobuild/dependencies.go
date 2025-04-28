@@ -22,8 +22,8 @@ func dependencyChainResolver(deps DependencySet) (fileSource, error) {
 	return resolver, nil
 }
 
-var fileNotFoundError = fmt.Errorf("file not found")
-var packageNotFoundError = fmt.Errorf("package not found")
+var errFileNotFound = fmt.Errorf("file not found")
+var errPackageNotFound = fmt.Errorf("package not found")
 
 type DependencySet interface {
 	ListDependencyFiles(root string) []string
@@ -112,7 +112,7 @@ func (br *builtinResolver) packageFiles(pkgName string) ([]string, error) {
 	root := strings.ReplaceAll(pkgName, ".", "/") + "/"
 	isBuiltin := br.hasRoot(root)
 	if !isBuiltin {
-		return nil, packageNotFoundError
+		return nil, errPackageNotFound
 	}
 	files := []string{}
 	protoregistry.GlobalFiles.RangeFilesByPackage(protoreflect.FullName(pkgName), func(refl protoreflect.FileDescriptor) bool {
@@ -126,7 +126,7 @@ func (br *builtinResolver) packageFiles(pkgName string) ([]string, error) {
 
 func (br *builtinResolver) findFileByPath(filename string) (*SearchResult, error) {
 	if !br.hasRoot(filename) {
-		return nil, fileNotFoundError
+		return nil, errFileNotFound
 	}
 
 	refl, err := protoregistry.GlobalFiles.FindFileByPath(filename)
@@ -162,14 +162,14 @@ func (rc *resolverCache) packageFiles(pkgName string) ([]string, error) {
 	for _, source := range rc.sources {
 		files, err := source.packageFiles(pkgName)
 		if err != nil {
-			if err == packageNotFoundError {
+			if err == errPackageNotFound {
 				continue // try next source
 			}
 			return nil, err
 		}
 		return files, nil
 	}
-	return nil, packageNotFoundError
+	return nil, errPackageNotFound
 }
 
 func (rc *resolverCache) findFileByPath(filename string) (*SearchResult, error) {
@@ -180,7 +180,7 @@ func (rc *resolverCache) findFileByPath(filename string) (*SearchResult, error) 
 	for _, source := range rc.sources {
 		file, err := source.findFileByPath(filename)
 		if err != nil {
-			if err == fileNotFoundError {
+			if err == errFileNotFound {
 				continue // try next source
 			}
 			return nil, err
@@ -189,5 +189,5 @@ func (rc *resolverCache) findFileByPath(filename string) (*SearchResult, error) 
 		return file, nil
 	}
 
-	return nil, fileNotFoundError
+	return nil, errFileNotFound
 }

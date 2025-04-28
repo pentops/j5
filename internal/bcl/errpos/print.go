@@ -60,19 +60,19 @@ func humanString(err *Err, lines []string, context int) string {
 			return
 		}
 
-		out.WriteString(fmt.Sprintf("Position: %s\n", err.Pos.String()))
+		fmt.Fprintf(out, "Position: %s\n", err.Pos.String())
 
 		if err.Pos.Start.isEmpty() {
 			return
 		}
-		out.WriteString(fmt.Sprintf("LIT: %d %d\n", err.Pos.Start.Line, err.Pos.Start.Column))
+		fmt.Fprintf(out, "LIT: %d %d\n", err.Pos.Start.Line, err.Pos.Start.Column)
 
 		pos := *err.Pos
 
 		startLine := pos.Start.Line + 1
 		startCol := pos.Start.Column + 1
 		if startLine > len(lines) {
-			out.WriteString(fmt.Sprintf("<line %d out of range (len %d) - a>", startLine, len(lines)))
+			fmt.Fprintf(out, "<line %d out of range (len %d) - a>", startLine, len(lines))
 			out.WriteString("\n")
 			return
 		}
@@ -82,14 +82,14 @@ func humanString(err *Err, lines []string, context int) string {
 				continue
 			}
 			line := lines[lineNum-1]
-			out.WriteString(fmt.Sprintf("  > %03d: ", lineNum))
+			fmt.Fprintf(out, "  > %03d: ", lineNum)
 			out.WriteString(tabsToSpaces(line))
 			out.WriteString("\n")
 			context--
 		}
 
 		if startLine > len(lines) || startLine < 1 {
-			out.WriteString(fmt.Sprintf("<line %d out of range (len %d) - b>", startLine, len(lines)))
+			fmt.Fprintf(out, "<line %d out of range (len %d) - b>", startLine, len(lines))
 			out.WriteString("\n")
 			return
 		}

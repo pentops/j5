@@ -44,7 +44,7 @@ func SourceSummary(sourceFile *sourcedef_j5pb.SourceFile, ec ErrCollector) (*Fil
 	for _, refSrc := range cc.refs {
 		expanded := importMap.expand(refSrc.Ref)
 		if expanded == nil {
-			err := fmt.Errorf("package %q not imported (for schema %s)", refSrc.Ref.Package, refSrc.Ref.Schema)
+			err := fmt.Errorf("package %q not imported (for schema %s)", refSrc.Package, refSrc.Schema)
 			err = errpos.AddContext(err, strings.Join(refSrc.Source.Path, "."))
 			loc := refSrc.Source.GetPos()
 			if loc != nil {

@@ -21,7 +21,7 @@ func ParseFile(input string, failFast bool) (*File, error) {
 
 	tree, err := Walk(tokens, failFast)
 	if err != nil {
-		if err == HadErrors {
+		if err == ErrWalker {
 			return tree, errpos.AddSource(tree.Errors, input)
 		}
 		return tree, fmt.Errorf("unexpected walk error: %w", err)
@@ -59,7 +59,7 @@ func Walk(tokens []Token, failFast bool) (*File, error) {
 	if len(ww.errors) > 0 {
 		return &File{
 			Errors: ww.errors,
-		}, HadErrors
+		}, ErrWalker
 	}
 
 	return fragmentsToFile(fragments)
@@ -113,7 +113,7 @@ func fragmentsToFile(fragments []Fragment) (*File, error) {
 
 		case CloseBlock:
 			if currentBlock.parent == nil {
-				pos := s.SourceNode.Position()
+				pos := s.Position()
 				ff.Errors = append(ff.Errors, &errpos.Err{
 					Pos: &pos,
 					Err: errors.New("unexpected close block"),
@@ -137,7 +137,7 @@ func fragmentsToFile(fragments []Fragment) (*File, error) {
 	}
 
 	if len(ff.Errors) > 0 {
-		return ff, HadErrors
+		return ff, ErrWalker
 	}
 
 	return ff, nil
@@ -181,10 +181,8 @@ func (ww *Walker) peekType(offset int) TokenType {
 
 func (ww *Walker) walkFragments() ([]Fragment, error) {
 	fragments := make([]Fragment, 0)
-	for {
-		if ww.nextType() == EOF {
-			break
-		}
+	for ww.nextType() != EOF {
+
 		fragment, err := ww.nextFragment()
 		if err != nil {
 			if err := ww.recoverError(err); err != nil {
@@ -204,7 +202,7 @@ func (ww *Walker) recoverError(err *unexpectedTokenError) error {
 	ww.addError(err)
 
 	if ww.failFast {
-		return HadErrors
+		return ErrWalker
 
 	}
 
@@ -291,12 +289,12 @@ func (ww *Walker) popValue() (Value, *unexpectedTokenError) {
 			token: Token{
 				Type:  STRING,
 				Lit:   ref.String(),
-				Start: ref.SourceNode.Start,
-				End:   ref.SourceNode.End,
+				Start: ref.Start,
+				End:   ref.End,
 			},
 			SourceNode: SourceNode{
-				Start: ref.SourceNode.Start,
-				End:   ref.SourceNode.End,
+				Start: ref.Start,
+				End:   ref.End,
 			},
 		}, nil
 	}
@@ -449,8 +447,8 @@ func (ww *Walker) popTag() (TagValue, *unexpectedTokenError) {
 			MarkToken: markToken,
 			Reference: &ref,
 			SourceNode: SourceNode{
-				Start: ref.SourceNode.Start,
-				End:   ref.SourceNode.End,
+				Start: ref.Start,
+				End:   ref.End,
 			},
 		}, nil
 
@@ -464,8 +462,8 @@ func (ww *Walker) popTag() (TagValue, *unexpectedTokenError) {
 			MarkToken: markToken,
 			Value:     &refStr,
 			SourceNode: SourceNode{
-				Start: refStr.SourceNode.Start,
-				End:   refStr.SourceNode.End,
+				Start: refStr.Start,
+				End:   refStr.End,
 			},
 		}, nil
 
@@ -486,7 +484,7 @@ func (ww *Walker) walkStatement() (Fragment, *unexpectedTokenError) {
 		return nil, err
 	}
 
-	start := ref.SourceNode.Start
+	start := ref.Start
 
 	// Assignments can only take one LHS argument
 	if ww.nextType() == ASSIGN {
@@ -621,7 +619,7 @@ func (ww *Walker) walkValueAssign(ref Reference) (Assignment, *unexpectedTokenEr
 	assign := Assignment{
 		Key: ref,
 		SourceNode: SourceNode{
-			Start: ref.SourceNode.Start,
+			Start: ref.Start,
 		},
 	}
 

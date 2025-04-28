@@ -96,7 +96,7 @@ func collectFmtFragments(input string) ([]FmtDiff, error) {
 	}
 	fragments, err := ww.walkFragments()
 	if err != nil {
-		if err == HadErrors {
+		if err == ErrWalker {
 			return nil, errpos.AddSource(ww.errors, input)
 		}
 

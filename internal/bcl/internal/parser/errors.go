@@ -8,7 +8,7 @@ import (
 	"github.com/pentops/j5/internal/bcl/errpos"
 )
 
-var HadErrors = fmt.Errorf("had errors, see Walker.Errors")
+var ErrWalker = fmt.Errorf("had errors, see Walker.Errors")
 
 func unexpectedToken(tok Token, expected ...TokenType) *unexpectedTokenError {
 	return &unexpectedTokenError{

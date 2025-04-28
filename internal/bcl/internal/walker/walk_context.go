@@ -42,7 +42,7 @@ type Context interface {
 
 	setContainerFromScalar(bs schema.BlockSpec, vals parser.ASTValue) error
 
-	Logf(format string, args ...interface{})
+	Logf(format string, args ...any)
 	WrapErr(err error, pos HasPosition) error
 }
 
@@ -63,7 +63,7 @@ type walkContext struct {
 }
 
 func newSchemaError(err error) error {
-	return fmt.Errorf("Schema Error): %w", err)
+	return fmt.Errorf("schema error: %w", err)
 }
 
 type pathElement struct {
@@ -469,15 +469,15 @@ func (wc *walkContext) WrapErr(err error, pos HasPosition) error {
 	return err
 }
 
-type logger func(format string, args ...interface{})
+type logger func(format string, args ...any)
 
 func prefixer(parent logger, prefix string) logger {
-	return func(format string, args ...interface{}) {
+	return func(format string, args ...any) {
 		parent(prefix+format+"\n", args...)
 	}
 }
 
-func (wc *walkContext) Logf(format string, args ...interface{}) {
+func (wc *walkContext) Logf(format string, args ...any) {
 	if !wc.verbose {
 		return
 	}

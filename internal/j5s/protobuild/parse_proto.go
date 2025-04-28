@@ -23,7 +23,7 @@ func hasAPrefix(s string, prefixes []string) bool {
 	return false
 }
 
-var ErrNotFound = errors.New("File not found")
+var ErrNotFound = errors.New("file not found")
 
 func protoToDescriptor(_ context.Context, filename string, data []byte, errs *ErrCollector) (proto_parser.Result, *j5convert.FileSummary, error) {
 

@@ -64,24 +64,24 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 	switch t := schema.Type.(type) {
 
 	case *schema_j5pb.Field_Any:
-		out.SchemaItem.Type = &AnySchemaItem{
+		out.Type = &AnySchemaItem{
 			AdditionalProperties: true,
 		}
 
 	case *schema_j5pb.Field_String_:
-		out.SchemaItem.Type = convertStringItem(t.String_)
+		out.Type = convertStringItem(t.String_)
 
 	case *schema_j5pb.Field_Integer:
-		out.SchemaItem.Type = convertIntegerItem(t.Integer)
+		out.Type = convertIntegerItem(t.Integer)
 
 	case *schema_j5pb.Field_Float:
-		out.SchemaItem.Type = convertFloatItem(t.Float)
+		out.Type = convertFloatItem(t.Float)
 
 	case *schema_j5pb.Field_Bool:
-		out.SchemaItem.Type = convertBooleanItem(t.Bool)
+		out.Type = convertBooleanItem(t.Bool)
 
 	case *schema_j5pb.Field_Array:
-		out.SchemaItem.Type, err = convertArrayItem(t.Array)
+		out.Type, err = convertArrayItem(t.Array)
 		if err != nil {
 			return nil, err
 		}
@@ -89,7 +89,7 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 	case *schema_j5pb.Field_Enum:
 		switch t := t.Enum.Schema.(type) {
 		case *schema_j5pb.EnumField_Enum:
-			out.SchemaItem.Type = convertEnumItem(t.Enum).Type
+			out.Type = convertEnumItem(t.Enum).Type
 
 		case *schema_j5pb.EnumField_Ref:
 			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
@@ -107,7 +107,7 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 				return nil, err
 			}
 
-			out.SchemaItem.Type = item.Type
+			out.Type = item.Type
 
 		case *schema_j5pb.ObjectField_Ref:
 			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
@@ -125,7 +125,7 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 				return nil, err
 			}
 
-			out.SchemaItem.Type = item.Type
+			out.Type = item.Type
 		case *schema_j5pb.OneofField_Ref:
 			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
 			out.Ref = &refStr
@@ -135,7 +135,7 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 		}
 
 	case *schema_j5pb.Field_Map:
-		out.SchemaItem.Type, err = convertMapItem(t.Map)
+		out.Type, err = convertMapItem(t.Map)
 		if err != nil {
 			return nil, err
 		}

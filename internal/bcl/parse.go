@@ -54,7 +54,7 @@ func (p *Parser) ParseFile(filename string, data string, msg protoreflect.Messag
 
 	tree, err := parser.ParseFile(data, p.FailFast)
 	if err != nil {
-		if err == parser.HadErrors {
+		if err == parser.ErrWalker {
 			return nil, errpos.AddSourceFile(tree.Errors, filename, data)
 		}
 		return nil, fmt.Errorf("parse file not HadErrors - : %w", err)
