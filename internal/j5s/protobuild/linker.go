@@ -15,22 +15,10 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-type searchLinker struct {
-	symbols  *linker.Symbols
-	Reporter reporter.Reporter
-	resolver fileSource
-}
-
-func newLinker(src fileSource, errs reporter.Reporter) *searchLinker {
-	return &searchLinker{
-		symbols:  &linker.Symbols{},
-		Reporter: errs,
-		resolver: src,
-	}
-}
-
 type SearchResult struct {
 	Summary *j5convert.FileSummary
+
+	SourceType SourceType
 
 	// Results are checked in lexical order
 	Linked      linker.File
@@ -39,16 +27,56 @@ type SearchResult struct {
 	ParseResult *parser.Result
 }
 
+type SourceType int
+
+const (
+	LocalJ5Source SourceType = iota
+	LocalProtoSource
+	BuiltInProtoSource
+	ExternalProtoSource
+)
+
+var sourceTypeNames = map[SourceType]string{
+	LocalJ5Source:       "Local J5",
+	LocalProtoSource:    "Local Proto",
+	BuiltInProtoSource:  "Built-in Proto",
+	ExternalProtoSource: "External Proto",
+}
+
+func (st SourceType) String() string {
+	if name, ok := sourceTypeNames[st]; ok {
+		return name
+	}
+	return fmt.Sprintf("Unknown SourceType %d", st)
+}
+
 type fileSource interface {
-	findFileByPath(ctx context.Context, filename string) (*SearchResult, error)
+	findFileByPath(filename string) (*SearchResult, error)
+	packageFiles(pkgName string) ([]string, error)
+}
+
+type searchLinker struct {
+	symbols  *linker.Symbols
+	Reporter reporter.Reporter
+	resolver fileSource // usually *PackageSet
+}
+
+func newLinker(src fileSource, errs reporter.Reporter) *searchLinker {
+	symbols := &linker.Symbols{}
+
+	return &searchLinker{
+		symbols:  symbols,
+		Reporter: errs,
+		resolver: src,
+	}
 }
 
 func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) (linker.Files, error) {
 	files := make(linker.Files, 0, len(filenames))
 	for _, filename := range filenames {
-		file, err := ll.resolveFile(ctx, filename)
+		file, err := ll._resolveFile(ctx, filename)
 		if err != nil {
-			return nil, fmt.Errorf("resolve file %s: %w", filename, err)
+			return nil, fmt.Errorf("linker, resolve file %s: %w", filename, err)
 		}
 
 		files = append(files, file)
@@ -57,9 +85,9 @@ func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) (lin
 	return files, nil
 }
 
-func (ll *searchLinker) resolveFile(ctx context.Context, filename string) (linker.File, error) {
+func (ll *searchLinker) _resolveFile(ctx context.Context, filename string) (linker.File, error) {
 	ctx = log.WithField(ctx, "askFilename", filename)
-	result, err := ll.resolver.findFileByPath(ctx, filename)
+	result, err := ll.resolver.findFileByPath(filename)
 	if err != nil {
 		return nil, fmt.Errorf("findFileByPath: %w", err)
 	}
@@ -69,10 +97,12 @@ func (ll *searchLinker) resolveFile(ctx context.Context, filename string) (linke
 
 func (ll *searchLinker) linkResult(ctx context.Context, result *SearchResult) (linker.File, error) {
 	if result.Linked != nil {
-		log.WithField(ctx, "sourceFilename", result.Summary.SourceFilename).Debug("pre-linked")
 		return result.Linked, nil
 	}
-	log.WithField(ctx, "sourceFilename", result.Summary.SourceFilename).Debug("link-new")
+	log.WithField(ctx,
+		"sourceFilename", result.Summary.SourceFilename,
+		"sourceType", result.SourceType.String(),
+	).Debug("link-new")
 
 	linked, err := ll._linkNewResult(ctx, result)
 	if err != nil {
@@ -80,38 +110,54 @@ func (ll *searchLinker) linkResult(ctx context.Context, result *SearchResult) (l
 	}
 
 	result.Linked = linked
-
+	err = ll.symbols.Import(linked, reporter.NewHandler(ll.Reporter))
+	if err != nil {
+		return nil, fmt.Errorf("importing new file into symbols: %w", err)
+	}
 	return linked, nil
 
 }
 
 func (ll *searchLinker) _linkNewResult(ctx context.Context, result *SearchResult) (linker.File, error) {
 	if result.Refl != nil {
-		return linker.NewFileRecursive(result.Refl)
+		file, err := ll._linkReflection(ctx, result.Refl)
+		if err != nil {
+			return nil, fmt.Errorf("linking Refl: %w", err)
+		}
+		return file, nil
 	}
 
 	if result.Desc != nil {
-		return ll._descriptorToFile(ctx, result.Desc)
+		file, err := ll._linkDescriptorProto(ctx, result.Desc)
+		if err != nil {
+			return nil, fmt.Errorf("linking Desc: %w", err)
+		}
+		return file, nil
 	}
 
 	if result.ParseResult != nil {
-		return ll.resultToFile(ctx, *result.ParseResult)
+		file, err := ll._linkParserResult(ctx, *result.ParseResult)
+		if err != nil {
+			return nil, fmt.Errorf("linking ParseResult: %w", err)
+		}
+		return file, nil
 	}
 
-	return nil, fmt.Errorf("Had no result")
+	return nil, fmt.Errorf("search result type not unknown")
 }
 
-func (ll *searchLinker) resultToFile(ctx context.Context, result parser.Result) (linker.File, error) {
+func (ll *searchLinker) _linkParserResult(ctx context.Context, result parser.Result) (linker.File, error) {
 	desc := result.FileDescriptorProto()
-	deps, err := ll.loadDependencies(ctx, desc)
+	deps, err := ll.resolveAll(ctx, desc.Dependency)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("loading dependencies for %s: %w", desc.GetName(), err)
 	}
 
 	handler := reporter.NewHandler(ll.Reporter)
+
 	linked, err := linker.Link(result, deps, ll.symbols, handler)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("linking using protocompile linker: %w", err)
 	}
 
 	_, err = options.InterpretOptions(linked, handler)
@@ -123,24 +169,30 @@ func (ll *searchLinker) resultToFile(ctx context.Context, result parser.Result) 
 	return linked, nil
 }
 
-func (ll *searchLinker) loadDependencies(ctx context.Context, desc *descriptorpb.FileDescriptorProto) (linker.Files, error) {
-	deps := make(linker.Files, 0, len(desc.Dependency))
-	for _, dep := range desc.Dependency {
-		ll, err := ll.resolveFile(ctx, dep)
-		if err != nil {
-			return nil, fmt.Errorf("resolve %s: %w", dep, err)
-		}
-
-		deps = append(deps, ll)
+func (ll *searchLinker) _linkReflection(ctx context.Context, refl protoreflect.FileDescriptor) (linker.File, error) {
+	imports := refl.Imports()
+	importFilenames := make([]string, 0, imports.Len())
+	for i := range imports.Len() {
+		imports := imports.Get(i)
+		importFilenames = append(importFilenames, imports.Path())
+	}
+	log.WithField(ctx, "importFilenames", importFilenames).Debug("linking reflection file")
+	deps, err := ll.resolveAll(ctx, importFilenames)
+	if err != nil {
+		return nil, fmt.Errorf("loading dependencies: %w", err)
+	}
+	file, err := linker.NewFile(refl, deps)
+	if err != nil {
+		return nil, fmt.Errorf("creating file from refl: %w", err)
 	}
 
-	return deps, nil
+	return file, nil
 }
 
-func (ll *searchLinker) _descriptorToFile(ctx context.Context, desc *descriptorpb.FileDescriptorProto) (linker.File, error) {
-	deps, err := ll.loadDependencies(ctx, desc)
+func (ll *searchLinker) _linkDescriptorProto(ctx context.Context, desc *descriptorpb.FileDescriptorProto) (linker.File, error) {
+	deps, err := ll.resolveAll(ctx, desc.Dependency)
 	if err != nil {
-		return nil, fmt.Errorf("loadDependencies: %w", err)
+		return nil, fmt.Errorf("loading dependencies: %w", err)
 	}
 
 	handler := reporter.NewHandler(ll.Reporter)
@@ -173,7 +225,7 @@ func (ll *searchLinker) _descriptorToFile(ctx context.Context, desc *descriptorp
 func markExtensionImportsUsed(file linker.File) error {
 	resolver := linker.ResolverFromFile(file)
 	messages := file.Messages()
-	for i := 0; i < messages.Len(); i++ {
+	for i := range messages.Len() {
 		message := messages.Get(i)
 		err := markMessageExtensionImportsUsed(resolver, message)
 		if err != nil {
@@ -182,7 +234,7 @@ func markExtensionImportsUsed(file linker.File) error {
 	}
 
 	services := file.Services()
-	for i := 0; i < services.Len(); i++ {
+	for i := range services.Len() {
 		service := services.Get(i)
 		err := markOptionImportsUsed(resolver, service.Options())
 		if err != nil {

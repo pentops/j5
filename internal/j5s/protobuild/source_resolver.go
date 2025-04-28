@@ -240,6 +240,7 @@ func (sr *sourceResolver) parseProto(ctx context.Context, sourceFilename string,
 		Result: &SearchResult{
 			Summary:     summary,
 			ParseResult: &result,
+			SourceType:  LocalProtoSource,
 		},
 	}, nil
 }

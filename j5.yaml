@@ -10,12 +10,6 @@ bundles:
   - name: buildtest
     dir: proto/buildtest
 
-  - name: j5build
-    dir: proto/j5build
-
-  - name: bcl
-    dir: proto/bcl
-
   - name: bcltest
     dir: proto/bcltest
 

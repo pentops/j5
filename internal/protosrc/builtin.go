@@ -2,6 +2,7 @@ package protosrc
 
 import (
 	// Pre Loaded Protos
+
 	"fmt"
 	"os"
 	"strings"
@@ -19,40 +20,52 @@ import (
 	_ "github.com/pentops/j5/j5types/decimal_j5t"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	_ "google.golang.org/genproto/googleapis/api/httpbody"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
 
+/*
+	func IsBuiltInType(typeName protoreflect.FullName) bool {
+		fp := strings.ReplaceAll(string(typeName), ".", "/")
+		return IsBuiltInProto(fp)
+	}
+
+
+	func IsJ5Proto(filename string) bool {
+		for _, prefix := range j5Prefixes {
+			if strings.HasPrefix(filename, prefix) {
+				return true
+			}
+		}
+		return false
+	}
+*/
+
 var inbuiltPrefixes = []string{
-	"google/protobuf/",
-	"google/api/",
 	"buf/validate/",
+	"google/api/",
+	"google/protobuf/",
+	"j5/auth/v1/",
+	"j5/bcl/v1/",
+	"j5/client/v1/",
 	"j5/ext/v1/",
 	"j5/list/v1/",
-	"j5/source/v1/",
 	"j5/messaging/v1/",
-	"j5/state/v1/",
-	"j5/client/v1/",
-	"j5/auth/v1/",
-	"j5/types/decimal/v1/",
-	"j5/types/date/v1/",
-	"j5/types/any/v1/",
 	"j5/schema/v1/",
+	"j5/source/v1/",
 	"j5/sourcedef/v1",
-	"j5/bcl/v1/",
+	"j5/state/v1/",
+	"j5/types/any/v1/",
+	"j5/types/date/v1/",
+	"j5/types/decimal/v1/",
 }
 
-func IsBuiltInType(typeName protoreflect.FullName) bool {
-	fp := strings.ReplaceAll(string(typeName), ".", "/")
-	return IsBuiltInProto(fp)
-}
-
-func IsBuiltInProto(filename string) bool {
+func isBuiltInProto(filename string) bool {
 	for _, prefix := range inbuiltPrefixes {
 		if strings.HasPrefix(filename, prefix) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -66,7 +79,7 @@ var BuiltinResolver = &builtinResolver{
 }
 
 func (rr *builtinResolver) FindFileByPath(filename string) (protocompile.SearchResult, error) {
-	if !IsBuiltInProto(filename) {
+	if !isBuiltInProto(filename) {
 		return protocompile.SearchResult{}, os.ErrNotExist
 	}
 	rr.lock.Lock()

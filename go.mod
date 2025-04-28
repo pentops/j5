@@ -29,7 +29,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/jhump/protoreflect v1.17.0 // indirect
 	github.com/pentops/golib v0.0.0-20250107012216-1b5307b3bfe0
-	github.com/pentops/log.go v0.0.0-20250304233315-e0210b7a6dc3
+	github.com/pentops/log.go v0.0.0-20250428233234-ecfc1d0c4d7e
 	github.com/pentops/o5-messaging v0.0.0-20250317182016-de51c0e702a3
 	github.com/pentops/runner v0.0.0-20250116202335-8635b2a42547
 	github.com/pmezard/go-difflib v1.0.0 // indirect

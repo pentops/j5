@@ -4,152 +4,30 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 
 	"github.com/bufbuild/protocompile/linker"
-	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/log.go/log"
 	"golang.org/x/exp/maps"
 )
 
-func NewCircularDependencyError(chain []string, dep string) error {
-	return &CircularDependencyError{
-		Chain: chain,
-		Dep:   dep,
-	}
-}
-
-type CircularDependencyError struct {
-	Chain []string
-	Dep   string
-}
-
-func (e *CircularDependencyError) Error() string {
-	return fmt.Sprintf("circular dependency detected: %s -> %s", strings.Join(e.Chain, " -> "), e.Dep)
-}
-
-type SourceFile struct {
-	Filename string
-	Summary  *j5convert.FileSummary
-
-	J5Source  *sourcedef_j5pb.SourceFile
-	RawSource []byte
-
-	Result *SearchResult
-}
-
-type Package struct {
-	Name        string
-	SourceFiles []*SourceFile
-
-	Files              map[string]*SearchResult
-	DirectDependencies map[string]*Package
-	Exports            map[string]*j5convert.TypeRef
-}
-
-func newPackage(name string) *Package {
-	pkg := &Package{
-		Name:               name,
-		DirectDependencies: map[string]*Package{},
-		Exports:            map[string]*j5convert.TypeRef{},
-		Files:              map[string]*SearchResult{},
-	}
-	return pkg
-}
-
-func (pkg *Package) includeIO(summary *j5convert.FileSummary, deps map[string]struct{}) {
-	for _, exp := range summary.Exports {
-		pkg.Exports[exp.Name] = exp
-	}
-
-	for _, ref := range summary.TypeDependencies {
-		deps[ref.Package] = struct{}{}
-	}
-	for _, file := range summary.FileDependencies {
-		dependsOn := j5convert.PackageFromFilename(file)
-		deps[dependsOn] = struct{}{}
-	}
-}
-
-func (pkg *Package) ResolveType(pkgName string, name string) (*j5convert.TypeRef, error) {
-	if pkgName == pkg.Name {
-		gotType, ok := pkg.Exports[name]
-		if ok {
-			return gotType, nil
-		}
-		return nil, &j5convert.TypeNotFoundError{
-			// no package, is own package.
-			Name: name,
-		}
-	}
-
-	pkg, ok := pkg.DirectDependencies[pkgName]
-	if !ok {
-		return nil, fmt.Errorf("ResolveType: package %s not loaded", pkgName)
-	}
-
-	gotType, ok := pkg.Exports[name]
-	if ok {
-		return gotType, nil
-	}
-
-	return nil, &j5convert.TypeNotFoundError{
-		Package: pkgName,
-		Name:    name,
-	}
-}
-
-type resolveBaton struct {
-	chain []string
-	errs  *ErrCollector
-}
-
-func newResolveBaton() *resolveBaton {
-	return &resolveBaton{
-		chain: []string{},
-		errs:  &ErrCollector{},
-	}
-}
-
-func (rb *resolveBaton) cloneFor(name string) (*resolveBaton, error) {
-	for _, ancestor := range rb.chain {
-		if name == ancestor {
-			return nil, NewCircularDependencyError(rb.chain, name)
-		}
-	}
-
-	return &resolveBaton{
-		chain: append(slices.Clone(rb.chain), name),
-		errs:  rb.errs,
-	}, nil
-}
-
-type PackageSrc interface {
-	fileSource
-	PackageForLocalFile(filename string) (string, bool, error)
-	LoadLocalPackage(ctx context.Context, pkgName string) (*Package, *ErrCollector, error)
-	ListLocalPackages() []string
-	GetLocalFileContent(ctx context.Context, filename string) (string, error)
-}
-
 // ps.Packages[pkgName] = pkg
 var _ PackageSrc = &PackageSet{}
 
 type PackageSet struct {
-	dependencyResolver *dependencyResolver
+	dependencyResolver fileSource
 	localResolver      *sourceResolver
 
 	Packages map[string]*Package
 }
 
 func NewPackageSet(deps DependencySet, localFiles LocalFileSource) (*PackageSet, error) {
+	resolver, err := dependencyChainResolver(deps)
 
-	resolver, err := newDependencyResolver(deps)
 	if err != nil {
-		return nil, fmt.Errorf("newResolver: %w", err)
+		return nil, fmt.Errorf("dependencyChainResolver: %w", err)
 	}
 
 	sourceResolver, err := newSourceResolver(localFiles)
@@ -191,7 +69,12 @@ func (ps *PackageSet) GetLocalFileContent(ctx context.Context, filename string) 
 	return string(data), nil
 }
 
-func (ps *PackageSet) findFileByPath(ctx context.Context, filename string) (*SearchResult, error) {
+func (ps *PackageSet) packageFiles(pkgName string) ([]string, error) {
+	// TODO: This skips *local* package files.
+	return ps.dependencyResolver.packageFiles(pkgName)
+}
+
+func (ps *PackageSet) findFileByPath(filename string) (*SearchResult, error) {
 	if filename == "" {
 		return nil, errors.New("empty filename")
 	}
@@ -202,7 +85,7 @@ func (ps *PackageSet) findFileByPath(ctx context.Context, filename string) (*Sea
 	}
 
 	if !isLocal {
-		file, err := ps.dependencyResolver.findFileByPath(ctx, filename)
+		file, err := ps.dependencyResolver.findFileByPath(filename)
 		if err != nil {
 			return nil, fmt.Errorf("readFile: %w", err)
 		}
@@ -224,7 +107,6 @@ func (ps *PackageSet) findFileByPath(ctx context.Context, filename string) (*Sea
 
 func (ps *PackageSet) loadPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {
 	ctx = log.WithField(ctx, "loadPackage", name)
-	log.Debug(ctx, "Loading package")
 	rb, err := rb.cloneFor(name)
 	if err != nil {
 		return nil, fmt.Errorf("cloneFor %s: %w", name, err)
@@ -236,16 +118,20 @@ func (ps *PackageSet) loadPackage(ctx context.Context, rb *resolveBaton, name st
 	}
 
 	if ps.localResolver.isLocalPackage(name) {
+		log.Debug(ctx, "Loading Local Package")
 		pkg, err = ps.loadLocalPackage(ctx, rb, name)
 		if err != nil {
 			return nil, fmt.Errorf("loadLocalPackage %s: %w", name, err)
 		}
+
 	} else {
+		log.Debug(ctx, "Loading External Package")
 		pkg, err = ps.loadExternalPackage(ctx, rb, name)
 		if err != nil {
 			return nil, fmt.Errorf("loadExternalPackage %s: %w", name, err)
 		}
 	}
+	log.Debug(ctx, "Loaded Package")
 	ps.Packages[name] = pkg
 
 	return pkg, nil
@@ -268,7 +154,7 @@ func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, na
 
 	fileNames, err := ps.localResolver.listPackageFiles(ctx, name)
 	if err != nil {
-		return nil, fmt.Errorf("package files for %s: %w", name, err)
+		return nil, fmt.Errorf("package files for (local) %s: %w", name, err)
 	}
 
 	pkg := newPackage(name)
@@ -299,8 +185,9 @@ func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, na
 
 			for _, desc := range descs {
 				pkg.Files[desc.GetName()] = &SearchResult{
-					Summary: srcFile.Summary,
-					Desc:    desc,
+					Summary:    srcFile.Summary,
+					Desc:       desc,
+					SourceType: LocalJ5Source,
 				}
 			}
 		} else {
@@ -313,15 +200,20 @@ func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, na
 
 func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {
 
-	files, err := ps.dependencyResolver.PackageFiles(ctx, name)
-	if err != nil {
-		return nil, fmt.Errorf("package files for %s: %w", name, err)
-	}
-
 	pkg := newPackage(name)
 
+	filenames, err := ps.dependencyResolver.packageFiles(name)
+	if err != nil {
+		return nil, fmt.Errorf("package files for (dependency) %s: %w", name, err)
+	}
+
 	deps := map[string]struct{}{}
-	for _, file := range files {
+	for _, filename := range filenames {
+		file, err := ps.dependencyResolver.findFileByPath(filename)
+		if err != nil {
+			return nil, fmt.Errorf("findFileByPath %s: %w", filename, err)
+		}
+
 		pkg.Files[file.Summary.SourceFilename] = file
 		pkg.includeIO(file.Summary, deps)
 	}
@@ -354,7 +246,11 @@ func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (l
 	log.Debug(ctx, "Compiler: Link")
 
 	errs := &ErrCollector{}
-
 	cc := newLinker(ps, errs)
-	return cc.resolveAll(ctx, filenames)
+	files, err := cc.resolveAll(ctx, filenames)
+	if err != nil {
+		return nil, fmt.Errorf("CompilePackage %s: %w", packageName, err)
+	}
+
+	return files, nil
 }
