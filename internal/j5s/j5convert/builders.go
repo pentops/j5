@@ -6,6 +6,7 @@ import (
 
 	"github.com/pentops/golib/gl"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"slices"
 )
 
 type fileContext struct {
@@ -59,10 +60,8 @@ func (fb *fileContext) ensureImport(importPath string) {
 	if importPath == *fb.fdp.Name {
 		return
 	}
-	for _, imp := range fb.fdp.Dependency {
-		if imp == importPath {
-			return
-		}
+	if slices.Contains(fb.fdp.Dependency, importPath) {
+		return
 	}
 	fb.fdp.Dependency = append(fb.fdp.Dependency, importPath)
 	sort.Strings(fb.fdp.Dependency)

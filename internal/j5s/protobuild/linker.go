@@ -233,7 +233,7 @@ func markExtensionImportsUsed(file linker.File) error {
 		}
 
 		methods := service.Methods()
-		for j := 0; j < methods.Len(); j++ {
+		for j := range methods.Len() {
 			method := methods.Get(j)
 			err = markOptionImportsUsed(resolver, method.Options())
 			if err != nil {
@@ -243,7 +243,7 @@ func markExtensionImportsUsed(file linker.File) error {
 	}
 
 	enums := file.Enums()
-	for i := 0; i < enums.Len(); i++ {
+	for i := range enums.Len() {
 		enum := enums.Get(i)
 		err := markOptionImportsUsed(resolver, enum.Options())
 		if err != nil {
@@ -251,7 +251,7 @@ func markExtensionImportsUsed(file linker.File) error {
 		}
 
 		values := enum.Values()
-		for j := 0; j < values.Len(); j++ {
+		for j := range values.Len() {
 			value := values.Get(j)
 			err = markOptionImportsUsed(resolver, value.Options())
 			if err != nil {
@@ -270,7 +270,7 @@ func markMessageExtensionImportsUsed(resolver linker.Resolver, message protorefl
 	}
 
 	fields := message.Fields()
-	for j := 0; j < fields.Len(); j++ {
+	for j := range fields.Len() {
 		field := fields.Get(j)
 		err = markOptionImportsUsed(resolver, field.Options())
 		if err != nil {
@@ -280,7 +280,7 @@ func markMessageExtensionImportsUsed(resolver linker.Resolver, message protorefl
 	}
 
 	oneofs := message.Oneofs()
-	for j := 0; j < oneofs.Len(); j++ {
+	for j := range oneofs.Len() {
 		oneof := oneofs.Get(j)
 		err = markOptionImportsUsed(resolver, oneof.Options())
 		if err != nil {
@@ -289,7 +289,7 @@ func markMessageExtensionImportsUsed(resolver linker.Resolver, message protorefl
 	}
 
 	nested := message.Messages()
-	for j := 0; j < nested.Len(); j++ {
+	for j := range nested.Len() {
 		nestedMessage := nested.Get(j)
 		err = markMessageExtensionImportsUsed(resolver, nestedMessage)
 		if err != nil {
@@ -303,7 +303,7 @@ func markMessageExtensionImportsUsed(resolver linker.Resolver, message protorefl
 func markOptionImportsUsed(resolver linker.Resolver, opts proto.Message) error {
 	var outerErr error
 
-	proto.RangeExtensions(opts, func(ext protoreflect.ExtensionType, value interface{}) bool {
+	proto.RangeExtensions(opts, func(ext protoreflect.ExtensionType, value any) bool {
 		td := ext.TypeDescriptor()
 		name := td.FullName()
 		_, err := resolver.FindExtensionByName(name)

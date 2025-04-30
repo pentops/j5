@@ -99,10 +99,8 @@ func newResolveBaton() *resolveBaton {
 }
 
 func (rb *resolveBaton) cloneFor(name string) (*resolveBaton, error) {
-	for _, ancestor := range rb.chain {
-		if name == ancestor {
-			return nil, NewCircularDependencyError(rb.chain, name)
-		}
+	if slices.Contains(rb.chain, name) {
+		return nil, NewCircularDependencyError(rb.chain, name)
 	}
 
 	return &resolveBaton{

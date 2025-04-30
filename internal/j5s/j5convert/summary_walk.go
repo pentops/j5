@@ -7,6 +7,7 @@ import (
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/j5s/sourcewalk"
+	"slices"
 )
 
 type ErrCollector interface {
@@ -95,10 +96,8 @@ type summaryWalker struct {
 }
 
 func (c *summaryWalker) includeSubFile(subPackage string) {
-	for _, file := range c.subPackageFiles {
-		if file == subPackage {
-			return
-		}
+	if slices.Contains(c.subPackageFiles, subPackage) {
+		return
 	}
 	c.subPackageFiles = append(c.subPackageFiles, subPackage)
 }

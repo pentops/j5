@@ -42,7 +42,7 @@ func (ww *conversionVisitor) _clone() *conversionVisitor {
 	}
 }
 
-func (rr *conversionVisitor) addErrorf(node sourcewalk.SourceNode, format string, args ...interface{}) {
+func (rr *conversionVisitor) addErrorf(node sourcewalk.SourceNode, format string, args ...any) {
 	err := fmt.Errorf(format, args...)
 	rr.addError(node, err)
 }

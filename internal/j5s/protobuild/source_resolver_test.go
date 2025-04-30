@@ -3,6 +3,7 @@ package protobuild
 import (
 	"context"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 	"testing"
@@ -21,10 +22,8 @@ func newTestFiles() *testFiles {
 }
 
 func (tf *testFiles) tIncludePackage(pkg string) {
-	for _, p := range tf.localPackages {
-		if p == pkg {
-			return
-		}
+	if slices.Contains(tf.localPackages, pkg) {
+		return
 	}
 	tf.localPackages = append(tf.localPackages, pkg)
 }
