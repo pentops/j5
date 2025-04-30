@@ -57,7 +57,6 @@ type searchLinker struct {
 }
 
 func newLinker(src fileResolver, symbols *linker.Symbols) *searchLinker {
-
 	return &searchLinker{
 		symbols:  symbols,
 		errs:     &ErrCollector{},

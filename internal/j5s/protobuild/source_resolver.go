@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/parser"
-	proto_parser "github.com/bufbuild/protocompile/parser"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/j5s/j5convert"
@@ -276,12 +275,12 @@ func (sr *sourceResolver) parseJ5s(sourceFilename string, data []byte) (*SourceF
 func (sr *sourceResolver) parseProto(filename string, data []byte) (*SourceFile, error) {
 
 	errs := &ErrCollector{}
-	fileNode, err := proto_parser.Parse(filename, bytes.NewReader(data), errs.Handler())
+	fileNode, err := parser.Parse(filename, bytes.NewReader(data), errs.Handler())
 	if err != nil {
 		return nil, err
 	}
 
-	result, err := proto_parser.ResultFromAST(fileNode, true, errs.Handler())
+	result, err := parser.ResultFromAST(fileNode, true, errs.Handler())
 	if err != nil {
 		return nil, err
 	}
