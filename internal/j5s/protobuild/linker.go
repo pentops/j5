@@ -7,25 +7,12 @@ import (
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
 	"github.com/bufbuild/protocompile/parser"
-	"github.com/bufbuild/protocompile/reporter"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
-
-type SearchResult struct {
-	Summary *j5convert.FileSummary
-
-	SourceType SourceType
-
-	// Results are checked in lexical order
-	Linked      linker.File
-	Refl        protoreflect.FileDescriptor
-	Desc        *descriptorpb.FileDescriptorProto
-	ParseResult *parser.Result
-}
 
 type SourceType int
 
@@ -50,23 +37,30 @@ func (st SourceType) String() string {
 	return fmt.Sprintf("Unknown SourceType %d", st)
 }
 
-type fileSource interface {
-	findFileByPath(filename string) (*SearchResult, error)
-	packageFiles(pkgName string) ([]string, error)
+type SearchResult struct {
+	Filename string
+	Summary  *j5convert.FileSummary
+
+	SourceType SourceType
+
+	// Results are checked in lexical order
+	Linked      linker.File
+	Refl        protoreflect.FileDescriptor
+	Desc        *descriptorpb.FileDescriptorProto
+	ParseResult *parser.Result
 }
 
 type searchLinker struct {
 	symbols  *linker.Symbols
-	Reporter reporter.Reporter
-	resolver fileSource // usually *PackageSet
+	resolver fileResolver // usually *PackageSet
+	errs     *ErrCollector
 }
 
-func newLinker(src fileSource, errs reporter.Reporter) *searchLinker {
-	symbols := &linker.Symbols{}
+func newLinker(src fileResolver, symbols *linker.Symbols) *searchLinker {
 
 	return &searchLinker{
 		symbols:  symbols,
-		Reporter: errs,
+		errs:     &ErrCollector{},
 		resolver: src,
 	}
 }
@@ -110,7 +104,8 @@ func (ll *searchLinker) linkResult(ctx context.Context, result *SearchResult) (l
 	}
 
 	result.Linked = linked
-	err = ll.symbols.Import(linked, reporter.NewHandler(ll.Reporter))
+
+	err = ll.symbols.Import(linked, ll.errs.Handler())
 	if err != nil {
 		return nil, fmt.Errorf("importing new file into symbols: %w", err)
 	}
@@ -153,19 +148,17 @@ func (ll *searchLinker) _linkParserResult(ctx context.Context, result parser.Res
 		return nil, fmt.Errorf("loading dependencies for %s: %w", desc.GetName(), err)
 	}
 
-	handler := reporter.NewHandler(ll.Reporter)
-
-	linked, err := linker.Link(result, deps, ll.symbols, handler)
+	linked, err := linker.Link(result, deps, ll.symbols, ll.errs.Handler())
 	if err != nil {
 		return nil, fmt.Errorf("linking using protocompile linker: %w", err)
 	}
 
-	_, err = options.InterpretOptions(linked, handler)
+	_, err = options.InterpretOptions(linked, ll.errs.Handler())
 	if err != nil {
 		return nil, err
 	}
 
-	linked.CheckForUnusedImports(handler)
+	linked.CheckForUnusedImports(ll.errs.Handler())
 	return linked, nil
 }
 
@@ -195,16 +188,15 @@ func (ll *searchLinker) _linkDescriptorProto(ctx context.Context, desc *descript
 		return nil, fmt.Errorf("loading dependencies: %w", err)
 	}
 
-	handler := reporter.NewHandler(ll.Reporter)
 	result := parser.ResultWithoutAST(desc)
 	log.WithField(ctx, "descName", desc.GetName()).Debug("descriptorToFile")
 
-	linked, err := linker.Link(result, deps, ll.symbols, handler)
+	linked, err := linker.Link(result, deps, ll.symbols, ll.errs.Handler())
 	if err != nil {
 		return nil, fmt.Errorf("descriptorToFile, link: %w", err)
 	}
 
-	_, err = options.InterpretOptions(linked, handler)
+	_, err = options.InterpretOptions(linked, ll.errs.Handler())
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +208,7 @@ func (ll *searchLinker) _linkDescriptorProto(ctx context.Context, desc *descript
 
 	linked.PopulateSourceCodeInfo()
 
-	linked.CheckForUnusedImports(handler)
+	linked.CheckForUnusedImports(ll.errs.Handler())
 	return linked, nil
 }
 

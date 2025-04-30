@@ -1,12 +1,10 @@
 package protobuild
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strings"
 
-	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 )
 
@@ -24,16 +22,6 @@ type CircularDependencyError struct {
 
 func (e *CircularDependencyError) Error() string {
 	return fmt.Sprintf("circular dependency detected: %s -> %s", strings.Join(e.Chain, " -> "), e.Dep)
-}
-
-type SourceFile struct {
-	Filename string
-	Summary  *j5convert.FileSummary
-
-	J5Source  *sourcedef_j5pb.SourceFile
-	RawSource []byte
-
-	Result *SearchResult
 }
 
 type Package struct {
@@ -69,6 +57,7 @@ func (pkg *Package) includeIO(summary *j5convert.FileSummary, deps map[string]st
 	}
 }
 
+// ResolveType implements j5convert.TypeResolver interface.
 func (pkg *Package) ResolveType(pkgName string, name string) (*j5convert.TypeRef, error) {
 	if pkgName == pkg.Name {
 		gotType, ok := pkg.Exports[name]
@@ -99,13 +88,13 @@ func (pkg *Package) ResolveType(pkgName string, name string) (*j5convert.TypeRef
 
 type resolveBaton struct {
 	chain []string
-	errs  *ErrCollector
+	// e     //rrs  *ErrCollector
 }
 
 func newResolveBaton() *resolveBaton {
 	return &resolveBaton{
 		chain: []string{},
-		errs:  &ErrCollector{},
+		//	errs:  &ErrCollector{},
 	}
 }
 
@@ -118,14 +107,6 @@ func (rb *resolveBaton) cloneFor(name string) (*resolveBaton, error) {
 
 	return &resolveBaton{
 		chain: append(slices.Clone(rb.chain), name),
-		errs:  rb.errs,
+		//	errs:  rb.errs,
 	}, nil
-}
-
-type PackageSrc interface {
-	fileSource
-	PackageForLocalFile(filename string) (string, bool, error)
-	LoadLocalPackage(ctx context.Context, pkgName string) (*Package, *ErrCollector, error)
-	ListLocalPackages() []string
-	GetLocalFileContent(ctx context.Context, filename string) (string, error)
 }

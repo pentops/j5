@@ -8,17 +8,14 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/linker"
-	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/log.go/log"
 	"golang.org/x/exp/maps"
 )
 
-// ps.Packages[pkgName] = pkg
-var _ PackageSrc = &PackageSet{}
-
 type PackageSet struct {
-	dependencyResolver fileSource
-	localResolver      *sourceResolver
+	dependencyResolver fileResolver
+	sourceResolver     *sourceResolver
+	symbols            *linker.Symbols
 
 	Packages map[string]*Package
 }
@@ -37,41 +34,42 @@ func NewPackageSet(deps DependencySet, localFiles LocalFileSource) (*PackageSet,
 
 	cc := &PackageSet{
 		dependencyResolver: resolver,
-		localResolver:      sourceResolver,
+		sourceResolver:     sourceResolver,
 		Packages:           map[string]*Package{},
+		symbols:            &linker.Symbols{},
 	}
 	return cc, nil
 }
 
 func (ps *PackageSet) PackageForLocalFile(filename string) (string, bool, error) {
-	return ps.localResolver.packageForFile(filename)
+	return ps.sourceResolver.packageForFile(filename)
 }
 
-func (ps *PackageSet) LoadLocalPackage(ctx context.Context, pkgName string) (*Package, *ErrCollector, error) {
+func (ps *PackageSet) LoadLocalPackage(ctx context.Context, pkgName string) (*Package, error) {
 	rb := newResolveBaton()
 	pkg, err := ps.loadPackage(ctx, rb, pkgName)
 	if err != nil {
-		return nil, rb.errs, fmt.Errorf("loadPackage %s: %w", pkgName, err)
+		return nil, fmt.Errorf("loadPackage %s: %w", pkgName, err)
 	}
 	ps.Packages[pkgName] = pkg
-	return pkg, rb.errs, nil
+	return pkg, nil
 }
 
 func (ps *PackageSet) ListLocalPackages() []string {
-	return ps.localResolver.ListPackages()
+	return ps.sourceResolver.ListPackages()
 }
 
 func (ps *PackageSet) GetLocalFileContent(ctx context.Context, filename string) (string, error) {
-	data, err := ps.localResolver.getFileContent(ctx, filename)
+	data, err := ps.sourceResolver.getFileContent(ctx, filename)
 	if err != nil {
 		return "", fmt.Errorf("getFileContent %s: %w", filename, err)
 	}
 	return string(data), nil
 }
 
-func (ps *PackageSet) packageFiles(pkgName string) ([]string, error) {
+func (ps *PackageSet) listPackageFiles(pkgName string) ([]string, error) {
 	// TODO: This skips *local* package files.
-	return ps.dependencyResolver.packageFiles(pkgName)
+	return ps.dependencyResolver.listPackageFiles(pkgName)
 }
 
 func (ps *PackageSet) findFileByPath(filename string) (*SearchResult, error) {
@@ -79,7 +77,7 @@ func (ps *PackageSet) findFileByPath(filename string) (*SearchResult, error) {
 		return nil, errors.New("empty filename")
 	}
 
-	pkgName, isLocal, err := ps.localResolver.packageForFile(filename)
+	pkgName, isLocal, err := ps.sourceResolver.packageForFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("packageForFile: %w", err)
 	}
@@ -117,7 +115,7 @@ func (ps *PackageSet) loadPackage(ctx context.Context, rb *resolveBaton, name st
 		return pkg, nil
 	}
 
-	if ps.localResolver.isLocalPackage(name) {
+	if ps.sourceResolver.isLocalPackage(name) {
 		log.Debug(ctx, "Loading Local Package")
 		pkg, err = ps.loadLocalPackage(ctx, rb, name)
 		if err != nil {
@@ -152,7 +150,7 @@ func (ps *PackageSet) resolveDependencies(ctx context.Context, rb *resolveBaton,
 
 func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {
 
-	fileNames, err := ps.localResolver.listPackageFiles(ctx, name)
+	fileNames, err := ps.sourceResolver.listPackageFiles(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("package files for (local) %s: %w", name, err)
 	}
@@ -161,7 +159,7 @@ func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, na
 
 	deps := map[string]struct{}{}
 	for _, filename := range fileNames {
-		file, err := ps.localResolver.getFile(ctx, filename, rb.errs)
+		file, err := ps.sourceResolver.getFile(ctx, filename)
 		if err != nil {
 			return nil, fmt.Errorf("GetLocalFile %s: %w", filename, err)
 		}
@@ -175,23 +173,12 @@ func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, na
 	}
 
 	for _, srcFile := range pkg.SourceFiles {
-		if srcFile.Result != nil {
-			pkg.Files[srcFile.Filename] = srcFile.Result
-		} else if srcFile.J5Source != nil {
-			descs, err := j5convert.ConvertJ5File(pkg, srcFile.J5Source)
-			if err != nil {
-				return nil, fmt.Errorf("convertJ5File %s: %w", srcFile.Filename, err)
-			}
-
-			for _, desc := range descs {
-				pkg.Files[desc.GetName()] = &SearchResult{
-					Summary:    srcFile.Summary,
-					Desc:       desc,
-					SourceType: LocalJ5Source,
-				}
-			}
-		} else {
-			return nil, fmt.Errorf("source file %s has no result and is not j5s", srcFile.Filename)
+		results, err := srcFile.toSearchResults(pkg)
+		if err != nil {
+			return nil, err
+		}
+		for _, result := range results {
+			pkg.Files[result.Filename] = result
 		}
 	}
 
@@ -202,7 +189,7 @@ func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton,
 
 	pkg := newPackage(name)
 
-	filenames, err := ps.dependencyResolver.packageFiles(name)
+	filenames, err := ps.dependencyResolver.listPackageFiles(name)
 	if err != nil {
 		return nil, fmt.Errorf("package files for (dependency) %s: %w", name, err)
 	}
@@ -245,8 +232,7 @@ func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (l
 
 	log.Debug(ctx, "Compiler: Link")
 
-	errs := &ErrCollector{}
-	cc := newLinker(ps, errs)
+	cc := newLinker(ps, ps.symbols)
 	files, err := cc.resolveAll(ctx, filenames)
 	if err != nil {
 		return nil, fmt.Errorf("CompilePackage %s: %w", packageName, err)

@@ -93,7 +93,7 @@ func runJ5sLint(ctx context.Context, cfg struct {
 			return err
 		}
 
-		lintErr, err := protobuild.LintFile(ctx, compiler, relToBundle, string(data))
+		lintErr, err := compiler.LintFile(ctx, relToBundle, string(data))
 		if err != nil {
 			return err
 		}
@@ -124,7 +124,7 @@ func runJ5sLint(ctx context.Context, cfg struct {
 			return err
 		}
 
-		lintErr, err := protobuild.LintAll(ctx, compiler)
+		lintErr, err := compiler.LintAll(ctx)
 		if err != nil {
 			return err
 		}

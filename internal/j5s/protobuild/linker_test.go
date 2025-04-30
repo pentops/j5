@@ -3,6 +3,7 @@ package protobuild
 import (
 	"testing"
 
+	"github.com/bufbuild/protocompile/linker"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -32,14 +33,13 @@ func TestLinkerDeps(t *testing.T) {
 
 	filenames := []string{"test/v1/foo.proto"}
 
-	errs := &ErrCollector{}
-	cc := newLinker(resolver, errs)
+	cc := newLinker(resolver, &linker.Symbols{})
 	files, err := cc.resolveAll(ctx, filenames)
 	if err != nil {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}
-	if len(errs.Errors) > 0 {
-		t.Fatalf("FATAL: Unexpected errors: %v", errs.Errors)
+	if len(cc.errs.Errors) > 0 {
+		t.Fatalf("FATAL: Unexpected errors: %v", cc.errs.Errors)
 	}
 	if len(files) != 1 {
 		t.Fatalf("Expected 1 file, got %d", len(files))

@@ -9,8 +9,12 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-func dependencyChainResolver(deps DependencySet) (fileSource, error) {
+type fileResolver interface {
+	findFileByPath(filename string) (*SearchResult, error)
+	listPackageFiles(pkgName string) ([]string, error)
+}
 
+func dependencyChainResolver(deps DependencySet) (fileResolver, error) {
 	depResolver, err := newDependencyResolver(deps)
 	if err != nil {
 		return nil, fmt.Errorf("newResolver: %w", err)
@@ -42,7 +46,7 @@ func newDependencyResolver(externalDeps DependencySet) (*dependencyResolver, err
 	return rr, nil
 }
 
-func (rr *dependencyResolver) packageFiles(pkgName string) ([]string, error) {
+func (rr *dependencyResolver) listPackageFiles(pkgName string) ([]string, error) {
 	root := strings.ReplaceAll(pkgName, ".", "/")
 
 	filenames := rr.deps.ListDependencyFiles(root)
@@ -108,7 +112,7 @@ func (br *builtinResolver) hasRoot(filename string) bool {
 	return false
 }
 
-func (br *builtinResolver) packageFiles(pkgName string) ([]string, error) {
+func (br *builtinResolver) listPackageFiles(pkgName string) ([]string, error) {
 	root := strings.ReplaceAll(pkgName, ".", "/") + "/"
 	isBuiltin := br.hasRoot(root)
 	if !isBuiltin {
@@ -148,19 +152,19 @@ func (br *builtinResolver) findFileByPath(filename string) (*SearchResult, error
 
 type resolverCache struct {
 	cache   map[string]*SearchResult
-	sources []fileSource
+	sources []fileResolver
 }
 
-func newResolverCache(sources ...fileSource) *resolverCache {
+func newResolverCache(sources ...fileResolver) *resolverCache {
 	return &resolverCache{
 		cache:   make(map[string]*SearchResult),
 		sources: sources,
 	}
 }
 
-func (rc *resolverCache) packageFiles(pkgName string) ([]string, error) {
+func (rc *resolverCache) listPackageFiles(pkgName string) ([]string, error) {
 	for _, source := range rc.sources {
-		files, err := source.packageFiles(pkgName)
+		files, err := source.listPackageFiles(pkgName)
 		if err != nil {
 			if err == errPackageNotFound {
 				continue // try next source

@@ -1,13 +1,10 @@
 package protobuild
 
 import (
-	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"strings"
 
-	proto_parser "github.com/bufbuild/protocompile/parser"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -24,24 +21,6 @@ func hasAPrefix(s string, prefixes []string) bool {
 }
 
 var ErrNotFound = errors.New("file not found")
-
-func protoToDescriptor(_ context.Context, filename string, data []byte, errs *ErrCollector) (proto_parser.Result, *j5convert.FileSummary, error) {
-
-	fileNode, err := proto_parser.Parse(filename, bytes.NewReader(data), errs.Handler())
-	if err != nil {
-		return nil, nil, err
-	}
-	result, err := proto_parser.ResultFromAST(fileNode, true, errs.Handler())
-	if err != nil {
-		return nil, nil, err
-	}
-
-	summary, err := buildSummaryFromDescriptor(result.FileDescriptorProto(), errs)
-	if err != nil {
-		return nil, nil, err
-	}
-	return result, summary, nil
-}
 
 func buildSummaryFromReflect(res protoreflect.FileDescriptor, errs *ErrCollector) (*j5convert.FileSummary, error) {
 	return buildSummaryFromDescriptor(protodesc.ToFileDescriptorProto(res), errs)

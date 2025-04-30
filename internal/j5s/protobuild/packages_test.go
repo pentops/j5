@@ -194,7 +194,7 @@ func TestCircularDependency(t *testing.T) {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}
 
-	_, _, err = cc.LoadLocalPackage(ctx, "foo.v1")
+	_, err = cc.LoadLocalPackage(ctx, "foo.v1")
 	if err == nil {
 		t.Fatalf("Expected error, got nil")
 	}
