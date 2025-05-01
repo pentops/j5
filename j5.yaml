@@ -26,6 +26,11 @@ generate:
       - base: go
       - base: go-sugar
       - base: go-grpc
+    mods:
+      - goPackageNames: 
+          prefix: github.com/pentops/j5/gen
+          suffixes:
+            "": "_j5pb"
 
   - name: j5build
     inputs:

@@ -144,6 +144,7 @@ func (br *builtinResolver) findFileByPath(filename string) (*SearchResult, error
 		return nil, fmt.Errorf("summary for builtin %s: %w", filename, err)
 	}
 	return &SearchResult{
+		Filename:   filename,
 		Summary:    summary,
 		Refl:       refl,
 		SourceType: BuiltInProtoSource,

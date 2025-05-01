@@ -263,16 +263,16 @@ func runJ5sGenProto(ctx context.Context, cfg j5sGenProtoConfig) error {
 			}
 
 			for _, file := range out {
-				filename := file.Path()
+				filename := file.Linked.Path()
 				if !strings.HasSuffix(filename, ".j5s.proto") {
 					continue
 				}
 
-				out, err := protoprint.PrintFile(ctx, file, genComment)
+				out, err := protoprint.PrintFile(ctx, file.Linked, genComment)
 				if err != nil {
 					log.WithFields(ctx, map[string]any{
 						"error":    err.Error(),
-						"filename": file.Path(),
+						"filename": file.Filename,
 					}).Error("Error printing file")
 					return err
 				}

@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"sort"
 	"strings"
 
@@ -15,7 +17,10 @@ import (
 type PackageSet struct {
 	dependencyResolver fileResolver
 	sourceResolver     *sourceResolver
-	symbols            *linker.Symbols
+
+	// symbols is reused for the entire package set, all files must be linked
+	// using the same symbols instance.
+	symbols *linker.Symbols
 
 	Packages map[string]*Package
 }
@@ -213,7 +218,7 @@ func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton,
 	return pkg, nil
 }
 
-func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (linker.Files, error) {
+func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) ([]*SearchResult, error) {
 	ctx = log.WithField(ctx, "CompilePackage", packageName)
 	log.Debug(ctx, "Compiler: Load")
 	rb := newResolveBaton()
@@ -235,8 +240,20 @@ func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (l
 	cc := newLinker(ps, ps.symbols)
 	files, err := cc.resolveAll(ctx, filenames)
 	if err != nil {
+		ps.debugState(os.Stderr)
 		return nil, fmt.Errorf("CompilePackage %s: %w", packageName, err)
 	}
 
 	return files, nil
+}
+
+func (ps *PackageSet) debugState(ww io.Writer) {
+
+	fmt.Fprintln(ww, "PackageSet State:")
+	for pkgName, pkg := range ps.Packages {
+		fmt.Fprintf(ww, "  Package: %s\n", pkgName)
+		for _, result := range pkg.Files {
+			fmt.Fprintf(ww, "    SearchResult: %s (%s)\n", result.Summary.SourceFilename, result.SourceType.String())
+		}
+	}
 }

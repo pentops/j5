@@ -3,10 +3,13 @@ package protobuild
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
 	"github.com/bufbuild/protocompile/parser"
+	"github.com/bufbuild/protocompile/reporter"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/protobuf/proto"
@@ -43,11 +46,31 @@ type SearchResult struct {
 
 	SourceType SourceType
 
-	// Results are checked in lexical order
-	Linked      linker.File
+	Linked linker.File
+
+	// Oneof
 	Refl        protoreflect.FileDescriptor
 	Desc        *descriptorpb.FileDescriptorProto
 	ParseResult *parser.Result
+}
+
+func (sr *SearchResult) listDependencies() ([]string, error) {
+	if sr.Refl != nil {
+		imports := sr.Refl.Imports()
+		deps := make([]string, 0, imports.Len())
+		for i := range imports.Len() {
+			deps = append(deps, imports.Get(i).Path())
+		}
+		return deps, nil
+	}
+	if sr.Desc != nil {
+		return sr.Desc.Dependency, nil
+	}
+	if sr.ParseResult != nil {
+		return (*sr.ParseResult).FileDescriptorProto().Dependency, nil
+	}
+	return nil, fmt.Errorf("no dependencies available in SearchResult")
+
 }
 
 type searchLinker struct {
@@ -64,8 +87,8 @@ func newLinker(src fileResolver, symbols *linker.Symbols) *searchLinker {
 	}
 }
 
-func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) (linker.Files, error) {
-	files := make(linker.Files, 0, len(filenames))
+func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) ([]*SearchResult, error) {
+	files := make([]*SearchResult, 0, len(filenames))
 	for _, filename := range filenames {
 		file, err := ll._resolveFile(ctx, filename)
 		if err != nil {
@@ -78,43 +101,96 @@ func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) (lin
 	return files, nil
 }
 
-func (ll *searchLinker) _resolveFile(ctx context.Context, filename string) (linker.File, error) {
+func (ll *searchLinker) _resolveFile(ctx context.Context, filename string) (*SearchResult, error) {
 	ctx = log.WithField(ctx, "askFilename", filename)
 	result, err := ll.resolver.findFileByPath(filename)
 	if err != nil {
 		return nil, fmt.Errorf("findFileByPath: %w", err)
 	}
 
-	return ll.linkResult(ctx, result)
+	err = ll.linkResult(ctx, result)
+	if err != nil {
+		return nil, fmt.Errorf("linkResult: %w", err)
+	}
+	return result, nil
 }
 
-func (ll *searchLinker) linkResult(ctx context.Context, result *SearchResult) (linker.File, error) {
+func (ll *searchLinker) linkResult(ctx context.Context, result *SearchResult) error {
 	if result.Linked != nil {
-		return result.Linked, nil
+		// result already linked
+		return nil
 	}
+
 	log.WithField(ctx,
 		"sourceFilename", result.Summary.SourceFilename,
 		"sourceType", result.SourceType.String(),
 	).Debug("link-new")
 
-	linked, err := ll._linkNewResult(ctx, result)
+	dependencyFilenames, err := result.listDependencies()
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("listing dependencies: %w", err)
+	}
+
+	dependencies, err := ll.resolveAll(ctx, dependencyFilenames)
+	if err != nil {
+		return fmt.Errorf("loading dependencies: %w", err)
+	}
+
+	info := linkInfo{
+		deps:    dependencies,
+		symbols: ll.symbols,
+		errs:    ll.errs.Handler(),
+	}
+
+	linked, err := result.link(info)
+	if err != nil {
+		info.debugState(os.Stderr)
+		return fmt.Errorf("linking: %w", err)
 	}
 
 	result.Linked = linked
 
 	err = ll.symbols.Import(linked, ll.errs.Handler())
 	if err != nil {
-		return nil, fmt.Errorf("importing new file into symbols: %w", err)
+		info.debugState(os.Stderr)
+		return fmt.Errorf("importing new file into symbols: %w", err)
 	}
-	return linked, nil
-
+	return nil
 }
 
-func (ll *searchLinker) _linkNewResult(ctx context.Context, result *SearchResult) (linker.File, error) {
+type linkInfo struct {
+	deps    []*SearchResult //linker.Files
+	symbols *linker.Symbols
+	errs    *reporter.Handler
+}
+
+func (info *linkInfo) linkerDeps() linker.Files {
+	return resultsToLinkerFiles(info.deps)
+}
+
+func resultsToLinkerFiles(results []*SearchResult) linker.Files {
+
+	deps := make(linker.Files, 0, len(results))
+	for _, dep := range results {
+		if dep.Linked != nil {
+			deps = append(deps, dep.Linked)
+		}
+	}
+	return deps
+}
+
+func (info *linkInfo) debugState(ww io.Writer) {
+	fmt.Fprintln(ww, "Linker State:")
+	fmt.Fprintln(ww, "  Dependencies:")
+	for _, dep := range info.deps {
+		fmt.Fprintf(ww, "   - %s (%s)\n", dep.Filename, dep.SourceType.String())
+	}
+}
+
+func (result *SearchResult) link(ll linkInfo) (linker.File, error) {
+	// REFACTOR: The types should be an interface implementation
 	if result.Refl != nil {
-		file, err := ll._linkReflection(ctx, result.Refl)
+		file, err := _linkReflection(ll, result.Refl)
 		if err != nil {
 			return nil, fmt.Errorf("linking Refl: %w", err)
 		}
@@ -122,7 +198,7 @@ func (ll *searchLinker) _linkNewResult(ctx context.Context, result *SearchResult
 	}
 
 	if result.Desc != nil {
-		file, err := ll._linkDescriptorProto(ctx, result.Desc)
+		file, err := _linkDescriptorProto(ll, result.Desc)
 		if err != nil {
 			return nil, fmt.Errorf("linking Desc: %w", err)
 		}
@@ -130,7 +206,7 @@ func (ll *searchLinker) _linkNewResult(ctx context.Context, result *SearchResult
 	}
 
 	if result.ParseResult != nil {
-		file, err := ll._linkParserResult(ctx, *result.ParseResult)
+		file, err := _linkParserResult(ll, *result.ParseResult)
 		if err != nil {
 			return nil, fmt.Errorf("linking ParseResult: %w", err)
 		}
@@ -140,40 +216,23 @@ func (ll *searchLinker) _linkNewResult(ctx context.Context, result *SearchResult
 	return nil, fmt.Errorf("search result type not unknown")
 }
 
-func (ll *searchLinker) _linkParserResult(ctx context.Context, result parser.Result) (linker.File, error) {
-	desc := result.FileDescriptorProto()
-	deps, err := ll.resolveAll(ctx, desc.Dependency)
-	if err != nil {
-		return nil, fmt.Errorf("loading dependencies for %s: %w", desc.GetName(), err)
-	}
-
-	linked, err := linker.Link(result, deps, ll.symbols, ll.errs.Handler())
+func _linkParserResult(ll linkInfo, result parser.Result) (linker.File, error) {
+	linked, err := linker.Link(result, ll.linkerDeps(), ll.symbols, ll.errs)
 	if err != nil {
 		return nil, fmt.Errorf("linking using protocompile linker: %w", err)
 	}
 
-	_, err = options.InterpretOptions(linked, ll.errs.Handler())
+	_, err = options.InterpretOptions(linked, ll.errs)
 	if err != nil {
 		return nil, err
 	}
 
-	linked.CheckForUnusedImports(ll.errs.Handler())
+	linked.CheckForUnusedImports(ll.errs)
 	return linked, nil
 }
 
-func (ll *searchLinker) _linkReflection(ctx context.Context, refl protoreflect.FileDescriptor) (linker.File, error) {
-	imports := refl.Imports()
-	importFilenames := make([]string, 0, imports.Len())
-	for i := range imports.Len() {
-		imports := imports.Get(i)
-		importFilenames = append(importFilenames, imports.Path())
-	}
-	log.WithField(ctx, "importFilenames", importFilenames).Debug("linking reflection file")
-	deps, err := ll.resolveAll(ctx, importFilenames)
-	if err != nil {
-		return nil, fmt.Errorf("loading dependencies: %w", err)
-	}
-	file, err := linker.NewFile(refl, deps)
+func _linkReflection(ll linkInfo, refl protoreflect.FileDescriptor) (linker.File, error) {
+	file, err := linker.NewFile(refl, ll.linkerDeps())
 	if err != nil {
 		return nil, fmt.Errorf("creating file from refl: %w", err)
 	}
@@ -181,21 +240,16 @@ func (ll *searchLinker) _linkReflection(ctx context.Context, refl protoreflect.F
 	return file, nil
 }
 
-func (ll *searchLinker) _linkDescriptorProto(ctx context.Context, desc *descriptorpb.FileDescriptorProto) (linker.File, error) {
-	deps, err := ll.resolveAll(ctx, desc.Dependency)
-	if err != nil {
-		return nil, fmt.Errorf("loading dependencies: %w", err)
-	}
+func _linkDescriptorProto(ll linkInfo, desc *descriptorpb.FileDescriptorProto) (linker.File, error) {
 
 	result := parser.ResultWithoutAST(desc)
-	log.WithField(ctx, "descName", desc.GetName()).Debug("descriptorToFile")
 
-	linked, err := linker.Link(result, deps, ll.symbols, ll.errs.Handler())
+	linked, err := linker.Link(result, ll.linkerDeps(), ll.symbols, ll.errs)
 	if err != nil {
 		return nil, fmt.Errorf("descriptorToFile, link: %w", err)
 	}
 
-	_, err = options.InterpretOptions(linked, ll.errs.Handler())
+	_, err = options.InterpretOptions(linked, ll.errs)
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +261,7 @@ func (ll *searchLinker) _linkDescriptorProto(ctx context.Context, desc *descript
 
 	linked.PopulateSourceCodeInfo()
 
-	linked.CheckForUnusedImports(ll.errs.Handler())
+	linked.CheckForUnusedImports(ll.errs)
 	return linked, nil
 }
 

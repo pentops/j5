@@ -48,7 +48,7 @@ func (ps *PackageSet) LintFile(ctx context.Context, filename string, fileData st
 		pkg.Files[result.Filename] = result
 		ctx := log.WithField(ctx, "linking", result.Filename)
 		log.Info(ctx, "linking for lint")
-		_, err := linker.linkResult(ctx, result)
+		err := linker.linkResult(ctx, result)
 		if err != nil {
 			return nil, fmt.Errorf("linking j5 file %s: %w", filename, err)
 		}
@@ -83,20 +83,16 @@ func (ps *PackageSet) LintAll(ctx context.Context) (*errpos.ErrorsWithSource, er
 
 		for _, file := range pkg.Files {
 			linker := newLinker(ps, ps.symbols)
-			linked, err := linker.linkResult(ctx, file)
+			err := linker.linkResult(ctx, file)
 			if err != nil {
 				return nil, fmt.Errorf("linking file %s: %w", file.Summary.SourceFilename, err)
 			}
 			if linker.errs.HasAny() {
-				if file.Summary.SourceFilename == linked.Path() {
-					data, err := ps.GetLocalFileContent(ctx, file.Summary.SourceFilename)
-					if err != nil {
-						return nil, fmt.Errorf("getRawFile %s: %w", file.Summary.SourceFilename, err)
-					}
-					return convertLintErrors(file.Summary.SourceFilename, data, linker.errs)
-				} else {
-					return convertLintErrors(file.Summary.SourceFilename+"!Virtual", "", linker.errs)
+				data, err := ps.GetLocalFileContent(ctx, file.Summary.SourceFilename)
+				if err != nil {
+					return nil, fmt.Errorf("getRawFile %s: %w", file.Summary.SourceFilename, err)
 				}
+				return convertLintErrors(file.Summary.SourceFilename, data, linker.errs)
 			}
 		}
 
