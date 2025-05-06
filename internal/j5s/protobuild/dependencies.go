@@ -1,70 +1,65 @@
 package protobuild
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
-	"github.com/pentops/j5/internal/protosrc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
+
+type fileResolver interface {
+	findFileByPath(filename string) (*SearchResult, error)
+	listPackageFiles(pkgName string) ([]string, error)
+}
+
+func dependencyChainResolver(deps DependencySet) (fileResolver, error) {
+	depResolver, err := newDependencyResolver(deps)
+	if err != nil {
+		return nil, fmt.Errorf("newResolver: %w", err)
+	}
+
+	builtinResolver := newBuiltinResolver()
+	resolver := newResolverCache(builtinResolver, depResolver)
+
+	return resolver, nil
+}
+
+var errFileNotFound = fmt.Errorf("file not found")
+var errPackageNotFound = fmt.Errorf("package not found")
 
 type DependencySet interface {
 	ListDependencyFiles(root string) []string
 	GetDependencyFile(filename string) (*descriptorpb.FileDescriptorProto, error)
 }
 
-// dependencyResolver provides non-local proto files, either Global or from a
-// DependencySet.
+// dependencyResolver wraps a DependencySet to resolve proto sources
 type dependencyResolver struct {
-	deps        DependencySet
-	resultCache map[string]*SearchResult
+	deps DependencySet
 }
 
 func newDependencyResolver(externalDeps DependencySet) (*dependencyResolver, error) {
 	rr := &dependencyResolver{
-		deps:        externalDeps,
-		resultCache: make(map[string]*SearchResult),
+		deps: externalDeps,
 	}
 	return rr, nil
 }
 
-type DependencyFile struct {
-	Desc *descriptorpb.FileDescriptorProto
-	Refl *protoreflect.FileDescriptor
+func (rr *dependencyResolver) listPackageFiles(pkgName string) ([]string, error) {
+	root := strings.ReplaceAll(pkgName, ".", "/")
+
+	filenames := rr.deps.ListDependencyFiles(root)
+	if len(filenames) == 0 {
+		return nil, fmt.Errorf("no files for package at %s", root)
+	}
+
+	return filenames, nil
 }
 
-func (rr *dependencyResolver) findFileByPath(ctx context.Context, filename string) (*SearchResult, error) {
-	if res, ok := rr.resultCache[filename]; ok {
-		return res, nil
-	}
-	file, err := rr.loadFile(ctx, filename)
-	if err != nil {
-		return nil, err
-	}
-	rr.resultCache[filename] = file
-	return file, nil
-}
-
-func (rr *dependencyResolver) loadFile(_ context.Context, filename string) (*SearchResult, error) {
+func (rr *dependencyResolver) findFileByPath(filename string) (*SearchResult, error) {
 
 	ec := &ErrCollector{}
-	if protosrc.IsBuiltInProto(filename) {
-		refl, err := protoregistry.GlobalFiles.FindFileByPath(filename)
-		if err != nil {
-			return nil, fmt.Errorf("find builtin file %s: %w", filename, err)
-		}
-		summary, err := buildSummaryFromReflect(refl, ec)
-		if err != nil {
-			return nil, fmt.Errorf("summary for builtin %s: %w", filename, err)
-		}
-		return &SearchResult{
-			Summary: summary,
-			Refl:    refl,
-		}, nil
-	}
 
 	file, err := rr.deps.GetDependencyFile(filename)
 	if err != nil {
@@ -76,37 +71,128 @@ func (rr *dependencyResolver) loadFile(_ context.Context, filename string) (*Sea
 		return nil, fmt.Errorf("summary for dependency %s: %w", file, err)
 	}
 	return &SearchResult{
-		Summary: summary,
-		Desc:    file,
+		Summary:    summary,
+		Desc:       file,
+		SourceType: ExternalProtoSource,
 	}, nil
 }
 
-func (rr *dependencyResolver) PackageFiles(ctx context.Context, pkgName string) ([]*SearchResult, error) {
-	filenames, err := rr.listPackageFiles(ctx, pkgName)
-	if err != nil {
-		return nil, err
-	}
-
-	files := make([]*SearchResult, 0)
-	for _, filename := range filenames {
-		file, err := rr.findFileByPath(ctx, filename)
-		if err != nil {
-			return nil, err
-		}
-		files = append(files, file)
-	}
-	return files, nil
+var builtinPrefixes = []string{
+	"buf/validate/",
+	"google/api/",
+	"google/protobuf/",
+	"j5/auth/v1/",
+	"j5/bcl/v1/",
+	"j5/client/v1/",
+	"j5/ext/v1/",
+	"j5/list/v1/",
+	"j5/messaging/v1/",
+	"j5/schema/v1/",
+	"j5/source/v1/",
+	"j5/sourcedef/v1/",
+	"j5/state/v1/",
+	"j5/types/any/v1/",
+	"j5/types/date/v1/",
+	"j5/types/decimal/v1/",
 }
 
-func (rr *dependencyResolver) listPackageFiles(_ context.Context, pkgName string) ([]string, error) {
-	root := strings.ReplaceAll(pkgName, ".", "/")
-	if protosrc.IsBuiltInProto(root + "/") {
-		return []string{}, nil
+type builtinResolver struct {
+}
+
+func newBuiltinResolver() *builtinResolver {
+	return &builtinResolver{}
+}
+
+func (br *builtinResolver) hasRoot(filename string) bool {
+	for _, prefix := range builtinPrefixes {
+		if strings.HasPrefix(filename, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func (br *builtinResolver) listPackageFiles(pkgName string) ([]string, error) {
+	root := strings.ReplaceAll(pkgName, ".", "/") + "/"
+	isBuiltin := br.hasRoot(root)
+	if !isBuiltin {
+		return nil, errPackageNotFound
+	}
+	files := []string{}
+	protoregistry.GlobalFiles.RangeFilesByPackage(protoreflect.FullName(pkgName), func(refl protoreflect.FileDescriptor) bool {
+		files = append(files, refl.Path())
+		return true
+	})
+
+	return files, nil
+
+}
+
+func (br *builtinResolver) findFileByPath(filename string) (*SearchResult, error) {
+	if !br.hasRoot(filename) {
+		return nil, errFileNotFound
 	}
 
-	files := rr.deps.ListDependencyFiles(root)
-	if len(files) == 0 {
-		return nil, fmt.Errorf("no files for package at %s", root)
+	refl, err := protoregistry.GlobalFiles.FindFileByPath(filename)
+	if err != nil {
+		return nil, fmt.Errorf("find builtin file %s: %w", filename, err)
 	}
-	return files, nil
+
+	ec := &ErrCollector{}
+	summary, err := buildSummaryFromReflect(refl, ec)
+	if err != nil {
+		return nil, fmt.Errorf("summary for builtin %s: %w", filename, err)
+	}
+	return &SearchResult{
+		Filename:   filename,
+		Summary:    summary,
+		Refl:       refl,
+		SourceType: BuiltInProtoSource,
+	}, nil
+}
+
+type resolverCache struct {
+	cache   map[string]*SearchResult
+	sources []fileResolver
+}
+
+func newResolverCache(sources ...fileResolver) *resolverCache {
+	return &resolverCache{
+		cache:   make(map[string]*SearchResult),
+		sources: sources,
+	}
+}
+
+func (rc *resolverCache) listPackageFiles(pkgName string) ([]string, error) {
+	for _, source := range rc.sources {
+		files, err := source.listPackageFiles(pkgName)
+		if err != nil {
+			if err == errPackageNotFound {
+				continue // try next source
+			}
+			return nil, err
+		}
+		return files, nil
+	}
+	return nil, errPackageNotFound
+}
+
+func (rc *resolverCache) findFileByPath(filename string) (*SearchResult, error) {
+	if res, ok := rc.cache[filename]; ok {
+		return res, nil
+	}
+
+	for _, source := range rc.sources {
+		file, err := source.findFileByPath(filename)
+		if err != nil {
+			if err == errFileNotFound {
+				continue // try next source
+			}
+			return nil, err
+		}
+		rc.cache[filename] = file
+		return file, nil
+	}
+
+	return nil, errFileNotFound
 }

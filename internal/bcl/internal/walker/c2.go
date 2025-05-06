@@ -71,7 +71,7 @@ func doBody(sc Context, body parser.Body) error {
 			}
 
 		case *parser.Assignment:
-			sc.Logf("Assign Statement %#v <- %#v (%s)", decl.Key, decl.Value, decl.SourceNode.Start)
+			sc.Logf("Assign Statement %#v <- %#v (%s)", decl.Key, decl.Value, decl.Start)
 			err := doAssign(sc, decl)
 			if err != nil {
 				err = errpos.AddPosition(err, decl.Position())
@@ -112,7 +112,7 @@ func doDescription(sc Context, decl *parser.Description) error {
 
 func doFullBlock(sc Context, decl *parser.Block) error {
 
-	typeTag := decl.BlockHeader.Type
+	typeTag := decl.Type
 
 	newScope, err := sc.BuildScope(nil, typeTag.Idents, ResetScope)
 	if err != nil {
@@ -161,17 +161,17 @@ func doBlock(sc Context, spec schema.BlockSpec, bs *parser.Block) error {
 
 	rootBlockSpec := spec
 
-	gotTags := newPopSet(bs.BlockHeader.Tags, bs.BlockHeader.Type.End)
+	gotTags := newPopSet(bs.Tags, bs.Type.End)
 
 	return walkTags(sc, spec, gotTags, func(sc Context, spec schema.BlockSpec) error {
 
-		gotQualifiers := newPopSet(bs.BlockHeader.Qualifiers, bs.BlockHeader.Start)
+		gotQualifiers := newPopSet(bs.Qualifiers, bs.Start)
 
 		return walkQualifiers(sc, spec, gotQualifiers, func(sc Context, spec schema.BlockSpec) error {
-			if bs.BlockHeader.Description != nil {
+			if bs.Description != nil {
 
 				if rootBlockSpec.Description == nil {
-					return sc.WrapErr(fmt.Errorf("block %q has no description field", spec.ErrName()), bs.BlockHeader.Description)
+					return sc.WrapErr(fmt.Errorf("block %q has no description field", spec.ErrName()), bs.Description)
 				}
 				if err := sc.SetAttribute(schema.PathSpec{*rootBlockSpec.Description}, nil, parser.NewStringValue(bs.Description.Value, bs.SourceNode)); err != nil {
 					return err
@@ -192,12 +192,13 @@ func checkBang(sc Context, tagSpec schema.Tag, gotTag parser.TagValue) error {
 		return nil
 	}
 	var path schema.PathSpec
-	if gotTag.Mark == parser.TagMarkBang {
+	switch gotTag.Mark {
+	case parser.TagMarkBang:
 		if tagSpec.BangFieldName == nil {
 			return sc.WrapErr(fmt.Errorf("tag %s does not support bang", tagSpec.FieldName), gotTag)
 		}
 		path = schema.PathSpec{*tagSpec.BangFieldName}
-	} else if gotTag.Mark == parser.TagMarkQuestion {
+	case parser.TagMarkQuestion:
 		if tagSpec.QuestionFieldName == nil {
 			return sc.WrapErr(fmt.Errorf("tag %s does not support question", tagSpec.FieldName), gotTag)
 		}

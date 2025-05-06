@@ -48,22 +48,22 @@ func (dd *Date) UnmarshalText(data []byte) error {
 func DateFromString(data string) (*Date, error) {
 	parts := strings.Split(data, "-")
 	if len(parts) != 3 {
-		return nil, fmt.Errorf("Invalid date string: %s", data)
+		return nil, fmt.Errorf("invalid date string: %s", data)
 	}
 
 	year, err := strconv.Atoi(parts[0])
 	if err != nil {
-		return nil, fmt.Errorf("Invalid date string: %s", data)
+		return nil, fmt.Errorf("invalid date string: %s", data)
 	}
 
 	month, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return nil, fmt.Errorf("Invalid date string: %s", data)
+		return nil, fmt.Errorf("invalid date string: %s", data)
 	}
 
 	day, err := strconv.Atoi(parts[2])
 	if err != nil {
-		return nil, fmt.Errorf("Invalid date string: %s", data)
+		return nil, fmt.Errorf("invalid date string: %s", data)
 	}
 
 	dd := &Date{

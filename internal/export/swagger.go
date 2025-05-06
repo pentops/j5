@@ -118,7 +118,7 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 		if err != nil {
 			return fmt.Errorf("path param %s: %w", property.Name, err)
 		}
-		operation.OperationHeader.Parameters = append(operation.OperationHeader.Parameters, SwaggerParameter{
+		operation.Parameters = append(operation.Parameters, SwaggerParameter{
 			Name:        property.Name,
 			In:          "path",
 			Description: property.Description,
@@ -132,7 +132,7 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 		if err != nil {
 			return fmt.Errorf("query param %s: %w", property.Name, err)
 		}
-		operation.OperationHeader.Parameters = append(operation.OperationHeader.Parameters, SwaggerParameter{
+		operation.Parameters = append(operation.Parameters, SwaggerParameter{
 			Name:        property.Name,
 			In:          "query",
 			Description: property.Description,

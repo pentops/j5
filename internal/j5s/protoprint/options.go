@@ -42,14 +42,11 @@ func parseOption(opt *optionreflect.OptionDefinition) parsedOption {
 	if !ok {
 		maxDepth = 5
 	}
-	simplify := true
+	simplify := opt.Desc.FullName() != "google.api.http"
 
 	// convention seems to dictate these are always specified as
 	// (google.api.http) = { ... }
 	// even if it's just a get.
-	if opt.Desc.FullName() == "google.api.http" {
-		simplify = false
-	}
 
 	if simplify {
 		opt.Simplify(maxDepth)

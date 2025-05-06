@@ -136,7 +136,7 @@ func TestEntity(t *testing.T) {
 			t.Fatalf("expected ref")
 		}
 		// not an inline ref, kind-of
-		assert.Equal(t, "FooEventType.FooCreated", ref.Ref.Schema)
+		assert.Equal(t, "FooEventType.FooCreated", ref.Schema)
 	}
 
 	if prop, ok := properties["FooEventType.FooCreated.inline"]; !ok {
@@ -150,7 +150,7 @@ func TestEntity(t *testing.T) {
 			t.Fatalf("expected inline ref")
 		}
 
-		assert.Equal(t, "FooEventType.FooCreated.Qux", ref.Ref.Schema)
+		assert.Equal(t, "FooEventType.FooCreated.Qux", ref.Schema)
 	}
 
 	if obj, ok := objects["FooEventType.FooCreated.Qux"]; !ok {

@@ -807,11 +807,11 @@ func (ww *conversionVisitor) setJ5Ext(node sourcewalk.SourceNode, dest *descript
 		err := RangeField(j5ExtRefl, func(fd protoreflect.FieldDescriptor, v protoreflect.Value) error {
 			destField := j5ExtFields.ByName(fd.Name())
 			if destField == nil {
-				return fmt.Errorf("No equivalent for %s in %s", fd.FullName(), j5ExtRefl.Descriptor().FullName())
+				return fmt.Errorf("no equivalent for %s in %s", fd.FullName(), j5ExtRefl.Descriptor().FullName())
 			}
 
 			if destField.Kind() != fd.Kind() {
-				return fmt.Errorf("Field %s has different kind in %s", fd.FullName(), j5ExtRefl.Descriptor().FullName())
+				return fmt.Errorf("field %s has different kind in %s", fd.FullName(), j5ExtRefl.Descriptor().FullName())
 			}
 
 			extTypedRefl.Set(fd, j5ExtRefl.Get(destField))

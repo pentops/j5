@@ -8,7 +8,7 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250307204501-0409229c3780.1
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/pentops/flowtest v0.0.0-20241110231021-42663ac00b63
+	github.com/pentops/flowtest v0.0.0-20250416222312-c5823a736ca5
 	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.10.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20250324211829-b45e905df463
@@ -28,9 +28,9 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/jhump/protoreflect v1.17.0 // indirect
-	github.com/pentops/golib v0.0.0-20250107012216-1b5307b3bfe0
-	github.com/pentops/log.go v0.0.0-20250304233315-e0210b7a6dc3
-	github.com/pentops/o5-messaging v0.0.0-20250317182016-de51c0e702a3
+	github.com/pentops/golib v0.0.0-20250326060930-8c83d58ddb63
+	github.com/pentops/log.go v0.0.0-20250429190455-112bbaa2cd2e
+	github.com/pentops/o5-messaging v0.0.0-20250408063726-cf9d6419c7cd
 	github.com/pentops/runner v0.0.0-20250116202335-8635b2a42547
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0

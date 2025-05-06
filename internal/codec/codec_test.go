@@ -18,7 +18,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pentops/flowtest/prototest"
-	"github.com/pentops/j5/gen/test/schema/v1/schema_testpb"
+	"github.com/pentops/j5/internal/gen/test/schema/v1/schema_testpb"
 	"github.com/pentops/j5/j5types/any_j5t"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"

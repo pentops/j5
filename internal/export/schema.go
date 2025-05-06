@@ -191,14 +191,14 @@ func (op *ObjectProperty) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("no schema on object property")
 	}
 
-	if op.Schema.Ref != nil {
-		base["$ref"] = *op.Schema.Ref
-	} else if op.Schema.OneOf != nil {
-		base["oneOf"] = op.Schema.OneOf
-	} else if op.Schema.AnyOf != nil {
-		base["anyOf"] = op.Schema.AnyOf
-	} else if op.Schema.SchemaItem != nil {
-		si := op.Schema.SchemaItem
+	if op.Ref != nil {
+		base["$ref"] = *op.Ref
+	} else if op.OneOf != nil {
+		base["oneOf"] = op.OneOf
+	} else if op.AnyOf != nil {
+		base["anyOf"] = op.AnyOf
+	} else if op.SchemaItem != nil {
+		si := op.SchemaItem
 		if si.Type == nil {
 			return nil, fmt.Errorf("no type set")
 		}

@@ -3,6 +3,8 @@ package protobuild
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
@@ -15,40 +17,82 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-type searchLinker struct {
-	symbols  *linker.Symbols
-	Reporter reporter.Reporter
-	resolver fileSource
+type SourceType int
+
+const (
+	LocalJ5Source SourceType = iota
+	LocalProtoSource
+	BuiltInProtoSource
+	ExternalProtoSource
+)
+
+var sourceTypeNames = map[SourceType]string{
+	LocalJ5Source:       "Local J5",
+	LocalProtoSource:    "Local Proto",
+	BuiltInProtoSource:  "Built-in Proto",
+	ExternalProtoSource: "External Proto",
 }
 
-func newLinker(src fileSource, errs reporter.Reporter) *searchLinker {
-	return &searchLinker{
-		symbols:  &linker.Symbols{},
-		Reporter: errs,
-		resolver: src,
+func (st SourceType) String() string {
+	if name, ok := sourceTypeNames[st]; ok {
+		return name
 	}
+	return fmt.Sprintf("Unknown SourceType %d", st)
 }
 
 type SearchResult struct {
-	Summary *j5convert.FileSummary
+	Filename string
+	Summary  *j5convert.FileSummary
 
-	// Results are checked in lexical order
-	Linked      linker.File
+	SourceType SourceType
+
+	Linked linker.File
+
+	// Oneof
 	Refl        protoreflect.FileDescriptor
 	Desc        *descriptorpb.FileDescriptorProto
 	ParseResult *parser.Result
 }
 
-type fileSource interface {
-	findFileByPath(ctx context.Context, filename string) (*SearchResult, error)
+func (sr *SearchResult) listDependencies() ([]string, error) {
+	if sr.Refl != nil {
+		imports := sr.Refl.Imports()
+		deps := make([]string, 0, imports.Len())
+		for i := range imports.Len() {
+			deps = append(deps, imports.Get(i).Path())
+		}
+		return deps, nil
+	}
+	if sr.Desc != nil {
+		return sr.Desc.Dependency, nil
+	}
+	if sr.ParseResult != nil {
+		return (*sr.ParseResult).FileDescriptorProto().Dependency, nil
+	}
+	return nil, fmt.Errorf("no dependencies available in SearchResult")
+
 }
 
-func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) (linker.Files, error) {
-	files := make(linker.Files, 0, len(filenames))
+type searchLinker struct {
+	symbols  *linker.Symbols
+	resolver fileResolver // usually *PackageSet
+	errs     *ErrCollector
+}
+
+func newLinker(src fileResolver, symbols *linker.Symbols) *searchLinker {
+	return &searchLinker{
+		symbols:  symbols,
+		errs:     &ErrCollector{},
+		resolver: src,
+	}
+}
+
+func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) ([]*SearchResult, error) {
+	files := make([]*SearchResult, 0, len(filenames))
 	for _, filename := range filenames {
-		file, err := ll.resolveFile(ctx, filename)
+		file, err := ll._resolveFile(ctx, filename)
 		if err != nil {
-			return nil, fmt.Errorf("resolve file %s: %w", filename, err)
+			return nil, fmt.Errorf("linker, resolve file %s: %w", filename, err)
 		}
 
 		files = append(files, file)
@@ -57,102 +101,155 @@ func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) (lin
 	return files, nil
 }
 
-func (ll *searchLinker) resolveFile(ctx context.Context, filename string) (linker.File, error) {
+func (ll *searchLinker) _resolveFile(ctx context.Context, filename string) (*SearchResult, error) {
 	ctx = log.WithField(ctx, "askFilename", filename)
-	result, err := ll.resolver.findFileByPath(ctx, filename)
+	result, err := ll.resolver.findFileByPath(filename)
 	if err != nil {
 		return nil, fmt.Errorf("findFileByPath: %w", err)
 	}
 
-	return ll.linkResult(ctx, result)
+	err = ll.linkResult(ctx, result)
+	if err != nil {
+		return nil, fmt.Errorf("linkResult: %w", err)
+	}
+	return result, nil
 }
 
-func (ll *searchLinker) linkResult(ctx context.Context, result *SearchResult) (linker.File, error) {
+func (ll *searchLinker) linkResult(ctx context.Context, result *SearchResult) error {
 	if result.Linked != nil {
-		log.WithField(ctx, "sourceFilename", result.Summary.SourceFilename).Debug("pre-linked")
-		return result.Linked, nil
+		// result already linked
+		return nil
 	}
-	log.WithField(ctx, "sourceFilename", result.Summary.SourceFilename).Debug("link-new")
 
-	linked, err := ll._linkNewResult(ctx, result)
+	log.WithField(ctx,
+		"sourceFilename", result.Summary.SourceFilename,
+		"sourceType", result.SourceType.String(),
+	).Debug("link-new")
+
+	dependencyFilenames, err := result.listDependencies()
 	if err != nil {
-		return nil, err
+		return fmt.Errorf("listing dependencies: %w", err)
+	}
+
+	dependencies, err := ll.resolveAll(ctx, dependencyFilenames)
+	if err != nil {
+		return fmt.Errorf("loading dependencies: %w", err)
+	}
+
+	info := linkInfo{
+		deps:    dependencies,
+		symbols: ll.symbols,
+		errs:    ll.errs.Handler(),
+	}
+
+	linked, err := result.link(info)
+	if err != nil {
+		info.debugState(os.Stderr)
+		return fmt.Errorf("linking: %w", err)
 	}
 
 	result.Linked = linked
 
-	return linked, nil
-
+	err = ll.symbols.Import(linked, ll.errs.Handler())
+	if err != nil {
+		info.debugState(os.Stderr)
+		return fmt.Errorf("importing new file into symbols: %w", err)
+	}
+	return nil
 }
 
-func (ll *searchLinker) _linkNewResult(ctx context.Context, result *SearchResult) (linker.File, error) {
+type linkInfo struct {
+	deps    []*SearchResult //linker.Files
+	symbols *linker.Symbols
+	errs    *reporter.Handler
+}
+
+func (info *linkInfo) linkerDeps() linker.Files {
+	return resultsToLinkerFiles(info.deps)
+}
+
+func resultsToLinkerFiles(results []*SearchResult) linker.Files {
+
+	deps := make(linker.Files, 0, len(results))
+	for _, dep := range results {
+		if dep.Linked != nil {
+			deps = append(deps, dep.Linked)
+		}
+	}
+	return deps
+}
+
+func (info *linkInfo) debugState(ww io.Writer) {
+	fmt.Fprintln(ww, "Linker State:")
+	fmt.Fprintln(ww, "  Dependencies:")
+	for _, dep := range info.deps {
+		fmt.Fprintf(ww, "   - %s (%s)\n", dep.Filename, dep.SourceType.String())
+	}
+}
+
+func (result *SearchResult) link(ll linkInfo) (linker.File, error) {
+	// REFACTOR: The types should be an interface implementation
 	if result.Refl != nil {
-		return linker.NewFileRecursive(result.Refl)
+		file, err := _linkReflection(ll, result.Refl)
+		if err != nil {
+			return nil, fmt.Errorf("linking Refl: %w", err)
+		}
+		return file, nil
 	}
 
 	if result.Desc != nil {
-		return ll._descriptorToFile(ctx, result.Desc)
+		file, err := _linkDescriptorProto(ll, result.Desc)
+		if err != nil {
+			return nil, fmt.Errorf("linking Desc: %w", err)
+		}
+		return file, nil
 	}
 
 	if result.ParseResult != nil {
-		return ll.resultToFile(ctx, *result.ParseResult)
+		file, err := _linkParserResult(ll, *result.ParseResult)
+		if err != nil {
+			return nil, fmt.Errorf("linking ParseResult: %w", err)
+		}
+		return file, nil
 	}
 
-	return nil, fmt.Errorf("Had no result")
+	return nil, fmt.Errorf("search result type not unknown")
 }
 
-func (ll *searchLinker) resultToFile(ctx context.Context, result parser.Result) (linker.File, error) {
-	desc := result.FileDescriptorProto()
-	deps, err := ll.loadDependencies(ctx, desc)
+func _linkParserResult(ll linkInfo, result parser.Result) (linker.File, error) {
+	linked, err := linker.Link(result, ll.linkerDeps(), ll.symbols, ll.errs)
+	if err != nil {
+		return nil, fmt.Errorf("linking using protocompile linker: %w", err)
+	}
+
+	_, err = options.InterpretOptions(linked, ll.errs)
 	if err != nil {
 		return nil, err
 	}
 
-	handler := reporter.NewHandler(ll.Reporter)
-	linked, err := linker.Link(result, deps, ll.symbols, handler)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = options.InterpretOptions(linked, handler)
-	if err != nil {
-		return nil, err
-	}
-
-	linked.CheckForUnusedImports(handler)
+	linked.CheckForUnusedImports(ll.errs)
 	return linked, nil
 }
 
-func (ll *searchLinker) loadDependencies(ctx context.Context, desc *descriptorpb.FileDescriptorProto) (linker.Files, error) {
-	deps := make(linker.Files, 0, len(desc.Dependency))
-	for _, dep := range desc.Dependency {
-		ll, err := ll.resolveFile(ctx, dep)
-		if err != nil {
-			return nil, fmt.Errorf("resolve %s: %w", dep, err)
-		}
-
-		deps = append(deps, ll)
+func _linkReflection(ll linkInfo, refl protoreflect.FileDescriptor) (linker.File, error) {
+	file, err := linker.NewFile(refl, ll.linkerDeps())
+	if err != nil {
+		return nil, fmt.Errorf("creating file from refl: %w", err)
 	}
 
-	return deps, nil
+	return file, nil
 }
 
-func (ll *searchLinker) _descriptorToFile(ctx context.Context, desc *descriptorpb.FileDescriptorProto) (linker.File, error) {
-	deps, err := ll.loadDependencies(ctx, desc)
-	if err != nil {
-		return nil, fmt.Errorf("loadDependencies: %w", err)
-	}
+func _linkDescriptorProto(ll linkInfo, desc *descriptorpb.FileDescriptorProto) (linker.File, error) {
 
-	handler := reporter.NewHandler(ll.Reporter)
 	result := parser.ResultWithoutAST(desc)
-	log.WithField(ctx, "descName", desc.GetName()).Debug("descriptorToFile")
 
-	linked, err := linker.Link(result, deps, ll.symbols, handler)
+	linked, err := linker.Link(result, ll.linkerDeps(), ll.symbols, ll.errs)
 	if err != nil {
 		return nil, fmt.Errorf("descriptorToFile, link: %w", err)
 	}
 
-	_, err = options.InterpretOptions(linked, handler)
+	_, err = options.InterpretOptions(linked, ll.errs)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +261,7 @@ func (ll *searchLinker) _descriptorToFile(ctx context.Context, desc *descriptorp
 
 	linked.PopulateSourceCodeInfo()
 
-	linked.CheckForUnusedImports(handler)
+	linked.CheckForUnusedImports(ll.errs)
 	return linked, nil
 }
 
@@ -173,7 +270,7 @@ func (ll *searchLinker) _descriptorToFile(ctx context.Context, desc *descriptorp
 func markExtensionImportsUsed(file linker.File) error {
 	resolver := linker.ResolverFromFile(file)
 	messages := file.Messages()
-	for i := 0; i < messages.Len(); i++ {
+	for i := range messages.Len() {
 		message := messages.Get(i)
 		err := markMessageExtensionImportsUsed(resolver, message)
 		if err != nil {
@@ -182,7 +279,7 @@ func markExtensionImportsUsed(file linker.File) error {
 	}
 
 	services := file.Services()
-	for i := 0; i < services.Len(); i++ {
+	for i := range services.Len() {
 		service := services.Get(i)
 		err := markOptionImportsUsed(resolver, service.Options())
 		if err != nil {
@@ -190,7 +287,7 @@ func markExtensionImportsUsed(file linker.File) error {
 		}
 
 		methods := service.Methods()
-		for j := 0; j < methods.Len(); j++ {
+		for j := range methods.Len() {
 			method := methods.Get(j)
 			err = markOptionImportsUsed(resolver, method.Options())
 			if err != nil {
@@ -200,7 +297,7 @@ func markExtensionImportsUsed(file linker.File) error {
 	}
 
 	enums := file.Enums()
-	for i := 0; i < enums.Len(); i++ {
+	for i := range enums.Len() {
 		enum := enums.Get(i)
 		err := markOptionImportsUsed(resolver, enum.Options())
 		if err != nil {
@@ -208,7 +305,7 @@ func markExtensionImportsUsed(file linker.File) error {
 		}
 
 		values := enum.Values()
-		for j := 0; j < values.Len(); j++ {
+		for j := range values.Len() {
 			value := values.Get(j)
 			err = markOptionImportsUsed(resolver, value.Options())
 			if err != nil {
@@ -227,7 +324,7 @@ func markMessageExtensionImportsUsed(resolver linker.Resolver, message protorefl
 	}
 
 	fields := message.Fields()
-	for j := 0; j < fields.Len(); j++ {
+	for j := range fields.Len() {
 		field := fields.Get(j)
 		err = markOptionImportsUsed(resolver, field.Options())
 		if err != nil {
@@ -237,7 +334,7 @@ func markMessageExtensionImportsUsed(resolver linker.Resolver, message protorefl
 	}
 
 	oneofs := message.Oneofs()
-	for j := 0; j < oneofs.Len(); j++ {
+	for j := range oneofs.Len() {
 		oneof := oneofs.Get(j)
 		err = markOptionImportsUsed(resolver, oneof.Options())
 		if err != nil {
@@ -246,7 +343,7 @@ func markMessageExtensionImportsUsed(resolver linker.Resolver, message protorefl
 	}
 
 	nested := message.Messages()
-	for j := 0; j < nested.Len(); j++ {
+	for j := range nested.Len() {
 		nestedMessage := nested.Get(j)
 		err = markMessageExtensionImportsUsed(resolver, nestedMessage)
 		if err != nil {
@@ -260,7 +357,7 @@ func markMessageExtensionImportsUsed(resolver linker.Resolver, message protorefl
 func markOptionImportsUsed(resolver linker.Resolver, opts proto.Message) error {
 	var outerErr error
 
-	proto.RangeExtensions(opts, func(ext protoreflect.ExtensionType, value interface{}) bool {
+	proto.RangeExtensions(opts, func(ext protoreflect.ExtensionType, value any) bool {
 		td := ext.TypeDescriptor()
 		name := td.FullName()
 		_, err := resolver.FindExtensionByName(name)

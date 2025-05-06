@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/pentops/golib/gl"
+	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
-	"github.com/pentops/j5/internal/bcl/gen/j5/bcl/v1/bcl_j5pb"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 

@@ -383,7 +383,7 @@ func (fs *propSet) buildValue(prop *property, create bool) (Field, bool, error) 
 
 	msg := fs.value
 	if msg == nil {
-		return nil, false, fmt.Errorf("Reflection Bug: no fs.value in buildValue")
+		return nil, false, fmt.Errorf("reflection Bug: no fs.value in buildValue")
 	}
 
 	fieldContext := &propertyContext{
@@ -393,7 +393,7 @@ func (fs *propSet) buildValue(prop *property, create bool) (Field, bool, error) 
 	if len(prop.protoPath) == 0 {
 		wrapper, ok := prop.schema.Schema.(*j5schema.OneofField)
 		if !ok {
-			return nil, false, fmt.Errorf("Reflection Bug: no proto field and not a oneof")
+			return nil, false, fmt.Errorf("reflection Bug: no proto field and not a oneof")
 		}
 
 		descriptor := msg.Descriptor()
@@ -430,7 +430,7 @@ func (fs *propSet) buildValue(prop *property, create bool) (Field, bool, error) 
 		}
 		walkMessage = fieldValue.Message()
 		if walkMessage == nil {
-			return nil, false, fmt.Errorf("Reflection Bug: field %s is not a message", walkField.FullName())
+			return nil, false, fmt.Errorf("reflection bug: field %s is not a message", walkField.FullName())
 		}
 	}
 
@@ -461,7 +461,7 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 
 	case *j5schema.ArrayField:
 		if !value.fieldInParent.IsList() {
-			return nil, fmt.Errorf("Reflection Bug: ArrayField is not a list")
+			return nil, fmt.Errorf("reflection bug: ArrayField is not a list")
 		}
 
 		valVal, err := value.getMutableValue(true)

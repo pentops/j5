@@ -1,7 +1,6 @@
 package protobuild
 
 import (
-	"context"
 	"strings"
 	"testing"
 
@@ -20,7 +19,7 @@ func testLint(t *testing.T, tf *testFiles, td *testDeps) *errpos.ErrorsWithSourc
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}
 
-	out, err := LintAll(context.Background(), cc)
+	out, err := cc.LintAll(t.Context())
 	if err != nil {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}

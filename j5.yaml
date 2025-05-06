@@ -1,20 +1,14 @@
 ---
 
 bundles:
-  - name: j5
-    dir: proto/j5
+  - name: core
+    dir: proto/core
+
+  - name: builds
+    dir: proto/builds
 
   - name: test
     dir: proto/test
-
-  - name: buildtest
-    dir: proto/buildtest
-
-  - name: j5build
-    dir: proto/j5build
-
-  - name: bcl
-    dir: proto/bcl
 
   - name: bcltest
     dir: proto/bcltest
@@ -22,8 +16,7 @@ bundles:
 generate:
   - name: base
     inputs:
-      - local: j5
-      - local: test
+      - local: core
     output: .
     opts:
       paths: import
@@ -33,44 +26,47 @@ generate:
       - base: go-sugar
       - base: go-grpc
 
-  - name: j5build
+  - name: builds
     inputs:
-      - local: j5build
-      - local: buildtest
-
+      - local: builds
+    output: .
+    opts:
+      paths: import
+      module: github.com/pentops/j5
+    plugins:
+      - base: go
+      - base: go-sugar
+      - base: go-grpc
     output: .
     mods:
       - goPackageNames: 
           prefix: github.com/pentops/j5/gen
           suffixes:
             "": "_j5pb"
-    opts:
-      paths: import
-      module: github.com/pentops/j5
-    plugins:
-      - base: go
-      - base: go-sugar
 
-  - name: bcl
+  - name: test
     inputs:
-      - local: bcl
       - local: bcltest
+      - local: test
     output: .
     mods:
       - goPackageNames: 
-          prefix: github.com/pentops/j5/internal/bcl/gen
+          prefix: github.com/pentops/j5/internal/gen
           suffixes:
-            "": "_j5pb"
+            "": "_testpb"
+            "service": "_testspb"
     opts:
       paths: import
       module: github.com/pentops/j5
     plugins:
       - base: go
       - base: go-sugar
+      - base: go-grpc
+
 
 managedPaths:
  - gen
- - internal/bcl/gen
+ - internal/gen
 
 plugins:
   - name: go

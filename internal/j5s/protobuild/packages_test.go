@@ -41,8 +41,8 @@ func testCompile(t *testing.T, tf *testFiles, td *testDeps, pkg string) fileSet 
 
 	files := make(fileSet)
 	for _, file := range out {
-		t.Logf("GOT FILE %s", file.Path())
-		files[file.Path()] = file
+		t.Logf("GOT FILE %s", file.Linked.Path())
+		files[file.Linked.Path()] = file.Linked
 	}
 
 	return files
@@ -194,7 +194,7 @@ func TestCircularDependency(t *testing.T) {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}
 
-	_, _, err = cc.LoadLocalPackage(ctx, "foo.v1")
+	_, err = cc.LoadLocalPackage(ctx, "foo.v1")
 	if err == nil {
 		t.Fatalf("Expected error, got nil")
 	}

@@ -43,12 +43,12 @@ func runVerify(ctx context.Context, cfg struct {
 
 		sourceAPI, err := structure.APIFromImage(img)
 		if err != nil {
-			return fmt.Errorf("Source API From Image: %w", err)
+			return fmt.Errorf("source API From Image: %w", err)
 		}
 
 		clientAPI, err := j5client.APIFromSource(sourceAPI)
 		if err != nil {
-			return fmt.Errorf("Client API From Source: %w", err)
+			return fmt.Errorf("client API From Source: %w", err)
 		}
 
 		if err := structure.ResolveProse(img, clientAPI); err != nil {

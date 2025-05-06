@@ -7,6 +7,7 @@ import (
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/j5s/sourcewalk"
+	"slices"
 )
 
 type ErrCollector interface {
@@ -44,7 +45,7 @@ func SourceSummary(sourceFile *sourcedef_j5pb.SourceFile, ec ErrCollector) (*Fil
 	for _, refSrc := range cc.refs {
 		expanded := importMap.expand(refSrc.Ref)
 		if expanded == nil {
-			err := fmt.Errorf("package %q not imported (for schema %s)", refSrc.Ref.Package, refSrc.Ref.Schema)
+			err := fmt.Errorf("package %q not imported (for schema %s)", refSrc.Package, refSrc.Schema)
 			err = errpos.AddContext(err, strings.Join(refSrc.Source.Path, "."))
 			loc := refSrc.Source.GetPos()
 			if loc != nil {
@@ -95,10 +96,8 @@ type summaryWalker struct {
 }
 
 func (c *summaryWalker) includeSubFile(subPackage string) {
-	for _, file := range c.subPackageFiles {
-		if file == subPackage {
-			return
-		}
+	if slices.Contains(c.subPackageFiles, subPackage) {
+		return
 	}
 	c.subPackageFiles = append(c.subPackageFiles, subPackage)
 }

@@ -48,7 +48,7 @@ func walkOptionList(fieldDesc protoreflect.FieldDescriptor, list protoreflect.Li
 	}
 
 	if fieldDesc.Kind() == protoreflect.MessageKind {
-		for i := 0; i < list.Len(); i++ {
+		for i := range list.Len() {
 			item := list.Get(i)
 			msgChild := walkOptionMessage(fieldDesc, item.Message())
 			out.Children = append(out.Children, msgChild)
@@ -56,7 +56,7 @@ func walkOptionList(fieldDesc protoreflect.FieldDescriptor, list protoreflect.Li
 		return out
 	}
 
-	for i := 0; i < list.Len(); i++ {
+	for i := range list.Len() {
 		item := list.Get(i)
 		scalarChild := walkOptionScalar(fieldDesc, item)
 		out.Children = append(out.Children, scalarChild)
@@ -105,7 +105,7 @@ func walkOptionMessage(fieldDesc protoreflect.FieldDescriptor, msgVal protorefle
 	}
 
 	fields := msgVal.Descriptor().Fields()
-	for idx := 0; idx < fields.Len(); idx++ {
+	for idx := range fields.Len() {
 		fieldRefl := fields.Get(idx)
 		if !msgVal.Has(fieldRefl) {
 			continue
@@ -244,7 +244,7 @@ func prototextString(in string) string {
 // indexNeedEscapeInString returns the index of the character that needs
 // escaping. If no characters need escaping, this returns the input length.
 func indexNeedEscapeInString(s string) int {
-	for i := 0; i < len(s); i++ {
+	for i := range len(s) {
 		if c := s[i]; c < ' ' || c == '"' || c == '\'' || c == '\\' || c >= 0x7f {
 			return i
 		}

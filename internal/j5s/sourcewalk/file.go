@@ -40,7 +40,7 @@ func wrapErr(source SourceNode, err error) error {
 }
 
 func (fn *FileNode) RangeRootElements(visitor FileVisitor) error {
-	for idx, element := range fn.SourceFile.Elements {
+	for idx, element := range fn.Elements {
 		source := fn.Source.child("elements", strconv.Itoa(idx))
 		switch element := element.Type.(type) {
 		case *sourcedef_j5pb.RootElement_Object:

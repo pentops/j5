@@ -113,7 +113,7 @@ func (fb *fileBuilder) printElements(elements sourceElements) error {
 func (fb *fileBuilder) printOneof(et protoreflect.OneofDescriptor) error {
 	elements := newElements()
 	fields := et.Fields()
-	for idx := 0; idx < fields.Len(); idx++ {
+	for idx := range fields.Len() {
 		elements.add(fields.Get(idx))
 	}
 	return fb.printSection("oneof", et, elements)
@@ -122,7 +122,7 @@ func (fb *fileBuilder) printOneof(et protoreflect.OneofDescriptor) error {
 func (fb *fileBuilder) printEnum(enum protoreflect.EnumDescriptor) error {
 	elements := newElements()
 	values := enum.Values()
-	for idx := 0; idx < values.Len(); idx++ {
+	for idx := range values.Len() {
 		elements.add(values.Get(idx))
 	}
 	return fb.printSection("enum", enum, elements)
@@ -132,7 +132,7 @@ func (fb *fileBuilder) printService(svc protoreflect.ServiceDescriptor) error {
 
 	elements := newElements()
 	methods := svc.Methods()
-	for idx := 0; idx < methods.Len(); idx++ {
+	for idx := range methods.Len() {
 		elements.add(methods.Get(idx))
 	}
 
@@ -144,7 +144,7 @@ func (fb *fileBuilder) printMessage(msg protoreflect.MessageDescriptor) error {
 	elements := newElements()
 
 	fields := msg.Fields()
-	for idx := 0; idx < fields.Len(); idx++ {
+	for idx := range fields.Len() {
 		field := fields.Get(idx)
 		inOneof := field.ContainingOneof()
 		if inOneof != nil && !inOneof.IsSynthetic() {
@@ -154,7 +154,7 @@ func (fb *fileBuilder) printMessage(msg protoreflect.MessageDescriptor) error {
 	}
 
 	oneofs := msg.Oneofs()
-	for idx := 0; idx < oneofs.Len(); idx++ {
+	for idx := range oneofs.Len() {
 		oneof := oneofs.Get(idx)
 		if oneof.IsSynthetic() {
 			continue
@@ -163,7 +163,7 @@ func (fb *fileBuilder) printMessage(msg protoreflect.MessageDescriptor) error {
 	}
 
 	nestedMessages := msg.Messages()
-	for idx := 0; idx < nestedMessages.Len(); idx++ {
+	for idx := range nestedMessages.Len() {
 		nested := nestedMessages.Get(idx)
 		if nested.IsMapEntry() {
 			continue
@@ -172,7 +172,7 @@ func (fb *fileBuilder) printMessage(msg protoreflect.MessageDescriptor) error {
 	}
 
 	enums := msg.Enums()
-	for idx := 0; idx < enums.Len(); idx++ {
+	for idx := range enums.Len() {
 		elements.add(enums.Get(idx))
 	}
 

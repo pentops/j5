@@ -73,7 +73,7 @@ func (l *Linter) FileChanged(ctx context.Context, req *protocol.TextDocumentItem
 	// Step 1: Parse BCL
 	tree, err := parser.ParseFile(req.Text, false)
 	if err != nil {
-		if err == parser.HadErrors {
+		if err == parser.ErrWalker {
 			err = errpos.AddSourceFile(tree.Errors, req.URI.Filename(), req.Text)
 			return errorToDiagnostics(ctx, err)
 		} else if ews, ok := errpos.AsErrorsWithSource(err); ok {

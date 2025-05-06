@@ -70,7 +70,7 @@ func runJ5sLint(ctx context.Context, cfg struct {
 		}
 
 		if bundle == nil {
-			return fmt.Errorf("File %s not found in any bundle", cfg.File)
+			return fmt.Errorf("file %s not found in any bundle", cfg.File)
 		}
 
 		deps, err := bundle.GetDependencies(ctx, srcRoot)
@@ -93,7 +93,7 @@ func runJ5sLint(ctx context.Context, cfg struct {
 			return err
 		}
 
-		lintErr, err := protobuild.LintFile(ctx, compiler, relToBundle, string(data))
+		lintErr, err := compiler.LintFile(ctx, relToBundle, string(data))
 		if err != nil {
 			return err
 		}
@@ -102,7 +102,7 @@ func runJ5sLint(ctx context.Context, cfg struct {
 			return nil
 		}
 		fmt.Fprintln(os.Stderr, lintErr.HumanString(2))
-		return fmt.Errorf("Linting failed")
+		return fmt.Errorf("linting failed")
 	}
 
 	hadErrors := false
@@ -124,7 +124,7 @@ func runJ5sLint(ctx context.Context, cfg struct {
 			return err
 		}
 
-		lintErr, err := protobuild.LintAll(ctx, compiler)
+		lintErr, err := compiler.LintAll(ctx)
 		if err != nil {
 			return err
 		}
@@ -136,7 +136,7 @@ func runJ5sLint(ctx context.Context, cfg struct {
 	}
 
 	if hadErrors {
-		return fmt.Errorf("Linting failed")
+		return fmt.Errorf("linting failed")
 	}
 
 	fmt.Fprintln(os.Stderr, "No linting errors")
@@ -167,7 +167,7 @@ func runJ5sFmt(ctx context.Context, cfg struct {
 
 	if cfg.File != "" {
 		if cfg.Dir != "" {
-			return fmt.Errorf("Cannot specify both dir and file")
+			return fmt.Errorf("cannot specify both dir and file")
 		}
 		dir, pathname := path.Split(cfg.File)
 		outWriter = &fileWriter{dir: dir}
@@ -263,16 +263,16 @@ func runJ5sGenProto(ctx context.Context, cfg j5sGenProtoConfig) error {
 			}
 
 			for _, file := range out {
-				filename := file.Path()
+				filename := file.Linked.Path()
 				if !strings.HasSuffix(filename, ".j5s.proto") {
 					continue
 				}
 
-				out, err := protoprint.PrintFile(ctx, file, genComment)
+				out, err := protoprint.PrintFile(ctx, file.Linked, genComment)
 				if err != nil {
-					log.WithFields(ctx, map[string]interface{}{
+					log.WithFields(ctx, map[string]any{
 						"error":    err.Error(),
-						"filename": file.Path(),
+						"filename": file.Filename,
 					}).Error("Error printing file")
 					return err
 				}

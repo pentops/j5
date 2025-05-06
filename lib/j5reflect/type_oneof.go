@@ -67,7 +67,7 @@ func newOneofField(context fieldContext, schema *j5schema.OneofField, value *one
 
 // IsSet is true for a oneof if the inner type is set.
 func (field *oneofField) IsSet() bool {
-	_, ok, err := field.oneofImpl.GetOne()
+	_, ok, err := field.GetOne()
 	return ok && err == nil
 }
 

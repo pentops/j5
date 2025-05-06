@@ -55,7 +55,7 @@ func (opt *OptionDefinition) Simplify(maxDepth int) {
 	descFields := encoderMessageDesc.Fields()
 
 	definedFields := make([]protoreflect.FieldDescriptor, 0, descFields.Len())
-	for i := 0; i < descFields.Len(); i++ {
+	for i := range descFields.Len() {
 		field := descFields.Get(i)
 		if encoderMessageVal.Has(field) {
 			definedFields = append(definedFields, field)

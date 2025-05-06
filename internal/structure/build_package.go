@@ -92,7 +92,7 @@ func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 
 	descFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {
 		fileServices := file.Services()
-		for ii := 0; ii < fileServices.Len(); ii++ {
+		for ii := range fileServices.Len() {
 			service := fileServices.Get(ii)
 			services = append(services, service)
 		}
@@ -221,7 +221,7 @@ func SplitPackageParts(packageName string) (string, *string, error) {
 }
 func splitPackageParts(packageName string) (*packageID, error) {
 	packageParts := strings.Split(packageName, ".")
-	var idxOfVersion int = -1
+	var idxOfVersion = -1
 
 	for idx, part := range packageParts {
 		if reVersion.MatchString(part) {
@@ -250,32 +250,6 @@ func splitPackageParts(packageName string) (*packageID, error) {
 		return nil, fmt.Errorf("package %q: multiple sub version path parts", packageName)
 	}
 }
-
-/*
-func buildEvents(src protoreflect.ServiceDescriptor) ([]*j5schema.Event, error) {
-	events := make([]*j5package.Event, 0)
-	methods := src.Methods()
-	for ii := 0; ii < methods.Len(); ii++ {
-		method := methods.Get(ii)
-
-		schema, err := refs.SchemaReflect(method.Input())
-		if err != nil {
-			return nil, fmt.Errorf("method %s: %w", method.FullName(), err)
-		}
-		objSchema, ok := schema.(*j5schema.ObjectSchema)
-		if !ok {
-			return nil, fmt.Errorf("method %s: expected object schema", method.FullName())
-		}
-
-		eventSpec := &j5schema.Event{
-			Name:   string(method.Name()),
-			Schema: objSchema,
-		}
-
-		events = append(events, eventSpec)
-	}
-	return events, nil
-}*/
 
 func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, error) {
 
@@ -317,7 +291,7 @@ func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, err
 		service.Audience = serviceExt.Audience
 	}
 
-	for ii := 0; ii < methods.Len(); ii++ {
+	for ii := range methods.Len() {
 		method := methods.Get(ii)
 		builtMethod, err := buildMethod(service, method)
 		if err != nil {
@@ -407,7 +381,7 @@ func buildMethod(service *source_j5pb.Service, method protoreflect.MethodDescrip
 		if ext.StateQuery != nil {
 			serviceQuery := service.Type.GetStateEntityQuery()
 			if serviceQuery == nil {
-				return nil, fmt.Errorf("service %q is not a state query service, but has state query annotations.", service.Name)
+				return nil, fmt.Errorf("service %q is not a state query service, but has state query annotations", service.Name)
 			}
 
 			query := &client_j5pb.MethodType_StateQuery{
@@ -440,7 +414,7 @@ func buildTopic(src protoreflect.ServiceDescriptor) (*source_j5pb.Topic, error) 
 		Name:     string(src.Name()),
 		Messages: make([]*source_j5pb.TopicMessage, 0, methods.Len()),
 	}
-	for ii := 0; ii < methods.Len(); ii++ {
+	for ii := range methods.Len() {
 		method := methods.Get(ii)
 		builtMethod, err := buildTopicMethod(method)
 		if err != nil {

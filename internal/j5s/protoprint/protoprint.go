@@ -36,7 +36,7 @@ type fileBuffer struct {
 	extensions *optionreflect.Builder
 }
 
-func (fb *fileBuffer) p(indent int, args ...interface{}) {
+func (fb *fileBuffer) p(indent int, args ...any) {
 	if fb.addGap {
 		fb.addGap = false
 		fb.out.WriteString("\n")
@@ -73,7 +73,7 @@ func printFile(ff protoreflect.FileDescriptor, genComment string) ([]byte, error
 	return p.printFile(ff)
 }
 
-func (fb *fileBuilder) p(args ...interface{}) {
+func (fb *fileBuilder) p(args ...any) {
 	fb.out.p(fb.ind, args...)
 }
 
@@ -136,7 +136,7 @@ func (fb *fileBuilder) addGap() {
 	fb.out.addGap = true
 }
 
-func (fb *fileBuilder) endElem(end ...interface{}) {
+func (fb *fileBuilder) endElem(end ...any) {
 	// gaps should only occur between elements, not after the last one
 	fb.out.addGap = false
 	fb.p(end...)
@@ -162,7 +162,7 @@ func (fb *fileBuilder) printFile(ff protoreflect.FileDescriptor) ([]byte, error)
 	imports := ff.Imports()
 
 	importStrings := make([]string, 0, imports.Len())
-	for idx := 0; idx < imports.Len(); idx++ {
+	for idx := range imports.Len() {
 		dep := imports.Get(idx)
 		importStrings = append(importStrings, dep.Path())
 	}
@@ -178,7 +178,7 @@ func (fb *fileBuilder) printFile(ff protoreflect.FileDescriptor) ([]byte, error)
 	// quicker to write.
 	refl := ff.Options().ProtoReflect()
 	fields := refl.Descriptor().Fields()
-	for i := 0; i < fields.Len(); i++ {
+	for i := range fields.Len() {
 		field := fields.Get(i)
 		if !refl.Has(field) {
 			continue
@@ -195,7 +195,7 @@ func (fb *fileBuilder) printFile(ff protoreflect.FileDescriptor) ([]byte, error)
 	extBlocks := make([]extBlock, 0)
 
 	exts := ff.Extensions()
-	for idx := 0; idx < exts.Len(); idx++ {
+	for idx := range exts.Len() {
 		ext := exts.Get(idx)
 		fullName := ext.ContainingMessage().FullName()
 		found := false
@@ -223,17 +223,17 @@ func (fb *fileBuilder) printFile(ff protoreflect.FileDescriptor) ([]byte, error)
 	var elements = make(sourceElements, 0)
 
 	messages := ff.Messages()
-	for idx := 0; idx < messages.Len(); idx++ {
+	for idx := range messages.Len() {
 		elements.add(messages.Get(idx))
 	}
 
 	services := ff.Services()
-	for idx := 0; idx < services.Len(); idx++ {
+	for idx := range services.Len() {
 		elements.add(services.Get(idx))
 	}
 
 	enums := ff.Enums()
-	for idx := 0; idx < enums.Len(); idx++ {
+	for idx := range enums.Len() {
 		elements.add(enums.Get(idx))
 	}
 
@@ -277,7 +277,7 @@ func contextRefName(contextOfCall protoreflect.Descriptor, refElement protorefle
 	refPath := pathToPackage(refElement)
 	contextPath := pathToPackage(contextOfCall)
 
-	for i := 0; i < len(contextPath); i++ {
+	for i := range contextPath {
 		if len(refPath) == 0 || refPath[0] != contextPath[i] {
 			break
 		}

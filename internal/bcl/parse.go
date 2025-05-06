@@ -8,8 +8,8 @@ import (
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"github.com/bufbuild/protovalidate-go"
+	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
-	"github.com/pentops/j5/internal/bcl/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/internal/bcl/internal/parser"
 	"github.com/pentops/j5/internal/bcl/internal/walker"
 	"github.com/pentops/j5/internal/bcl/internal/walker/schema"
@@ -54,7 +54,7 @@ func (p *Parser) ParseFile(filename string, data string, msg protoreflect.Messag
 
 	tree, err := parser.ParseFile(data, p.FailFast)
 	if err != nil {
-		if err == parser.HadErrors {
+		if err == parser.ErrWalker {
 			return nil, errpos.AddSourceFile(tree.Errors, filename, data)
 		}
 		return nil, fmt.Errorf("parse file not HadErrors - : %w", err)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/pentops/golib/gl"
 	"google.golang.org/protobuf/types/descriptorpb"
+	"slices"
 )
 
 type fileContext struct {
@@ -59,10 +60,8 @@ func (fb *fileContext) ensureImport(importPath string) {
 	if importPath == *fb.fdp.Name {
 		return
 	}
-	for _, imp := range fb.fdp.Dependency {
-		if imp == importPath {
-			return
-		}
+	if slices.Contains(fb.fdp.Dependency, importPath) {
+		return
 	}
 	fb.fdp.Dependency = append(fb.fdp.Dependency, importPath)
 	sort.Strings(fb.fdp.Dependency)
@@ -71,21 +70,21 @@ func (fb *fileContext) ensureImport(importPath string) {
 func (fb *fileContext) addMessage(message *MessageBuilder) {
 	idx := int32(len(fb.fdp.MessageType))
 	path := []int32{4, idx}
-	fb.commentSet.mergeAt(path, message.commentSet)
+	fb.mergeAt(path, message.commentSet)
 	fb.fdp.MessageType = append(fb.fdp.MessageType, message.descriptor)
 }
 
 func (fb *fileContext) addEnum(enum *enumBuilder) {
 	idx := int32(len(fb.fdp.EnumType))
 	path := []int32{5, idx}
-	fb.commentSet.mergeAt(path, enum.commentSet)
+	fb.mergeAt(path, enum.commentSet)
 	fb.fdp.EnumType = append(fb.fdp.EnumType, enum.desc)
 }
 
 func (fb *fileContext) addService(service *serviceBuilder) {
 	idx := int32(len(fb.fdp.Service))
 	path := []int32{6, idx}
-	fb.commentSet.mergeAt(path, service.commentSet)
+	fb.mergeAt(path, service.commentSet)
 	fb.fdp.Service = append(fb.fdp.Service, service.desc)
 }
 
@@ -105,11 +104,11 @@ func blankMessage(name string) *MessageBuilder {
 }
 
 func (msg *MessageBuilder) addMessage(message *MessageBuilder) {
-	msg.commentSet.mergeAt([]int32{3, int32(len(msg.descriptor.NestedType))}, message.commentSet)
+	msg.mergeAt([]int32{3, int32(len(msg.descriptor.NestedType))}, message.commentSet)
 	msg.descriptor.NestedType = append(msg.descriptor.NestedType, message.descriptor)
 }
 
 func (msg *MessageBuilder) addEnum(enum *enumBuilder) {
-	msg.commentSet.mergeAt([]int32{4, int32(len(msg.descriptor.EnumType))}, enum.commentSet)
+	msg.mergeAt([]int32{4, int32(len(msg.descriptor.EnumType))}, enum.commentSet)
 	msg.descriptor.EnumType = append(msg.descriptor.EnumType, enum.desc)
 }

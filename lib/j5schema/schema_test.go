@@ -9,7 +9,7 @@ import (
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 
-	"github.com/pentops/j5/gen/test/schema/v1/schema_testpb"
+	"github.com/pentops/j5/internal/gen/test/schema/v1/schema_testpb"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -255,12 +255,12 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 	})
 
 	assertProperty("mapStringString", map[string]interface{}{
-		"protoField":                   jsontest.Array[float64]{36},
+		"protoField":                   jsontest.Array[float64]{50},
 		"schema.map.itemSchema.string": map[string]interface{}{},
 	})
 
 	assertProperty("flattened", map[string]interface{}{
-		"protoField":            jsontest.Array[float64]{42},
+		"protoField":            jsontest.Array[float64]{52},
 		"schema.object.flatten": true,
 	})
 }

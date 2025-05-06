@@ -2,9 +2,6 @@
 packages:
   - name: test.foo.v1
 
-dependencies:
-  - local: j5
-
 options:
   subPackages:
     - name: "service"

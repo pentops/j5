@@ -9,43 +9,68 @@ import "j5/types/any/v1/any.proto";
 import "j5/types/date/v1/date.proto";
 import "j5/types/decimal/v1/decimal.proto";
 
-option go_package = "github.com/pentops/j5/gen/test/schema/v1/schema_testpb";
 
 message FullSchema {
+
+  // Scalars
   string s_string = 1;
   optional string o_string = 2;
   repeated string r_string = 3;
+  
+  string key_string = 4 [(j5.ext.v1.field).key = {}];
 
-  float s_float = 4;
-  optional float o_float = 5;
-  repeated float r_float = 6;
+  float s_float = 5;
+  optional float o_float = 6;
+  repeated float r_float = 7;
 
-  google.protobuf.Timestamp ts = 7;
-  repeated google.protobuf.Timestamp r_ts = 8;
+  google.protobuf.Timestamp ts = 8;
+  repeated google.protobuf.Timestamp r_ts = 9;
 
-  bool s_bool = 9;
-  optional bool o_bool = 10;
-  repeated bool r_bool = 11;
-
-  int32 s_int32 = 20;
-  uint32 s_uint32 = 21;
-  sint32 s_sint32 = 22;
-  int64 s_int64 = 23;
-  uint64 s_uint64 = 24;
+  bool s_bool = 10;
+  optional bool o_bool = 11;
+  repeated bool r_bool = 12;
+  
+  int32 s_int32 = 13;
+  uint32 s_uint32 = 14;
+  sint32 s_sint32 = 15;
+  int64 s_int64 = 16;
+  uint64 s_uint64 = 17;
+  
+  bytes s_bytes = 18;
+  repeated bytes r_bytes = 19;
 
   Bar s_bar = 30;
   repeated Bar r_bars = 31;
 
-  Enum enum = 32;
-  repeated Enum r_enum = 33;
+  Enum enum = 40;
+  repeated Enum r_enum = 41;
 
-  bytes s_bytes = 34;
-  repeated bytes r_bytes = 35;
+  // Maps
+  map<string, string> map_string_string = 50;
+  
+  map<string, Bar> map_string_bar = 51;
 
-  map<string, string> map_string_string = 36;
 
-  map<string, Bar> map_string_bar = 37;
 
+  FlattenedMessage flattened = 52 [(j5.ext.v1.field).message.flatten = true];
+
+  NestedExposed nested_exposed_oneof = 53;
+
+  repeated NestedExposed nested_exposed_oneofs = 54;
+
+  ImplicitOneof s_implicit_oneof = 55;
+  repeated ImplicitOneof r_implicit_oneofs = 56;
+
+  google.protobuf.Any pbany = 57;
+
+  j5.types.any.v1.Any j5any = 58;
+  j5.types.date.v1.Date date = 59;
+
+  repeated j5.types.date.v1.Date r_date = 60;
+
+  j5.types.decimal.v1.Decimal decimal = 61;
+  repeated j5.types.decimal.v1.Decimal r_decimal = 62;
+  
   oneof anon_oneof {
     string a_oneof_string = 100;
     Bar a_oneof_bar = 101;
@@ -58,38 +83,10 @@ message FullSchema {
 
     string exposed_string = 200;
   }
+  
+  WrappedOneof wrapped_oneof = 300;
 
-  WrappedOneof wrapped_oneof = 40;
-
-  repeated WrappedOneof wrapped_oneofs = 41;
-
-  FlattenedMessage flattened = 42 [(j5.ext.v1.field).message.flatten = true];
-
-  NestedExposed nested_exposed_oneof = 43;
-
-  repeated NestedExposed nested_exposed_oneofs = 44;
-
-  ImplicitOneof s_implicit_oneof = 45;
-  repeated ImplicitOneof r_implicit_oneofs = 46;
-
-  google.protobuf.Any pbany = 47;
-
-  j5.types.any.v1.Any j5any = 48; /* [(j5.ext.v1.field).any = {
-       only_defined: true
-       types: [
-         "test.schema.v1.Bar",
-         "test.schema.v1.Baz",
-         "this.does.not.exist.and.that.is.fine"
-       ]
-     }];
-  */
-  j5.types.date.v1.Date date = 49;
-  repeated j5.types.date.v1.Date r_date = 50;
-
-  j5.types.decimal.v1.Decimal decimal = 51;
-  repeated j5.types.decimal.v1.Decimal r_decimal = 52;
-
-  string key_string = 53 [(j5.ext.v1.field).key = {}];
+  repeated WrappedOneof wrapped_oneofs = 301;
 }
 
 message WrappedOneof {
@@ -126,8 +123,8 @@ enum Enum {
 }
 
 message Bar {
-  string bar_id = 10; // not using 1 or 2 to force any bugs relating to MapEntry which does have fields 1 and 2
-  string bar_field = 11;
+  string bar_id = 1;
+  string bar_field = 2;
 }
 
 message Baz {
