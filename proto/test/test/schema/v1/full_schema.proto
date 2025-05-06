@@ -124,6 +124,7 @@ enum Enum {
 
 message Bar {
   string bar_id = 1;
+  string bar_field = 2;
 }
 
 message Baz {

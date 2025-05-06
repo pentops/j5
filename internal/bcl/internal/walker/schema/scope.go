@@ -3,8 +3,8 @@ package schema
 import (
 	"fmt"
 
-	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
+	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/lib/j5reflect"
 )
 

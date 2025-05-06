@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/reflect/protodesc"
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
-	"github.com/pentops/j5/gen/test/foo/v1/foo_testspb"
+	"github.com/pentops/j5/internal/gen/test/foo/v1/foo_testspb"
 	"github.com/pentops/j5/lib/j5schema"
 )
 
@@ -42,6 +42,9 @@ func TestTestListRequest(t *testing.T) {
 			Name: "createdAt",
 		}},
 		FilterableFields: []*client_j5pb.ListRequest_FilterField{
+			{
+				Name: "fooId",
+			},
 			{
 				Name:           "status",
 				DefaultFilters: []string{"ACTIVE"},

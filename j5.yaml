@@ -54,6 +54,7 @@ generate:
           prefix: github.com/pentops/j5/internal/gen
           suffixes:
             "": "_testpb"
+            "service": "_testspb"
     opts:
       paths: import
       module: github.com/pentops/j5

@@ -3,7 +3,7 @@ package j5reflect
 import (
 	"testing"
 
-	"github.com/pentops/j5/gen/test/schema/v1/schema_testpb"
+	"github.com/pentops/j5/internal/gen/test/schema/v1/schema_testpb"
 	"github.com/stretchr/testify/assert"
 )
 

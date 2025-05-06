@@ -41,8 +41,8 @@ func testCompile(t *testing.T, tf *testFiles, td *testDeps, pkg string) fileSet 
 
 	files := make(fileSet)
 	for _, file := range out {
-		t.Logf("GOT FILE %s", file.Path())
-		files[file.Path()] = file
+		t.Logf("GOT FILE %s", file.Linked.Path())
+		files[file.Linked.Path()] = file.Linked
 	}
 
 	return files

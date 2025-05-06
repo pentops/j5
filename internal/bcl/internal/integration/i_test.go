@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pentops/j5/internal/bcl"
 	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
-	"github.com/pentops/j5/gen/test/v1/test_j5pb"
+	"github.com/pentops/j5/internal/bcl"
+	"github.com/pentops/j5/internal/gen/test/v1/test_j5pb"
 	"github.com/stretchr/testify/assert"
 )
 
