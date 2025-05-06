@@ -9,11 +9,11 @@ package sourcedef_j5pb
 import (
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	auth_j5pb "github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
+	bcl_j5pb "github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	client_j5pb "github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	ext_j5pb "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	list_j5pb "github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	schema_j5pb "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	bcl_j5pb "github.com/pentops/j5/internal/bcl/gen/j5/bcl/v1/bcl_j5pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	_ "google.golang.org/protobuf/types/descriptorpb"

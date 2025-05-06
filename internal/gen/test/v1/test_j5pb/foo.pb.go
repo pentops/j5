@@ -8,7 +8,7 @@ package test_j5pb
 
 import (
 	_ "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
-	bcl_j5pb "github.com/pentops/j5/internal/bcl/gen/j5/bcl/v1/bcl_j5pb"
+	bcl_j5pb "github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	_ "google.golang.org/protobuf/types/known/timestamppb"

@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/pentops/j5/internal/bcl"
-	"github.com/pentops/j5/internal/bcl/gen/j5/bcl/v1/bcl_j5pb"
+	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/internal/bcl/internal/linter"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/protobuf/reflect/protoreflect"
