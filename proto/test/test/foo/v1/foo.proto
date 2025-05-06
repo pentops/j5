@@ -7,19 +7,27 @@ import "google/protobuf/timestamp.proto";
 import "j5/ext/v1/annotations.proto";
 import "j5/list/v1/annotations.proto";
 
-option go_package = "github.com/pentops/j5/gen/test/foo/v1/foo_testpb";
-
 message FooKeys {
   option (j5.ext.v1.psm).entity_name = "foo";
 
   string foo_id = 1 [
-    (j5.ext.v1.field).key = {},
-    (j5.ext.v1.key).primary_key = true
+    (j5.ext.v1.key).primary_key = true,
+    (buf.validate.field).required = true,
+    (j5.list.v1.field).string.foreign_key.uuid.filtering.filterable = true
+  ];
+
+  string bar_id = 2 [
+    (j5.ext.v1.key).foreign_key = {
+      package: "test.foo.v1"
+      entity: "bar"
+    },
+    (j5.ext.v1.field).key.format = FORMAT_UUID
   ];
 }
 
 message FooState {
   FooKeys keys = 1 [(j5.ext.v1.field).message.flatten = true];
+
   FooStatus status = 2 [
     (buf.validate.field).required = true,
     (j5.list.v1.field).enum.filtering = {
@@ -42,6 +50,7 @@ enum FooStatus {
   FOO_STATUS_INACTIVE = 2;
 }
 
+// Comment on Bar
 message Bar {
   option (j5.ext.v1.message).object = {
     any_member: ["foobar"]
@@ -60,8 +69,6 @@ message FooEventType {
   option (j5.ext.v1.message).is_oneof_wrapper = true;
 
   oneof type {
-    option (j5.list.v1.oneof).filtering.filterable = true;
-
     Created created = 1;
     Updated updated = 2;
   }

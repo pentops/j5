@@ -8,8 +8,6 @@ packages:
   - name: j5.messaging.v1
   - name: j5.plugin.v1
   - name: j5.schema.v1
-  - name: j5.bcl.v1
-  - name: j5.sourcedef.v1
   #- name: j5.source.v1 - Imports google.protobuf.FileDescriptorProto, can't j5
   - name: j5.state.v1
   # Types contain only Proto
