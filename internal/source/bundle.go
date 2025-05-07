@@ -9,6 +9,7 @@ import (
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/log.go/log"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type Bundle interface {
@@ -17,7 +18,7 @@ type Bundle interface {
 	SourceImage(ctx context.Context, resolver InputSource) (*source_j5pb.SourceImage, error)
 	DirInRepo() string
 	FS() fs.FS
-	GetDependencies(ctx context.Context, resolver InputSource) (DependencySet, error)
+	GetDependencies(ctx context.Context, resolver InputSource) (map[string]*descriptorpb.FileDescriptorProto, error)
 }
 
 type bundleSource struct {
@@ -76,7 +77,7 @@ func (b *bundleSource) SourceImage(ctx context.Context, resolver InputSource) (*
 	return img, nil
 }
 
-func (bundle *bundleSource) GetDependencies(ctx context.Context, resolver InputSource) (DependencySet, error) {
+func (bundle *bundleSource) GetDependencies(ctx context.Context, resolver InputSource) (map[string]*descriptorpb.FileDescriptorProto, error) {
 	ctx = log.WithField(ctx, "bundleDeps", bundle.DebugName())
 
 	log.Debug(ctx, "BundleSource: GetDependencies")
@@ -105,7 +106,7 @@ func (bundle *bundleSource) GetDependencies(ctx context.Context, resolver InputS
 		return nil, err
 	}
 	log.Debug(ctx, "BundleSource: GetDependencies done")
-	return ds, nil
+	return ds.primary, nil
 
 }
 func (bundle *bundleSource) getDependencies(ctx context.Context, resolver InputSource) ([]*source_j5pb.SourceImage, error) {

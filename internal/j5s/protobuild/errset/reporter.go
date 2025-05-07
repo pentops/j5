@@ -1,4 +1,4 @@
-package protobuild
+package errset
 
 import (
 	"github.com/bufbuild/protocompile/reporter"
@@ -11,6 +11,13 @@ import (
 type ErrCollector struct {
 	Errors   []*errpos.Err //reporter.ErrorWithPos
 	Warnings []*errpos.Err //.ErrorWithPos
+}
+
+func NewCollector() *ErrCollector {
+	return &ErrCollector{
+		Errors:   make([]*errpos.Err, 0),
+		Warnings: make([]*errpos.Err, 0),
+	}
 }
 
 func convertError(err reporter.ErrorWithPos) *errpos.Err {

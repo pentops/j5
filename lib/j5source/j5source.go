@@ -35,10 +35,6 @@ func (w *Source) BundleFS(name string) (fs.FS, error) {
 	return bundle.FS(), nil
 }
 
-func (w *Source) BundleDependencies(ctx context.Context, name string) (DependencySet, error) {
-	return w.src.BundleDependencies(ctx, name)
-}
-
 func NewFSSource(ctx context.Context, root fs.FS) (*Source, error) {
 	resolver, err := source.NewEnvResolver()
 	if err != nil {

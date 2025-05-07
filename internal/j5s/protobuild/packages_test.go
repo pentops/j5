@@ -23,7 +23,7 @@ func (fs fileSet) expectFile(t *testing.T, filename string) linker.File {
 	return file
 }
 
-func testCompile(t *testing.T, tf *testFiles, td *testDeps, pkg string) fileSet {
+func testCompile(t *testing.T, tf *testFiles, td map[string]*descriptorpb.FileDescriptorProto, pkg string) fileSet {
 	before := log.DefaultLogger
 	log.DefaultLogger = log.NewTestLogger(t)
 	defer func() {
@@ -185,9 +185,7 @@ func TestCircularDependency(t *testing.T) {
 		localPackages: []string{"foo.v1", "bar.v1", "baz.v1"},
 	}
 
-	td := &testDeps{
-		externalDeps: map[string]*descriptorpb.FileDescriptorProto{},
-	}
+	td := newTestDeps()
 
 	cc, err := NewPackageSet(td, tf)
 	if err != nil {

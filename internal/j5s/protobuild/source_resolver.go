@@ -13,6 +13,8 @@ import (
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/j5/internal/j5s/j5parse"
+	"github.com/pentops/j5/internal/j5s/protobuild/errset"
+	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/log.go/log"
 )
@@ -121,11 +123,11 @@ type SourceFile struct {
 // toSearchResults converts the source file to the protocompile searchResults it
 // produces. Proto files are 1:1 with Search Results, but one J5S file can
 // produce multiple Search Results
-func (sf *SourceFile) toSearchResults(typeResolver j5convert.TypeResolver) ([]*SearchResult, error) {
+func (sf *SourceFile) toSearchResults(typeResolver j5convert.TypeResolver) ([]*psrc.File, error) {
 
 	if sf.ProtoFile != nil {
-		return []*SearchResult{{
-			SourceType:  LocalProtoSource,
+		return []*psrc.File{{
+			SourceType:  psrc.LocalProtoSource,
 			Filename:    sf.Summary.SourceFilename,
 			Summary:     sf.Summary,
 			ParseResult: sf.ProtoFile,
@@ -138,13 +140,13 @@ func (sf *SourceFile) toSearchResults(typeResolver j5convert.TypeResolver) ([]*S
 			return nil, fmt.Errorf("convertJ5File %s: %w", sf.Summary.SourceFilename, err)
 		}
 
-		files := make([]*SearchResult, 0, len(descs))
+		files := make([]*psrc.File, 0, len(descs))
 		for _, desc := range descs {
-			files = append(files, &SearchResult{
+			files = append(files, &psrc.File{
 				Filename:   desc.GetName(),
 				Summary:    sf.Summary,
 				Desc:       desc,
-				SourceType: LocalJ5Source,
+				SourceType: psrc.LocalJ5Source,
 			})
 		}
 		return files, nil
@@ -254,7 +256,7 @@ func (sr *sourceResolver) getFile(ctx context.Context, sourceFilename string) (*
 
 func (sr *sourceResolver) parseJ5s(sourceFilename string, data []byte) (*SourceFile, error) {
 
-	errs := &ErrCollector{}
+	errs := errset.NewCollector()
 	sourceFile, err := sr.j5Parser.ParseFile(sourceFilename, string(data))
 	if err != nil {
 		return nil, errpos.AddSourceFile(err, sourceFilename, string(data))
@@ -274,7 +276,7 @@ func (sr *sourceResolver) parseJ5s(sourceFilename string, data []byte) (*SourceF
 
 func (sr *sourceResolver) parseProto(filename string, data []byte) (*SourceFile, error) {
 
-	errs := &ErrCollector{}
+	errs := errset.NewCollector()
 	fileNode, err := parser.Parse(filename, bytes.NewReader(data), errs.Handler())
 	if err != nil {
 		return nil, err
@@ -285,7 +287,7 @@ func (sr *sourceResolver) parseProto(filename string, data []byte) (*SourceFile,
 		return nil, err
 	}
 
-	summary, err := buildSummaryFromDescriptor(result.FileDescriptorProto(), errs)
+	summary, err := psrc.SummaryFromDescriptor(result.FileDescriptorProto(), errs)
 	if err != nil {
 		return nil, err
 	}

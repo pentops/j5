@@ -1,14 +1,55 @@
 package protobuild
 
 import (
+	"path"
 	"strings"
 	"testing"
 
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/log.go/log"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-func testLint(t *testing.T, tf *testFiles, td *testDeps) *errpos.ErrorsWithSource {
+type testDeps map[string]*descriptorpb.FileDescriptorProto
+
+func newTestDeps() testDeps {
+	return map[string]*descriptorpb.FileDescriptorProto{}
+}
+
+func tFileToPackage(filename string) string {
+	dir := path.Dir(filename)
+	return strings.ReplaceAll(dir, "/", ".")
+}
+
+func (tf testDeps) tAddSimple(filename string) *fileBuilder {
+	pkg := tFileToPackage(filename)
+	fd := &descriptorpb.FileDescriptorProto{
+		Name:    proto.String(filename),
+		Syntax:  proto.String("proto3"),
+		Package: proto.String(pkg),
+	}
+	tf[filename] = fd
+	return &fileBuilder{
+		fd: fd,
+	}
+}
+
+type fileBuilder struct {
+	fd *descriptorpb.FileDescriptorProto
+}
+
+func (fb *fileBuilder) msg(name string, fields ...*descriptorpb.FieldDescriptorProto) {
+	for idx, f := range fields {
+		f.Number = proto.Int32(int32(idx + 1))
+	}
+	fb.fd.MessageType = append(fb.fd.MessageType, &descriptorpb.DescriptorProto{
+		Name:  proto.String(name),
+		Field: fields,
+	})
+}
+
+func testLint(t *testing.T, tf *testFiles, td map[string]*descriptorpb.FileDescriptorProto) *errpos.ErrorsWithSource {
 	before := log.DefaultLogger
 	log.DefaultLogger = log.NewTestLogger(t)
 	defer func() {
