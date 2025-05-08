@@ -13,7 +13,7 @@ type Resolver interface {
 
 func ChainResolver(deps map[string]*descriptorpb.FileDescriptorProto) (Resolver, error) {
 	depResolver := descriptorFiles(deps)
-	builtinResolver := newBuiltinResolver()
+	builtinResolver := NewBuiltinResolver()
 	resolver := newResolverCache(builtinResolver, depResolver)
 
 	return resolver, nil

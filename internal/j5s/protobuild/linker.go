@@ -81,6 +81,8 @@ func (ll *searchLinker) linkResult(ctx context.Context, result *psrc.File) error
 		return fmt.Errorf("loading dependencies: %w", err)
 	}
 
+	result.Dependencies = dependencies
+
 	info := linkInfo{
 		deps:    dependencies,
 		symbols: ll.symbols,

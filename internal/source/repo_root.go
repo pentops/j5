@@ -255,15 +255,6 @@ func (src *RepoRoot) CombinedSourceImage(ctx context.Context, inputs []*config_j
 	return fullImage, nil
 }
 
-/*
-func (src *RepoRoot) BundleDependencies(ctx context.Context, name string) (DependencySet, error) {
-	bs, err := src.BundleSource(name)
-	if err != nil {
-		return nil, err
-	}
-	return bs.GetDependencies(ctx, src)
-}*/
-
 func (src *RepoRoot) BundleImageSource(ctx context.Context, name string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {
 	bundleSource, err := src.BundleSource(name)
 	if err != nil {

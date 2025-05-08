@@ -1,3 +1,5 @@
+// package buildlib provides an interface to the code generation for external
+// programs, e.g. pentops/registry
 package buildlib
 
 import (
@@ -36,6 +38,7 @@ func NewBuilder(regClient RegistryClient) (*Builder, error) {
 	}, nil
 }
 
+// Builder implements pentops/registry/internal/buildwrap/J5Builder
 type Builder struct {
 	impl     *builder.Builder
 	resolver source.RemoteResolver

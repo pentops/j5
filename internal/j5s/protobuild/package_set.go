@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/log.go/log"
 	"golang.org/x/exp/maps"
@@ -220,7 +221,13 @@ func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton,
 	return pkg, nil
 }
 
-func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) ([]*psrc.File, error) {
+type BuiltPackage struct {
+	Proto []*psrc.File
+	Prose []*source_j5pb.ProseFile
+}
+
+func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (*BuiltPackage, error) {
+
 	ctx = log.WithField(ctx, "CompilePackage", packageName)
 	log.Debug(ctx, "Compiler: Load")
 	rb := newResolveBaton()
@@ -246,7 +253,11 @@ func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) ([
 		return nil, fmt.Errorf("CompilePackage %s: %w", packageName, err)
 	}
 
-	return files, nil
+	prose, err := ps.sourceResolver.ProseFiles(packageName)
+	return &BuiltPackage{
+		Proto: files,
+		Prose: prose,
+	}, nil
 }
 
 func (ps *PackageSet) debugState(ww io.Writer) {

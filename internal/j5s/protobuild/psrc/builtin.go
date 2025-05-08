@@ -5,8 +5,22 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/internal/j5s/protobuild/errset"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
+
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	_ "github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
+	_ "github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
+	_ "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
+	_ "github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
+	_ "github.com/pentops/j5/gen/j5/state/v1/psm_j5pb"
+	_ "github.com/pentops/j5/j5types/any_j5t"
+	_ "github.com/pentops/j5/j5types/date_j5t"
+	_ "github.com/pentops/j5/j5types/decimal_j5t"
+	_ "google.golang.org/genproto/googleapis/api/annotations"
+	_ "google.golang.org/genproto/googleapis/api/httpbody"
 )
 
 var builtinPrefixes = []string{
@@ -28,14 +42,14 @@ var builtinPrefixes = []string{
 	"j5/types/decimal/v1/",
 }
 
-type builtinResolver struct {
+type BuiltinResolver struct {
 }
 
-func newBuiltinResolver() *builtinResolver {
-	return &builtinResolver{}
+func NewBuiltinResolver() *BuiltinResolver {
+	return &BuiltinResolver{}
 }
 
-func (br *builtinResolver) hasRoot(filename string) bool {
+func isBuiltin(filename string) bool {
 	for _, prefix := range builtinPrefixes {
 		if strings.HasPrefix(filename, prefix) {
 			return true
@@ -44,10 +58,9 @@ func (br *builtinResolver) hasRoot(filename string) bool {
 	return false
 }
 
-func (br *builtinResolver) ListPackageFiles(pkgName string) ([]string, error) {
+func (br *BuiltinResolver) ListPackageFiles(pkgName string) ([]string, error) {
 	root := strings.ReplaceAll(pkgName, ".", "/") + "/"
-	isBuiltin := br.hasRoot(root)
-	if !isBuiltin {
+	if !isBuiltin(root) {
 		return nil, errPackageNotFound
 	}
 	files := []string{}
@@ -60,8 +73,8 @@ func (br *builtinResolver) ListPackageFiles(pkgName string) ([]string, error) {
 
 }
 
-func (br *builtinResolver) FindFileByPath(filename string) (*File, error) {
-	if !br.hasRoot(filename) {
+func (br *BuiltinResolver) FindFileByPath(filename string) (*File, error) {
+	if !isBuiltin(filename) {
 		return nil, errFileNotFound
 	}
 
@@ -81,4 +94,15 @@ func (br *builtinResolver) FindFileByPath(filename string) (*File, error) {
 		Refl:       refl,
 		SourceType: BuiltInProtoSource,
 	}, nil
+}
+
+func BuiltinFile(filename string) (*descriptorpb.FileDescriptorProto, bool) {
+	if !isBuiltin(filename) {
+		return nil, false
+	}
+	refl, err := protoregistry.GlobalFiles.FindFileByPath(filename)
+	if err != nil {
+		return nil, false
+	}
+	return protodesc.ToFileDescriptorProto(refl), true
 }
