@@ -27,12 +27,12 @@ type EntityPart int32
 
 const (
 	EntityPart_ENTITY_PART_UNSPECIFIED EntityPart = 0
-	EntityPart_ENTITY_PART_KEYS        EntityPart = 1 // Contains the immutable keys of the entity, primary, foreign and natural.
-	EntityPart_ENTITY_PART_STATE       EntityPart = 2 // The full state object containing Keys, Data, Status and References.
-	EntityPart_ENTITY_PART_EVENT       EntityPart = 3 // The event object, wrapping the event types.
-	EntityPart_ENTITY_PART_DATA        EntityPart = 4 // The mutable and non-key data of an entity.
-	EntityPart_ENTITY_PART_REFERENCES  EntityPart = 5 // A collection of references to other state entities.
-	EntityPart_ENTITY_PART_DERIVED     EntityPart = 6 // one of potentially many derived representations of the entity.
+	EntityPart_ENTITY_PART_KEYS        EntityPart = 1
+	EntityPart_ENTITY_PART_STATE       EntityPart = 2
+	EntityPart_ENTITY_PART_EVENT       EntityPart = 3
+	EntityPart_ENTITY_PART_DATA        EntityPart = 4
+	EntityPart_ENTITY_PART_REFERENCES  EntityPart = 5
+	EntityPart_ENTITY_PART_DERIVED     EntityPart = 6
 )
 
 // Enum value maps for EntityPart.
@@ -457,13 +457,10 @@ type isField_Type interface {
 }
 
 type Field_Any struct {
-	// Special Cases
 	Any *AnyField `protobuf:"bytes,11,opt,name=any,proto3,oneof"`
 }
 
 type Field_Oneof struct {
-	// Named Root Types, wrapped as Field to separate the object-property rules
-	// from the type itself.
 	Oneof *OneofField `protobuf:"bytes,12,opt,name=oneof,proto3,oneof"`
 }
 
@@ -476,7 +473,6 @@ type Field_Enum struct {
 }
 
 type Field_Array struct {
-	// Complex Types
 	Array *ArrayField `protobuf:"bytes,20,opt,name=array,proto3,oneof"`
 }
 
@@ -485,7 +481,6 @@ type Field_Map struct {
 }
 
 type Field_String_ struct {
-	// Scalar Types
 	String_ *StringField `protobuf:"bytes,30,opt,name=string,proto3,oneof"`
 }
 
@@ -551,15 +546,13 @@ func (*Field_Timestamp) isField_Type() {}
 
 func (*Field_Key) isField_Type() {}
 
-// Ref is a reference to a RootSchema (object, oneof or enum) which is used in
-// fields.
 type Ref struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Package string `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"` // Dot notation, 'j5.schema.v1'
-	Schema  string `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`   // Schema name, 'Ref'
+	Package string `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"`
+	Schema  string `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`
 }
 
 func (x *Ref) Reset() {
@@ -608,14 +601,13 @@ func (x *Ref) GetSchema() string {
 	return ""
 }
 
-// Like Ref but to an entity rather than a schema
 type EntityRef struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Package string `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"` // Dot notation, 'foo.bar.v1'
-	Entity  string `protobuf:"bytes,2,opt,name=entity,proto3" json:"entity,omitempty"`   // The *entity* name, not schema, 'foo' not 'FooState'
+	Package string `protobuf:"bytes,1,opt,name=package,proto3" json:"package,omitempty"`
+	Entity  string `protobuf:"bytes,2,opt,name=entity,proto3" json:"entity,omitempty"`
 }
 
 func (x *EntityRef) Reset() {
@@ -664,18 +656,11 @@ func (x *EntityRef) GetEntity() string {
 	return ""
 }
 
-// Allows anything... Almost
 type AnyField struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// When false, this is fully 'any', in that it can contain any message type
-	// value.
-	// When true, only the types listed are permitted in the field, making it a
-	// constrained any, or a detached oneof.
-	// Note that even with only_defined, schemas may be added in the future, which
-	// is not considered a breaking change, even when the field is required.
 	OnlyDefined bool                `protobuf:"varint,1,opt,name=only_defined,json=onlyDefined,proto3" json:"only_defined,omitempty"`
 	ListRules   *list_j5pb.AnyRules `protobuf:"bytes,5,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
 	Types       []string            `protobuf:"bytes,2,rep,name=types,proto3" json:"types,omitempty"`
@@ -734,7 +719,6 @@ func (x *AnyField) GetTypes() []string {
 	return nil
 }
 
-// ObjectAsField is an object as-a-field in an ObjectProperty
 type ObjectField struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -744,17 +728,11 @@ type ObjectField struct {
 	//
 	//	*ObjectField_Ref
 	//	*ObjectField_Object
-	Schema isObjectField_Schema `protobuf_oneof:"schema"`
-	Rules  *ObjectField_Rules   `protobuf:"bytes,5,opt,name=rules,proto3" json:"rules,omitempty"`
-	Ext    *ObjectField_Ext     `protobuf:"bytes,6,opt,name=ext,proto3" json:"ext,omitempty"`
-	// When true, the fields of the child message are flattened into the parent
-	// message in JSON encoding and client schemas.
-	Flatten bool `protobuf:"varint,7,opt,name=flatten,proto3" json:"flatten,omitempty"`
-	// Valid only in entity state objects, this field references another entity.
-	// The states of the entities are independent, the content of this field will
-	// change through events in the referenced entity only.
-	// The content of this field should not be stored with the state.
-	Entity *ObjectField_EntityJoin `protobuf:"bytes,8,opt,name=entity,proto3" json:"entity,omitempty"`
+	Schema  isObjectField_Schema    `protobuf_oneof:"schema"`
+	Rules   *ObjectField_Rules      `protobuf:"bytes,5,opt,name=rules,proto3" json:"rules,omitempty"`
+	Ext     *ObjectField_Ext        `protobuf:"bytes,6,opt,name=ext,proto3" json:"ext,omitempty"`
+	Flatten bool                    `protobuf:"varint,7,opt,name=flatten,proto3" json:"flatten,omitempty"`
+	Entity  *ObjectField_EntityJoin `protobuf:"bytes,8,opt,name=entity,proto3" json:"entity,omitempty"`
 }
 
 func (x *ObjectField) Reset() {
@@ -843,7 +821,7 @@ type isObjectField_Schema interface {
 }
 
 type ObjectField_Ref struct {
-	Ref *Ref `protobuf:"bytes,1,opt,name=ref,proto3,oneof"` // Will always point to an Object.
+	Ref *Ref `protobuf:"bytes,1,opt,name=ref,proto3,oneof"`
 }
 
 type ObjectField_Object struct {
@@ -906,16 +884,11 @@ type Object struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Name        string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`               // [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
-	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"` // brief text description, will not contain markdown.
-	// When the object is an entity type, the entity details are available in the
-	// entity set for the same package.
-	Entity     *EntityObject     `protobuf:"bytes,3,opt,name=entity,proto3" json:"entity,omitempty"`
-	Properties []*ObjectProperty `protobuf:"bytes,4,rep,name=properties,proto3" json:"properties,omitempty"`
-	// The names of any Any messages this object is a member of.
-	// Setting this field forces the object to appear in packages even if
-	// not referenced by services or topics.
-	AnyMember []string `protobuf:"bytes,5,rep,name=any_member,json=anyMember,proto3" json:"any_member,omitempty"`
+	Name        string            `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description string            `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Entity      *EntityObject     `protobuf:"bytes,3,opt,name=entity,proto3" json:"entity,omitempty"`
+	Properties  []*ObjectProperty `protobuf:"bytes,4,rep,name=properties,proto3" json:"properties,omitempty"`
+	AnyMember   []string          `protobuf:"bytes,5,rep,name=any_member,json=anyMember,proto3" json:"any_member,omitempty"`
 }
 
 func (x *Object) Reset() {
@@ -1134,7 +1107,7 @@ type isOneofField_Schema interface {
 }
 
 type OneofField_Ref struct {
-	Ref *Ref `protobuf:"bytes,1,opt,name=ref,proto3,oneof"` // Will always point to a Oneof
+	Ref *Ref `protobuf:"bytes,1,opt,name=ref,proto3,oneof"`
 }
 
 type OneofField_Oneof struct {
@@ -1145,8 +1118,6 @@ func (*OneofField_Ref) isOneofField_Schema() {}
 
 func (*OneofField_Oneof) isOneofField_Schema() {}
 
-// Similar to ObjectItem (it is an object in JSON Schema), but where exactly one
-// property should be set
 type Oneof struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1304,7 +1275,7 @@ type isEnumField_Schema interface {
 }
 
 type EnumField_Ref struct {
-	Ref *Ref `protobuf:"bytes,1,opt,name=ref,proto3,oneof"` // Will always point to an Enum
+	Ref *Ref `protobuf:"bytes,1,opt,name=ref,proto3,oneof"`
 }
 
 type EnumField_Enum struct {
@@ -2132,17 +2103,12 @@ type EntityKey struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// # unexposed oneof, mainly because of the circular dependency between ext and
-	// # schema, but also to avoid further clutter in the proto tags.
-	//
 	// Types that are assignable to Type:
 	//
 	//	*EntityKey_PrimaryKey
 	//	*EntityKey_ForeignKey
-	Type isEntityKey_Type `protobuf_oneof:"type"`
-	// Marks the field as containing a tenant_id for the given tenant. Copies to
-	// j5.state.v1.PublishAuth.tenant_keys on publish
-	TenantKey *string `protobuf:"bytes,5,opt,name=tenant_key,json=tenantKey,proto3,oneof" json:"tenant_key,omitempty"`
+	Type      isEntityKey_Type `protobuf_oneof:"type"`
+	TenantKey *string          `protobuf:"bytes,5,opt,name=tenant_key,json=tenantKey,proto3,oneof" json:"tenant_key,omitempty"`
 }
 
 func (x *EntityKey) Reset() {
@@ -2210,14 +2176,10 @@ type isEntityKey_Type interface {
 }
 
 type EntityKey_PrimaryKey struct {
-	// the field is the primary key of the state entity. It is only valid in the
-	// keys object of an entity.
 	PrimaryKey bool `protobuf:"varint,1,opt,name=primary_key,json=primaryKey,proto3,oneof"`
 }
 
 type EntityKey_ForeignKey struct {
-	// When set, this key should be in the keys of an entity, and references the
-	// primary key of another entity.
 	ForeignKey *EntityRef `protobuf:"bytes,2,opt,name=foreign_key,json=foreignKey,proto3,oneof"`
 }
 
@@ -2339,18 +2301,12 @@ type ObjectProperty struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Schema             *Field `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
-	Name               string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
-	Required           bool   `protobuf:"varint,4,opt,name=required,proto3" json:"required,omitempty"`
-	ExplicitlyOptional bool   `protobuf:"varint,5,opt,name=explicitly_optional,json=explicitlyOptional,proto3" json:"explicitly_optional,omitempty"`
-	// bool read_only = 6;
-	// bool write_only = 7;
-	Description string `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
-	// For flattened objects,
-	// Defines the path from the root proto message to the field. All but the last
-	// node will be message fields holding a message kind, and the last node is
-	// the field containing the property type.
-	ProtoField []int32 `protobuf:"varint,11,rep,packed,name=proto_field,json=protoField,proto3" json:"proto_field,omitempty"`
+	Schema             *Field  `protobuf:"bytes,1,opt,name=schema,proto3" json:"schema,omitempty"`
+	Name               string  `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Required           bool    `protobuf:"varint,4,opt,name=required,proto3" json:"required,omitempty"`
+	ExplicitlyOptional bool    `protobuf:"varint,5,opt,name=explicitly_optional,json=explicitlyOptional,proto3" json:"explicitly_optional,omitempty"`
+	Description        string  `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	ProtoField         []int32 `protobuf:"varint,11,rep,packed,name=proto_field,json=protoField,proto3" json:"proto_field,omitempty"`
 }
 
 func (x *ObjectProperty) Reset() {
@@ -2525,14 +2481,7 @@ type ObjectField_EntityJoin struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The reference to the entity. This does not effect the schema of the
-	// field, use ref or object as usual.
-	Entity *EntityRef `protobuf:"bytes,1,opt,name=entity,proto3" json:"entity,omitempty"`
-	// Which part of the entity is being referenced.
-	// STATE means a full state copy
-	// DATA is just the data object.
-	// DERIVED is used when a custom representation is used in the reference,
-	// i.e. a summary of the parts important to this representation.
+	Entity     *EntityRef `protobuf:"bytes,1,opt,name=entity,proto3" json:"entity,omitempty"`
 	EntityPart EntityPart `protobuf:"varint,3,opt,name=entity_part,json=entityPart,proto3,enum=j5.schema.v1.EntityPart" json:"entity_part,omitempty"`
 }
 
@@ -2890,8 +2839,6 @@ type ArrayField_Ext struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The name of the singular form of the array item, used in documentation and
-	// block parsing.
 	SingleForm *string `protobuf:"bytes,3,opt,name=single_form,json=singleForm,proto3,oneof" json:"single_form,omitempty"`
 }
 
@@ -3057,8 +3004,6 @@ type MapField_Ext struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// The name of the singular form of the map pairs, used in documentation and
-	// block parsing.
 	SingleForm *string `protobuf:"bytes,3,opt,name=single_form,json=singleForm,proto3,oneof" json:"single_form,omitempty"`
 }
 

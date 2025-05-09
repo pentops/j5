@@ -10,6 +10,7 @@ import (
 	"github.com/bufbuild/protocompile/options"
 	"github.com/bufbuild/protocompile/parser"
 	"github.com/bufbuild/protocompile/reporter"
+	"github.com/bufbuild/protocompile/sourceinfo"
 	"github.com/pentops/j5/internal/j5s/protobuild/errset"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/log.go/log"
@@ -169,12 +170,18 @@ func _linkParserResult(ll linkInfo, result parser.Result) (linker.File, error) {
 		return nil, fmt.Errorf("linking using protocompile linker: %w", err)
 	}
 
-	_, err = options.InterpretOptions(linked, ll.errs)
+	optsIndex, err := options.InterpretOptions(linked, ll.errs)
 	if err != nil {
 		return nil, err
 	}
 
+	astNode := result.AST()
+	sourceInfo := sourceinfo.GenerateSourceInfo(astNode, optsIndex, sourceinfo.WithExtraComments())
+	linked.FileDescriptorProto().SourceCodeInfo = sourceInfo
+
+	linked.PopulateSourceCodeInfo()
 	linked.CheckForUnusedImports(ll.errs)
+
 	return linked, nil
 }
 
@@ -201,14 +208,16 @@ func _linkDescriptorProto(ll linkInfo, desc *descriptorpb.FileDescriptorProto) (
 		return nil, err
 	}
 
+	linked.FileDescriptorProto().SourceCodeInfo = desc.SourceCodeInfo
+
 	err = markExtensionImportsUsed(linked)
 	if err != nil {
 		return nil, err
 	}
 
 	linked.PopulateSourceCodeInfo()
-
 	linked.CheckForUnusedImports(ll.errs)
+
 	return linked, nil
 }
 

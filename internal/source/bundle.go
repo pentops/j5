@@ -168,9 +168,22 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 		if err != nil {
 			return nil, fmt.Errorf("compile package %s: %w", pkg.Name, err)
 		}
+
+		descriptors := make([]*descriptorpb.FileDescriptorProto, 0, len(built.Proto))
 		for _, file := range built.Proto {
 			descriptor := protodesc.ToFileDescriptorProto(file.Linked)
-			img.addFile(descriptor, true)
+			descriptors = append(descriptors, descriptor)
+
+		}
+
+		sorted, err := sortByDependency(descriptors)
+		if err != nil {
+			return nil, fmt.Errorf("sort by dependency: %w", err)
+		}
+		for _, descriptor := range sorted {
+			if err := img.addFile(descriptor, true); err != nil {
+				return nil, fmt.Errorf("add file %s: %w", descriptor.GetName(), err)
+			}
 		}
 		for _, file := range built.Prose {
 			img.addProseFile(file)
@@ -187,6 +200,65 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 	}
 
 	return img.img, nil
+}
+
+func sortByDependency(files []*descriptorpb.FileDescriptorProto) ([]*descriptorpb.FileDescriptorProto, error) {
+	// Sort to topological order, so each file
+	// appears before any file that imports it.
+	// For consistent ordering, files are alphabetical first.
+
+	sort.Slice(files, func(i, j int) bool {
+		if *files[i].Name == *files[j].Name {
+			return false
+		}
+		return *files[i].Name < *files[j].Name
+	})
+
+	workingOn := make(map[string]bool)
+	hasFile := make(map[string]bool)
+	out := make([]*descriptorpb.FileDescriptorProto, 0, len(files))
+
+	var addFile func(file *descriptorpb.FileDescriptorProto) error
+
+	requireFile := func(name string) error {
+		for _, f := range files {
+			if *f.Name == name {
+				return addFile(f)
+			}
+		}
+		// doesn't matter if it can't find, we assume its in another bundle...
+		return nil
+	}
+
+	addFile = func(file *descriptorpb.FileDescriptorProto) error {
+		if hasFile[*file.Name] {
+			return nil
+		}
+
+		if workingOn[*file.Name] {
+			return fmt.Errorf("circular dependency detected: %s", *file.Name)
+		}
+		workingOn[*file.Name] = true
+
+		for _, dep := range file.Dependency {
+			if err := requireFile(dep); err != nil {
+				return fmt.Errorf("resolving dep %s for %s: %w", dep, *file.Name, err)
+			}
+		}
+
+		out = append(out, file)
+		delete(workingOn, *file.Name)
+		hasFile[*file.Name] = true
+		return nil
+	}
+
+	for _, file := range files {
+		if err := addFile(file); err != nil {
+			return nil, err
+		}
+	}
+
+	return out, nil
 }
 
 func (bundle *bundleSource) FileSource() (protobuild.LocalFileSource, error) {
@@ -317,7 +389,6 @@ func (rr *fileReader) ListSourceFiles(ctx context.Context, pkgName string) ([]st
 	if err != nil {
 		return nil, fmt.Errorf("walk %s: %w", rr.fsName, err)
 	}
-	fmt.Printf("ListSourceFiles %s: %v\n", pkgName, files)
 	return files, nil
 }
 

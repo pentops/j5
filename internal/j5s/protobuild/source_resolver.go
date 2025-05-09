@@ -110,6 +110,15 @@ func (sr *sourceResolver) ProseFiles(pkgName string) ([]*source_j5pb.ProseFile, 
 	return sr.bundleFiles.ProseFiles(pkgName)
 }
 
+func hasAPrefix(s string, prefixes []string) bool {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(s, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func (sr *sourceResolver) packageForFile(filename string) (string, bool, error) {
 	if !hasAPrefix(filename, sr.localPrefixes) {
 		// not a local file, not in scope.
@@ -140,11 +149,6 @@ func (sr *sourceResolver) listPackageFiles(ctx context.Context, pkgName string) 
 		if strings.HasSuffix(f, ".j5s.proto") {
 			continue
 		}
-		/*
-			dir := path.Dir(f)
-			if dir != root {
-				continue
-			}*/
 		filtered = append(filtered, f)
 	}
 	return filtered, nil
