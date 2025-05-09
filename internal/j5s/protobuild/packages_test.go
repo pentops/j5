@@ -40,7 +40,7 @@ func testCompile(t *testing.T, tf *testFiles, td map[string]*descriptorpb.FileDe
 	}
 
 	files := make(fileSet)
-	for _, file := range out {
+	for _, file := range out.Proto {
 		t.Logf("GOT FILE %s", file.Linked.Path())
 		files[file.Linked.Path()] = file.Linked
 	}
