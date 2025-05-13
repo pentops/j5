@@ -254,6 +254,9 @@ func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (*
 	}
 
 	prose, err := ps.sourceResolver.ProseFiles(packageName)
+	if err != nil {
+		return nil, err
+	}
 	return &BuiltPackage{
 		Proto: files,
 		Prose: prose,

@@ -197,7 +197,11 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 	}
 
 	for _, included := range includeImages {
-		img.include(included)
+		err = img.include(included)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	return img.img, nil

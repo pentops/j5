@@ -67,14 +67,20 @@ func (ib *imageBuilder) addProseFile(file *source_j5pb.ProseFile) {
 	ib.img.Prose = append(ib.img.Prose, file)
 }
 
-func (ib *imageBuilder) include(img *source_j5pb.SourceImage) {
+func (ib *imageBuilder) include(img *source_j5pb.SourceImage) error {
 	ib.img.Prose = append(ib.img.Prose, img.Prose...)
 	ib.img.SourceFilenames = append(ib.img.SourceFilenames, img.SourceFilenames...)
+	var err error
 	for _, file := range img.File {
-		ib.addFile(file, false)
+		err = ib.addFile(file, false)
+		if err != nil {
+			return err
+		}
+
 	}
 
 	for _, pkg := range img.Packages {
 		ib.addPackage(pkg)
 	}
+	return nil
 }
