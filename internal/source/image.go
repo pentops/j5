@@ -46,10 +46,8 @@ func (ib *imageBuilder) addFile(file *descriptorpb.FileDescriptorProto, asSource
 			continue
 		}
 
-		if builtin, ok := psrc.BuiltinFile(dependencyFilename); ok {
-			if err := ib.addFile(builtin, false); err != nil {
-				return fmt.Errorf("add file %s: %w", dependencyFilename, err)
-			}
+		if _, ok := psrc.BuiltinFile(dependencyFilename); ok {
+			// not required to add
 			continue
 		}
 

@@ -11,9 +11,9 @@ import (
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/j5/lib/id62"
 	"github.com/pentops/j5/lib/patherr"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
@@ -89,10 +89,10 @@ func (ps *SchemaSet) messageSchema(src protoreflect.MessageDescriptor) (RootSche
 
 	schemaPackage.Schemas[nameInPackage] = placeholder
 
-	msgOptions := proto.GetExtension(src.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+	msgOptions := protosrc.GetExtension[*ext_j5pb.MessageOptions](src.Options(), ext_j5pb.E_Message)
 
-	isOneofWrapper := isOneofWrapper(src, msgOptions)
 	var err error
+	isOneofWrapper := isOneofWrapper(src, msgOptions)
 	if isOneofWrapper {
 		placeholder.To, err = schemaPackage.buildOneofSchema(src, msgOptions.GetOneof())
 	} else {
@@ -145,7 +145,7 @@ func jsonFieldName(s protoreflect.Name) string {
 }
 
 func IsOneofWrapper(msg protoreflect.MessageDescriptor) bool {
-	msgOptions := proto.GetExtension(msg.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+	msgOptions := protosrc.GetExtension[*ext_j5pb.MessageOptions](msg.Options(), ext_j5pb.E_Message)
 	return isOneofWrapper(msg, msgOptions)
 }
 
@@ -180,7 +180,7 @@ func isOneofWrapper(src protoreflect.MessageDescriptor, options *ext_j5pb.Messag
 		return false
 	}
 
-	ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
+	ext := protosrc.GetExtension[*ext_j5pb.OneofOptions](oneof.Options(), ext_j5pb.E_Oneof)
 	if ext != nil {
 		// even if it is marked to expose, still don't automatically make it a
 		// oneof.
@@ -256,7 +256,7 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts
 }
 
 func findPSMOptions(srcMsg protoreflect.MessageDescriptor) (*schema_j5pb.EntityObject, error) {
-	psmExt := proto.GetExtension(srcMsg.Options(), ext_j5pb.E_Psm).(*ext_j5pb.PSMOptions)
+	psmExt := protosrc.GetExtension[*ext_j5pb.PSMOptions](srcMsg.Options(), ext_j5pb.E_Psm)
 
 	if psmExt == nil {
 		// support 'legacy' model where only the Keys message has the extension.
@@ -269,7 +269,7 @@ func findPSMOptions(srcMsg protoreflect.MessageDescriptor) (*schema_j5pb.EntityO
 			return nil, nil
 		}
 
-		psmExt = proto.GetExtension(msg.Options(), ext_j5pb.E_Psm).(*ext_j5pb.PSMOptions)
+		psmExt = protosrc.GetExtension[*ext_j5pb.PSMOptions](msg.Options(), ext_j5pb.E_Psm)
 	}
 
 	if psmExt == nil {
@@ -314,7 +314,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			continue
 		}
 
-		ext := proto.GetExtension(oneof.Options(), ext_j5pb.E_Oneof).(*ext_j5pb.OneofOptions)
+		ext := protosrc.GetExtension[*ext_j5pb.OneofOptions](oneof.Options(), ext_j5pb.E_Oneof)
 		if ext == nil {
 			continue
 		} else if !ext.Expose {
@@ -540,7 +540,7 @@ type protoFieldExtensions struct {
 }
 
 func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensions {
-	validateConstraint := proto.GetExtension(src.Options(), validate.E_Field).(*validate.FieldConstraints)
+	validateConstraint := protosrc.GetExtension[*validate.FieldConstraints](src.Options(), validate.E_Field)
 	if validateConstraint != nil && validateConstraint.Ignore != nil && *validateConstraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
 		// constraint.IgnoreEmpty doesn't really apply
 
@@ -555,9 +555,9 @@ func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensi
 		validateConstraint = &validate.FieldConstraints{}
 	}
 
-	listConstraint := proto.GetExtension(src.Options(), list_j5pb.E_Field).(*list_j5pb.FieldConstraint)
+	listConstraint := protosrc.GetExtension[*list_j5pb.FieldConstraint](src.Options(), list_j5pb.E_Field)
 
-	fieldOptions := proto.GetExtension(src.Options(), ext_j5pb.E_Field).(*ext_j5pb.FieldOptions)
+	fieldOptions := protosrc.GetExtension[*ext_j5pb.FieldOptions](src.Options(), ext_j5pb.E_Field)
 
 	exts := protoFieldExtensions{
 		validate: validateConstraint,
@@ -932,7 +932,7 @@ func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions)
 
 func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*EnumSchema, error) {
 
-	ext := proto.GetExtension(enumDescriptor.Options(), ext_j5pb.E_Enum).(*ext_j5pb.EnumOptions)
+	ext := protosrc.GetExtension[*ext_j5pb.EnumOptions](enumDescriptor.Options(), ext_j5pb.E_Enum)
 
 	sourceValues := enumDescriptor.Values()
 	values := make([]*EnumOption, 0, sourceValues.Len())
@@ -942,7 +942,7 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 
 		var info map[string]string
 
-		optExt := proto.GetExtension(option.Options(), ext_j5pb.E_EnumValue).(*ext_j5pb.EnumValueOptions)
+		optExt := protosrc.GetExtension[*ext_j5pb.EnumValueOptions](option.Options(), ext_j5pb.E_EnumValue)
 		if optExt != nil && optExt.Info != nil {
 			info = optExt.Info
 		}
@@ -1167,7 +1167,7 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 		return nil, fmt.Errorf("unsupported google type %s", src.Message().FullName())
 	}
 	msg := src.Message()
-	msgOptions := proto.GetExtension(msg.Options(), ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+	msgOptions := protosrc.GetExtension[*ext_j5pb.MessageOptions](msg.Options(), ext_j5pb.E_Message)
 
 	isOneofWrapper := isOneofWrapper(msg, msgOptions)
 
@@ -1367,7 +1367,7 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		}
 	}
 
-	psmKeyExt := proto.GetExtension(src.Options(), ext_j5pb.E_Key).(*ext_j5pb.PSMKeyFieldOptions)
+	psmKeyExt := protosrc.GetExtension[*ext_j5pb.PSMKeyFieldOptions](src.Options(), ext_j5pb.E_Key)
 
 	if openText := listRules.GetOpenText(); openText != nil {
 		if stringItem.Format != nil {

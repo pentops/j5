@@ -9,15 +9,40 @@ import (
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/j5/lib/j5schema"
 	"github.com/pentops/j5/lib/patherr"
 	"google.golang.org/genproto/googleapis/api/annotations"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
+
+type chainResolver []protodesc.Resolver
+
+func (cr chainResolver) FindFileByPath(name string) (protoreflect.FileDescriptor, error) {
+	var file protoreflect.FileDescriptor
+	var err error
+	for _, rr := range cr {
+		file, err = rr.FindFileByPath(name)
+		if err == nil {
+			return file, nil
+		}
+	}
+	return nil, err
+}
+
+func (cr chainResolver) FindDescriptorByName(name protoreflect.FullName) (protoreflect.Descriptor, error) {
+	var desc protoreflect.Descriptor
+	var err error
+	for _, rr := range cr {
+		desc, err = rr.FindDescriptorByName(name)
+		if err == nil {
+			return desc, nil
+		}
+	}
+	return nil, err
+}
 
 func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 
@@ -34,12 +59,41 @@ func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 		})
 	}
 
-	descFiles, err := protodesc.NewFiles(&descriptorpb.FileDescriptorSet{
-		File: image.File,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("new files: %w", err)
+	descFiles := &protoregistry.Files{}
+
+	resolver := chainResolver{
+		descFiles,
+		protoregistry.GlobalFiles,
 	}
+
+	files, err := protosrc.SortByDependency(image.File)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, file := range files {
+		fmt.Printf("FILE %s\n", file.GetName())
+	}
+
+	for _, file := range files {
+
+		file, err := protodesc.NewFile(file, resolver)
+		if err != nil {
+			return nil, err
+		}
+		err = descFiles.RegisterFile(file)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	/*
+		descFiles, err := protodesc.NewFiles(&descriptorpb.FileDescriptorSet{
+			File: image.File,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("protodesc.NewFiles: %w", err)
+		}*/
 
 	if err := bb.addStructure(descFiles); err != nil {
 		return nil, err
@@ -259,7 +313,9 @@ func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, err
 		Methods: make([]*source_j5pb.Method, 0, methods.Len()),
 	}
 
-	if serviceExt := proto.GetExtension(src.Options(), ext_j5pb.E_Service).(*ext_j5pb.ServiceOptions); serviceExt != nil {
+	serviceExt := protosrc.GetExtension[*ext_j5pb.ServiceOptions](src.Options(), ext_j5pb.E_Service)
+
+	if serviceExt != nil {
 		if serviceExt.Type != nil {
 			switch set := serviceExt.Type.(type) {
 			case *ext_j5pb.ServiceOptions_StateQuery_:
@@ -317,8 +373,7 @@ func buildMethod(service *source_j5pb.Service, method protoreflect.MethodDescrip
 		}
 	}
 
-	httpOpt := proto.GetExtension(method.Options(), annotations.E_Http).(*annotations.HttpRule)
-
+	httpOpt := protosrc.GetExtension[*annotations.HttpRule](method.Options(), annotations.E_Http)
 	if httpOpt == nil {
 		return nil, fmt.Errorf("missing http rule")
 	}
@@ -376,7 +431,8 @@ func buildMethod(service *source_j5pb.Service, method protoreflect.MethodDescrip
 	}
 	builtMethod.HttpPath = strings.Join(pathParts, "/")
 
-	if ext := proto.GetExtension(method.Options(), ext_j5pb.E_Method).(*ext_j5pb.MethodOptions); ext != nil {
+	ext := protosrc.GetExtension[*ext_j5pb.MethodOptions](method.Options(), ext_j5pb.E_Method)
+	if ext != nil {
 		builtMethod.Auth = ext.Auth
 		if ext.StateQuery != nil {
 			serviceQuery := service.Type.GetStateEntityQuery()
