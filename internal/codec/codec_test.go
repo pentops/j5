@@ -235,6 +235,34 @@ func TestUnmarshal(t *testing.T) {
 				},
 			},
 		}, {
+			name: "date",
+			json: `{
+				"date": "2000-01-02"
+			}`,
+			queries: []url.Values{{
+				"date": []string{"2000-01-02"},
+			}},
+			wantProto: &schema_testpb.FullSchema{
+				Date: &date_j5t.Date{Year: 2000, Month: 1, Day: 2},
+			},
+		}, {
+			name: "date array",
+
+			json: `{
+				"rDate": ["2001-01-02", "2002-01-02"]
+			}`,
+			queries: []url.Values{{
+				"rDate": []string{"2001-01-02", "2002-01-02"},
+			}, {
+				"rDate": []string{`["2001-01-02","2002-01-02"]`},
+			}},
+			wantProto: &schema_testpb.FullSchema{
+				RDate: []*date_j5t.Date{
+					{Year: 2001, Month: 1, Day: 2},
+					{Year: 2002, Month: 1, Day: 2},
+				},
+			},
+		}, {
 			name: "object",
 			json: `{
 				"sBar": {

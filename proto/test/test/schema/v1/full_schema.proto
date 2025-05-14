@@ -50,8 +50,6 @@ message FullSchema {
   
   map<string, Bar> map_string_bar = 51;
 
-
-
   FlattenedMessage flattened = 52 [(j5.ext.v1.field).message.flatten = true];
 
   NestedExposed nested_exposed_oneof = 53;
