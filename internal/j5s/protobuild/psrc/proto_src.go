@@ -1,32 +1,21 @@
-package protobuild
+package psrc
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/pentops/j5/internal/j5s/j5convert"
+	"github.com/pentops/j5/internal/j5s/protobuild/errset"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-func hasAPrefix(s string, prefixes []string) bool {
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(s, prefix) {
-			return true
-		}
-	}
-	return false
+func buildSummaryFromReflect(res protoreflect.FileDescriptor, errs *errset.ErrCollector) (*j5convert.FileSummary, error) {
+	return SummaryFromDescriptor(protodesc.ToFileDescriptorProto(res), errs)
 }
 
-var ErrNotFound = errors.New("file not found")
-
-func buildSummaryFromReflect(res protoreflect.FileDescriptor, errs *ErrCollector) (*j5convert.FileSummary, error) {
-	return buildSummaryFromDescriptor(protodesc.ToFileDescriptorProto(res), errs)
-}
-
-func buildSummaryFromDescriptor(res *descriptorpb.FileDescriptorProto, errs *ErrCollector) (*j5convert.FileSummary, error) {
+func SummaryFromDescriptor(res *descriptorpb.FileDescriptorProto, errs *errset.ErrCollector) (*j5convert.FileSummary, error) {
 	filename := res.GetName()
 	exports := map[string]*j5convert.TypeRef{}
 
@@ -63,7 +52,7 @@ func buildSummaryFromDescriptor(res *descriptorpb.FileDescriptorProto, errs *Err
 	}, nil
 }
 
-func buildEnumRef(file *descriptorpb.FileDescriptorProto, idx int32, enumDescriptor *descriptorpb.EnumDescriptorProto, errs *ErrCollector) (*j5convert.EnumRef, error) {
+func buildEnumRef(file *descriptorpb.FileDescriptorProto, idx int32, enumDescriptor *descriptorpb.EnumDescriptorProto, errs *errset.ErrCollector) (*j5convert.EnumRef, error) {
 	for idx, value := range enumDescriptor.Value {
 		if value.Number == nil {
 			return nil, fmt.Errorf("enum value[%d] does not have a number", idx)

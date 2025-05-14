@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/internal/j5s/j5convert"
+	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 )
 
 func NewCircularDependencyError(chain []string, dep string) error {
@@ -28,7 +29,7 @@ type Package struct {
 	Name        string
 	SourceFiles []*SourceFile
 
-	Files              map[string]*SearchResult
+	Files              map[string]*psrc.File
 	DirectDependencies map[string]*Package
 	Exports            map[string]*j5convert.TypeRef
 }
@@ -38,7 +39,7 @@ func newPackage(name string) *Package {
 		Name:               name,
 		DirectDependencies: map[string]*Package{},
 		Exports:            map[string]*j5convert.TypeRef{},
-		Files:              map[string]*SearchResult{},
+		Files:              map[string]*psrc.File{},
 	}
 	return pkg
 }

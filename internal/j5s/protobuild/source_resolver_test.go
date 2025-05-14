@@ -7,11 +7,14 @@ import (
 	"sort"
 	"strings"
 	"testing"
+
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 )
 
 type testFiles struct {
 	localFiles    map[string][]byte
 	localPackages []string
+	proseFiles    []*source_j5pb.ProseFile
 }
 
 func newTestFiles() *testFiles {
@@ -68,6 +71,10 @@ func (tf *testFiles) GetLocalFile(ctx context.Context, filename string) ([]byte,
 		return desc, nil
 	}
 	return nil, fmt.Errorf("file not found: %s", filename)
+}
+
+func (tf *testFiles) ProseFiles(pkgName string) ([]*source_j5pb.ProseFile, error) {
+	return tf.proseFiles, nil
 }
 
 func TestLocalResolver(t *testing.T) {

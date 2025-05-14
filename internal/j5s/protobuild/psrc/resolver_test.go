@@ -1,8 +1,7 @@
-package protobuild
+package psrc
 
 import (
 	"fmt"
-	"path"
 	"sort"
 	"strings"
 	"testing"
@@ -14,25 +13,6 @@ import (
 
 type testDeps struct {
 	externalDeps map[string]*descriptorpb.FileDescriptorProto
-}
-
-func newTestDeps() *testDeps {
-	return &testDeps{
-		externalDeps: map[string]*descriptorpb.FileDescriptorProto{},
-	}
-}
-
-func (tf *testDeps) tAddSimple(filename string) *fileBuilder {
-	pkg := tFileToPackage(filename)
-	fd := &descriptorpb.FileDescriptorProto{
-		Name:    proto.String(filename),
-		Syntax:  proto.String("proto3"),
-		Package: proto.String(pkg),
-	}
-	tf.externalDeps[filename] = fd
-	return &fileBuilder{
-		fd: fd,
-	}
 }
 
 func (tf *testDeps) GetDependencyFile(filename string) (*descriptorpb.FileDescriptorProto, error) {
@@ -53,25 +33,6 @@ func (tf *testDeps) ListDependencyFiles(root string) []string {
 	return files
 }
 
-type fileBuilder struct {
-	fd *descriptorpb.FileDescriptorProto
-}
-
-func (fb *fileBuilder) msg(name string, fields ...*descriptorpb.FieldDescriptorProto) {
-	for idx, f := range fields {
-		f.Number = proto.Int32(int32(idx + 1))
-	}
-	fb.fd.MessageType = append(fb.fd.MessageType, &descriptorpb.DescriptorProto{
-		Name:  proto.String(name),
-		Field: fields,
-	})
-}
-
-func tFileToPackage(filename string) string {
-	dir := path.Dir(filename)
-	return strings.ReplaceAll(dir, "/", ".")
-}
-
 func TestFileLoad(t *testing.T) {
 	tf := &testDeps{
 		externalDeps: map[string]*descriptorpb.FileDescriptorProto{
@@ -83,14 +44,14 @@ func TestFileLoad(t *testing.T) {
 		},
 	}
 
-	rr, err := dependencyChainResolver(tf)
+	rr, err := ChainResolver(tf.externalDeps)
 	if err != nil {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}
 
-	t.Run("Inbuilt", func(t *testing.T) {
+	t.Run("Builtin", func(t *testing.T) {
 		path := "j5/list/v1/query.proto"
-		result, err := rr.findFileByPath(path)
+		result, err := rr.FindFileByPath(path)
 		if err != nil {
 			t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 		}
@@ -101,7 +62,7 @@ func TestFileLoad(t *testing.T) {
 	})
 
 	t.Run("External", func(t *testing.T) {
-		result, err := rr.findFileByPath("external/v1/foo.proto")
+		result, err := rr.FindFileByPath("external/v1/foo.proto")
 		if err != nil {
 			t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 		}

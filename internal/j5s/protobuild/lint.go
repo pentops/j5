@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pentops/j5/internal/bcl/errpos"
+	"github.com/pentops/j5/internal/j5s/protobuild/errset"
 	"github.com/pentops/log.go/log"
 )
 
@@ -57,7 +58,7 @@ func (ps *PackageSet) LintFile(ctx context.Context, filename string, fileData st
 		}
 	}
 
-	return convertLintErrors(filename, fileData, &ErrCollector{
+	return convertLintErrors(filename, fileData, &errset.ErrCollector{
 		Warnings: srcFile.Warnings,
 	})
 }
@@ -65,7 +66,7 @@ func (ps *PackageSet) LintFile(ctx context.Context, filename string, fileData st
 func (ps *PackageSet) LintAll(ctx context.Context) (*errpos.ErrorsWithSource, error) {
 	allPackages := ps.ListLocalPackages()
 
-	allErrs := &ErrCollector{}
+	allErrs := &errset.ErrCollector{}
 
 	for _, pkgName := range allPackages {
 		// LoadLocalPackage parses both BCL and Proto files, but does not fully link.
@@ -101,7 +102,7 @@ func (ps *PackageSet) LintAll(ctx context.Context) (*errpos.ErrorsWithSource, er
 
 }
 
-func convertLintErrors(filename string, fileData string, errs *ErrCollector) (*errpos.ErrorsWithSource, error) {
+func convertLintErrors(filename string, fileData string, errs *errset.ErrCollector) (*errpos.ErrorsWithSource, error) {
 
 	errors := errpos.Errors{}
 	for _, err := range errs.Errors {

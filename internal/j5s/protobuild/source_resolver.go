@@ -4,108 +4,24 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/fs"
-	"path"
 	"strings"
 
 	"github.com/bufbuild/protocompile/parser"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/j5/internal/j5s/j5parse"
-	"github.com/pentops/j5/internal/source"
+	"github.com/pentops/j5/internal/j5s/protobuild/errset"
+	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/log.go/log"
 )
 
 type LocalFileSource interface {
 	GetLocalFile(context.Context, string) ([]byte, error)
+	ProseFiles(pkgName string) ([]*source_j5pb.ProseFile, error)
 	ListPackages() []string
 	ListSourceFiles(ctx context.Context, pkgName string) ([]string, error)
-}
-
-func NewBundleResolver(ctsx context.Context, bundle source.Bundle) (LocalFileSource, error) {
-
-	bundleDir := bundle.DirInRepo()
-
-	bundleConfig, err := bundle.J5Config()
-	if err != nil {
-		return nil, err
-	}
-
-	bundleFS := bundle.FS()
-
-	packages := []string{}
-	for _, pkg := range bundleConfig.Packages {
-		packages = append(packages, pkg.Name)
-	}
-
-	localFiles := &fileReader{
-		fs:       bundleFS,
-		fsName:   bundleDir,
-		packages: packages,
-	}
-
-	return localFiles, nil
-}
-
-type fileReader struct {
-	fs       fs.FS
-	fsName   string
-	packages []string
-}
-
-func (rr *fileReader) GetLocalFile(ctx context.Context, filename string) ([]byte, error) {
-	return fs.ReadFile(rr.fs, filename)
-}
-
-func (rr *fileReader) ListPackages() []string {
-	return rr.packages
-}
-
-func (rr *fileReader) ListSourceFiles(ctx context.Context, pkgName string) ([]string, error) {
-	pkgRoot := strings.ReplaceAll(pkgName, ".", "/")
-
-	files := make([]string, 0)
-	err := fs.WalkDir(rr.fs, pkgRoot, func(path string, dirEntry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if dirEntry.IsDir() {
-			return nil
-		}
-		if strings.HasSuffix(path, ".j5s.proto") {
-			return nil
-		}
-		if strings.HasSuffix(path, ".proto") || strings.HasSuffix(path, ".j5s") {
-			files = append(files, path)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("walk %s: %w", rr.fsName, err)
-	}
-	return files, nil
-}
-
-func (rr *fileReader) ListJ5Files(ctx context.Context) ([]string, error) {
-	files := make([]string, 0)
-	err := fs.WalkDir(rr.fs, ".", func(path string, dirEntry fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if dirEntry.IsDir() {
-			return nil
-		}
-		if strings.HasSuffix(path, ".j5s") {
-			files = append(files, path)
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	return files, nil
-
 }
 
 type SourceFile struct {
@@ -121,11 +37,11 @@ type SourceFile struct {
 // toSearchResults converts the source file to the protocompile searchResults it
 // produces. Proto files are 1:1 with Search Results, but one J5S file can
 // produce multiple Search Results
-func (sf *SourceFile) toSearchResults(typeResolver j5convert.TypeResolver) ([]*SearchResult, error) {
+func (sf *SourceFile) toSearchResults(typeResolver j5convert.TypeResolver) ([]*psrc.File, error) {
 
 	if sf.ProtoFile != nil {
-		return []*SearchResult{{
-			SourceType:  LocalProtoSource,
+		return []*psrc.File{{
+			SourceType:  psrc.LocalProtoSource,
 			Filename:    sf.Summary.SourceFilename,
 			Summary:     sf.Summary,
 			ParseResult: sf.ProtoFile,
@@ -138,13 +54,13 @@ func (sf *SourceFile) toSearchResults(typeResolver j5convert.TypeResolver) ([]*S
 			return nil, fmt.Errorf("convertJ5File %s: %w", sf.Summary.SourceFilename, err)
 		}
 
-		files := make([]*SearchResult, 0, len(descs))
+		files := make([]*psrc.File, 0, len(descs))
 		for _, desc := range descs {
-			files = append(files, &SearchResult{
+			files = append(files, &psrc.File{
 				Filename:   desc.GetName(),
 				Summary:    sf.Summary,
 				Desc:       desc,
-				SourceType: LocalJ5Source,
+				SourceType: psrc.LocalJ5Source,
 			})
 		}
 		return files, nil
@@ -190,6 +106,19 @@ func (sr *sourceResolver) ListPackages() []string {
 	return sr.bundleFiles.ListPackages()
 }
 
+func (sr *sourceResolver) ProseFiles(pkgName string) ([]*source_j5pb.ProseFile, error) {
+	return sr.bundleFiles.ProseFiles(pkgName)
+}
+
+func hasAPrefix(s string, prefixes []string) bool {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(s, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func (sr *sourceResolver) packageForFile(filename string) (string, bool, error) {
 	if !hasAPrefix(filename, sr.localPrefixes) {
 		// not a local file, not in scope.
@@ -218,10 +147,6 @@ func (sr *sourceResolver) listPackageFiles(ctx context.Context, pkgName string) 
 	filtered := make([]string, 0)
 	for _, f := range files {
 		if strings.HasSuffix(f, ".j5s.proto") {
-			continue
-		}
-		dir := path.Dir(f)
-		if dir != root {
 			continue
 		}
 		filtered = append(filtered, f)
@@ -254,7 +179,7 @@ func (sr *sourceResolver) getFile(ctx context.Context, sourceFilename string) (*
 
 func (sr *sourceResolver) parseJ5s(sourceFilename string, data []byte) (*SourceFile, error) {
 
-	errs := &ErrCollector{}
+	errs := errset.NewCollector()
 	sourceFile, err := sr.j5Parser.ParseFile(sourceFilename, string(data))
 	if err != nil {
 		return nil, errpos.AddSourceFile(err, sourceFilename, string(data))
@@ -274,7 +199,7 @@ func (sr *sourceResolver) parseJ5s(sourceFilename string, data []byte) (*SourceF
 
 func (sr *sourceResolver) parseProto(filename string, data []byte) (*SourceFile, error) {
 
-	errs := &ErrCollector{}
+	errs := errset.NewCollector()
 	fileNode, err := parser.Parse(filename, bytes.NewReader(data), errs.Handler())
 	if err != nil {
 		return nil, err
@@ -285,7 +210,7 @@ func (sr *sourceResolver) parseProto(filename string, data []byte) (*SourceFile,
 		return nil, err
 	}
 
-	summary, err := buildSummaryFromDescriptor(result.FileDescriptorProto(), errs)
+	summary, err := psrc.SummaryFromDescriptor(result.FileDescriptorProto(), errs)
 	if err != nil {
 		return nil, err
 	}

@@ -10,12 +10,15 @@ import (
 	"strings"
 
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/log.go/log"
 	"golang.org/x/exp/maps"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type PackageSet struct {
-	dependencyResolver fileResolver
+	dependencyResolver psrc.Resolver
 	sourceResolver     *sourceResolver
 
 	// symbols is reused for the entire package set, all files must be linked
@@ -25,8 +28,8 @@ type PackageSet struct {
 	Packages map[string]*Package
 }
 
-func NewPackageSet(deps DependencySet, localFiles LocalFileSource) (*PackageSet, error) {
-	resolver, err := dependencyChainResolver(deps)
+func NewPackageSet(deps map[string]*descriptorpb.FileDescriptorProto, localFiles LocalFileSource) (*PackageSet, error) {
+	resolver, err := psrc.ChainResolver(deps)
 
 	if err != nil {
 		return nil, fmt.Errorf("dependencyChainResolver: %w", err)
@@ -72,12 +75,12 @@ func (ps *PackageSet) GetLocalFileContent(ctx context.Context, filename string) 
 	return string(data), nil
 }
 
-func (ps *PackageSet) listPackageFiles(pkgName string) ([]string, error) {
+func (ps *PackageSet) ListPackageFiles(pkgName string) ([]string, error) {
 	// TODO: This skips *local* package files.
-	return ps.dependencyResolver.listPackageFiles(pkgName)
+	return ps.dependencyResolver.ListPackageFiles(pkgName)
 }
 
-func (ps *PackageSet) findFileByPath(filename string) (*SearchResult, error) {
+func (ps *PackageSet) FindFileByPath(filename string) (*psrc.File, error) {
 	if filename == "" {
 		return nil, errors.New("empty filename")
 	}
@@ -88,7 +91,7 @@ func (ps *PackageSet) findFileByPath(filename string) (*SearchResult, error) {
 	}
 
 	if !isLocal {
-		file, err := ps.dependencyResolver.findFileByPath(filename)
+		file, err := ps.dependencyResolver.FindFileByPath(filename)
 		if err != nil {
 			return nil, fmt.Errorf("readFile: %w", err)
 		}
@@ -194,14 +197,14 @@ func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton,
 
 	pkg := newPackage(name)
 
-	filenames, err := ps.dependencyResolver.listPackageFiles(name)
+	filenames, err := ps.dependencyResolver.ListPackageFiles(name)
 	if err != nil {
 		return nil, fmt.Errorf("package files for (dependency) %s: %w", name, err)
 	}
 
 	deps := map[string]struct{}{}
 	for _, filename := range filenames {
-		file, err := ps.dependencyResolver.findFileByPath(filename)
+		file, err := ps.dependencyResolver.FindFileByPath(filename)
 		if err != nil {
 			return nil, fmt.Errorf("findFileByPath %s: %w", filename, err)
 		}
@@ -218,7 +221,13 @@ func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton,
 	return pkg, nil
 }
 
-func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) ([]*SearchResult, error) {
+type BuiltPackage struct {
+	Proto []*psrc.File
+	Prose []*source_j5pb.ProseFile
+}
+
+func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (*BuiltPackage, error) {
+
 	ctx = log.WithField(ctx, "CompilePackage", packageName)
 	log.Debug(ctx, "Compiler: Load")
 	rb := newResolveBaton()
@@ -244,7 +253,14 @@ func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) ([
 		return nil, fmt.Errorf("CompilePackage %s: %w", packageName, err)
 	}
 
-	return files, nil
+	prose, err := ps.sourceResolver.ProseFiles(packageName)
+	if err != nil {
+		return nil, err
+	}
+	return &BuiltPackage{
+		Proto: files,
+		Prose: prose,
+	}, nil
 }
 
 func (ps *PackageSet) debugState(ww io.Writer) {
@@ -253,7 +269,7 @@ func (ps *PackageSet) debugState(ww io.Writer) {
 	for pkgName, pkg := range ps.Packages {
 		fmt.Fprintf(ww, "  Package: %s\n", pkgName)
 		for _, result := range pkg.Files {
-			fmt.Fprintf(ww, "    SearchResult: %s (%s)\n", result.Summary.SourceFilename, result.SourceType.String())
+			fmt.Fprintf(ww, "    psrc.File: %s (%s)\n", result.Summary.SourceFilename, result.SourceType.String())
 		}
 	}
 }

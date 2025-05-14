@@ -77,13 +77,12 @@ func runJ5sLint(ctx context.Context, cfg struct {
 		if err != nil {
 			return err
 		}
-
-		localFiles, err := protobuild.NewBundleResolver(ctx, bundle)
+		fileSource, err := bundle.FileSource()
 		if err != nil {
 			return err
 		}
 
-		compiler, err := protobuild.NewPackageSet(deps, localFiles)
+		compiler, err := protobuild.NewPackageSet(deps, fileSource)
 		if err != nil {
 			return err
 		}
@@ -114,12 +113,12 @@ func runJ5sLint(ctx context.Context, cfg struct {
 			return err
 		}
 
-		localFiles, err := protobuild.NewBundleResolver(ctx, bundle)
+		fileSource, err := bundle.FileSource()
 		if err != nil {
 			return err
 		}
 
-		compiler, err := protobuild.NewPackageSet(deps, localFiles)
+		compiler, err := protobuild.NewPackageSet(deps, fileSource)
 		if err != nil {
 			return err
 		}
@@ -235,7 +234,7 @@ func runJ5sGenProto(ctx context.Context, cfg j5sGenProtoConfig) error {
 			return err
 		}
 
-		localFiles, err := protobuild.NewBundleResolver(ctx, bundle)
+		localFiles, err := bundle.FileSource()
 		if err != nil {
 			return err
 		}
@@ -262,7 +261,7 @@ func runJ5sGenProto(ctx context.Context, cfg j5sGenProtoConfig) error {
 				return fmt.Errorf("compile package %q: %w", pkg, err)
 			}
 
-			for _, file := range out {
+			for _, file := range out.Proto {
 				filename := file.Linked.Path()
 				if !strings.HasSuffix(filename, ".j5s.proto") {
 					continue

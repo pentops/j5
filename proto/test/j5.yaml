@@ -1,6 +1,7 @@
 ---
 packages:
   - name: test.foo.v1
+  - name: test.schema.v1
 
 options:
   subPackages:
