@@ -177,7 +177,7 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 
 		}
 
-		sorted, err := protosrc.SortByDependency(descriptors)
+		sorted, err := protosrc.SortByDependency(descriptors, false)
 		if err != nil {
 			return nil, fmt.Errorf("sort by dependency: %w", err)
 		}
