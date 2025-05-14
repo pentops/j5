@@ -1,6 +1,7 @@
 package codec
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strings"
@@ -73,10 +74,26 @@ func (c *Codec) decodeQuery(queryString url.Values, msg protoreflect.Message) er
 		}
 
 		if array, ok := field.AsArrayOfScalar(); ok {
+			if len(values) == 1 && strings.HasPrefix(values[0], "[") {
+				// json array
+				val := values[0]
+				items := make([]any, 0)
+				err = json.Unmarshal([]byte(val), &items)
+				if err != nil {
+					return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid value %q for array field %q", val, key))
+				}
+				for _, value := range items {
+					_, err = array.AppendGoValue(value)
+					if err != nil {
+						return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid value %q for array field %q", value, key))
+					}
+				}
+				continue
+			}
 			for _, value := range values {
 				_, err = array.AppendGoValue(value)
 				if err != nil {
-					return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid value %q for field %q", value, key))
+					return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid value %q for array field %q", value, key))
 				}
 			}
 			continue
