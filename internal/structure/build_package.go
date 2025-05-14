@@ -66,17 +66,12 @@ func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 		protoregistry.GlobalFiles,
 	}
 
-	files, err := protosrc.SortByDependency(image.File)
+	files, err := protosrc.SortByDependency(image.File, true)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, file := range files {
-		fmt.Printf("FILE %s\n", file.GetName())
-	}
-
-	for _, file := range files {
-
 		file, err := protodesc.NewFile(file, resolver)
 		if err != nil {
 			return nil, err
@@ -86,14 +81,6 @@ func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 			return nil, err
 		}
 	}
-
-	/*
-		descFiles, err := protodesc.NewFiles(&descriptorpb.FileDescriptorSet{
-			File: image.File,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("protodesc.NewFiles: %w", err)
-		}*/
 
 	if err := bb.addStructure(descFiles); err != nil {
 		return nil, err

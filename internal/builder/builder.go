@@ -113,7 +113,7 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input *sourc
 		case config_j5pb.Plugin_PLUGIN_PROTO:
 			protoBuildRequest, err := protosrc.CodeGeneratorRequestFromImage(input)
 			if err != nil {
-				return fmt.Errorf("CodeGeneratorRequestFromImage: %w", err)
+				return fmt.Errorf("CodeGeneratorRequestFromImage for image %s: %w", input.SourceName, err)
 			}
 
 			plugin := plugin

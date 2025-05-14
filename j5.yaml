@@ -46,8 +46,8 @@ generate:
 
   - name: test
     inputs:
-      - local: bcltest
       - local: test
+      - local: bcltest
     output: .
     mods:
       - goPackageNames: 
@@ -62,7 +62,6 @@ generate:
       - base: go
       - base: go-sugar
       - base: go-grpc
-
 
 managedPaths:
  - gen

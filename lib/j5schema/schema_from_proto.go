@@ -1111,7 +1111,7 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 			},
 		}, true, nil
 
-	case "google.protobuf.Struct":
+	case "google.protobuf.Struct", "google.protobuf.FileDescriptorProto":
 		return &MapField{
 			Schema: &AnyField{},
 		}, true, nil
