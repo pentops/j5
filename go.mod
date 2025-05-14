@@ -7,6 +7,7 @@ toolchain go1.24.1
 require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.6-20250307204501-0409229c3780.1
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/mux v1.8.1
 	github.com/iancoleman/strcase v0.3.0
 	github.com/pentops/flowtest v0.0.0-20250416222312-c5823a736ca5
 	github.com/shopspring/decimal v1.4.0
