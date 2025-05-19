@@ -1,6 +1,7 @@
 package sourcewalk
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -57,14 +58,12 @@ func (ent *entityNode) run(visitor FileVisitor) error {
 	if err := ent.acceptKeys(visitor); err != nil {
 		return err
 	}
-
 	if err := ent.acceptData(visitor); err != nil {
 		return err
 	}
 	if err := ent.acceptStatus(visitor); err != nil {
 		return err
 	}
-
 	if err := ent.acceptState(visitor); err != nil {
 		return err
 	}
@@ -109,14 +108,13 @@ func (ent *entityNode) acceptKeys(visitor FileVisitor) error {
 		ent.componentName("Keys"),
 		keyProps,
 	)
+	if err != nil {
+		return wrapErr(ent.Source, err)
+	}
 
 	object.Entity = &schema_j5pb.EntityObject{
 		Entity: ent.name,
 		Part:   schema_j5pb.EntityPart_KEYS,
-	}
-
-	if err != nil {
-		return wrapErr(ent.Source, err)
 	}
 
 	if err := visitor.VisitObject(object); err != nil {
@@ -254,6 +252,10 @@ func (ent *entityNode) acceptState(visitor FileVisitor) error {
 }
 
 func (ent *entityNode) acceptEventOneof(visitor FileVisitor) error {
+
+	if len(ent.Schema.Events) == 0 {
+		return wrapErr(ent.Source, errors.New("entity has no events"))
+	}
 
 	entity := ent.Schema
 	eventOneof := &schema_j5pb.Oneof{

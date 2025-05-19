@@ -1,12 +1,14 @@
 package j5convert
 
 import (
+	"fmt"
 	"sort"
 	"strings"
 
+	"slices"
+
 	"github.com/pentops/golib/gl"
 	"google.golang.org/protobuf/types/descriptorpb"
-	"slices"
 )
 
 type fileContext struct {
@@ -67,6 +69,10 @@ func (fb *fileContext) ensureImport(importPath string) {
 	sort.Strings(fb.fdp.Dependency)
 }
 
+func (fb *fileContext) addSyntheticOneof(nameHont string) (int32, error) {
+	return 0, fmt.Errorf("at file level, synthetic oneof not supported")
+}
+
 func (fb *fileContext) addMessage(message *MessageBuilder) {
 	idx := int32(len(fb.fdp.MessageType))
 	path := []int32{4, idx}
@@ -111,4 +117,12 @@ func (msg *MessageBuilder) addMessage(message *MessageBuilder) {
 func (msg *MessageBuilder) addEnum(enum *enumBuilder) {
 	msg.mergeAt([]int32{4, int32(len(msg.descriptor.EnumType))}, enum.commentSet)
 	msg.descriptor.EnumType = append(msg.descriptor.EnumType, enum.desc)
+}
+
+func (msg *MessageBuilder) addSyntheticOneof(nameHint string) (int32, error) {
+	nextIndex := len(msg.descriptor.OneofDecl)
+	msg.descriptor.OneofDecl = append(msg.descriptor.OneofDecl, &descriptorpb.OneofDescriptorProto{
+		Name: gl.Ptr(fmt.Sprintf("_%s", nameHint)),
+	})
+	return int32(nextIndex), nil
 }

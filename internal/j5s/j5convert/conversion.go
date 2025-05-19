@@ -20,16 +20,12 @@ import (
 type parentContext interface {
 	addMessage(*MessageBuilder)
 	addEnum(*enumBuilder)
-}
-
-type fieldContext struct {
-	name string
+	addSyntheticOneof(nameHint string) (int32, error)
 }
 
 type conversionVisitor struct {
 	root          *rootContext
 	file          *fileContext
-	field         *fieldContext
 	parentContext parentContext
 }
 
@@ -37,7 +33,6 @@ func (ww *conversionVisitor) _clone() *conversionVisitor {
 	return &conversionVisitor{
 		root:          ww.root,
 		file:          ww.file,
-		field:         ww.field,
 		parentContext: ww.parentContext,
 	}
 }
@@ -59,7 +54,6 @@ func (rr *conversionVisitor) addError(node sourcewalk.SourceNode, err error) {
 func (ww *conversionVisitor) inMessage(msg *MessageBuilder) *conversionVisitor {
 	walk := ww._clone()
 	walk.parentContext = msg
-	walk.field = nil
 	return walk
 }
 
@@ -228,6 +222,7 @@ func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
 			locPath := []int32{2, int32(len(message.descriptor.Field))}
 			message.comment(locPath, node.Schema.Description)
 			message.descriptor.Field = append(message.descriptor.Field, propertyDesc)
+
 			return nil
 		},
 	})
@@ -248,10 +243,7 @@ func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
 func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 	schema := node.Schema
 	if schema.Name == "" {
-		if ww.field == nil {
-			ww.addErrorf(node.Source, "missing object name")
-		}
-		schema.Name = strcase.ToCamel(ww.field.name)
+		ww.addErrorf(node.Source, "missing object name")
 	}
 
 	message := blankMessage(schema.Name)

@@ -167,7 +167,16 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 		if required {
 			return nil, fmt.Errorf("cannot be both required and optional")
 		}
-		fieldDesc.Proto3Optional = gl.Ptr(true)
+		if fieldDesc.Label == nil {
+			// Caller must create a 'synthetic' proto2 oneof in the parent
+			// message to match the optional field
+			fieldDesc.Proto3Optional = gl.Ptr(true)
+			index, err := ww.parentContext.addSyntheticOneof(protoFieldName)
+			if err != nil {
+				return nil, fmt.Errorf("failed to add synthetic oneof: %w", err)
+			}
+			fieldDesc.OneofIndex = gl.Ptr(index)
+		}
 	}
 
 	fieldDesc.Name = gl.Ptr(protoFieldName)
