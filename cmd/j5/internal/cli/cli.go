@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path"
 	"path/filepath"
@@ -15,6 +16,7 @@ import (
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/builder"
 	"github.com/pentops/j5/internal/source"
+	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
 )
 
@@ -247,6 +249,28 @@ func (local *LocalFS) PutFile(ctx context.Context, subPath string, body io.Reade
 
 type fileWriter struct {
 	dir string
+}
+
+func (f *fileWriter) DeleteFilesMatching(ctx context.Context, check func(string) bool) error {
+	err := fs.WalkDir(os.DirFS(f.dir), ".", func(pathname string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+
+		if !check(pathname) {
+			return nil
+		}
+
+		log.WithField(ctx, "file", pathname).Debug("Deleting file")
+		return os.Remove(filepath.Join(f.dir, pathname))
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (f *fileWriter) PutFile(ctx context.Context, filename string, data []byte) error {

@@ -11,9 +11,7 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/j5s/protobuild"
-	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/log.go/log"
-	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -158,37 +156,27 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 
 	img := newImageBuilder(deps)
 
+	pkgNames := make([]string, 0, len(bundle.config.Packages))
 	for _, pkg := range bundle.config.Packages {
 		img.addPackage(&source_j5pb.PackageInfo{
 			Name:  pkg.Name,
 			Prose: pkg.Prose,
 			Label: pkg.Label,
 		})
+		pkgNames = append(pkgNames, pkg.Name)
+	}
 
-		built, err := compiler.CompilePackage(ctx, pkg.Name)
+	built, err := compiler.BuildPackages(ctx, pkgNames)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, pkg := range built {
+		err = img.addBuilt(pkg)
 		if err != nil {
-			return nil, fmt.Errorf("compile package %s: %w", pkg.Name, err)
+			return nil, err
 		}
 
-		descriptors := make([]*descriptorpb.FileDescriptorProto, 0, len(built.Proto))
-		for _, file := range built.Proto {
-			descriptor := protodesc.ToFileDescriptorProto(file.Linked)
-			descriptors = append(descriptors, descriptor)
-
-		}
-
-		sorted, err := protosrc.SortByDependency(descriptors, false)
-		if err != nil {
-			return nil, fmt.Errorf("sort by dependency: %w", err)
-		}
-		for _, descriptor := range sorted {
-			if err := img.addFile(descriptor, true); err != nil {
-				return nil, fmt.Errorf("add file %s: %w", descriptor.GetName(), err)
-			}
-		}
-		for _, file := range built.Prose {
-			img.addProseFile(file)
-		}
 	}
 
 	includeImages, err := bundle.getIncludes(ctx, resolver)

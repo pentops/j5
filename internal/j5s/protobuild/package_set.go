@@ -115,7 +115,7 @@ func (ps *PackageSet) loadPackage(ctx context.Context, rb *resolveBaton, name st
 	ctx = log.WithField(ctx, "loadPackage", name)
 	rb, err := rb.cloneFor(name)
 	if err != nil {
-		return nil, fmt.Errorf("cloneFor %s: %w", name, err)
+		return nil, err
 	}
 
 	pkg, ok := ps.Packages[name]
@@ -127,18 +127,17 @@ func (ps *PackageSet) loadPackage(ctx context.Context, rb *resolveBaton, name st
 		log.Debug(ctx, "Loading Local Package")
 		pkg, err = ps.loadLocalPackage(ctx, rb, name)
 		if err != nil {
-			return nil, fmt.Errorf("loadLocalPackage %s: %w", name, err)
+			return nil, err
 		}
 
 	} else {
 		log.Debug(ctx, "Loading External Package")
 		pkg, err = ps.loadExternalPackage(ctx, rb, name)
 		if err != nil {
-			return nil, fmt.Errorf("loadExternalPackage %s: %w", name, err)
+			return nil, err
 		}
 	}
 	log.Debug(ctx, "Loaded Package")
-	ps.Packages[name] = pkg
 
 	return pkg, nil
 }
@@ -164,6 +163,7 @@ func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, na
 	}
 
 	pkg := newPackage(name)
+	ps.Packages[name] = pkg
 
 	deps := map[string]struct{}{}
 	for _, filename := range fileNames {
@@ -190,12 +190,49 @@ func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, na
 		}
 	}
 
+	filenames := make([]string, 0)
+	for filename := range pkg.Files {
+		filenames = append(filenames, filename)
+	}
+
+	sort.Strings(filenames) // for consistent error ordering
+
+	log.Debug(ctx, "Compiler: Link")
+
+	cc := newLinker(ps, ps.symbols)
+	files, err := cc.resolveAll(ctx, filenames)
+	if err != nil {
+		ps.debugState(os.Stderr)
+		return nil, fmt.Errorf("resolveAll files for %s: %w", name, err)
+	}
+
+	prose, err := ps.sourceResolver.ProseFiles(name)
+	if err != nil {
+		return nil, err
+	}
+
+	packageDeps := make([]*BuiltPackage, 0, len(pkg.DirectDependencies))
+	for _, dep := range pkg.DirectDependencies {
+		if dep.Built == nil {
+			continue
+		}
+		packageDeps = append(packageDeps, dep.Built)
+	}
+
+	pkg.Built = &BuiltPackage{
+		Name:         pkg.Name,
+		Proto:        files,
+		Prose:        prose,
+		Dependencies: packageDeps,
+	}
+
 	return pkg, nil
 }
 
 func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {
 
 	pkg := newPackage(name)
+	ps.Packages[name] = pkg
 
 	filenames, err := ps.dependencyResolver.ListPackageFiles(name)
 	if err != nil {
@@ -222,8 +259,10 @@ func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton,
 }
 
 type BuiltPackage struct {
-	Proto []*psrc.File
-	Prose []*source_j5pb.ProseFile
+	Name         string
+	Proto        []*psrc.File
+	Prose        []*source_j5pb.ProseFile
+	Dependencies []*BuiltPackage
 }
 
 func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (*BuiltPackage, error) {
@@ -237,30 +276,7 @@ func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (*
 		return nil, fmt.Errorf("loadPackage %s: %w", packageName, err)
 	}
 
-	filenames := make([]string, 0)
-	for filename := range pkg.Files {
-		filenames = append(filenames, filename)
-	}
-
-	sort.Strings(filenames) // for consistent error ordering
-
-	log.Debug(ctx, "Compiler: Link")
-
-	cc := newLinker(ps, ps.symbols)
-	files, err := cc.resolveAll(ctx, filenames)
-	if err != nil {
-		ps.debugState(os.Stderr)
-		return nil, fmt.Errorf("CompilePackage %s: %w", packageName, err)
-	}
-
-	prose, err := ps.sourceResolver.ProseFiles(packageName)
-	if err != nil {
-		return nil, err
-	}
-	return &BuiltPackage{
-		Proto: files,
-		Prose: prose,
-	}, nil
+	return pkg.Built, nil
 }
 
 func (ps *PackageSet) debugState(ww io.Writer) {
@@ -272,4 +288,38 @@ func (ps *PackageSet) debugState(ww io.Writer) {
 			fmt.Fprintf(ww, "    psrc.File: %s (%s)\n", result.Summary.SourceFilename, result.SourceType.String())
 		}
 	}
+}
+
+func (ps *PackageSet) BuildPackages(ctx context.Context, pkgNames []string) ([]*BuiltPackage, error) {
+	done := map[string]struct{}{}
+	out := []*BuiltPackage{}
+
+	var addPkg func(pkg *BuiltPackage) error
+	addPkg = func(pkg *BuiltPackage) error {
+		if _, ok := done[pkg.Name]; ok {
+			return nil
+		}
+		done[pkg.Name] = struct{}{}
+
+		for _, dep := range pkg.Dependencies {
+			if err := addPkg(dep); err != nil {
+				return fmt.Errorf("addPkg %s: %w", dep.Name, err)
+			}
+		}
+		out = append(out, pkg)
+		return nil
+	}
+
+	for _, pkgName := range pkgNames {
+		built, err := ps.CompilePackage(ctx, pkgName)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := addPkg(built); err != nil {
+			return nil, fmt.Errorf("addPkg %s: %w", pkgName, err)
+		}
+	}
+
+	return out, nil
 }

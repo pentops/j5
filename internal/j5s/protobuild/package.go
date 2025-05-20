@@ -32,6 +32,8 @@ type Package struct {
 	Files              map[string]*psrc.File
 	DirectDependencies map[string]*Package
 	Exports            map[string]*j5convert.TypeRef
+
+	Built *BuiltPackage
 }
 
 func newPackage(name string) *Package {
@@ -52,8 +54,13 @@ func (pkg *Package) includeIO(summary *j5convert.FileSummary, deps map[string]st
 	for _, ref := range summary.TypeDependencies {
 		deps[ref.Package] = struct{}{}
 	}
+
 	for _, file := range summary.FileDependencies {
-		dependsOn := j5convert.PackageFromFilename(file)
+		dependsOn, _, err := j5convert.SplitPackageFromFilename(file)
+		if err != nil {
+			// fallback to full name
+			dependsOn = j5convert.PackageFromFilename(file)
+		}
 		deps[dependsOn] = struct{}{}
 	}
 }
@@ -89,13 +96,11 @@ func (pkg *Package) ResolveType(pkgName string, name string) (*j5convert.TypeRef
 
 type resolveBaton struct {
 	chain []string
-	// e     //rrs  *ErrCollector
 }
 
 func newResolveBaton() *resolveBaton {
 	return &resolveBaton{
 		chain: []string{},
-		//	errs:  &ErrCollector{},
 	}
 }
 
@@ -106,6 +111,5 @@ func (rb *resolveBaton) cloneFor(name string) (*resolveBaton, error) {
 
 	return &resolveBaton{
 		chain: append(slices.Clone(rb.chain), name),
-		//	errs:  rb.errs,
 	}, nil
 }

@@ -244,14 +244,17 @@ func runJ5sGenProto(ctx context.Context, cfg j5sGenProtoConfig) error {
 			return err
 		}
 
-		err = deleteJ5sProto(ctx, bundle.DirInRepo())
-		if err != nil {
-			return err
-		}
-
 		outWriter, err := cfg.FileWriterAt(ctx, bundle.DirInRepo())
 		if err != nil {
-			return err
+			return fmt.Errorf("fw: %w", err)
+		}
+
+		err = outWriter.DeleteFilesMatching(ctx, func(name string) bool {
+			// not using path.Ext because it returns .proto
+			return strings.HasSuffix(name, ".j5s.proto")
+		})
+		if err != nil {
+			return fmt.Errorf("clean: %w", err)
 		}
 
 		for _, pkg := range localFiles.ListPackages() {
@@ -299,27 +302,4 @@ func runJ5sGenProto(ctx context.Context, cfg j5sGenProtoConfig) error {
 	fmt.Fprintln(os.Stderr, e.HumanString(3))
 
 	return err
-}
-
-func deleteJ5sProto(ctx context.Context, dir string) error {
-	err := fs.WalkDir(os.DirFS(dir), ".", func(pathname string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-
-		if !strings.HasSuffix(pathname, ".j5s.proto") {
-			// not using path.Ext because it returns .proto
-			return nil
-		}
-
-		log.WithField(ctx, "file", pathname).Debug("Deleting file")
-		return os.Remove(filepath.Join(dir, pathname))
-	})
-	if err != nil {
-		return err
-	}
-	return nil
 }

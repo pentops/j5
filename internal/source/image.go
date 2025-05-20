@@ -4,7 +4,10 @@ import (
 	"fmt"
 
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/j5s/protobuild"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
+	"github.com/pentops/j5/internal/protosrc"
+	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -24,6 +27,28 @@ func newImageBuilder(deps *imageFiles) *imageBuilder {
 
 func (ib *imageBuilder) addPackage(pkg *source_j5pb.PackageInfo) {
 	ib.img.Packages = append(ib.img.Packages, pkg)
+}
+
+func (ib *imageBuilder) addBuilt(built *protobuild.BuiltPackage) error {
+	descriptors := make([]*descriptorpb.FileDescriptorProto, 0, len(built.Proto))
+	for _, file := range built.Proto {
+		descriptor := protodesc.ToFileDescriptorProto(file.Linked)
+		descriptors = append(descriptors, descriptor)
+	}
+
+	sorted, err := protosrc.SortByDependency(descriptors, false)
+	if err != nil {
+		return fmt.Errorf("sort by dependency: %w", err)
+	}
+	for _, descriptor := range sorted {
+		if err := ib.addFile(descriptor, true); err != nil {
+			return fmt.Errorf("add file %s: %w", descriptor.GetName(), err)
+		}
+	}
+	for _, file := range built.Prose {
+		ib.addProseFile(file)
+	}
+	return nil
 }
 
 func (ib *imageBuilder) addFile(file *descriptorpb.FileDescriptorProto, asSource bool) error {
