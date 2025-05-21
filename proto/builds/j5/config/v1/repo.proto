@@ -9,15 +9,18 @@ import "j5/config/v1/plugin.proto";
 
 // Config represents the config file (j5.yaml) for a repo.
 message RepoConfigFile {
-  repeated BuildPlugin plugins = 3;
+  repeated BuildPlugin plugins = 1;
   repeated PluginOverride plugin_overrides = 2;
-  repeated GenerateConfig generate = 4;
-  repeated BundleReference bundles = 6;
+  repeated GenerateConfig generate = 3;
+  repeated BundleReference bundles = 4;
 
-  GitConfig git = 7;
+  GitConfig git = 5;
 
-  // Managed Paths get deleted on `j5 generate --clean`
-  repeated string managed_paths = 5;
+  // Managed Paths get deleted on `j5 generate` unless `--no-clean` is set
+  repeated string managed_paths = 6;
+  
+  // Generate .j5s.proto files in the repo on generate
+  bool generate_j5s_proto = 7;
 
   // Inline Bundle
   RegistryConfig registry = 8;

@@ -13,20 +13,20 @@ import (
 func runGenerate(ctx context.Context, cfg struct {
 	SourceConfig
 	NoClean bool `flag:"no-clean" description:"Do not remove the directories in config as 'managedPaths' before generating"`
-	NoJ5s   bool `flag:"no-j5s" description:"Do not convert J5s source files to proto"`
 }) error {
 
-	if !cfg.NoJ5s {
+	src, err := cfg.GetSource(ctx)
+	if err != nil {
+		return err
+	}
+
+	repoConfig := src.RepoConfig()
+	if repoConfig.GenerateJ5SProto {
 		if err := runJ5sGenProto(ctx, j5sGenProtoConfig{
 			SourceConfig: cfg.SourceConfig,
 		}); err != nil {
 			return err
 		}
-	}
-
-	src, err := cfg.GetSource(ctx)
-	if err != nil {
-		return err
 	}
 
 	dockerWrapper, err := builder.NewRunner(builder.DefaultRegistryAuths)
