@@ -174,7 +174,7 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 			fieldDesc.Proto3Optional = gl.Ptr(true)
 			index, err := ww.parentContext.addSyntheticOneof(protoFieldName)
 			if err != nil {
-				return nil, fmt.Errorf("failed to add synthetic oneof: %w", err)
+				return nil, err
 			}
 			fieldDesc.OneofIndex = gl.Ptr(index)
 		}

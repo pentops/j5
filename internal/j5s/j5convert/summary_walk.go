@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"slices"
+
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/j5s/sourcewalk"
-	"slices"
 )
 
 type ErrCollector interface {

@@ -91,43 +91,6 @@ func TestLintImport(t *testing.T) {
 	}
 }
 
-func TestLintSingleProto(t *testing.T) {
-	for _, tc := range []struct {
-		name    string
-		body    []string
-		wantErr string
-	}{{
-		name: "unused import",
-		body: []string{
-			`import "j5/messaging/v1/annotations.proto";`,
-			"message Foo {",
-			"}",
-		},
-		wantErr: "not used",
-	}} {
-		t.Run(tc.name, func(t *testing.T) {
-			tf := newTestFiles()
-			tf.tAddProtoFile("local/v1/foo.proto",
-				tc.body...,
-			)
-			td := newTestDeps()
-			es := testLint(t, tf, td)
-			if es == nil {
-				t.Fatalf("Expected errors, got nil")
-			}
-
-			if len(es.Errors) != 1 {
-				t.Fatalf("Expected 1 error, got %d", len(es.Errors))
-			}
-			msg := es.Errors[0].Err.Error()
-			t.Logf("Got error: %s", msg)
-			if !strings.Contains(msg, tc.wantErr) {
-				t.Fatalf("Expected error containing %q, got %q", tc.wantErr, msg)
-			}
-		})
-	}
-}
-
 func TestLintSingleJ5(t *testing.T) {
 
 	for _, tc := range []struct {

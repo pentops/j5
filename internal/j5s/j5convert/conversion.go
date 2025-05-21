@@ -84,7 +84,7 @@ func (ww *conversionVisitor) resolveType(ref *sourcewalk.RefNode) (*TypeRef, err
 		}
 	}
 
-	typeRef, err := ww.root.resolveTypeNoImport(ref.Ref)
+	typeRef, err := ww.root.resolveType(ref.Ref)
 	if err != nil {
 		pos := ref.Source.GetPos()
 		if pos != nil {

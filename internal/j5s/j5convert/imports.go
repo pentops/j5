@@ -243,7 +243,7 @@ func (im importMap) expand(ref *schema_j5pb.Ref) *expandedRef {
 
 }
 
-func (fb *rootContext) resolveTypeNoImport(refSrc *schema_j5pb.Ref) (*TypeRef, error) {
+func (fb *rootContext) resolveType(refSrc *schema_j5pb.Ref) (*TypeRef, error) {
 
 	ref := fb.importAliases.expand(refSrc)
 	if ref == nil {
