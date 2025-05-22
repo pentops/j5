@@ -5,14 +5,13 @@ import (
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	"github.com/google/go-cmp/cmp"
+	"github.com/pentops/flowtest/prototest"
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -294,7 +293,112 @@ func TestSchemaToProto(t *testing.T) {
 	}
 
 	gotFile[0].SourceCodeInfo = nil
-	equal(t, wantFile, gotFile[0])
+	prototest.AssertEqualProto(t, wantFile, gotFile[0])
+}
+
+func TestEnumConvert(t *testing.T) {
+	schema := &sourcedef_j5pb.RootElement{
+		Type: &sourcedef_j5pb.RootElement_Enum{
+			Enum: &schema_j5pb.Enum{
+				Name:   "TestEnum",
+				Prefix: "TEST_ENUM_",
+				Options: []*schema_j5pb.Enum_Option{{
+					Name: "TEST_ENUM_UNSPECIFIED",
+				}, {
+					Name: "FOO",
+				}, {
+					Name: "TEST_ENUM_BAR",
+				}},
+			},
+		},
+	}
+
+	wantFile := &descriptorpb.FileDescriptorProto{
+		Syntax:  proto.String("proto3"),
+		Options: &descriptorpb.FileOptions{},
+		Name:    proto.String("test/v1/test.j5s.proto"),
+		Package: proto.String("test.v1"),
+		EnumType: []*descriptorpb.EnumDescriptorProto{{
+			Name: proto.String("TestEnum"),
+			Value: []*descriptorpb.EnumValueDescriptorProto{{
+				Name:   proto.String("TEST_ENUM_UNSPECIFIED"),
+				Number: proto.Int32(0),
+			}, {
+				Name:   proto.String("TEST_ENUM_FOO"),
+				Number: proto.Int32(1),
+			}, {
+				Name:   proto.String("TEST_ENUM_BAR"),
+				Number: proto.Int32(2),
+			}},
+		}},
+	}
+
+	gotFile := testConvert(t, schema)
+	prototest.AssertEqualProto(t, wantFile, gotFile)
+}
+
+func TestPolymorphConvert(t *testing.T) {
+
+	polymorphSchema := &sourcedef_j5pb.RootElement{
+		Type: &sourcedef_j5pb.RootElement_Polymorph{
+			Polymorph: &sourcedef_j5pb.Polymorph{
+				Def: &schema_j5pb.Polymorph{
+					Name:  "TestPolymorph",
+					Types: []string{"foo.v1.Foo", "bar.v1.Bar"},
+				},
+				Includes: []string{"baz.v1.BazPoly"},
+			},
+		},
+	}
+
+	wantFile := &descriptorpb.FileDescriptorProto{
+		Syntax:  proto.String("proto3"),
+		Options: &descriptorpb.FileOptions{},
+		Name:    proto.String("test/v1/test.j5s.proto"),
+		Package: proto.String("test.v1"),
+		Dependency: []string{
+			"j5/ext/v1/annotations.proto",
+		},
+		MessageType: []*descriptorpb.DescriptorProto{{
+			Name: proto.String("TestPolymorph"),
+			Options: withOption(&descriptorpb.MessageOptions{}, ext_j5pb.E_Message, &ext_j5pb.MessageOptions{
+				Type: &ext_j5pb.MessageOptions_Polymorph{
+					Polymorph: &ext_j5pb.PolymorphMessageOptions{
+						Types: []string{
+							"foo.v1.Foo",
+							"bar.v1.Bar",
+						},
+					},
+				},
+			}),
+		}},
+	}
+
+	gotFile := testConvert(t, polymorphSchema)
+	prototest.AssertEqualProto(t, wantFile, gotFile)
+
+}
+
+func testConvert(t testing.TB, schemas ...*sourcedef_j5pb.RootElement) *descriptorpb.FileDescriptorProto {
+	t.Helper()
+	deps := &testDeps{
+		pkg: "test.v1",
+	}
+	sourceFile := &sourcedef_j5pb.SourceFile{
+		Path:     "test/v1/test.j5s",
+		Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
+		Elements: schemas,
+	}
+	gotFiles, err := ConvertJ5File(deps, sourceFile)
+	if err != nil {
+		t.Fatalf("ConvertJ5File failed: %v", err)
+	}
+	if len(gotFiles) != 1 {
+		t.Fatalf("Expected 1 file, got %d", len(gotFiles))
+	}
+	gotFile := gotFiles[0]
+	gotFile.SourceCodeInfo = nil
+	return gotFile
 }
 
 // Copies the J5 extension object to the equivalent protoreflect extension type
@@ -322,13 +426,4 @@ func tEmptyTypeExt(t testing.TB, fieldType protoreflect.Name) *descriptorpb.Fiel
 
 	proto.SetExtension(fieldOptions, ext_j5pb.E_Field, extOptions)
 	return fieldOptions
-}
-
-func equal(t testing.TB, want, got proto.Message) {
-	t.Helper()
-	diff := cmp.Diff(want, got, protocmp.Transform())
-	if diff != "" {
-		t.Errorf("Mismatch (-want +got):\n%s", diff)
-	}
-
 }

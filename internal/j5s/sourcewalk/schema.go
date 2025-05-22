@@ -15,12 +15,14 @@ type SchemaVisitor interface {
 	VisitObject(*ObjectNode) error
 	VisitOneof(*OneofNode) error
 	VisitEnum(*EnumNode) error
+	VisitPolymorph(*PolymorphNode) error
 }
 
 type SchemaCallbacks struct {
-	Object func(*ObjectNode) error
-	Oneof  func(*OneofNode) error
-	Enum   func(*EnumNode) error
+	Object    func(*ObjectNode) error
+	Oneof     func(*OneofNode) error
+	Enum      func(*EnumNode) error
+	Polymorph func(*PolymorphNode) error
 }
 
 func (fc SchemaCallbacks) VisitObject(on *ObjectNode) error {
@@ -33,6 +35,10 @@ func (fc SchemaCallbacks) VisitOneof(on *OneofNode) error {
 
 func (fc SchemaCallbacks) VisitEnum(en *EnumNode) error {
 	return fc.Enum(en)
+}
+
+func (fc SchemaCallbacks) VisitPolymorph(pn *PolymorphNode) error {
+	return fc.Polymorph(pn)
 }
 
 type EnumNode struct {
@@ -149,6 +155,25 @@ func newObjectNode(source SourceNode, parent parentNode, wrapper *sourcedef_j5pb
 		wrapper.Schemas,
 	)
 
+	return node, nil
+}
+
+type PolymorphNode struct {
+	rootType
+	Name        string
+	Description string
+	Types       []string
+	Includes    []string
+}
+
+func newPolymorphNode(source SourceNode, parent parentNode, schema *schema_j5pb.Polymorph, includes []string) (*PolymorphNode, error) {
+	node := &PolymorphNode{
+		rootType:    newRoot(source, parent, schema.Name),
+		Name:        schema.Name,
+		Types:       schema.Types,
+		Includes:    includes,
+		Description: schema.Description,
+	}
 	return node, nil
 }
 

@@ -76,8 +76,3 @@ func SplitPackageFromFilename(filename string) (string, string, error) {
 	}
 	return pkg, "", fmt.Errorf("no version in package %q", pkg)
 }
-
-type J5Result struct {
-	SourceFile *sourcedef_j5pb.SourceFile
-	Summary    *FileSummary
-}

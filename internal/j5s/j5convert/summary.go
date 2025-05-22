@@ -27,6 +27,27 @@ type FileSummary struct {
 	ProducesFiles []string
 }
 
+// TypeRef is the summary of an exported type
+type TypeRef struct {
+	Package  string
+	Name     string
+	File     string
+	Position *errpos.Position
+
+	// Oneof
+	Enum      *EnumRef
+	Object    *ObjectRef
+	Oneof     *OneofRef
+	Polymorph *PolymorphRef
+}
+
+func (typeRef TypeRef) protoTypeName() *string {
+	if typeRef.Package == "" {
+		return gl.Ptr(typeRef.Name)
+	}
+	return gl.Ptr(fmt.Sprintf(".%s.%s", typeRef.Package, typeRef.Name))
+}
+
 type ObjectRef struct {
 }
 
@@ -34,7 +55,8 @@ type OneofRef struct {
 }
 
 type PolymorphRef struct {
-	Types []string
+	Types    []string
+	Includes []string
 }
 
 // EnumRef is the summary of an enum definition
@@ -56,27 +78,6 @@ func (er *EnumRef) mapValues(vals []string) ([]int32, error) {
 		out[idx] = val
 	}
 	return out, nil
-}
-
-// TypeRef is the summary of an exported type
-type TypeRef struct {
-	Package  string
-	Name     string
-	File     string
-	Position *errpos.Position
-
-	// Oneof
-	Enum      *EnumRef
-	Object    *ObjectRef
-	Oneof     *OneofRef
-	Polymorph *PolymorphRef
-}
-
-func (typeRef TypeRef) protoTypeName() *string {
-	if typeRef.Package == "" {
-		return gl.Ptr(typeRef.Name)
-	}
-	return gl.Ptr(fmt.Sprintf(".%s.%s", typeRef.Package, typeRef.Name))
 }
 
 type TypeResolver interface {
@@ -210,6 +211,10 @@ func (cc *summaryWalker) collectFileRefs(sourceFile *sourcedef_j5pb.SourceFile) 
 			cc.addExport(enumTypeRef(node))
 			return nil
 		},
+		Polymorph: func(node *sourcewalk.PolymorphNode) error {
+			cc.addExport(polymorphTypeRef(node))
+			return nil
+		},
 		Service: func(node *sourcewalk.ServiceNode) error {
 			cc.includeSubFile("service")
 			return nil
@@ -252,6 +257,17 @@ func enumTypeRef(node *sourcewalk.EnumNode) *TypeRef {
 		Enum: &EnumRef{
 			Prefix: node.Schema.Prefix,
 			ValMap: valMap,
+		},
+	}
+}
+
+func polymorphTypeRef(node *sourcewalk.PolymorphNode) *TypeRef {
+	return &TypeRef{
+		Name:     node.NameInPackage(),
+		Position: node.Source.GetPos(),
+		Polymorph: &PolymorphRef{
+			Types:    node.Types,
+			Includes: node.Includes,
 		},
 	}
 }

@@ -14,14 +14,6 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-// parentContext is a file's root, or message, which can hold messages and
-// enums. Implemented by FileBuilder and MessageBuilder.
-type parentContext interface {
-	addMessage(*MessageBuilder)
-	addEnum(*enumBuilder)
-	addSyntheticOneof(nameHint string) (int32, error)
-}
-
 type conversionVisitor struct {
 	root          *rootContext
 	file          *fileContext
@@ -99,20 +91,7 @@ func (ww *conversionVisitor) resolveType(ref *sourcewalk.RefNode) (*TypeRef, err
 
 func (ww *conversionVisitor) visitFileNode(file *sourcewalk.FileNode) error {
 	return file.RangeRootElements(sourcewalk.FileCallbacks{
-		SchemaCallbacks: sourcewalk.SchemaCallbacks{
-			Object: func(on *sourcewalk.ObjectNode) error {
-				ww.visitObjectNode(on)
-				return nil
-			},
-			Oneof: func(on *sourcewalk.OneofNode) error {
-				ww.visitOneofNode(on)
-				return nil
-			},
-			Enum: func(en *sourcewalk.EnumNode) error {
-				ww.visitEnumNode(en)
-				return nil
-			},
-		},
+		SchemaCallbacks: walkerSchemaVisitor(ww),
 		TopicFile: func(tn *sourcewalk.TopicFileNode) error {
 			subWalk := ww.subPackageFile("topic")
 			return subWalk.visitTopicFileNode(tn)
@@ -124,8 +103,8 @@ func (ww *conversionVisitor) visitFileNode(file *sourcewalk.FileNode) error {
 	})
 }
 
-func walkerSchemaVisitor(ww *conversionVisitor) sourcewalk.SchemaVisitor {
-	return &sourcewalk.SchemaCallbacks{
+func walkerSchemaVisitor(ww *conversionVisitor) sourcewalk.SchemaCallbacks {
+	return sourcewalk.SchemaCallbacks{
 		Object: func(on *sourcewalk.ObjectNode) error {
 			ww.visitObjectNode(on)
 			return nil
@@ -138,11 +117,14 @@ func walkerSchemaVisitor(ww *conversionVisitor) sourcewalk.SchemaVisitor {
 			ww.visitEnumNode(en)
 			return nil
 		},
+		Polymorph: func(pn *sourcewalk.PolymorphNode) error {
+			ww.visitPolymorphNode(pn)
+			return nil
+		},
 	}
 }
 
 func (ww *conversionVisitor) visitTopicFileNode(tn *sourcewalk.TopicFileNode) error {
-
 	return tn.Accept(sourcewalk.TopicFileCallbacks{
 		Topic: func(tn *sourcewalk.TopicNode) error {
 			ww.visitTopicNode(tn)
@@ -292,21 +274,40 @@ func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 	ww.parentContext.addMessage(message)
 }
 
-func (ww *conversionVisitor) visitEnumNode(node *sourcewalk.EnumNode) {
+func (ww *conversionVisitor) visitPolymorphNode(node *sourcewalk.PolymorphNode) {
+	message := blankMessage(node.Name)
 
-	eb := &enumBuilder{
-		prefix: node.Prefix,
-		desc: &descriptorpb.EnumDescriptorProto{
-			Name: gl.Ptr(node.Schema.Name),
-			Value: []*descriptorpb.EnumValueDescriptorProto{{
-				Name:   gl.Ptr(fmt.Sprintf("%sUNSPECIFIED", node.Prefix)),
-				Number: gl.Ptr(int32(0)),
-			}},
-		},
+	message.comment([]int32{}, node.Description)
+
+	pmm := &ext_j5pb.PolymorphMessageOptions{
+		Types: node.Types,
 	}
 
+	ww.file.ensureImport(j5ExtImport)
+	ext := &ext_j5pb.MessageOptions{
+		Type: &ext_j5pb.MessageOptions_Polymorph{
+			Polymorph: pmm,
+		},
+	}
+	proto.SetExtension(message.descriptor.Options, ext_j5pb.E_Message, ext)
+	ww.parentContext.addMessage(message)
+
+}
+
+func (ww *conversionVisitor) visitEnumNode(node *sourcewalk.EnumNode) {
+
+	desc := &descriptorpb.EnumDescriptorProto{
+		Name: gl.Ptr(node.Schema.Name),
+		Value: []*descriptorpb.EnumValueDescriptorProto{{
+			Name:   gl.Ptr(fmt.Sprintf("%sUNSPECIFIED", node.Prefix)),
+			Number: gl.Ptr(int32(0)),
+		}},
+	}
+
+	var comments commentSet
+
 	if node.Schema.Description != "" {
-		eb.comment([]int32{}, node.Schema.Description)
+		comments.comment([]int32{}, node.Schema.Description)
 	}
 
 	if node.Schema.Info != nil {
@@ -320,13 +321,33 @@ func (ww *conversionVisitor) visitEnumNode(node *sourcewalk.EnumNode) {
 			})
 		}
 
-		eb.desc.Options = &descriptorpb.EnumOptions{}
-		proto.SetExtension(eb.desc.Options, ext_j5pb.E_Enum, ext)
+		desc.Options = &descriptorpb.EnumOptions{}
+		proto.SetExtension(desc.Options, ext_j5pb.E_Enum, ext)
 	}
 
-	for _, value := range node.Options {
-		eb.addValue(value)
+	for _, src := range node.Options {
+		value := &descriptorpb.EnumValueDescriptorProto{
+			Name:   gl.Ptr(src.Name),
+			Number: gl.Ptr(src.Number),
+		}
+
+		if len(src.Info) > 0 {
+			value.Options = &descriptorpb.EnumValueOptions{}
+			proto.SetExtension(value.Options, ext_j5pb.E_EnumValue, &ext_j5pb.EnumValueOptions{
+				Info: src.Info,
+			})
+		}
+
+		if src.Number == 0 {
+			desc.Value[0] = value
+		} else {
+			desc.Value = append(desc.Value, value)
+		}
+		if src.Description != "" {
+			comments.comment([]int32{2, src.Number}, src.Description)
+		}
+
 	}
 
-	ww.parentContext.addEnum(eb)
+	ww.parentContext.addEnum(desc, comments)
 }
