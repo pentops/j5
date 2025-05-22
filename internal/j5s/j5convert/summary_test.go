@@ -82,10 +82,10 @@ func TestPolymorphSummary(t *testing.T) {
 		Type: &sourcedef_j5pb.RootElement_Polymorph{
 			Polymorph: &sourcedef_j5pb.Polymorph{
 				Def: &schema_j5pb.Polymorph{
-					Name:  "TestPolymorph",
-					Types: []string{"foo.v1.Foo", "bar.v1.Bar"},
+					Name:    "TestPolymorph",
+					Members: []string{"foo.v1.Foo", "bar.v1.Bar"},
 				},
-				Includes: []string{"baz.v1.Baz"},
+				Includes: []string{"baz.v1.BazMorph"},
 			},
 		},
 	}
@@ -103,11 +103,11 @@ func TestPolymorphSummary(t *testing.T) {
 		t.Fatalf("Expected PolymorphRef in summary, got %v", testPolymorph)
 	}
 
-	assert.Equal(t, 2, len(testPolymorph.Polymorph.Types), "TypeRef.Types")
-	assert.Equal(t, "foo.v1.Foo", testPolymorph.Polymorph.Types[0], "TypeRef.Types[0]")
-	assert.Equal(t, "bar.v1.Bar", testPolymorph.Polymorph.Types[1], "TypeRef.Types[1]")
+	assert.Equal(t, 2, len(testPolymorph.Polymorph.Members), "TypeRef.Types")
+	assert.Equal(t, "foo.v1.Foo", testPolymorph.Polymorph.Members[0], "TypeRef.Types[0]")
+	assert.Equal(t, "bar.v1.Bar", testPolymorph.Polymorph.Members[1], "TypeRef.Types[1]")
 
 	assert.Equal(t, 1, len(testPolymorph.Polymorph.Includes), "TypeRef.Includes")
-	assert.Equal(t, "baz.v1.Baz", testPolymorph.Polymorph.Includes[0], "TypeRef.Includes[0]")
+	assert.Equal(t, "baz.v1.BazMorph", testPolymorph.Polymorph.Includes[0], "TypeRef.Includes[0]")
 
 }

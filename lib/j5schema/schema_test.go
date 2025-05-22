@@ -587,7 +587,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 				Options: extend(&descriptorpb.MessageOptions{}, ext_j5pb.E_Message, &ext_j5pb.MessageOptions{
 					Type: &ext_j5pb.MessageOptions_Polymorph{
 						Polymorph: &ext_j5pb.PolymorphMessageOptions{
-							Types: []string{"foo", "bar"},
+							Members: []string{"foo", "bar"},
 						},
 					},
 				}),
@@ -598,7 +598,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 		runTestCase(t, testCase{
 			proto: base,
 			expected: map[string]interface{}{
-				"polymorph.types": []interface{}{"foo", "bar"},
+				"polymorph.members": []interface{}{"foo", "bar"},
 			},
 		})
 

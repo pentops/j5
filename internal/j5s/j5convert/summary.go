@@ -55,7 +55,7 @@ type OneofRef struct {
 }
 
 type PolymorphRef struct {
-	Types    []string
+	Members  []string
 	Includes []string
 }
 
@@ -266,7 +266,7 @@ func polymorphTypeRef(node *sourcewalk.PolymorphNode) *TypeRef {
 		Name:     node.NameInPackage(),
 		Position: node.Source.GetPos(),
 		Polymorph: &PolymorphRef{
-			Types:    node.Types,
+			Members:  node.Members,
 			Includes: node.Includes,
 		},
 	}

@@ -252,7 +252,7 @@ func (s *ObjectSchema) ToJ5Root() *schema_j5pb.RootSchema {
 
 type PolymorphSchema struct {
 	rootSchema
-	Types []string
+	Members []string
 }
 
 func (s *PolymorphSchema) ToJ5Root() *schema_j5pb.RootSchema {
@@ -261,7 +261,7 @@ func (s *PolymorphSchema) ToJ5Root() *schema_j5pb.RootSchema {
 			Polymorph: &schema_j5pb.Polymorph{
 				Description: s.description,
 				Name:        s.name,
-				Types:       s.Types,
+				Members:     s.Members,
 			},
 		},
 	}

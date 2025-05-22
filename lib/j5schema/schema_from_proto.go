@@ -278,7 +278,7 @@ func (ss *Package) buildPolymorphSchema(srcMsg protoreflect.MessageDescriptor, o
 	}
 	polymorphSchema := &PolymorphSchema{
 		rootSchema: ss.schemaRootFromProto(srcMsg),
-		Types:      opts.Types,
+		Members:    opts.Members,
 	}
 
 	return polymorphSchema, nil

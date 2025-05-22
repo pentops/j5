@@ -167,7 +167,7 @@ message Polymorph {
   string name = 1;
   string description = 2;
 
-  repeated string types = 4;
+  repeated string members = 4;
 }
 
 message OneofField {

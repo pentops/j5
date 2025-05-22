@@ -333,7 +333,7 @@ func TestEnumConvert(t *testing.T) {
 		}},
 	}
 
-	gotFile := testConvert(t, schema)
+	gotFile := newTestConversion().element(schema).convert(t)
 	prototest.AssertEqualProto(t, wantFile, gotFile)
 }
 
@@ -343,10 +343,10 @@ func TestPolymorphConvert(t *testing.T) {
 		Type: &sourcedef_j5pb.RootElement_Polymorph{
 			Polymorph: &sourcedef_j5pb.Polymorph{
 				Def: &schema_j5pb.Polymorph{
-					Name:  "TestPolymorph",
-					Types: []string{"foo.v1.Foo", "bar.v1.Bar"},
+					Name:    "TestPolymorph",
+					Members: []string{"foo.v1.Foo", "bar.v1.Bar"},
 				},
-				Includes: []string{"baz.v1.BazPoly"},
+				Includes: []string{"baz.BazPoly"},
 			},
 		},
 	}
@@ -358,38 +358,91 @@ func TestPolymorphConvert(t *testing.T) {
 		Package: proto.String("test.v1"),
 		Dependency: []string{
 			"j5/ext/v1/annotations.proto",
+			"j5/types/any/v1/any.proto",
 		},
 		MessageType: []*descriptorpb.DescriptorProto{{
 			Name: proto.String("TestPolymorph"),
 			Options: withOption(&descriptorpb.MessageOptions{}, ext_j5pb.E_Message, &ext_j5pb.MessageOptions{
 				Type: &ext_j5pb.MessageOptions_Polymorph{
 					Polymorph: &ext_j5pb.PolymorphMessageOptions{
-						Types: []string{
+						Members: []string{
 							"foo.v1.Foo",
 							"bar.v1.Bar",
+							"baz.v1.Baz",
 						},
 					},
 				},
 			}),
+			Field: []*descriptorpb.FieldDescriptorProto{{
+				Name:     proto.String("value"),
+				Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+				Number:   proto.Int32(1),
+				TypeName: proto.String(".j5.types.any.v1.Any"),
+				JsonName: proto.String("value"),
+			}},
 		}},
 	}
 
-	gotFile := testConvert(t, polymorphSchema)
-	prototest.AssertEqualProto(t, wantFile, gotFile)
+	gotFile := newTestConversion().
+		element(polymorphSchema).
+		depType(&TypeRef{
+			Package: "baz.v1",
+			Name:    "BazPoly",
+			Polymorph: &PolymorphRef{
+				Members: []string{"baz.v1.Baz"},
+			},
+		}).
+		addImport("baz.v1", "baz").
+		convert(t)
 
+	prototest.AssertEqualProto(t, wantFile, gotFile)
 }
 
-func testConvert(t testing.TB, schemas ...*sourcedef_j5pb.RootElement) *descriptorpb.FileDescriptorProto {
-	t.Helper()
-	deps := &testDeps{
-		pkg: "test.v1",
+type tConversion struct {
+	deps     *testDeps
+	elements []*sourcedef_j5pb.RootElement
+	imports  []*sourcedef_j5pb.Import
+}
+
+func newTestConversion() *tConversion {
+	return &tConversion{
+		deps: &testDeps{
+			pkg:   "test.v1",
+			types: map[string]*TypeRef{},
+		},
 	}
+}
+
+func (tc *tConversion) element(element *sourcedef_j5pb.RootElement) *tConversion {
+	tc.elements = append(tc.elements, element)
+	return tc
+}
+
+func (tc *tConversion) addImport(name, alias string) *tConversion {
+	tc.imports = append(tc.imports, &sourcedef_j5pb.Import{
+		Path:  name,
+		Alias: alias,
+	})
+	return tc
+}
+
+func (tc *tConversion) depType(typ *TypeRef) *tConversion {
+	if tc.deps.types == nil {
+		tc.deps.types = make(map[string]*TypeRef)
+	}
+	tc.deps.types[typ.Package+"."+typ.Name] = typ
+	return tc
+}
+
+func (tc *tConversion) convert(t testing.TB) *descriptorpb.FileDescriptorProto {
+	t.Helper()
 	sourceFile := &sourcedef_j5pb.SourceFile{
 		Path:     "test/v1/test.j5s",
 		Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
-		Elements: schemas,
+		Elements: tc.elements,
+		Imports:  tc.imports,
 	}
-	gotFiles, err := ConvertJ5File(deps, sourceFile)
+	gotFiles, err := ConvertJ5File(tc.deps, sourceFile)
 	if err != nil {
 		t.Fatalf("ConvertJ5File failed: %v", err)
 	}

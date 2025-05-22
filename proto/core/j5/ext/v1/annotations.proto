@@ -87,7 +87,9 @@ message ObjectMessageOptions {
 message OneofMessageOptions {}
 
 message PolymorphMessageOptions {
-  repeated string types = 1;
+  // list of fully qualified proto names of the types that are allowed to be
+  // used in this polymorphic field.
+  repeated string members = 1;
 }
 
 extend google.protobuf.OneofOptions {

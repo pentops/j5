@@ -162,7 +162,7 @@ type PolymorphNode struct {
 	rootType
 	Name        string
 	Description string
-	Types       []string
+	Members     []string
 	Includes    []string
 }
 
@@ -170,7 +170,7 @@ func newPolymorphNode(source SourceNode, parent parentNode, schema *schema_j5pb.
 	node := &PolymorphNode{
 		rootType:    newRoot(source, parent, schema.Name),
 		Name:        schema.Name,
-		Types:       schema.Types,
+		Members:     schema.Members,
 		Includes:    includes,
 		Description: schema.Description,
 	}

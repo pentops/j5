@@ -8,6 +8,7 @@ import (
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/j5s/sourcewalk"
 	"google.golang.org/protobuf/proto"
@@ -54,6 +55,19 @@ func (ww *conversionVisitor) subPackageFile(subPackage string) *conversionVisito
 	walk.file = file
 	walk.parentContext = file
 	return walk
+}
+
+func (ww *conversionVisitor) resolveTypeName(typeName string) (*TypeRef, error) {
+	parts := strings.Split(typeName, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid type name %q", typeName)
+	}
+	pkgName := strings.Join(parts[:len(parts)-1], ".")
+	typeName = parts[len(parts)-1]
+	return ww.root.resolveType(&schema_j5pb.Ref{
+		Package: pkgName,
+		Schema:  typeName,
+	})
 }
 
 func (ww *conversionVisitor) resolveType(ref *sourcewalk.RefNode) (*TypeRef, error) {
@@ -274,16 +288,54 @@ func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 	ww.parentContext.addMessage(message)
 }
 
+func (ww *conversionVisitor) resolvePolymorphIncludes(includes []string) ([]string, error) {
+	members := make([]string, 0)
+	for _, include := range includes {
+		typeRef, err := ww.resolveTypeName(include)
+		if err != nil {
+			return nil, err
+		}
+
+		if typeRef.Polymorph == nil {
+			return nil, fmt.Errorf("type %q is not a polymorph", typeRef.Name)
+		}
+
+		members = append(members, typeRef.Polymorph.Members...)
+
+		subIncluded, err := ww.resolvePolymorphIncludes(typeRef.Polymorph.Includes)
+		if err != nil {
+			return nil, err
+		}
+		members = append(members, subIncluded...)
+	}
+
+	return members, nil
+}
+
 func (ww *conversionVisitor) visitPolymorphNode(node *sourcewalk.PolymorphNode) {
 	message := blankMessage(node.Name)
 
 	message.comment([]int32{}, node.Description)
 
-	pmm := &ext_j5pb.PolymorphMessageOptions{
-		Types: node.Types,
+	message.descriptor.Field = []*descriptorpb.FieldDescriptorProto{{
+		Name:     proto.String("value"),
+		Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+		Number:   proto.Int32(1),
+		TypeName: proto.String(".j5.types.any.v1.Any"),
+		JsonName: proto.String("value"),
+	}}
+	pmm := &ext_j5pb.PolymorphMessageOptions{}
+
+	extraMembers, err := ww.resolvePolymorphIncludes(node.Includes)
+	if err != nil {
+		ww.addError(node.Source, err)
+	} else {
+		pmm.Members = append(node.Members, extraMembers...)
 	}
 
+	ww.file.ensureImport(j5AnyImport)
 	ww.file.ensureImport(j5ExtImport)
+
 	ext := &ext_j5pb.MessageOptions{
 		Type: &ext_j5pb.MessageOptions_Polymorph{
 			Polymorph: pmm,

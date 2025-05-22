@@ -141,6 +141,52 @@ JSON encoding uses the shorter string (e.g. `ACTIVE` rather than
 TODO: Clarify unspecified as '', null or omitted, in both the implementation and
 the docs
 
+### Polymorph
+
+A polymorph is a merge between a oneof and an any field.
+
+The value of the any is constrained to the listed types on the polymorph.
+
+It allows for reverse-imports where types are known in advance, but the
+members are in packages which import and use the definition.
+
+The proto implementation is a message with a single 'value' field, which is a
+j5.types.any.v1
+
+The listed types must be fully qualified type names, they may be in the same
+package or in a separate package, however if they are in a separate package, the
+packages they belong to cannot be imported directly or indirectly by the
+package containing the polymorph.
+
+The implementations of the polymorph must also mark themselves as such, which
+does require an import.
+
+The implementations are checked against the polymorph's type list to ensure they
+are listed.
+
+```j5s
+package foo.v1
+
+polymorph FooMorph {
+   member bar.v1.Bar
+   member baz.v1.Baz
+}
+
+```
+
+```j5s
+
+package bar.v1
+
+import foo.v1 as foo
+
+object Bar {
+  polymorphMember foo.FooMorph
+
+  field barId key:id62
+}
+```
+
 
 
 ## Field Types
