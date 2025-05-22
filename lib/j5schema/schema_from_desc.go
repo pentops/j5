@@ -100,6 +100,13 @@ func (pkg *Package) buildRoot(schema *schema_j5pb.RootSchema) (RootSchema, error
 		itemSchema := pkg.enumSchemaFromDesc(st.Enum)
 
 		return itemSchema, nil
+
+	case *schema_j5pb.RootSchema_Polymorph:
+		item, err := pkg.polymorphSchemaFromDesc(st.Polymorph)
+		if err != nil {
+			return nil, err
+		}
+		return item, nil
 	}
 
 	return nil, fmt.Errorf("expected root schema, got %T", schema.Type)
@@ -180,6 +187,27 @@ func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Fie
 			}, nil
 		default:
 			return nil, fmt.Errorf("unsupported enum schema type %T", inner)
+		}
+
+	case *schema_j5pb.Field_Polymorph:
+		switch inner := st.Polymorph.Schema.(type) {
+		case *schema_j5pb.PolymorphField_Polymorph:
+			item, err := pkg.polymorphSchemaFromDesc(inner.Polymorph)
+			if err != nil {
+				return nil, err
+			}
+			return &PolymorphField{
+				fieldContext: context,
+				Ref:          item.AsRef(),
+			}, nil
+		case *schema_j5pb.PolymorphField_Ref:
+			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
+			return &PolymorphField{
+				fieldContext: context,
+				Ref:          ref,
+			}, nil
+		default:
+			return nil, fmt.Errorf("unsupported polymorph schema type %T", inner)
 		}
 
 	case *schema_j5pb.Field_Array:
@@ -372,6 +400,19 @@ func (pkg *Package) enumSchemaFromDesc(sch *schema_j5pb.Enum) *EnumSchema {
 		},
 		Options: opts,
 	}
+}
+
+func (pkg *Package) polymorphSchemaFromDesc(sch *schema_j5pb.Polymorph) (*PolymorphSchema, error) {
+	polymorph := &PolymorphSchema{
+		Members: sch.Members,
+		rootSchema: rootSchema{
+			description: sch.Description,
+			name:        sch.Name,
+			pkg:         pkg,
+		},
+	}
+
+	return polymorph, nil
 }
 
 func (pkg *Package) objectPropertyFromDesc(parent RootSchema, prop *schema_j5pb.ObjectProperty) (*ObjectProperty, error) {

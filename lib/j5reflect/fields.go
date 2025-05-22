@@ -19,6 +19,7 @@ type Field interface {
 	AsContainer() (ContainerField, bool)
 	AsObject() (ObjectField, bool)
 	AsOneof() (OneofField, bool)
+	AsPolymorph() (PolymorphField, bool)
 
 	AsArray() (ArrayField, bool)
 	AsArrayOfScalar() (ArrayOfScalarField, bool)
@@ -59,6 +60,7 @@ func (fieldDefaults) AsAny() (AnyField, bool)                           { return
 func (fieldDefaults) AsContainer() (ContainerField, bool)               { return nil, false }
 func (fieldDefaults) AsObject() (ObjectField, bool)                     { return nil, false }
 func (fieldDefaults) AsOneof() (OneofField, bool)                       { return nil, false }
+func (fieldDefaults) AsPolymorph() (PolymorphField, bool)               { return nil, false }
 func (fieldDefaults) AsArray() (ArrayField, bool)                       { return nil, false }
 func (fieldDefaults) AsArrayOfContainer() (ArrayOfContainerField, bool) { return nil, false }
 func (fieldDefaults) AsArrayOfScalar() (ArrayOfScalarField, bool)       { return nil, false }

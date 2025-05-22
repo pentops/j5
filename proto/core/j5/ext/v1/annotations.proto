@@ -170,6 +170,7 @@ message FieldOptions {
     ObjectField object = 10;
     EnumField enum = 11;
     OneofField oneof = 12;
+    PolymorphField polymorph = 13;
 
     MapField map = 20;
     ArrayField array = 21;
@@ -206,6 +207,8 @@ message ObjectField {
 message EnumField {}
 
 message OneofField {}
+
+message PolymorphField {}
 
 message MapField {
   // The name of the singular form of the map pairs, used in documentation and

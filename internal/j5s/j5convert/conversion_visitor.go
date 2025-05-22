@@ -317,13 +317,14 @@ func (ww *conversionVisitor) visitPolymorphNode(node *sourcewalk.PolymorphNode) 
 
 	message.comment([]int32{}, node.Description)
 
-	message.descriptor.Field = []*descriptorpb.FieldDescriptorProto{{
+	valueField := &descriptorpb.FieldDescriptorProto{
 		Name:     proto.String("value"),
 		Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
 		Number:   proto.Int32(1),
 		TypeName: proto.String(".j5.types.any.v1.Any"),
 		JsonName: proto.String("value"),
-	}}
+	}
+	message.descriptor.Field = []*descriptorpb.FieldDescriptorProto{valueField}
 	pmm := &ext_j5pb.PolymorphMessageOptions{}
 
 	extraMembers, err := ww.resolvePolymorphIncludes(node.Includes)

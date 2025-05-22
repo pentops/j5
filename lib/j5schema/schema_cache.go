@@ -2,6 +2,7 @@ package j5schema
 
 import (
 	"fmt"
+	"strings"
 
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -45,6 +46,22 @@ func (sc *SchemaCache) Schema(src protoreflect.MessageDescriptor) (RootSchema, e
 		return nil, fmt.Errorf("schema %q has wrong name %q", placeholder.FullName(), placeholder.To.FullName())
 	}
 	return placeholder.To, nil
+}
+
+func (sc *SchemaCache) SchemaByName(name string) (RootSchema, error) {
+	parts := strings.SplitN(name, ".", 2)
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid schema name %q", name)
+	}
+	packageName, nameInPackage := strings.Join(parts[0:len(parts)-1], "."), parts[len(parts)-1]
+	pkg, ok := sc.packages[packageName]
+	if !ok {
+		return nil, fmt.Errorf("package %q not found", packageName)
+	}
+	if schema, ok := pkg.Schemas[nameInPackage]; ok {
+		return schema.To, nil
+	}
+	return nil, fmt.Errorf("schema %q not found in package %q", nameInPackage, packageName)
 }
 
 func (sc *SchemaCache) refTo(pkg, schema string) (*RefSchema, bool) {
