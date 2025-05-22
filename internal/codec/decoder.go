@@ -177,6 +177,9 @@ func (dec *decoder) decodeValue(prop j5reflect.Property) error {
 	case j5reflect.AnyProperty:
 		return dec.decodeAny(prop)
 
+	case j5reflect.PolymorphProperty:
+		return dec.decodePolymorphProperty(prop)
+
 	default:
 		return fmt.Errorf("unknown field schema type %v", prop.PropertyType())
 	}
@@ -398,6 +401,41 @@ func (dec *decoder) decodeEnum(prop j5reflect.Property) error {
 	return field.SetFromString(stringVal)
 }
 
+func (dec *decoder) decodePolymorphProperty(prop j5reflect.Property) error {
+
+	wasNull, err := dec.expectDelimOrNull('{')
+	if err != nil {
+		return err
+	}
+
+	if wasNull {
+		return nil
+	}
+
+	genWrapper, err := prop.CreateField()
+	if err != nil {
+		return err
+	}
+
+	polyWrapper, ok := genWrapper.AsPolymorph()
+	if !ok {
+		return fmt.Errorf("any property produced non poly field")
+	}
+
+	field, err := polyWrapper.Unwrap()
+	if err != nil {
+		return err
+	}
+
+	err = dec.decodeAnyInner(field)
+	if err != nil {
+		return err
+	}
+
+	return dec.expectDelim('}')
+
+}
+
 func (dec *decoder) decodeAny(prop j5reflect.Property) error {
 
 	wasNull, err := dec.expectDelimOrNull('{')
@@ -418,6 +456,16 @@ func (dec *decoder) decodeAny(prop j5reflect.Property) error {
 	if !ok {
 		return fmt.Errorf("any property produced non-any field")
 	}
+
+	err = dec.decodeAnyInner(field)
+	if err != nil {
+		return err
+	}
+
+	return dec.expectDelim('}')
+}
+
+func (dec *decoder) decodeAnyInner(field j5reflect.AnyField) error {
 
 	var valueBytes []byte
 	var constrainType *string
@@ -490,12 +538,12 @@ func (dec *decoder) decodeAny(prop j5reflect.Property) error {
 		anyVal.Proto = protoBytes
 	}
 
-	err = field.SetJ5Any(anyVal)
+	err := field.SetJ5Any(anyVal)
 	if err != nil {
 		return newFieldError("value", err.Error())
 	}
 
-	return dec.expectDelim('}')
+	return nil
 }
 
 func (dec *decoder) decodeMapProperty(prop j5reflect.Property) error {

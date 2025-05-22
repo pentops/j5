@@ -4,6 +4,9 @@ import (
 	"sort"
 	"testing"
 
+	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
+	"github.com/pentops/flowtest/prototest"
+	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"google.golang.org/protobuf/proto"
@@ -35,7 +38,7 @@ func runField(t *testing.T,
 	}
 
 	gotField := gotFile[0].MessageType[0].Field[0]
-	equal(t, wantField, gotField)
+	prototest.AssertEqualProto(t, wantField, gotField)
 }
 
 func tSimpleObject(prop *schema_j5pb.ObjectProperty) *sourcedef_j5pb.RootElement {
@@ -215,10 +218,10 @@ func TestImports(t *testing.T) {
 				pkg: pkgName,
 				types: map[string]*TypeRef{
 					"baz.v1.Referenced": {
-						Package:    "baz.v1",
-						Name:       "Referenced",
-						File:       "baz/v1/referenced.j5s.proto",
-						MessageRef: &MessageRef{},
+						Package: "baz.v1",
+						Name:    "Referenced",
+						File:    "baz/v1/referenced.j5s.proto",
+						Object:  &ObjectRef{},
 					},
 				},
 			}
@@ -249,7 +252,7 @@ func TestImports(t *testing.T) {
 				}
 
 				gotField := gotFile[0].MessageType[0].Field[0]
-				equal(t, wantField, gotField)
+				prototest.AssertEqualProto(t, wantField, gotField)
 				wantImports := []string{
 					"j5/ext/v1/annotations.proto",
 				}
@@ -262,6 +265,68 @@ func TestImports(t *testing.T) {
 
 		})
 	}
+}
+
+func TestImportEnum(t *testing.T) {
+
+	deps := &testDeps{
+		pkg: "test.v1",
+		types: map[string]*TypeRef{
+			"test.v1.TestEnum": {
+				Package: "test.v1",
+				Name:    "TestEnum",
+				File:    "test/v1/test_enum.proto",
+				Enum: &EnumRef{
+					Prefix: "TEST_ENUM_",
+					ValMap: map[string]int32{
+						"TEST_ENUM_FOO": 1,
+						"TEST_ENUM_BAR": 2,
+					},
+				},
+			},
+		},
+	}
+
+	enumField := &schema_j5pb.EnumField{
+		Schema: &schema_j5pb.EnumField_Ref{
+			Ref: &schema_j5pb.Ref{
+				Package: "",
+				Schema:  "TestEnum",
+			},
+		},
+		Rules: &schema_j5pb.EnumField_Rules{
+			In: []string{"FOO", "BAR"},
+		},
+	}
+
+	wantField := &descriptorpb.FieldDescriptorProto{
+		Name:     proto.String("enum"),
+		Type:     descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
+		Number:   proto.Int32(1),
+		TypeName: proto.String(".test.v1.TestEnum"),
+		Options: withOption(tEmptyTypeExt(t, "enum"), validate.E_Field, &validate.FieldConstraints{
+
+			Type: &validate.FieldConstraints_Enum{
+				Enum: &validate.EnumRules{
+					DefinedOnly: gl.Ptr(true),
+					In:          []int32{1, 2},
+				},
+			},
+		}),
+		JsonName: proto.String("enum"),
+	}
+
+	inputProp := &schema_j5pb.ObjectProperty{
+		Name: "enum",
+		Schema: &schema_j5pb.Field{
+			Type: &schema_j5pb.Field_Enum{
+				Enum: enumField,
+			},
+		},
+		ProtoField: []int32{3},
+	}
+
+	runField(t, deps, inputProp, wantField)
 
 }
 

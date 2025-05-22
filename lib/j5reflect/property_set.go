@@ -6,7 +6,6 @@ import (
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/lib/j5schema"
 	"github.com/pentops/j5/lib/patherr"
-	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -38,6 +37,7 @@ const (
 	EnumProperty
 	ScalarProperty
 	AnyProperty
+	PolymorphProperty
 )
 
 // PropertySet is implemented by Oneofs, Objects and Maps with String keys.
@@ -128,6 +128,8 @@ func (p *property) PropertyType() PropertyType {
 		return ScalarProperty
 	case *j5schema.AnyField:
 		return AnyProperty
+	case *j5schema.PolymorphField:
+		return PolymorphProperty
 	default:
 		return -1
 	}
@@ -225,8 +227,6 @@ func newPropSet(schema hasProps, rootDesc protoreflect.MessageDescriptor) (propS
 		for idx, fieldNumber := range propSchema.ProtoField {
 			fieldDesc := walk.Fields().ByNumber(fieldNumber)
 			if fieldDesc == nil {
-				fmt.Printf("NO FIELD: %s\n", prototext.Format(propSchema.ToJ5Proto()))
-
 				return propSetFactory{}, fmt.Errorf("newPropSet: field %d not found in %s (%v)", fieldNumber, walk.FullName(), propSchema.ProtoField)
 			}
 			prop.protoPath = append(prop.protoPath, fieldDesc)
@@ -600,6 +600,9 @@ func newMessageFieldFactory(schema j5schema.FieldSchema, desc protoreflect.Messa
 
 	case *j5schema.AnyField:
 		return &anyFieldFactory{schema: st}, nil
+
+	case *j5schema.PolymorphField:
+		return &polymorphFieldFactory{schema: st}, nil
 
 	default:
 		panic(fmt.Sprintf("invalid schema for message field: %T", schema))

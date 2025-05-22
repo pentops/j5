@@ -2,6 +2,7 @@ package j5convert
 
 import (
 	"fmt"
+	"path"
 	"sort"
 	"strings"
 
@@ -10,6 +11,62 @@ import (
 	"github.com/pentops/golib/gl"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
+
+// parentContext is a file's root, or message, which can hold messages and
+// enums. Implemented by FileBuilder and MessageBuilder.
+type parentContext interface {
+	addMessage(*MessageBuilder)
+	addEnum(*descriptorpb.EnumDescriptorProto, commentSet)
+	addSyntheticOneof(nameHint string) (int32, error)
+}
+
+type rootContext struct {
+	packageName string
+	deps        TypeResolver
+	//source      sourceLink
+	errors []error
+
+	importAliases *importMap
+
+	mainFile *fileContext
+	files    []*fileContext
+}
+
+func newRootContext(deps TypeResolver, imports *importMap, file *fileContext) *rootContext {
+	return &rootContext{
+		packageName:   file.fdp.GetPackage(),
+		deps:          deps,
+		mainFile:      file,
+		importAliases: imports,
+		files:         []*fileContext{file},
+	}
+}
+
+func subPackageFileName(sourceFilename, subPackage string) string {
+	dirName, baseName := path.Split(sourceFilename)
+	baseRoot := strings.TrimSuffix(baseName, ".j5s.proto")
+	newBase := fmt.Sprintf("%s.p.j5s.proto", baseRoot)
+	subName := path.Join(dirName, subPackage, newBase)
+	return subName
+}
+
+func (rr *rootContext) subPackageFile(subPackage string) *fileContext {
+	fullPackage := fmt.Sprintf("%s.%s", rr.packageName, subPackage)
+
+	for _, search := range rr.files {
+		if search.fdp.GetPackage() == fullPackage {
+			return search
+		}
+	}
+	rootName := *rr.mainFile.fdp.Name
+	subName := subPackageFileName(rootName, subPackage)
+
+	found := newFileContext(subName)
+
+	found.fdp.Package = &fullPackage
+	rr.files = append(rr.files, found)
+	return found
+}
 
 type fileContext struct {
 	fdp *descriptorpb.FileDescriptorProto
@@ -80,11 +137,11 @@ func (fb *fileContext) addMessage(message *MessageBuilder) {
 	fb.fdp.MessageType = append(fb.fdp.MessageType, message.descriptor)
 }
 
-func (fb *fileContext) addEnum(enum *enumBuilder) {
+func (fb *fileContext) addEnum(desc *descriptorpb.EnumDescriptorProto, comments commentSet) {
 	idx := int32(len(fb.fdp.EnumType))
 	path := []int32{5, idx}
-	fb.mergeAt(path, enum.commentSet)
-	fb.fdp.EnumType = append(fb.fdp.EnumType, enum.desc)
+	fb.mergeAt(path, comments)
+	fb.fdp.EnumType = append(fb.fdp.EnumType, desc)
 }
 
 func (fb *fileContext) addService(service *serviceBuilder) {
@@ -114,9 +171,9 @@ func (msg *MessageBuilder) addMessage(message *MessageBuilder) {
 	msg.descriptor.NestedType = append(msg.descriptor.NestedType, message.descriptor)
 }
 
-func (msg *MessageBuilder) addEnum(enum *enumBuilder) {
-	msg.mergeAt([]int32{4, int32(len(msg.descriptor.EnumType))}, enum.commentSet)
-	msg.descriptor.EnumType = append(msg.descriptor.EnumType, enum.desc)
+func (msg *MessageBuilder) addEnum(desc *descriptorpb.EnumDescriptorProto, comments commentSet) {
+	msg.mergeAt([]int32{4, int32(len(msg.descriptor.EnumType))}, comments)
+	msg.descriptor.EnumType = append(msg.descriptor.EnumType, desc)
 }
 
 func (msg *MessageBuilder) addSyntheticOneof(nameHint string) (int32, error) {

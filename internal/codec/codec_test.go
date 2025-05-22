@@ -520,6 +520,23 @@ func TestUnmarshal(t *testing.T) {
 					BarId: "barId",
 				}),
 			},
+		}, {
+			name: "polymorphic",
+			json: `{
+				"polymorph": {
+					"!type": "test.schema.v1.Bar",
+					"value": {
+						"barId": "barId"
+					}
+				}
+			}`,
+			wantProto: &schema_testpb.FullSchema{
+				Polymorph: &schema_testpb.PolyMessage{
+					Value: mustJ5Any(t, &schema_testpb.Bar{
+						BarId: "barId",
+					}, []byte(`{"barId":"barId"}`)),
+				},
+			},
 		}} {
 		t.Run(tc.name, func(t *testing.T) {
 

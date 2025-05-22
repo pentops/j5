@@ -85,10 +85,12 @@ message FullSchema {
   WrappedOneof wrapped_oneof = 300;
 
   repeated WrappedOneof wrapped_oneofs = 301;
+
+  PolyMessage polymorph = 310;
 }
 
 message WrappedOneof {
-  option (j5.ext.v1.message).is_oneof_wrapper = true;
+  option (j5.ext.v1.message).oneof = {};
 
   oneof type {
     string w_oneof_string = 1;
@@ -132,4 +134,16 @@ message Baz {
 message FlattenedMessage {
   string field_from_flattened = 1;
   string field_2_from_flattened = 2;
+}
+
+message PolyMessage {
+
+  option (j5.ext.v1.message).polymorph = {
+    members: [
+      "test.schema.v1.Bar",
+      "test.schema.v1.Baz"
+    ],
+  };
+
+  j5.types.any.v1.Any value = 1;
 }

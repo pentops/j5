@@ -100,7 +100,7 @@ func (pkg *Package) assertRefsLink() error {
 				}
 			}
 
-		case *EnumSchema:
+		case *EnumSchema, *PolymorphSchema:
 			// nothing to do, enum has no children with references
 
 		default:

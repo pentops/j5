@@ -21,11 +21,13 @@ func SummaryFromDescriptor(res *descriptorpb.FileDescriptorProto, errs *errset.E
 
 	for _, msg := range res.MessageType {
 		exports[msg.GetName()] = &j5convert.TypeRef{
-			Name:       msg.GetName(),
-			File:       filename,
-			Package:    res.GetPackage(),
-			MessageRef: &j5convert.MessageRef{},
+			Name:    msg.GetName(),
+			File:    filename,
+			Package: res.GetPackage(),
+			Object:  &j5convert.ObjectRef{},
 		}
+		// TODO: Oneof
+		// TODO: Polymorph
 	}
 	for idx, en := range res.EnumType {
 		built, err := buildEnumRef(res, int32(idx), en, errs)
@@ -36,7 +38,7 @@ func SummaryFromDescriptor(res *descriptorpb.FileDescriptorProto, errs *errset.E
 			Name:    en.GetName(),
 			Package: res.GetPackage(),
 			File:    filename,
-			EnumRef: built,
+			Enum:    built,
 		}
 	}
 

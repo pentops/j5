@@ -3,6 +3,7 @@ package j5convert
 import (
 	"testing"
 
+	"github.com/pentops/flowtest/prototest"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"google.golang.org/protobuf/encoding/prototext"
@@ -96,6 +97,6 @@ func TestMessageNesting(t *testing.T) {
 
 	gotFile.SourceCodeInfo = nil
 	t.Log(prototext.Format(gotFile))
-	equal(t, wantFile, gotFile)
+	prototest.AssertEqualProto(t, wantFile, gotFile)
 
 }

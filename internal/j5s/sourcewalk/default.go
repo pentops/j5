@@ -9,6 +9,7 @@ type DefaultVisitor struct {
 	Oneof           func(*OneofNode) error
 	OneofExit       func(*OneofNode) error
 	Enum            func(*EnumNode) error
+	Polymorph       func(*PolymorphNode) error
 	TopicFile       func(*TopicFileNode) error
 	Topic           func(*TopicNode) error
 	TopicFileExit   func(*TopicFileNode) error
@@ -68,6 +69,13 @@ func (df *DefaultVisitor) VisitOneof(node *OneofNode) error {
 func (df *DefaultVisitor) VisitEnum(node *EnumNode) error {
 	if df.Enum != nil {
 		return df.Enum(node)
+	}
+	return nil
+}
+
+func (df *DefaultVisitor) VisitPolymorph(node *PolymorphNode) error {
+	if df.Polymorph != nil {
+		return df.Polymorph(node)
 	}
 	return nil
 }
