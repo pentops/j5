@@ -272,8 +272,7 @@ message Foo {
 Arrays and Maps are defined as fields with a type of `array` or `map` as a
 prefix to the sub-type.
 
-- The sub-type can be anything other than a map or array. (constraint carried
-  over from proto)
+- The sub-type can be anything other than a map or array. (constraint carried over from proto)
 - Map keys are strings, as in JSON.
 
 ```j5s
