@@ -215,10 +215,10 @@ func TestImports(t *testing.T) {
 				pkg: pkgName,
 				types: map[string]*TypeRef{
 					"baz.v1.Referenced": {
-						Package:    "baz.v1",
-						Name:       "Referenced",
-						File:       "baz/v1/referenced.j5s.proto",
-						MessageRef: &MessageRef{},
+						Package: "baz.v1",
+						Name:    "Referenced",
+						File:    "baz/v1/referenced.j5s.proto",
+						Object:  &ObjectRef{},
 					},
 				},
 			}

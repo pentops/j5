@@ -1,11 +1,9 @@
 package j5convert
 
 import (
-	"strings"
-
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/internal/j5s/sourcewalk"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -17,14 +15,10 @@ type enumBuilder struct {
 	commentSet
 }
 
-func (e *enumBuilder) addValue(number int32, schema *schema_j5pb.Enum_Option) {
-	name := schema.Name
-	if !strings.HasPrefix(name, e.prefix) {
-		name = e.prefix + name
-	}
+func (e *enumBuilder) addValue(schema sourcewalk.EnumOption) {
 	value := &descriptorpb.EnumValueDescriptorProto{
-		Name:   gl.Ptr(name),
-		Number: gl.Ptr(number),
+		Name:   gl.Ptr(schema.Name),
+		Number: gl.Ptr(schema.Number),
 	}
 
 	if len(schema.Info) > 0 {
@@ -34,13 +28,13 @@ func (e *enumBuilder) addValue(number int32, schema *schema_j5pb.Enum_Option) {
 		})
 	}
 
-	if number == 0 {
+	if schema.Number == 0 {
 		e.desc.Value[0] = value
 	} else {
 		e.desc.Value = append(e.desc.Value, value)
 	}
 	if schema.Description != "" {
-		e.comment([]int32{2, number}, schema.Description)
+		e.comment([]int32{2, schema.Number}, schema.Description)
 	}
 
 }

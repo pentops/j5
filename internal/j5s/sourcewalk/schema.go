@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 )
@@ -37,12 +38,61 @@ func (fc SchemaCallbacks) VisitEnum(en *EnumNode) error {
 type EnumNode struct {
 	Schema *schema_j5pb.Enum
 	rootType
+
+	Prefix string
+
+	Options []EnumOption
+}
+
+type EnumOption struct {
+	Name        string
+	Number      int32
+	Description string
+	Info        map[string]string
 }
 
 func newEnumNode(source SourceNode, parent parentNode, schema *schema_j5pb.Enum) (*EnumNode, error) {
+
+	prefix := schema.Prefix
+	if prefix == "" {
+		prefix = strcase.ToScreamingSnake(schema.Name) + "_"
+	}
+
+	values := make([]EnumOption, 0)
+
+	optionsToSet := schema.Options
+	if len(optionsToSet) > 0 && optionsToSet[0].Number == 0 && strings.HasSuffix(optionsToSet[0].Name, "UNSPECIFIED") {
+		opt0 := optionsToSet[0]
+
+		values = append(values, EnumOption{
+			Number:      0,
+			Name:        prefix + "UNSPECIFIED",
+			Description: opt0.Description,
+			Info:        opt0.Info,
+		})
+
+		optionsToSet = optionsToSet[1:]
+	}
+
+	for idx, value := range optionsToSet {
+		name := value.Name
+		if !strings.HasPrefix(name, prefix) {
+			name = prefix + name
+		}
+
+		values = append(values, EnumOption{
+			Number:      int32(idx + 1), // 0 is unspecified
+			Name:        name,
+			Info:        value.Info,
+			Description: value.Description,
+		})
+
+	}
 	return &EnumNode{
 		Schema:   schema,
+		Prefix:   prefix,
 		rootType: newRoot(source, parent, schema.Name),
+		Options:  values,
 	}, nil
 }
 
@@ -50,7 +100,6 @@ type ObjectNode struct {
 	Name        string
 	Description string
 	Entity      *schema_j5pb.EntityObject
-	AnyMember   []string
 
 	rootType
 	propertySet
@@ -81,7 +130,6 @@ func newObjectSchemaNode(source SourceNode, parent parentNode, schema *schema_j5
 		Name:        schema.Name,
 		Description: schema.Description,
 		Entity:      schema.Entity,
-		AnyMember:   schema.AnyMember,
 		rootType:    root,
 		propertySet: propertySet{
 			properties: mapProperties(source, []string{"properties"}, root, schema.Properties, virtual),

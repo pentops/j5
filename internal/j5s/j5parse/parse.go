@@ -9,6 +9,14 @@ import (
 	"github.com/pentops/j5/internal/bcl"
 )
 
+func ParseFile(filename string, data string) (*sourcedef_j5pb.SourceFile, error) {
+	p, err := NewParser()
+	if err != nil {
+		return nil, err
+	}
+	return p.ParseFile(filename, data)
+}
+
 type Parser struct {
 	bcl *bcl.Parser
 }

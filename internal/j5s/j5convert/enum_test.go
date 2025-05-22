@@ -7,63 +7,13 @@ import (
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
+	"github.com/pentops/j5/internal/j5s/protobuild/errset"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-func TestEnumNormal(t *testing.T) {
-	wantFile := &descriptorpb.FileDescriptorProto{
-		Syntax:  proto.String("proto3"),
-		Options: &descriptorpb.FileOptions{
-			//GoPackage: proto.String("github.com/pentops/j5/test/v1/test_pb"),
-		},
-		Name:    proto.String("test/v1/test.j5s.proto"),
-		Package: proto.String("test.v1"),
-		EnumType: []*descriptorpb.EnumDescriptorProto{{
-			Name: proto.String("TestEnum"),
-			Value: []*descriptorpb.EnumValueDescriptorProto{{
-				Name:   proto.String("TEST_ENUM_UNSPECIFIED"),
-				Number: proto.Int32(0),
-			}, {
-				Name:   proto.String("TEST_ENUM_FOO"),
-				Number: proto.Int32(1),
-			}},
-		}},
-	}
-
-	enumSchema := &sourcedef_j5pb.RootElement{
-		Type: &sourcedef_j5pb.RootElement_Enum{
-			Enum: &schema_j5pb.Enum{
-				Name:   "TestEnum",
-				Prefix: "TEST_ENUM_",
-				Options: []*schema_j5pb.Enum_Option{{
-					Name:   "FOO",
-					Number: 1,
-				}},
-			},
-		},
-	}
-
-	deps := &testDeps{
-		pkg: "test.v1",
-	}
-
-	gotFiles, err := ConvertJ5File(deps, &sourcedef_j5pb.SourceFile{
-		Path:     "test/v1/test.j5s",
-		Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
-		Elements: []*sourcedef_j5pb.RootElement{enumSchema},
-	})
-	if err != nil {
-		t.Fatalf("ConvertJ5File failed: %v", err)
-	}
-	gotFile := gotFiles[0]
-
-	gotFile.SourceCodeInfo = nil
-	equal(t, wantFile, gotFile)
-
-}
-
-func TestEnumFlexibility(t *testing.T) {
+func TestEnum(t *testing.T) {
 	wantFile := &descriptorpb.FileDescriptorProto{
 		Syntax:  proto.String("proto3"),
 		Options: &descriptorpb.FileOptions{
@@ -91,11 +41,12 @@ func TestEnumFlexibility(t *testing.T) {
 			deps := &testDeps{
 				pkg: "test.v1",
 			}
-			gotFiles, err := ConvertJ5File(deps, &sourcedef_j5pb.SourceFile{
+			sourceFile := &sourcedef_j5pb.SourceFile{
 				Path:     "test/v1/test.j5s",
 				Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
 				Elements: []*sourcedef_j5pb.RootElement{schema},
-			})
+			}
+			gotFiles, err := ConvertJ5File(deps, sourceFile)
 			if err != nil {
 				t.Fatalf("ConvertJ5File failed: %v", err)
 			}
@@ -103,6 +54,40 @@ func TestEnumFlexibility(t *testing.T) {
 			gotFile := gotFiles[0]
 			gotFile.SourceCodeInfo = nil
 			equal(t, wantFile, gotFile)
+
+			ec := errset.NewCollector()
+			summary, err := SourceSummary(sourceFile, ec)
+			if err != nil {
+				t.Fatalf("ConvertJ5File failed: %v", err)
+			}
+
+			testEnum, ok := summary.Exports["TestEnum"]
+			if !ok {
+				t.Fatalf("Expected TestEnum in summary, got %v", summary)
+			}
+
+			assert.Equal(t, "TestEnum", testEnum.Name, "TypeRef.Name")
+			assert.Equal(t, "test.v1", testEnum.Package, "TypeRef.Package")
+
+			if testEnum.Enum == nil {
+				t.Fatalf("Expected EnumRef in summary, got %v", testEnum)
+			}
+
+			assert.Equal(t, "TEST_ENUM_", testEnum.Enum.Prefix, "TypeRef.Prefix")
+			assert.Equal(t, 3, len(testEnum.Enum.ValMap), "TypeRef.ValMap")
+			t.Logf("ValMap: %v", testEnum.Enum.ValMap)
+			want := map[string]int32{
+				"UNSPECIFIED": 0,
+				"FOO":         1,
+				"BAR":         2,
+			}
+			for k, v := range want {
+				if got, ok := testEnum.Enum.ValMap["TEST_ENUM_"+k]; !ok {
+					t.Fatalf("Expected TEST_ENUM_%s in ValMap, got %v", k, testEnum.Enum.ValMap)
+				} else if got != v {
+					t.Fatalf("Expected TEST_ENUM_%s to be %d, got %d", k, v, got)
+				}
+			}
 		})
 	}
 
@@ -132,7 +117,7 @@ func TestImportEnum(t *testing.T) {
 				Package: "test.v1",
 				Name:    "TestEnum",
 				File:    "test/v1/test_enum.proto",
-				EnumRef: &EnumRef{
+				Enum: &EnumRef{
 					Prefix: "TEST_ENUM_",
 					ValMap: map[string]int32{
 						"TEST_ENUM_FOO": 1,

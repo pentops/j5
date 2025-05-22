@@ -148,7 +148,7 @@ func (sb *sourceBuilder) walkSourceSchemas(pkg *Package, schemaPackage *j5schema
 			if err := includeEntity(pkg, obj); err != nil {
 				return fmt.Errorf("include entity: %w", err)
 			}
-		} else if obj.AnyMember != nil {
+		} else if len(obj.PolymorphMember) > 0 {
 			pkg.Exported = append(pkg.Exported, obj)
 		}
 	}

@@ -10,6 +10,7 @@ import (
 type IsRootSchema_Type = isRootSchema_Type
 type IsField_Type = isField_Type
 type IsObjectField_Schema = isObjectField_Schema
+type IsPolymorphField_Schema = isPolymorphField_Schema
 type IsOneofField_Schema = isOneofField_Schema
 type IsEnumField_Schema = isEnumField_Schema
 type IsEntityKey_Type = isEntityKey_Type

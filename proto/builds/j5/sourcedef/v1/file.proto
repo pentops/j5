@@ -36,6 +36,7 @@ message RootElement {
     Entity entity = 4;
     Oneof oneof = 1;
     Object object = 2;
+    Polymorph polymorph = 7;
     j5.schema.v1.Enum enum = 3;
     Topic topic = 5;
     Service service = 6;
@@ -151,6 +152,14 @@ message Object {
   j5.schema.v1.Object def = 1 [(j5.ext.v1.field).message.flatten = true];
 
   repeated NestedSchema schemas = 3;
+}
+
+message Polymorph {
+  //j5.schema.v1.Polymorph def = 1 [(j5.ext.v1.field).message.flatten = true];
+
+  // list of other polymorph types
+  // The members of the listed types are included in this type.
+  repeated string includes = 2; 
 }
 
 message EntityElement {

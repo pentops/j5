@@ -291,8 +291,6 @@ func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Fie
 	case *schema_j5pb.Field_Any:
 		return &AnyField{
 			fieldContext: context,
-			OnlyDefined:  st.Any.OnlyDefined,
-			Types:        stringSliceConvert[string, protoreflect.FullName](st.Any.Types),
 		}, nil
 
 	default:
@@ -314,9 +312,9 @@ var intKinds = map[schema_j5pb.IntegerField_Format]protoreflect.Kind{
 
 func (pkg *Package) objectSchemaFromDesc(sch *schema_j5pb.Object) (*ObjectSchema, error) {
 	object := &ObjectSchema{
-		Properties: make([]*ObjectProperty, len(sch.Properties)),
-		Entity:     sch.Entity,
-		AnyMember:  sch.AnyMember,
+		Properties:      make([]*ObjectProperty, len(sch.Properties)),
+		Entity:          sch.Entity,
+		PolymorphMember: sch.PolymorphMember,
 		rootSchema: rootSchema{
 			description: sch.Description,
 			name:        sch.Name,

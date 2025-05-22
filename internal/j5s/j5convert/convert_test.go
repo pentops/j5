@@ -128,7 +128,7 @@ func TestSchemaToProto(t *testing.T) {
 				Package: "test.v1",
 				Name:    "TestEnum",
 				File:    "test/v1/test.j5s.proto",
-				EnumRef: &EnumRef{
+				Enum: &EnumRef{
 					Prefix: "TEST_ENUM_",
 					ValMap: map[string]int32{
 						"TEST_ENUM_FOO": 1,
@@ -212,12 +212,13 @@ func TestSchemaToProto(t *testing.T) {
 			},
 		},
 	}
-
-	gotFile, err := ConvertJ5File(deps, &sourcedef_j5pb.SourceFile{
+	sourceFile := &sourcedef_j5pb.SourceFile{
 		Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
 		Path:     "test/v1/test.j5s",
 		Elements: []*sourcedef_j5pb.RootElement{objectSchema, enumSchema},
-	})
+	}
+
+	gotFile, err := ConvertJ5File(deps, sourceFile)
 	if err != nil {
 		t.Fatalf("ConvertJ5File failed: %v", err)
 	}
@@ -294,23 +295,6 @@ func TestSchemaToProto(t *testing.T) {
 
 	gotFile[0].SourceCodeInfo = nil
 	equal(t, wantFile, gotFile[0])
-
-	/*
-		fds := &descriptorpb.FileDescriptorSet{
-			File: []*descriptorpb.FileDescriptorProto{gotFile},
-		}
-
-		fm := NewFileMap()
-
-		if err := protoprint.PrintProtoFiles(context.Background(), fm, fds, protoprint.Options{}); err != nil {
-			t.Fatalf("PrintProtoFiles failed: %v", err)
-		}
-
-		for filename, content := range fm {
-			t.Logf("\n====== %s ======\n%s", filename, content)
-		}
-	*/
-
 }
 
 // Copies the J5 extension object to the equivalent protoreflect extension type

@@ -76,6 +76,7 @@ message MessageOptions {
   oneof type {
     ObjectMessageOptions object = 10;
     OneofMessageOptions oneof = 11;
+    PolymorphMessageOptions polymorph = 12;
   }
 }
 
@@ -84,6 +85,10 @@ message ObjectMessageOptions {
 }
 
 message OneofMessageOptions {}
+
+message PolymorphMessageOptions {
+  repeated string types = 1;
+}
 
 extend google.protobuf.OneofOptions {
   OneofOptions oneof = 555000;
@@ -188,17 +193,6 @@ message MessageFieldOptions {
 
 // AnyField is valid for j5.types.embed.v1.Any and google.protobuf.Any
 message AnyField {
-  // When false, this is fully 'any', in that it can contain any message type
-  // value.
-  // When true, only the types listed are permitted in the field, making it a
-  // constrained any, or a detached oneof.
-  // Note that even with only_defined, schemas may be added in the future, which
-  // is not considered a breaking change, even when the field is required.
-  bool only_defined = 1;
-
-  // The full proto name of the messages which may be encoded into the field.
-  // With 'only_defined', setting other messages is invalid.
-  repeated string types = 2;
 }
 
 message ObjectField {

@@ -5,7 +5,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
@@ -193,9 +192,6 @@ func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
 	}
 
 	objectType := &ext_j5pb.ObjectMessageOptions{}
-	if node.AnyMember != nil {
-		objectType.AnyMember = node.AnyMember
-	}
 
 	ww.file.ensureImport(j5ExtImport)
 	ext := &ext_j5pb.MessageOptions{
@@ -298,16 +294,12 @@ func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 
 func (ww *conversionVisitor) visitEnumNode(node *sourcewalk.EnumNode) {
 
-	prefix := node.Schema.Prefix
-	if prefix == "" {
-		prefix = strcase.ToScreamingSnake(node.Schema.Name) + "_"
-	}
 	eb := &enumBuilder{
-		prefix: prefix,
+		prefix: node.Prefix,
 		desc: &descriptorpb.EnumDescriptorProto{
 			Name: gl.Ptr(node.Schema.Name),
 			Value: []*descriptorpb.EnumValueDescriptorProto{{
-				Name:   gl.Ptr(fmt.Sprintf("%sUNSPECIFIED", prefix)),
+				Name:   gl.Ptr(fmt.Sprintf("%sUNSPECIFIED", node.Prefix)),
 				Number: gl.Ptr(int32(0)),
 			}},
 		},
@@ -332,14 +324,8 @@ func (ww *conversionVisitor) visitEnumNode(node *sourcewalk.EnumNode) {
 		proto.SetExtension(eb.desc.Options, ext_j5pb.E_Enum, ext)
 	}
 
-	optionsToSet := node.Schema.Options
-	if len(optionsToSet) > 0 && optionsToSet[0].Number == 0 && strings.HasSuffix(optionsToSet[0].Name, "UNSPECIFIED") {
-		eb.addValue(0, optionsToSet[0])
-		optionsToSet = optionsToSet[1:]
-	}
-
-	for idx, value := range optionsToSet {
-		eb.addValue(int32(idx+1), value)
+	for _, value := range node.Options {
+		eb.addValue(value)
 	}
 
 	ww.parentContext.addEnum(eb)

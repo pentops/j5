@@ -13,6 +13,7 @@ message RootSchema {
     Oneof oneof = 12;
     Object object = 21;
     Enum enum = 32;
+    Polymorph polymorph = 33;
   }
 }
 
@@ -26,6 +27,7 @@ message Field {
     // from the type itself.
     OneofField oneof = 12;
     ObjectField object = 21;
+    PolymorphField polymorph = 13;
     EnumField enum = 32;
 
     // Complex Types
@@ -58,19 +60,9 @@ message EntityRef {
   string entity = 2; // The *entity* name, not schema, 'foo' not 'FooState'
 }
 
-// Allows anything... Almost
+// Allows anything
 message AnyField {
-  // When false, this is fully 'any', in that it can contain any message type
-  // value.
-  // When true, only the types listed are permitted in the field, making it a
-  // constrained any, or a detached oneof.
-  // Note that even with only_defined, schemas may be added in the future, which
-  // is not considered a breaking change, even when the field is required.
-  bool only_defined = 1;
-
   j5.list.v1.AnyRules list_rules = 5;
-
-  repeated string types = 2;
 }
 
 // ObjectAsField is an object as-a-field in an ObjectProperty
@@ -133,10 +125,8 @@ message Object {
 
   repeated ObjectProperty properties = 4;
 
-  // The names of any Any messages this object is a member of.
-  // Setting this field forces the object to appear in packages even if
-  // not referenced by services or topics.
-  repeated string any_member = 5;
+  // The names of any Polymorph types this object is a member of.
+  repeated string polymorph_member = 5;
 }
 
 message EntityObject {
@@ -152,6 +142,32 @@ enum EntityPart {
   ENTITY_PART_DATA = 4; // The mutable and non-key data of an entity.
   ENTITY_PART_REFERENCES = 5; // A collection of references to other state entities.
   ENTITY_PART_DERIVED = 6; // one of potentially many derived representations of the entity.
+}
+
+message PolymorphField {
+  oneof schema {
+    Ref ref = 1; // Will always point to a Poly
+    Polymorph polymorph = 2;
+  }
+
+  Rules rules = 4;
+  //j5.list.v1.PolyRules list_rules = 5;
+  Ext ext = 6;
+
+  message Rules {}
+  message Ext {}
+}
+
+// A polymorph is like an any, however only the types listed are permitted in the field, making it a
+// constrained any, or a detached oneof.
+// Types which are members of this Poly must be listed in the types field.
+// To be a member, an implementing object must import the package of the Poly,
+// reversing the import path of a Oneof
+message Polymorph {
+  string name = 1;
+  string description = 2;
+
+  repeated string types = 4;
 }
 
 message OneofField {

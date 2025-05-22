@@ -89,15 +89,8 @@ func (ps *SchemaSet) messageSchema(src protoreflect.MessageDescriptor) (RootSche
 
 	schemaPackage.Schemas[nameInPackage] = placeholder
 
-	msgOptions := protosrc.GetExtension[*ext_j5pb.MessageOptions](src.Options(), ext_j5pb.E_Message)
-
 	var err error
-	isOneofWrapper := isOneofWrapper(src, msgOptions)
-	if isOneofWrapper {
-		placeholder.To, err = schemaPackage.buildOneofSchema(src, msgOptions.GetOneof())
-	} else {
-		placeholder.To, err = schemaPackage.buildObjectSchema(src, msgOptions.GetObject())
-	}
+	placeholder.To, err = schemaPackage.buildMessageSchema(src)
 	if err != nil {
 		return nil, err
 	}
@@ -145,59 +138,83 @@ func jsonFieldName(s protoreflect.Name) string {
 }
 
 func IsOneofWrapper(msg protoreflect.MessageDescriptor) bool {
-	msgOptions := protosrc.GetExtension[*ext_j5pb.MessageOptions](msg.Options(), ext_j5pb.E_Message)
-	return isOneofWrapper(msg, msgOptions)
+	return inferMessageType(msg) == oneofMessage
 }
 
-func isOneofWrapper(src protoreflect.MessageDescriptor, options *ext_j5pb.MessageOptions) bool {
+type messageType int
+
+const (
+	objectMessage = iota
+	oneofMessage
+	polymorphMessage
+)
+
+func inferMessageType(src protoreflect.MessageDescriptor) messageType {
+	options := protosrc.GetExtension[*ext_j5pb.MessageOptions](src.Options(), ext_j5pb.E_Message)
 	if options != nil {
 
 		if options.IsOneofWrapper {
 			// this is deprecated.
-			return true
+			return oneofMessage
 		}
 
 		switch options.Type.(type) {
 		case *ext_j5pb.MessageOptions_Oneof:
-			return true
+			return oneofMessage
 		case *ext_j5pb.MessageOptions_Object:
-			return false
+			return objectMessage
+		case *ext_j5pb.MessageOptions_Polymorph:
+			return polymorphMessage
 		}
 	}
 
 	oneofs := src.Oneofs()
 
 	if oneofs.Len() != 1 {
-		return false
+		return objectMessage
 	}
 
 	oneof := oneofs.Get(0)
 	if oneof.IsSynthetic() {
-		return false
+		return objectMessage
 	}
 
 	if oneof.Name() != "type" {
-		return false
+		return objectMessage
 	}
 
 	ext := protosrc.GetExtension[*ext_j5pb.OneofOptions](oneof.Options(), ext_j5pb.E_Oneof)
 	if ext != nil {
 		// even if it is marked to expose, still don't automatically make it a
 		// oneof.
-		return false
+		return objectMessage
 	}
 
 	for ii := 0; ii < src.Fields().Len(); ii++ {
 		field := src.Fields().Get(ii)
 		if field.ContainingOneof() != oneof {
-			return false
+			return objectMessage
 		}
 		if field.Kind() != protoreflect.MessageKind {
-			return false
+			return objectMessage
 		}
 	}
 
-	return true
+	return oneofMessage
+}
+
+func (ss *Package) buildMessageSchema(srcMsg protoreflect.MessageDescriptor) (RootSchema, error) {
+	msgOptions := protosrc.GetExtension[*ext_j5pb.MessageOptions](srcMsg.Options(), ext_j5pb.E_Message)
+	switch inferMessageType(srcMsg) {
+	case oneofMessage:
+		return ss.buildOneofSchema(srcMsg, msgOptions.GetOneof())
+	case objectMessage:
+		return ss.buildObjectSchema(srcMsg, msgOptions.GetObject())
+	case polymorphMessage:
+		return ss.buildPolymorphSchema(srcMsg, msgOptions.GetPolymorph())
+	default:
+		return nil, fmt.Errorf("unknown message type %q", srcMsg.FullName())
+	}
 }
 
 func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor, _ *ext_j5pb.OneofMessageOptions) (*OneofSchema, error) {
@@ -249,10 +266,22 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts
 	}
 
 	if opts != nil {
-		objectSchema.AnyMember = opts.AnyMember
+		objectSchema.PolymorphMember = opts.AnyMember
 	}
 
 	return objectSchema, nil
+}
+
+func (ss *Package) buildPolymorphSchema(srcMsg protoreflect.MessageDescriptor, opts *ext_j5pb.PolymorphMessageOptions) (*PolymorphSchema, error) {
+	if opts == nil {
+		return nil, fmt.Errorf("polymorph message %q has no options", srcMsg.FullName())
+	}
+	polymorphSchema := &PolymorphSchema{
+		rootSchema: ss.schemaRootFromProto(srcMsg),
+		Types:      opts.Types,
+	}
+
+	return polymorphSchema, nil
 }
 
 func findPSMOptions(srcMsg protoreflect.MessageDescriptor) (*schema_j5pb.EntityObject, error) {
@@ -1120,13 +1149,13 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 		field := &AnyField{
 			ListRules: ext.list.GetAny(),
 		}
-		if ext.j5 != nil {
-			anyExt := ext.j5.GetAny()
-			if anyExt != nil {
-				field.OnlyDefined = anyExt.OnlyDefined
-				field.Types = stringSliceConvert[string, protoreflect.FullName](anyExt.Types)
-			}
-		}
+		/*
+			if ext.j5 != nil {
+				anyExt := ext.j5.GetAny()
+				if anyExt != nil {
+					// Nothing Here
+				}
+			}*/
 		return field, true, nil
 
 	}
@@ -1167,18 +1196,11 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 		return nil, fmt.Errorf("unsupported google type %s", src.Message().FullName())
 	}
 	msg := src.Message()
-	msgOptions := protosrc.GetExtension[*ext_j5pb.MessageOptions](msg.Options(), ext_j5pb.E_Message)
-
-	isOneofWrapper := isOneofWrapper(msg, msgOptions)
 
 	ref, didExist := newRefPlaceholder(pkg.PackageSet, msg)
 	if !didExist {
 		var err error
-		if isOneofWrapper {
-			ref.To, err = pkg.buildOneofSchema(msg, msgOptions.GetOneof())
-		} else {
-			ref.To, err = pkg.buildObjectSchema(msg, msgOptions.GetObject())
-		}
+		ref.To, err = pkg.buildMessageSchema(msg)
 		if err != nil {
 			return nil, err
 		}
@@ -1186,20 +1208,29 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 		if err := ref.check(); err != nil {
 			return nil, err
 		}
-
 	}
-	if isOneofWrapper {
+
+	switch inferMessageType(msg) {
+	case oneofMessage:
 		return &OneofField{
 			fieldContext: context,
 			Ref:          ref,
 		}, nil
-	}
 
-	return &ObjectField{
-		fieldContext: context,
-		Ref:          ref,
-		Flatten:      flatten,
-	}, nil
+	case objectMessage:
+		return &ObjectField{
+			fieldContext: context,
+			Ref:          ref,
+			Flatten:      flatten,
+		}, nil
+	case polymorphMessage:
+		return &PolymorphField{
+			fieldContext: context,
+			Ref:          ref,
+		}, nil
+	default:
+		return nil, fmt.Errorf("unknown schema type (ref) %T", ref.To)
+	}
 }
 
 func buildEnumFieldSchema(pkg *Package, context fieldContext, src protoreflect.FieldDescriptor, ext protoFieldExtensions) (*EnumField, error) {

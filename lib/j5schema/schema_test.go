@@ -545,10 +545,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 			Number:   proto.Int32(1),
 			Options: extend(&descriptorpb.FieldOptions{}, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
 				Type: &ext_j5pb.FieldOptions_Any{
-					Any: &ext_j5pb.AnyField{
-						OnlyDefined: true,
-						Types:       []string{"foo.v1.foo", "foo.v1.bar"},
-					},
+					Any: &ext_j5pb.AnyField{},
 				},
 			}),
 		})
@@ -556,10 +553,6 @@ func TestSchemaTypesComplex(t *testing.T) {
 		base.Dependency = []string{"google/protobuf/any.proto"}
 		runTestCase(t, testCase{
 			proto: base,
-			expected: map[string]interface{}{
-				"object.properties.0.schema.any.onlyDefined": true,
-				"object.properties.0.schema.any.types":       []interface{}{"foo.v1.foo", "foo.v1.bar"},
-			},
 		})
 
 	})
@@ -572,10 +565,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 			Number:   proto.Int32(1),
 			Options: extend(&descriptorpb.FieldOptions{}, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
 				Type: &ext_j5pb.FieldOptions_Any{
-					Any: &ext_j5pb.AnyField{
-						OnlyDefined: true,
-						Types:       []string{"foo.v1.foo", "foo.v1.bar"},
-					},
+					Any: &ext_j5pb.AnyField{},
 				},
 			}),
 		})
@@ -583,15 +573,38 @@ func TestSchemaTypesComplex(t *testing.T) {
 		base.Dependency = []string{"j5/types/any/v1/any.proto"}
 		runTestCase(t, testCase{
 			proto: base,
+		})
+
+	})
+
+	t.Run("polymorph", func(t *testing.T) {
+		base := &descriptorpb.FileDescriptorProto{
+			Name:    proto.String("test.proto"),
+			Package: proto.String("test"),
+			MessageType: []*descriptorpb.DescriptorProto{{
+				Name:  proto.String("TestMessage"),
+				Field: []*descriptorpb.FieldDescriptorProto{},
+				Options: extend(&descriptorpb.MessageOptions{}, ext_j5pb.E_Message, &ext_j5pb.MessageOptions{
+					Type: &ext_j5pb.MessageOptions_Polymorph{
+						Polymorph: &ext_j5pb.PolymorphMessageOptions{
+							Types: []string{"foo", "bar"},
+						},
+					},
+				}),
+			}},
+		}
+
+		base.Dependency = []string{"j5/ext/v1/annotations.proto"}
+		runTestCase(t, testCase{
+			proto: base,
 			expected: map[string]interface{}{
-				"object.properties.0.schema.any.onlyDefined": true,
-				"object.properties.0.schema.any.types":       []interface{}{"foo.v1.foo", "foo.v1.bar"},
+				"polymorph.types": []interface{}{"foo", "bar"},
 			},
 		})
 
 	})
 
-	t.Run("any member", func(t *testing.T) {
+	t.Run("polymorph member", func(t *testing.T) {
 		base := &descriptorpb.FileDescriptorProto{
 			Name:    proto.String("test.proto"),
 			Package: proto.String("test"),
@@ -612,7 +625,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 		runTestCase(t, testCase{
 			proto: base,
 			expected: map[string]interface{}{
-				"object.anyMember": []interface{}{"foo"},
+				"object.polymorphMember": []interface{}{"foo"},
 			},
 		})
 
