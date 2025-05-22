@@ -96,12 +96,14 @@ func (ib *imageBuilder) include(img *source_j5pb.SourceImage) error {
 	ib.img.Prose = append(ib.img.Prose, img.Prose...)
 	ib.img.SourceFilenames = append(ib.img.SourceFilenames, img.SourceFilenames...)
 	var err error
+	fmt.Printf("INCLUDE %s\n", img.SourceName)
+
 	for _, file := range img.File {
+		fmt.Printf("  FILE %s\n", file.GetName())
 		err = ib.addFile(file, false)
 		if err != nil {
 			return err
 		}
-
 	}
 
 	for _, pkg := range img.Packages {

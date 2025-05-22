@@ -112,9 +112,21 @@ func (bundle *bundleSource) getDependencyFiles(ctx context.Context, resolver Inp
 		if err != nil {
 			return nil, err
 		}
+		img.SourceName = inputName(dep.Input)
 		dependencies = append(dependencies, img)
 	}
 	return combineSourceImages(dependencies)
+}
+
+func inputName(input *config_j5pb.Input) string {
+	switch it := input.Type.(type) {
+	case *config_j5pb.Input_Local:
+		return it.Local
+	case *config_j5pb.Input_Registry_:
+		return fmt.Sprintf("%s/%s", it.Registry.Owner, it.Registry.Name)
+	}
+
+	return "<unknown>"
 }
 
 // getIncludes returns the images corresponding to the inputs. The returned
@@ -130,6 +142,7 @@ func (bundle *bundleSource) getIncludes(ctx context.Context, resolver InputSourc
 		if err != nil {
 			return nil, err
 		}
+		img.SourceName = inputName(spec.Input)
 
 		dependencies[idx] = img
 	}

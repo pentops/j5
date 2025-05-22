@@ -115,7 +115,7 @@ func (cfg *SourceConfig) GetSource(ctx context.Context) (*source.RepoRoot, error
 	fsRoot := os.DirFS(cfg.Source)
 	root, err := source.NewFSRepoRoot(ctx, fsRoot, resolver)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reading source at %s: %w", cfg.Source, err)
 	}
 	cfg._resolved = root
 	return root, nil
