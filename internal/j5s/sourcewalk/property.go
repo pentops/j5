@@ -152,6 +152,17 @@ func buildFieldNode(source SourceNode, parent parentNode, defaultNestingName str
 			Ref:    ref,
 		}, nil
 
+	case *schema_j5pb.Field_Polymorph:
+		ref, err := replaceNesstedPolymorph(source.child("polymorph"), parent, defaultNestingName, pt.Polymorph, visitor)
+		if err != nil {
+			return nil, err
+		}
+		return &FieldNode{
+			Source: source.child("polymorph"),
+			Schema: pt,
+			Ref:    ref,
+		}, nil
+
 	default:
 		tn := pn.ProtoReflect()
 		var name string
