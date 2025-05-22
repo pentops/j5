@@ -49,7 +49,7 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 	var fieldDesc *descriptorpb.FieldDescriptorProto
 	var err error
 	protoFieldName := strcase.ToSnake(node.Schema.Name)
-	jsonFieldName := strcase.ToLowerCamel(node.Schema.Name)
+	jsonFieldName := strcase.ToLowerCamel(protoFieldName)
 
 	switch st := node.Field.Schema.(type) {
 	case *schema_j5pb.Field_Map:
