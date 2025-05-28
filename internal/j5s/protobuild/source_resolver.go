@@ -181,6 +181,9 @@ func (sr *sourceResolver) parseJ5s(sourceFilename string, data []byte) (*SourceF
 
 	sourceFile, err := sr.j5Parser.ParseFile(sourceFilename, string(data))
 	if err != nil {
+		if ep, ok := errpos.AsErrors(err); ok {
+			return nil, ep.AsErrorsWithSource(sourceFilename, string(data))
+		}
 		return nil, err
 	}
 

@@ -135,9 +135,9 @@ func runJ5sLintAll(ctx context.Context, srcRoot *source.RepoRoot) error {
 		if err != nil {
 			if ep, ok := errpos.AsErrorsWithSource(err); ok {
 				fmt.Printf("Linting errors in bundle %s\n", bundle.DebugName())
-				fmt.Fprintln(os.Stderr, ep.HumanString(2))
+				fmt.Fprintln(os.Stderr, ep.ShortString())
 			}
-			return err
+			return fmt.Errorf("unhandled: %w", err)
 		}
 		for _, pkg := range built {
 			for _, file := range pkg.Proto {

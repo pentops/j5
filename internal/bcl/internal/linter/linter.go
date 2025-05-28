@@ -37,11 +37,19 @@ func NewGeneric() *Linter {
 	return &Linter{}
 }
 
-func errorToDiagnostics(ctx context.Context, mainError error) ([]protocol.Diagnostic, error) {
+func errorToDiagnostics(ctx context.Context, relFilename string, mainError error) ([]protocol.Diagnostic, error) {
+	if mainError == nil {
+		log.Debug(ctx, "No errors")
+		return []protocol.Diagnostic{}, nil
+	}
 	locErr, ok := errpos.AsErrors(mainError)
 	if !ok {
-		log.WithError(ctx, mainError).Error("Error not ErrorsWithSource")
-		return nil, mainError
+		withSourceErr, ok := errpos.AsErrorsWithSource(mainError) // try to convert to ErrorsWithSource
+		if !ok {
+			log.WithError(ctx, mainError).Error("Error not errpos.Errors")
+			return nil, mainError
+		}
+		locErr = withSourceErr.Errors
 	}
 
 	diagnostics := make([]protocol.Diagnostic, 0, len(locErr))
@@ -50,7 +58,18 @@ func errorToDiagnostics(ctx context.Context, mainError error) ([]protocol.Diagno
 		log.WithFields(ctx,
 			"pos", err.Pos.String(),
 			"error", err.Err.Error(),
+			"relFilename", relFilename,
 		).Debug("Lint Diagnostic")
+		if err.Pos == nil {
+			continue
+		}
+		if err.Pos.Filename == nil {
+			continue
+		}
+		if *err.Pos.Filename != relFilename {
+			continue
+		}
+
 		diagnostics = append(diagnostics, protocol.Diagnostic{
 			Range: protocol.Range{
 				Start: protocol.Position{
@@ -81,8 +100,9 @@ func (l *Linter) FileChanged(ctx context.Context, req *protocol.TextDocumentItem
 	// Step 1: Parse BCL
 	tree, err := parser.ParseFile(relFilename, req.Text, false)
 	if err != nil {
+		log.WithError(ctx, err).Error("parser.ParseFile error")
 		if ews, ok := errpos.AsErrorsWithSource(err); ok {
-			return errorToDiagnostics(ctx, ews)
+			return errorToDiagnostics(ctx, relFilename, ews)
 		} else {
 			return nil, fmt.Errorf("parse file not HadErrors - : %w", err)
 		}
@@ -96,7 +116,10 @@ func (l *Linter) FileChanged(ctx context.Context, req *protocol.TextDocumentItem
 	msg := l.fileFactory(req.URI.Filename())
 	sourceLocs, err := l.parser.ParseAST(tree, msg)
 	if err != nil {
-		return errorToDiagnostics(ctx, err)
+		if ep, ok := errpos.AsErrors(err); ok {
+			return errorToDiagnostics(ctx, relFilename, ep.AsErrorsWithSource(relFilename, req.Text))
+		}
+		return errorToDiagnostics(ctx, relFilename, err)
 	}
 
 	// Step 3: Validate
@@ -108,7 +131,7 @@ func (l *Linter) FileChanged(ctx context.Context, req *protocol.TextDocumentItem
 	if err != nil {
 
 		//err = errpos.AddSourceFile(err, req.URI.Filename(), req.Text)
-		return errorToDiagnostics(ctx, err)
+		return errorToDiagnostics(ctx, relFilename, err)
 	}
 
 	log.Debug(ctx, "No errors")

@@ -22,6 +22,16 @@ type entityNode struct {
 	Schema      *sourcedef_j5pb.Entity
 }
 
+func newEntityNode(source SourceNode, packageName string, entity *sourcedef_j5pb.Entity) (*entityNode, error) {
+	entityNode := &entityNode{
+		name:        strcase.ToSnake(entity.Name),
+		packageName: packageName,
+		Schema:      entity,
+		Source:      source.child("entity"),
+	}
+	return entityNode, nil
+}
+
 func (ent *entityNode) componentName(suffix string) string {
 	return strcase.ToCamel(ent.Schema.Name) + strcase.ToCamel(suffix)
 }

@@ -120,7 +120,7 @@ message InlineObject {
 }
 
 message Object {
-  string name = 1; // [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
+  string name = 1 [(buf.validate.field).string.pattern = "^(|[A-Z][a-zA-Z0-9]*)$"];
 
   string description = 2; // brief text description, will not contain markdown.
 
@@ -135,7 +135,7 @@ message Object {
 }
 
 message EntityObject {
-  string entity = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9_]*$"];
+  string entity = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
   EntityPart part = 2;
 }
 
@@ -192,7 +192,7 @@ message OneofField {
 // Similar to ObjectItem (it is an object in JSON Schema), but where exactly one
 // property should be set
 message Oneof {
-  string name = 1;
+  string name = 1 [(buf.validate.field).string.pattern = "^(|[A-Z][a-zA-Z0-9]*)$"];
   string description = 2;
 
   repeated ObjectProperty properties = 3;
@@ -216,7 +216,7 @@ message EnumField {
 }
 
 message Enum {
-  string name = 1;
+  string name = 1 [(buf.validate.field).string.pattern = "^[A-Z][a-zA-Z0-9]*$"];
   string description = 2;
   string prefix = 3;
 
@@ -450,7 +450,7 @@ message KeyFormat {
 
 message ObjectProperty {
   Field schema = 1;
-  string name = 3;
+  string name = 3 [(buf.validate.field).string.pattern = "^[a-z][a-zA-Z0-9]*$"];
   bool required = 4;
   bool explicitly_optional = 5;
   //bool read_only = 6;

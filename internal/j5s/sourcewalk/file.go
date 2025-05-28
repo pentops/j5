@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 )
 
@@ -54,7 +53,6 @@ func (fn *FileNode) RangeRootElements(visitor FileVisitor) error {
 			}
 
 		case *sourcedef_j5pb.RootElement_Oneof:
-			source := source.child("oneof")
 			oneofNode, err := newOneofNode(source.child("oneof"), nil, element.Oneof)
 			if err != nil {
 				return wrapErr(source, err)
@@ -64,8 +62,7 @@ func (fn *FileNode) RangeRootElements(visitor FileVisitor) error {
 			}
 
 		case *sourcedef_j5pb.RootElement_Enum:
-			enum := element.Enum
-			enumNode, err := newEnumNode(source.child("enum"), nil, enum)
+			enumNode, err := newEnumNode(source.child("enum"), nil, element.Enum)
 			if err != nil {
 				return wrapErr(source, err)
 			}
@@ -83,12 +80,9 @@ func (fn *FileNode) RangeRootElements(visitor FileVisitor) error {
 			}
 
 		case *sourcedef_j5pb.RootElement_Entity:
-			entity := element.Entity
-			entityNode := &entityNode{
-				name:        strcase.ToSnake(entity.Name),
-				packageName: fn.Package.Name,
-				Schema:      entity,
-				Source:      source.child("entity"),
+			entityNode, err := newEntityNode(source.child("entity"), fn.Package.Name, element.Entity)
+			if err != nil {
+				return wrapErr(source, err)
 			}
 			if err := entityNode.run(visitor); err != nil {
 				return err
@@ -109,8 +103,7 @@ func (fn *FileNode) RangeRootElements(visitor FileVisitor) error {
 			}
 
 		case *sourcedef_j5pb.RootElement_Service:
-			service := element.Service
-			node, err := newServiceRef(source.child("service"), service)
+			node, err := newServiceRef(source.child("service"), element.Service)
 			if err != nil {
 				return wrapErr(source, err)
 			}

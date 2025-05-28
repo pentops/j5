@@ -26,6 +26,9 @@ J5 APIs can be defined in either  `.proto` files using [proto3 syntax](https://p
 
 J5 does not support all proto structures, so .proto files must be structured according to the rigid rules of J5, including annotations.
 
+J5 files follow the style guide defined in [docs/style.md](docs/style.md) and
+can be checked and formatted using `j5 j5s fmt` and `j5 j5s lint`.
+
 
 ### Descriptions
 

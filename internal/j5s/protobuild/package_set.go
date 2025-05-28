@@ -9,6 +9,7 @@ import (
 
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/dag"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/log.go/log"
@@ -304,6 +305,8 @@ func (ps *PackageSet) BuildPackages(ctx context.Context, pkgNames []string) ([]*
 
 	packages := make(map[string]*Package)
 
+	globalErrors := &errpos.ErrorsWithSource{}
+
 	// IO Summary for all packages
 	for _, pkgName := range pkgNames {
 		if !ps.sourceResolver.isLocalPackage(pkgName) {
@@ -312,9 +315,18 @@ func (ps *PackageSet) BuildPackages(ctx context.Context, pkgNames []string) ([]*
 
 		pkg, err := ps.localPackageIO(ctx, pkgName)
 		if err != nil {
-			return nil, fmt.Errorf("localPackageIO %s: %w", pkgName, err)
+			if ep, ok := errpos.AsErrorsWithSource(err); ok {
+				globalErrors.Append(ep)
+				continue
+			} else {
+				return nil, fmt.Errorf("localPackageIO %s: %w", pkgName, err)
+			}
 		}
 		packages[pkgName] = pkg
+	}
+
+	if len(globalErrors.Errors) > 0 {
+		return nil, globalErrors
 	}
 
 	// Identify dependencies within provided packages

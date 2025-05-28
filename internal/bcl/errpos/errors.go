@@ -5,7 +5,6 @@ package errpos
 import (
 	"errors"
 	"fmt"
-	"log"
 	"strings"
 )
 
@@ -132,6 +131,15 @@ func (e Errors) FilterToFile(filename string) Errors {
 }
 
 func (e Errors) AsErrorsWithSource(filename string, fileData string) *ErrorsWithSource {
+	for _, err := range e {
+		if err.Pos == nil {
+			continue
+		}
+		if err.Pos.Filename == nil {
+			err.Pos.Filename = &filename
+		}
+	}
+
 	return &ErrorsWithSource{
 		lines: map[string][]string{
 			filename: strings.Split(string(fileData), "\n"),
@@ -162,7 +170,6 @@ type multiError interface {
 
 func AsErrors(err error) (Errors, bool) {
 	if err == nil {
-		log.Printf("is not an error")
 		return nil, false
 	}
 
@@ -254,7 +261,7 @@ func (e *Err) mergeErr(err error, label string) {
 	if errors.Is(err, e.Err) {
 		return // no change
 	}
-	e.Err = fmt.Errorf("%w: %v", e.Err, err)
+	e.Err = fmt.Errorf("%s %w: %v", label, e.Err, err)
 }
 
 // WithContext adds context elements to an error.

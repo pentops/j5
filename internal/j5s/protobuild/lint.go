@@ -30,6 +30,9 @@ func (ps *PackageSet) LintFile(ctx context.Context, filename string, parsed *sou
 	rb := newResolveBaton()
 	err = ps.resolveDependencies(ctx, rb, pkg)
 	if err != nil {
+		if ep, ok := errpos.AsErrors(err); ok {
+			return ep, nil
+		}
 		return nil, fmt.Errorf("resolveDependencies for %s: %w", pkgName, err)
 	}
 

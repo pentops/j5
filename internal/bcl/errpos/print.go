@@ -26,8 +26,10 @@ func (e ErrorsWithSource) HumanString(contextLines int) string {
 
 		var srcLines []string
 		if err.Pos != nil && err.Pos.Filename != nil {
-			if lines, ok := e.lines[*err.Pos.Filename]; ok {
-				srcLines = lines
+			if fileLines, ok := e.lines[*err.Pos.Filename]; ok {
+				srcLines = fileLines
+			} else {
+				lines = append(lines, fmt.Sprintf("<no source lines for %s>", *err.Pos.Filename))
 			}
 		}
 
@@ -36,6 +38,29 @@ func (e ErrorsWithSource) HumanString(contextLines int) string {
 	}
 
 	return strings.Join(lines, "\n")
+}
+
+func (e ErrorsWithSource) ShortString() string {
+	lines := make([]string, 0)
+	for _, err := range e.Errors {
+		lines = append(lines, shortString(err))
+	}
+	return strings.Join(lines, "\n")
+
+}
+
+func (e *ErrorsWithSource) Append(err *ErrorsWithSource) {
+	if e.lines == nil {
+		e.lines = make(map[string][]string)
+	}
+
+	for filename, lines := range err.lines {
+		if _, ok := e.lines[filename]; !ok {
+			e.lines[filename] = lines
+		}
+	}
+
+	e.Errors = append(e.Errors, err.Errors...)
 }
 
 func (e ErrorsWithSource) Error() string {
@@ -61,6 +86,16 @@ func AsErrorsWithSource(err error) (*ErrorsWithSource, bool) {
 	return nil, false
 }
 
+func shortString(err *Err) string {
+
+	if err.Pos == nil || err.Pos.isEmpty() {
+		return fmt.Sprintf("? %s", err.Err.Error())
+	} else {
+		return fmt.Sprintf("%s %s", err.Pos.String(), err.Err.Error())
+
+	}
+}
+
 func humanString(err *Err, lines []string, context int) string {
 	out := &strings.Builder{}
 
@@ -76,7 +111,6 @@ func humanString(err *Err, lines []string, context int) string {
 		if err.Pos.Start.isEmpty() {
 			return
 		}
-		fmt.Fprintf(out, "LIT: %d %d\n", err.Pos.Start.Line, err.Pos.Start.Column)
 
 		pos := *err.Pos
 
