@@ -18,9 +18,9 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type AnyValue interface{}
+type AnyValue any
 
-func scalarReflectFromGo(schema *schema_j5pb.Field, value interface{}) (protoreflect.Value, error) {
+func scalarReflectFromGo(schema *schema_j5pb.Field, value any) (protoreflect.Value, error) {
 	var pv protoreflect.Value
 	switch st := schema.Type.(type) {
 	case *schema_j5pb.Field_Any:
@@ -457,7 +457,7 @@ func byteValueFromString(val string) (protoreflect.Value, error) {
 	return protoreflect.ValueOfBytes(b), nil
 }
 
-func scalarGoFromReflect(schema *schema_j5pb.Field, val protoreflect.Value) (interface{}, error) {
+func scalarGoFromReflect(schema *schema_j5pb.Field, val protoreflect.Value) (any, error) {
 	switch st := schema.Type.(type) {
 	case *schema_j5pb.Field_Any:
 		return AnyValue(val.Interface()), nil

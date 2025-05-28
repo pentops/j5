@@ -11,7 +11,7 @@ type Optional[T any] struct {
 	Set   bool
 }
 
-func (o Optional[T]) ValOk() (interface{}, bool) {
+func (o Optional[T]) ValOk() (any, bool) {
 	return o.Value, o.Set
 }
 
@@ -45,7 +45,7 @@ func Ptr[T any](val T) *T {
 	return &val
 }
 
-func jsonStructFields(object interface{}, out map[string]interface{}) error {
+func jsonStructFields(object any, out map[string]any) error {
 	if out == nil {
 		return fmt.Errorf("jsonFieldMap requires a non-nil map")
 	}
@@ -61,7 +61,7 @@ func jsonStructFields(object interface{}, out map[string]interface{}) error {
 		return fmt.Errorf("jsonFieldMap requires a struct, got %s", val.Kind().String())
 	}
 
-	for i := 0; i < val.NumField(); i++ {
+	for i := range val.NumField() {
 		field := val.Type().Field(i)
 		if field.Anonymous {
 			err := jsonStructFields(val.Field(i).Interface(), out)
@@ -96,7 +96,7 @@ func jsonStructFields(object interface{}, out map[string]interface{}) error {
 		if iv == nil {
 			continue
 		}
-		if optional, ok := iv.(interface{ ValOk() (interface{}, bool) }); ok {
+		if optional, ok := iv.(interface{ ValOk() (any, bool) }); ok {
 			val, isSet := optional.ValOk()
 			if !isSet {
 				continue

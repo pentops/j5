@@ -67,7 +67,7 @@ func (fs *fileSet) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocu
 	}
 	file := &params.TextDocument
 
-	log.WithFields(ctx, map[string]interface{}{
+	log.WithFields(ctx, map[string]any{
 		"version":  params.TextDocument.Version,
 		"language": params.TextDocument.LanguageID,
 		"textLen":  len(params.TextDocument.Text),
@@ -87,7 +87,7 @@ func (fs *fileSet) DidChange(ctx context.Context, params *protocol.DidChangeText
 	if err != nil {
 		return err
 	}
-	log.WithFields(ctx, map[string]interface{}{
+	log.WithFields(ctx, map[string]any{
 		"version": params.TextDocument.Version,
 		"changes": len(params.ContentChanges),
 		"local":   local,
@@ -116,7 +116,7 @@ func (fs *fileSet) DidClose(ctx context.Context, params *protocol.DidCloseTextDo
 	if err != nil {
 		return err
 	}
-	log.WithFields(ctx, map[string]interface{}{
+	log.WithFields(ctx, map[string]any{
 		"local": local,
 	}).Debug("DidClose")
 	delete(fs.files, local)
@@ -129,7 +129,7 @@ func (fs *fileSet) DidSave(ctx context.Context, params *protocol.DidSaveTextDocu
 	if err != nil {
 		return err
 	}
-	log.WithFields(ctx, map[string]interface{}{
+	log.WithFields(ctx, map[string]any{
 		"textLen": len(params.Text),
 		"local":   local,
 	}).Debug("DidSave")

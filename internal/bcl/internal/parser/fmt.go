@@ -113,7 +113,7 @@ type fmter struct {
 
 func (p *fmter) diffFile(ff []Fragment) {
 
-	for idx := 0; idx < len(ff); idx++ {
+	for idx := range ff {
 		stmt := ff[idx]
 		switch stmt := stmt.(type) {
 		case BlockHeader:

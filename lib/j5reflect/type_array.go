@@ -144,7 +144,7 @@ func (array *mutableArrayField) RangeValues(cb RangeArrayCallback) error {
 		return nil // TODO: return an error? Ranging a nil array means there's certainly nothing to range
 	}
 
-	for idx := 0; idx < array.value.Len(); idx++ {
+	for idx := range array.value.Len() {
 		fieldVal := array.wrapValue(idx, array.value.Get(idx).Message())
 		err := cb(idx, fieldVal)
 		if err != nil {
@@ -175,7 +175,7 @@ func (array *leafArrayField) RangeValues(cb RangeArrayCallback) error {
 		return nil // TODO: return an error? Ranging a nil array means there's certainly nothing to range
 	}
 
-	for idx := 0; idx < array.value.Len(); idx++ {
+	for idx := range array.value.Len() {
 		fieldVal := array.wrapValue(idx)
 		err := cb(idx, fieldVal)
 		if err != nil {

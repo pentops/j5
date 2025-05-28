@@ -160,7 +160,7 @@ func tIsScalar() tPathElement {
 	}
 }*/
 
-func tSetScalar(v interface{}) tPathElement {
+func tSetScalar(v any) tPathElement {
 	return func(t *testing.T, f Field) Field {
 		t.Helper()
 		t.Logf("T SetScalar")
@@ -207,7 +207,7 @@ func tArrayOfScalar() tPathElement {
 	}
 }
 
-func tAppendScalar(v interface{}) tPathElement {
+func tAppendScalar(v any) tPathElement {
 	return func(t *testing.T, f Field) Field {
 		t.Helper()
 		t.Logf("T AppendScalar")

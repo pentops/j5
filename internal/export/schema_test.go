@@ -12,7 +12,7 @@ func TestConvertSchema(t *testing.T) {
 	for _, tc := range []struct {
 		name  string
 		input *schema_j5pb.Field
-		want  map[string]interface{}
+		want  map[string]any
 	}{
 		{
 			name: "string",
@@ -27,7 +27,7 @@ func TestConvertSchema(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":      "string",
 				"format":    "date",
 				"minLength": 1,
@@ -49,7 +49,7 @@ func TestConvertSchema(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":             "number",
 				"format":           "double",
 				"minimum":          0.0,
@@ -73,7 +73,7 @@ func TestConvertSchema(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":             "integer",
 				"format":           "int64",
 				"minimum":          0,
@@ -97,7 +97,7 @@ func TestConvertSchema(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":             "integer",
 				"format":           "uint64",
 				"minimum":          0,
@@ -121,7 +121,7 @@ func TestConvertSchema(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":             "integer",
 				"format":           "int32",
 				"minimum":          0,
@@ -145,7 +145,7 @@ func TestConvertSchema(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":             "integer",
 				"format":           "uint32",
 				"minimum":          0,
@@ -172,7 +172,7 @@ func TestConvertSchema(t *testing.T) {
 						},
 					}},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				// json schema doesn't have an actual 'enum' type, enum is just an
 				// extension on any other type. Our enums are always strings.
 				"type":                 "string",
@@ -219,7 +219,7 @@ func TestConvertSchema(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":                "object",
 				"description":         "description",
 				"x-name":              "short",
@@ -257,7 +257,7 @@ func TestConvertSchema(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":                "object",
 				"x-name":              "short",
 				"properties.foo.type": "string",
@@ -282,7 +282,7 @@ func TestConvertSchema(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":        "array",
 				"items.type":  "string",
 				"minItems":    1,
@@ -303,7 +303,7 @@ func TestConvertSchema(t *testing.T) {
 					},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":                      "object",
 				"additionalProperties.type": "string",
 				"x-key-property.type":       "string",
@@ -316,7 +316,7 @@ func TestConvertSchema(t *testing.T) {
 					Any: &schema_j5pb.AnyField{},
 				},
 			},
-			want: map[string]interface{}{
+			want: map[string]any{
 				"type":                 "object",
 				"additionalProperties": true,
 			},

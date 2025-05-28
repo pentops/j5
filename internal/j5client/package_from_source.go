@@ -278,8 +278,8 @@ func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src
 func (mm *Method) fillRequest(requestObject *j5schema.ObjectSchema) error {
 
 	pathParameterNames := map[string]struct{}{}
-	pathParts := strings.Split(mm.HTTPPath, "/")
-	for _, part := range pathParts {
+	pathParts := strings.SplitSeq(mm.HTTPPath, "/")
+	for part := range pathParts {
 		if !strings.HasPrefix(part, ":") {
 			continue
 		}

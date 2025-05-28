@@ -47,7 +47,7 @@ func (c *j5Cache) tryGet(ctx context.Context, name, version string) (*source_j5p
 }
 
 func (c *j5Cache) put(ctx context.Context, name, version string, img *source_j5pb.SourceImage) error {
-	log.WithFields(ctx, map[string]interface{}{
+	log.WithFields(ctx, map[string]any{
 		"bundle":  name,
 		"version": version,
 	}).Debug("J5Cache: caching source image")

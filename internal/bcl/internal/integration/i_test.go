@@ -90,8 +90,8 @@ func TestEndToEnd(t *testing.T) {
 }
 
 func assertLoc(t *testing.T, walk *bcl_j5pb.SourceLocation, name string, startLine int32) {
-	parts := strings.Split(name, ".")
-	for _, part := range parts {
+	parts := strings.SplitSeq(name, ".")
+	for part := range parts {
 		child, ok := walk.Children[part]
 		if !ok {
 			t.Errorf("could not find loc for %s", name)

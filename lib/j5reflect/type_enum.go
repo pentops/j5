@@ -95,7 +95,7 @@ func (ef *enumField) SetASTValue(value ASTValue) error {
 	return ef.SetFromString(str)
 }
 
-func (ef *enumField) SetGoValue(value interface{}) error {
+func (ef *enumField) SetGoValue(value any) error {
 	switch v := value.(type) {
 	case string:
 		return ef.SetFromString(v)
@@ -109,7 +109,7 @@ func (ef *enumField) SetGoValue(value interface{}) error {
 	}
 }
 
-func (ef *enumField) ToGoValue() (interface{}, error) {
+func (ef *enumField) ToGoValue() (any, error) {
 	val, err := ef.GetValue()
 	if err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func (ef *arrayOfEnumField) AppendASTValue(value ASTValue) (int, error) {
 	return ef.AppendEnumFromString(str)
 }
 
-func (ef *arrayOfEnumField) AppendGoValue(value interface{}) (int, error) {
+func (ef *arrayOfEnumField) AppendGoValue(value any) (int, error) {
 	switch v := value.(type) {
 	case string:
 		return ef.AppendEnumFromString(v)

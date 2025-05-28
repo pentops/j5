@@ -12,7 +12,7 @@ func BuildSwagger(b *client_j5pb.API) (*Document, error) {
 	doc := &Document{
 		OpenAPI: "3.0.0",
 		Components: Components{
-			SecuritySchemes: make(map[string]interface{}),
+			SecuritySchemes: make(map[string]any),
 		},
 	}
 

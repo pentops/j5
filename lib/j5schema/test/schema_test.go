@@ -58,14 +58,14 @@ func TestStringSchemaTypes(t *testing.T) {
 	for _, tt := range []struct {
 		name       string
 		constraint *validate.StringRules
-		expected   map[string]interface{}
+		expected   map[string]any
 	}{{
 		name: "length constraints",
 		constraint: &validate.StringRules{
 			MinLen: proto.Uint64(1),
 			MaxLen: proto.Uint64(10),
 		},
-		expected: map[string]interface{}{
+		expected: map[string]any{
 			"schema.string.rules.minLength": "1",
 			"schema.string.rules.maxLength": "10",
 		},
@@ -74,7 +74,7 @@ func TestStringSchemaTypes(t *testing.T) {
 		constraint: &validate.StringRules{
 			Pattern: proto.String("^[a-z]+$"),
 		},
-		expected: map[string]interface{}{
+		expected: map[string]any{
 			"schema.string.rules.pattern": "^[a-z]+$",
 		},
 	}, {
@@ -84,7 +84,7 @@ func TestStringSchemaTypes(t *testing.T) {
 				Uuid: true,
 			},
 		},
-		expected: map[string]interface{}{
+		expected: map[string]any{
 			"schema.key.format": jsontest.IsOneofKey("uuid"),
 		},
 	}, {
@@ -92,7 +92,7 @@ func TestStringSchemaTypes(t *testing.T) {
 		constraint: &validate.StringRules{
 			Pattern: proto.String(`^[0-9A-Za-z]{22}$`),
 		},
-		expected: map[string]interface{}{
+		expected: map[string]any{
 			"schema.key.format": jsontest.IsOneofKey("id62"),
 		},
 	}} {
@@ -119,7 +119,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 		name     string
 		proto    *descriptorpb.FieldDescriptorProto
 		validate *validate.FieldConstraints
-		expected map[string]interface{}
+		expected map[string]any
 	}{{
 		name: "int32",
 		proto: &descriptorpb.FieldDescriptorProto{
@@ -139,7 +139,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 				},
 			},
 		},
-		expected: map[string]interface{}{
+		expected: map[string]any{
 			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_INT32.String(),
 			"schema.integer.rules.minimum":          "1",
 			"schema.integer.rules.maximum":          "10",
@@ -164,7 +164,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 				},
 			},
 		},
-		expected: map[string]interface{}{
+		expected: map[string]any{
 			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_INT64.String(),
 			"schema.integer.rules.minimum":          "1",
 			"schema.integer.rules.maximum":          "10",
@@ -189,7 +189,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 				},
 			},
 		},
-		expected: map[string]interface{}{
+		expected: map[string]any{
 			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_UINT32.String(),
 			"schema.integer.rules.minimum":          "1",
 			"schema.integer.rules.maximum":          "10",
@@ -222,7 +222,7 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 	schemaItem := reflectRoot.ToJ5Root()
 
 	obj := schemaItem.Type.(*schema_j5pb.RootSchema_Object)
-	assertProperty := func(name string, expected map[string]interface{}) {
+	assertProperty := func(name string, expected map[string]any) {
 		t.Helper()
 		for _, prop := range obj.Object.Properties {
 			if prop.Name == name {
@@ -241,26 +241,26 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 		t.Errorf("property %q not found", name)
 	}
 
-	assertProperty("sString", map[string]interface{}{
+	assertProperty("sString", map[string]any{
 		"protoField": jsontest.Array[float64]{1},
 	})
 
-	assertProperty("oString", map[string]interface{}{
+	assertProperty("oString", map[string]any{
 		"protoField":         jsontest.Array[float64]{2},
 		"explicitlyOptional": true,
 	})
 
-	assertProperty("rString", map[string]interface{}{
+	assertProperty("rString", map[string]any{
 		"protoField":                jsontest.Array[float64]{3},
-		"schema.array.items.string": map[string]interface{}{},
+		"schema.array.items.string": map[string]any{},
 	})
 
-	assertProperty("mapStringString", map[string]interface{}{
+	assertProperty("mapStringString", map[string]any{
 		"protoField":                   jsontest.Array[float64]{50},
-		"schema.map.itemSchema.string": map[string]interface{}{},
+		"schema.map.itemSchema.string": map[string]any{},
 	})
 
-	assertProperty("flattened", map[string]interface{}{
+	assertProperty("flattened", map[string]any{
 		"protoField":            jsontest.Array[float64]{52},
 		"schema.object.flatten": true,
 	})
@@ -270,8 +270,8 @@ func TestSchemaTypesComplex(t *testing.T) {
 
 	type testCase struct {
 		proto        *descriptorpb.FileDescriptorProto
-		expected     map[string]interface{}
-		expectedRefs map[string]map[string]interface{}
+		expected     map[string]any
+		expectedRefs map[string]map[string]any
 	}
 
 	runTestCase := func(t *testing.T, tt testCase) {
@@ -325,7 +325,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 					Name: proto.String("TestMessage"),
 				}},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"object.name": "TestMessage",
 				//"object.properties":       jsontest.LenEqual(0),
 			},
@@ -347,7 +347,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 					}},
 				}},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"object.name":              "TestMessage",
 				"object.properties.0.name": "testField",
 			},
@@ -383,7 +383,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 					}},
 				}},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"object.name":                               "TestMessage",
 				"object.properties.0.name":                  "testField",
 				"object.properties.0.schema.object.flatten": true,
@@ -412,14 +412,14 @@ func TestSchemaTypesComplex(t *testing.T) {
 					}},
 				}},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"object.name":              "TestMessage",
 				"object.properties.0.name": "exposeMe",
 				"object.properties.0.schema.oneof.ref.package": "test",
 				"object.properties.0.schema.oneof.ref.schema":  "TestMessage_expose_me",
 				"object.properties.0.protoField":               jsontest.NotSet{},
 			},
-			expectedRefs: map[string]map[string]interface{}{
+			expectedRefs: map[string]map[string]any{
 				"TestMessage_expose_me": {
 					"oneof.properties.0.name":       "testField",
 					"oneof.properties.0.protoField": jsontest.Array[float64]{1},
@@ -462,11 +462,11 @@ func TestSchemaTypesComplex(t *testing.T) {
 					}},
 				}},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				// Outer Wrapper
 				"object.name":              "TestMessage",
 				"object.properties.0.name": "testField",
-				"object.properties.0.schema.map.itemSchema.string": map[string]interface{}{},
+				"object.properties.0.schema.map.itemSchema.string": map[string]any{},
 			},
 		})
 	})
@@ -511,11 +511,11 @@ func TestSchemaTypesComplex(t *testing.T) {
 					}),
 				}},
 			},
-			expected: map[string]interface{}{
+			expected: map[string]any{
 				"object.properties.0.schema.enum.ref.package": "test",
 				"object.properties.0.schema.enum.ref.schema":  "TestEnum",
 			},
-			expectedRefs: map[string]map[string]interface{}{
+			expectedRefs: map[string]map[string]any{
 				"TestEnum": {
 					"enum.options.0.name": "FOO",
 					"enum.options.1.name": "BAR",
@@ -595,8 +595,8 @@ func TestSchemaTypesComplex(t *testing.T) {
 		base.Dependency = []string{"j5/ext/v1/annotations.proto"}
 		runTestCase(t, testCase{
 			proto: base,
-			expected: map[string]interface{}{
-				"polymorph.members": []interface{}{"foo", "bar"},
+			expected: map[string]any{
+				"polymorph.members": []any{"foo", "bar"},
 			},
 		})
 
@@ -622,8 +622,8 @@ func TestSchemaTypesComplex(t *testing.T) {
 		base.Dependency = []string{"j5/ext/v1/annotations.proto"}
 		runTestCase(t, testCase{
 			proto: base,
-			expected: map[string]interface{}{
-				"object.polymorphMember": []interface{}{"foo"},
+			expected: map[string]any{
+				"object.polymorphMember": []any{"foo"},
 			},
 		})
 
@@ -635,7 +635,7 @@ func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constr
 	return fieldWithExtension(field, validate.E_Field, constraints)
 }
 
-func fieldWithExtension(field *descriptorpb.FieldDescriptorProto, extensionType protoreflect.ExtensionType, extensionValue interface{}) *descriptorpb.FieldDescriptorProto {
+func fieldWithExtension(field *descriptorpb.FieldDescriptorProto, extensionType protoreflect.ExtensionType, extensionValue any) *descriptorpb.FieldDescriptorProto {
 	if field.Options == nil {
 		field.Options = &descriptorpb.FieldOptions{}
 	}
@@ -644,7 +644,7 @@ func fieldWithExtension(field *descriptorpb.FieldDescriptorProto, extensionType 
 	return field
 }
 
-func extend[T proto.Message](v T, extensionType protoreflect.ExtensionType, extensionValue interface{}) T {
+func extend[T proto.Message](v T, extensionType protoreflect.ExtensionType, extensionValue any) T {
 	proto.SetExtension(v, extensionType, extensionValue)
 	return v
 }

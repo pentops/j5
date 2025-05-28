@@ -35,7 +35,7 @@ type serverStream struct {
 }
 
 type replyServer interface {
-	Notify(context.Context, string, interface{}) error
+	Notify(context.Context, string, any) error
 }
 
 func newServerStream(cfg lspConfig) (*serverStream, error) {

@@ -27,13 +27,13 @@ func SchemaSetFromFiles(descFiles *protoregistry.Files, include func(protoreflec
 			return true
 		}
 		fileMessages := file.Messages()
-		for ii := 0; ii < fileMessages.Len(); ii++ {
+		for ii := range fileMessages.Len() {
 			message := fileMessages.Get(ii)
 			messages = append(messages, message)
 		}
 
 		fileEnums := file.Enums()
-		for ii := 0; ii < fileEnums.Len(); ii++ {
+		for ii := range fileEnums.Len() {
 			enum := fileEnums.Get(ii)
 			enums = append(enums, enum)
 		}
@@ -190,7 +190,7 @@ func inferMessageType(src protoreflect.MessageDescriptor) messageType {
 		return objectMessage
 	}
 
-	for ii := 0; ii < src.Fields().Len(); ii++ {
+	for ii := range src.Fields().Len() {
 		field := src.Fields().Get(ii)
 		if field.ContainingOneof() != oneof {
 			return objectMessage
@@ -337,7 +337,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 	exposeOneofs := make(map[string]*OneofSchema)
 	pendingOneofProps := make(map[string]*ObjectProperty)
 
-	for idx := 0; idx < src.Oneofs().Len(); idx++ {
+	for idx := range src.Oneofs().Len() {
 		oneof := src.Oneofs().Get(idx)
 		if oneof.IsSynthetic() {
 			continue
@@ -379,7 +379,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 
 	}
 
-	for ii := 0; ii < src.Fields().Len(); ii++ {
+	for ii := range src.Fields().Len() {
 		field := src.Fields().Get(ii)
 
 		context := fieldContext{
@@ -965,7 +965,7 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 
 	sourceValues := enumDescriptor.Values()
 	values := make([]*EnumOption, 0, sourceValues.Len())
-	for ii := 0; ii < sourceValues.Len(); ii++ {
+	for ii := range sourceValues.Len() {
 		option := sourceValues.Get(ii)
 		number := int32(option.Number())
 

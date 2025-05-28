@@ -11,19 +11,19 @@ import (
 
 type ScalarField interface {
 	Field
-	ToGoValue() (interface{}, error)
-	SetGoValue(value interface{}) error
+	ToGoValue() (any, error)
+	SetGoValue(value any) error
 	SetASTValue(ASTValue) error
 }
 
 type ArrayOfScalarField interface {
 	ArrayField
-	AppendGoValue(value interface{}) (int, error)
+	AppendGoValue(value any) (int, error)
 	AppendASTValue(ASTValue) (int, error)
 }
 
 type MapOfScalarField interface {
-	SetGoValue(key string, value interface{}) error
+	SetGoValue(key string, value any) error
 	SetASTValue(key string, value ASTValue) error
 }
 
@@ -69,7 +69,7 @@ func (sf *scalarField) setValue(reflectValue protoreflect.Value) error {
 	return sf.value.setValue(reflectValue)
 }
 
-func (sf *scalarField) SetGoValue(value interface{}) error {
+func (sf *scalarField) SetGoValue(value any) error {
 	reflectValue, err := scalarReflectFromGo(sf.schema.Proto, value)
 	if err != nil {
 		return fmt.Errorf("setting field %s: %w", sf.FullTypeName(), err)
@@ -77,7 +77,7 @@ func (sf *scalarField) SetGoValue(value interface{}) error {
 	return sf.setValue(reflectValue)
 }
 
-func (sf *scalarField) ToGoValue() (interface{}, error) {
+func (sf *scalarField) ToGoValue() (any, error) {
 	val, ok := sf.value.getValue()
 	if !ok {
 		return nil, nil
@@ -100,7 +100,7 @@ func (array *arrayOfScalarField) AsArrayOfScalar() (ArrayOfScalarField, bool) {
 	return array, true
 }
 
-func (array *arrayOfScalarField) AppendGoValue(value interface{}) (int, error) {
+func (array *arrayOfScalarField) AppendGoValue(value any) (int, error) {
 	reflectValue, err := scalarReflectFromGo(array.itemSchema.Proto, value)
 	if err != nil {
 		return -1, err
@@ -127,7 +127,7 @@ func (mapField *mapOfScalarField) AsMap() (MapField, bool) {
 	return mapField, true
 }
 
-func (mapField *mapOfScalarField) SetGoValue(key string, value interface{}) error {
+func (mapField *mapOfScalarField) SetGoValue(key string, value any) error {
 	reflVal, err := scalarReflectFromGo(mapField.itemSchema.Proto, value)
 	if err != nil {
 		return fmt.Errorf("converting value to proto: %w", err)

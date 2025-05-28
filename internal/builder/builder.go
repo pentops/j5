@@ -20,6 +20,7 @@ import (
 	"golang.org/x/mod/modfile"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
+	"maps"
 )
 
 func NewBuilder(runner PipeRunner) *Builder {
@@ -220,7 +221,7 @@ func (b *Builder) runProtocPlugin(ctx context.Context, pc PluginContext, plugin 
 		}
 	}
 
-	log.WithFields(ctx, map[string]interface{}{
+	log.WithFields(ctx, map[string]any{
 		"files":           len(resp.File),
 		"durationSeconds": time.Since(start).Seconds(),
 	}).Info("Protoc Plugin Complete")
@@ -236,9 +237,7 @@ func (b *Builder) runJ5ClientPlugin(ctx context.Context, pc PluginContext, plugi
 		Packages: descriptorAPI.Packages,
 		Options:  map[string]string{},
 	}
-	for key, opt := range plugin.Opts {
-		buildRequest.Options[key] = opt
-	}
+	maps.Copy(buildRequest.Options, plugin.Opts)
 
 	reqBytes, err := proto.Marshal(buildRequest)
 	if err != nil {
@@ -275,7 +274,7 @@ func (b *Builder) runJ5ClientPlugin(ctx context.Context, pc PluginContext, plugi
 		}
 	}
 
-	log.WithFields(ctx, map[string]interface{}{
+	log.WithFields(ctx, map[string]any{
 		"files":           len(resp.Files),
 		"durationSeconds": time.Since(start).Seconds(),
 	}).Info("Protoc Plugin Complete")

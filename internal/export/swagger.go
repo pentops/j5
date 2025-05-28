@@ -23,8 +23,8 @@ type DocumentInfo struct {
 }
 
 type Components struct {
-	Schemas         map[string]*Schema     `json:"schemas"`
-	SecuritySchemes map[string]interface{} `json:"securitySchemes"`
+	Schemas         map[string]*Schema `json:"schemas"`
+	SecuritySchemes map[string]any     `json:"securitySchemes"`
 }
 
 type OperationHeader struct {

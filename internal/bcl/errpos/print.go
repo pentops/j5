@@ -165,7 +165,7 @@ func tabsToSpaces(s string) string {
 func replaceRunes(s string, cb func(string) string) string {
 	runes := []rune(s)
 	out := make([]string, 0, len(runes))
-	for i := 0; i < len(runes); i++ {
+	for i := range runes {
 		out = append(out, cb(string(runes[i])))
 	}
 	return strings.Join(out, "")

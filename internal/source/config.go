@@ -100,9 +100,7 @@ func resolveBundlePluginReferences(base *pluginBase, config *config_j5pb.BundleC
 		rootPlugins: maps.Clone(base.rootPlugins),
 	}
 
-	for key, base := range bundleRoot {
-		bundleBase.rootPlugins[key] = base
-	}
+	maps.Copy(bundleBase.rootPlugins, bundleRoot)
 
 	for _, pub := range config.Publish {
 		if err := resolvePlugins(bundleBase, pub.Plugins, pub.Opts); err != nil {

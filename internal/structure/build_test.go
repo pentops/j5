@@ -63,7 +63,7 @@ func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constr
 	return fieldWithExtension(field, validate.E_Field, constraints)
 }
 
-func fieldWithExtension(field *descriptorpb.FieldDescriptorProto, extensionType protoreflect.ExtensionType, extensionValue interface{}) *descriptorpb.FieldDescriptorProto {
+func fieldWithExtension(field *descriptorpb.FieldDescriptorProto, extensionType protoreflect.ExtensionType, extensionValue any) *descriptorpb.FieldDescriptorProto {
 	if field.Options == nil {
 		field.Options = &descriptorpb.FieldOptions{}
 	}

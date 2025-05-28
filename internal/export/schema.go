@@ -21,12 +21,12 @@ func (s *Schema) MarshalJSON() ([]byte, error) {
 		})
 	}
 	if s.OneOf != nil {
-		return json.Marshal(map[string]interface{}{
+		return json.Marshal(map[string]any{
 			"oneOf": s.OneOf,
 		})
 	}
 	if s.AnyOf != nil {
-		return json.Marshal(map[string]interface{}{
+		return json.Marshal(map[string]any{
 			"oneOf": s.AnyOf,
 		})
 	}
@@ -42,7 +42,7 @@ func (si SchemaItem) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("no type set")
 	}
 
-	base := map[string]interface{}{}
+	base := map[string]any{}
 	base["type"] = si.Type.TypeName()
 
 	if err := jsonStructFields(si.Type, base); err != nil {
@@ -63,11 +63,11 @@ func (ri EmptySchemaItem) TypeName() string {
 }
 
 type StringItem struct {
-	Format    Optional[string] `json:"format,omitempty"`
-	Example   Optional[string] `json:"example,omitempty"`
-	Pattern   Optional[string] `json:"pattern,omitempty"`
-	MinLength Optional[uint64] `json:"minLength,omitempty"`
-	MaxLength Optional[uint64] `json:"maxLength,omitempty"`
+	Format    Optional[string] `json:"format"`
+	Example   Optional[string] `json:"example"`
+	Pattern   Optional[string] `json:"pattern"`
+	MinLength Optional[uint64] `json:"minLength"`
+	MaxLength Optional[uint64] `json:"maxLength"`
 }
 
 func (ri StringItem) TypeName() string {
@@ -92,11 +92,11 @@ func (ri EnumItem) TypeName() string {
 
 type FloatItem struct {
 	Format           string            `json:"format,omitempty"`
-	ExclusiveMaximum Optional[bool]    `json:"exclusiveMaximum,omitempty"`
-	ExclusiveMinimum Optional[bool]    `json:"exclusiveMinimum,omitempty"`
-	Minimum          Optional[float64] `json:"minimum,omitempty"`
-	Maximum          Optional[float64] `json:"maximum,omitempty"`
-	MultipleOf       Optional[float64] `json:"multipleOf,omitempty"`
+	ExclusiveMaximum Optional[bool]    `json:"exclusiveMaximum"`
+	ExclusiveMinimum Optional[bool]    `json:"exclusiveMinimum"`
+	Minimum          Optional[float64] `json:"minimum"`
+	Maximum          Optional[float64] `json:"maximum"`
+	MultipleOf       Optional[float64] `json:"multipleOf"`
 }
 
 func (ri FloatItem) TypeName() string {
@@ -105,11 +105,11 @@ func (ri FloatItem) TypeName() string {
 
 type IntegerItem struct {
 	Format           string          `json:"format,omitempty"`
-	ExclusiveMaximum Optional[bool]  `json:"exclusiveMaximum,omitempty"`
-	ExclusiveMinimum Optional[bool]  `json:"exclusiveMinimum,omitempty"`
-	Minimum          Optional[int64] `json:"minimum,omitempty"`
-	Maximum          Optional[int64] `json:"maximum,omitempty"`
-	MultipleOf       Optional[int64] `json:"multipleOf,omitempty"`
+	ExclusiveMaximum Optional[bool]  `json:"exclusiveMaximum"`
+	ExclusiveMinimum Optional[bool]  `json:"exclusiveMinimum"`
+	Minimum          Optional[int64] `json:"minimum"`
+	Maximum          Optional[int64] `json:"maximum"`
+	MultipleOf       Optional[int64] `json:"multipleOf"`
 }
 
 func (ri IntegerItem) TypeName() string {
@@ -117,7 +117,7 @@ func (ri IntegerItem) TypeName() string {
 }
 
 type BoolItem struct {
-	Const Optional[bool] `json:"const,omitempty"`
+	Const Optional[bool] `json:"const"`
 }
 
 func (ri BoolItem) TypeName() string {
@@ -126,9 +126,9 @@ func (ri BoolItem) TypeName() string {
 
 type ArrayItem struct {
 	Items       *Schema          `json:"items,omitempty"`
-	MinItems    Optional[uint64] `json:"minItems,omitempty"`
-	MaxItems    Optional[uint64] `json:"maxItems,omitempty"`
-	UniqueItems Optional[bool]   `json:"uniqueItems,omitempty"`
+	MinItems    Optional[uint64] `json:"minItems"`
+	MaxItems    Optional[uint64] `json:"maxItems"`
+	UniqueItems Optional[bool]   `json:"uniqueItems"`
 }
 
 func (ri ArrayItem) TypeName() string {
@@ -158,8 +158,8 @@ type ObjectItem struct {
 	IsOneof       bool                       `json:"x-is-oneof,omitempty"`
 	Properties    map[string]*ObjectProperty `json:"properties,omitempty"`
 	Required      []string                   `json:"required,omitempty"`
-	MinProperties Optional[uint64]           `json:"minProperties,omitempty"`
-	MaxProperties Optional[uint64]           `json:"maxProperties,omitempty"`
+	MinProperties Optional[uint64]           `json:"minProperties"`
+	MaxProperties Optional[uint64]           `json:"maxProperties"`
 }
 
 func (ri *ObjectItem) TypeName() string {
@@ -176,7 +176,7 @@ type ObjectProperty struct {
 
 func (op *ObjectProperty) MarshalJSON() ([]byte, error) {
 
-	base := map[string]interface{}{
+	base := map[string]any{
 		"readOnly":  op.ReadOnly,
 		"writeOnly": op.WriteOnly,
 	}

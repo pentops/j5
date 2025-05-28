@@ -26,8 +26,8 @@ func reformatDescription(input string, maxWidth int) []string {
 		}
 		lastWasEmpty = false
 
-		words := strings.Split(line, " ")
-		for _, word := range words {
+		words := strings.SplitSeq(line, " ")
+		for word := range words {
 			if pend == "" {
 				pend = word
 				continue

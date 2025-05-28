@@ -42,7 +42,7 @@ func (f AuthHeadersFunc) AuthHeaders(ctx context.Context, r *http.Request) (map[
 type AppConn interface {
 	// Invoke is designed for gRPC ClientConn.Invoke, the two interfaces should
 	// be protos...
-	Invoke(context.Context, string, interface{}, interface{}, ...grpc.CallOption) error
+	Invoke(context.Context, string, any, any, ...grpc.CallOption) error
 
 	JSONToProto(body []byte, msg protoreflect.Message) error
 	QueryToProto(query url.Values, msg protoreflect.Message) error
@@ -111,7 +111,7 @@ func (rr *Router) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler.ServeHTTP(w, r)
 }
 
-func (rr *Router) StaticJSON(path string, document interface{}) error {
+func (rr *Router) StaticJSON(path string, document any) error {
 	jb, err := json.Marshal(document)
 	if err != nil {
 		return err
@@ -141,7 +141,7 @@ func (rr *Router) RegisterGRPCService(ctx context.Context, sd protoreflect.Servi
 	if serviceExt != nil {
 		if serviceExt.DefaultAuth != nil {
 			defaultAuth = serviceExt.DefaultAuth.Get()
-			log.WithFields(ctx, map[string]interface{}{
+			log.WithFields(ctx, map[string]any{
 				"authMethod": defaultAuth.TypeKey(),
 				"service":    sd.FullName(),
 			}).Debug("Service Default Auth")
@@ -245,7 +245,7 @@ func (rr *Router) registerMethod(ctx context.Context, md protoreflect.MethodDesc
 	}
 
 	rr.router.Methods(handler.HTTPMethod).Path(handler.HTTPPath).Handler(handler)
-	log.WithFields(ctx, map[string]interface{}{
+	log.WithFields(ctx, map[string]any{
 		"method":     handler.HTTPMethod,
 		"path":       handler.HTTPPath,
 		"grpc":       handler.FullName,
@@ -295,7 +295,7 @@ func (mm *grpcMethod) mapRequest(r *http.Request) (protoreflect.Message, error) 
 
 func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
-	ctx = log.WithFields(ctx, map[string]interface{}{
+	ctx = log.WithFields(ctx, map[string]any{
 		"httpMethod": r.Method,
 		"httpURL":    r.URL.String(),
 		"gRPCMethod": mm.FullName,
@@ -334,10 +334,7 @@ func (mm *grpcMethod) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			doUserError(ctx, w, err)
 			return
 		}
-		for key, val := range authHeaders {
-			md[key] = val
-
-		}
+		maps.Copy(md, authHeaders)
 		ctx = log.WithField(ctx, "authHeaders", authHeaders)
 	}
 

@@ -122,7 +122,7 @@ func (l *Lexer) AllTokens(failFast bool) ([]Token, bool, error) {
 	return tokens, true, nil
 }
 
-func (l *Lexer) errf(format string, args ...interface{}) error {
+func (l *Lexer) errf(format string, args ...any) error {
 	current := l.getPosition()
 	return &errpos.Err{
 		Pos: &errpos.Position{

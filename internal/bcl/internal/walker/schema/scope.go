@@ -279,7 +279,7 @@ func (sw *Scope) MergeScope(other *Scope) *Scope {
 	}
 }
 
-func (sw *Scope) PrintScope(logf func(string, ...interface{})) {
+func (sw *Scope) PrintScope(logf func(string, ...any)) {
 	logf("available blocks:")
 	for _, block := range sw.blockSet {
 		if block.spec.DebugName != "" {

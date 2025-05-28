@@ -58,7 +58,7 @@ func PrintServerInfo(server InfoProvider) error {
 			continue
 		}
 
-		for i := 0; i < serviceDesc.Methods().Len(); i++ {
+		for i := range serviceDesc.Methods().Len() {
 			method := serviceDesc.Methods().Get(i)
 			fmt.Printf("  %s\n", method.FullName())
 

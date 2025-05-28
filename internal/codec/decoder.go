@@ -123,7 +123,7 @@ func newFieldError(field, message string) error {
 	}
 }
 
-func unexpectedTokenError(got, expected interface{}) error {
+func unexpectedTokenError(got, expected any) error {
 	return fieldError{
 		pathToField: []string{fmt.Sprint(got)},
 		err:         fmt.Errorf("unexpected token %v, expected %v", got, expected),

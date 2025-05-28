@@ -165,7 +165,7 @@ func (src *Resolver) LatestLocks(ctx context.Context, deps []*config_j5pb.Input)
 			}
 		}
 
-		ctx = log.WithFields(ctx, map[string]interface{}{
+		ctx = log.WithFields(ctx, map[string]any{
 			"dep":         fullName,
 			"lockVersion": *img.Version,
 		})

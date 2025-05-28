@@ -176,7 +176,7 @@ func TestBodyHandlerMapping(t *testing.T) {
 		if rw.Code != http.StatusBadRequest {
 			t.Fatalf("expected BadRequest, got %d", rw.Code)
 		}
-		errResp := map[string]interface{}{}
+		errResp := map[string]any{}
 		if err := json.Unmarshal(rw.Body.Bytes(), &errResp); err != nil {
 			t.Fatal(err)
 		}
@@ -185,7 +185,7 @@ func TestBodyHandlerMapping(t *testing.T) {
 
 type TestInvoker[REQ proto.Message, RES proto.Message] func(req REQ) (RES, error)
 
-func (fn TestInvoker[REQ, RES]) Invoke(ctx context.Context, method string, protoReq, protoRes interface{}, opts ...grpc.CallOption) error {
+func (fn TestInvoker[REQ, RES]) Invoke(ctx context.Context, method string, protoReq, protoRes any, opts ...grpc.CallOption) error {
 	protoInvokeRequest, ok := protoReq.(REQ)
 	if !ok {
 		return fmt.Errorf("expected proto.Message, got %T", protoReq)
@@ -225,7 +225,7 @@ func roundTrip(method *grpcMethod, req *http.Request, reqBody, resBody proto.Mes
 	}
 	method.AppCon = &testInvoker{
 		codec: codec.NewCodec(),
-		invoke: func(ctx context.Context, method string, rawInvokeRequest, rawInvokeResponse interface{}, opts ...grpc.CallOption) error {
+		invoke: func(ctx context.Context, method string, rawInvokeRequest, rawInvokeResponse any, opts ...grpc.CallOption) error {
 			protoInvokeRequest, ok := rawInvokeRequest.(proto.Message)
 			if !ok {
 				return fmt.Errorf("expected proto.Message, got %T", req)
@@ -257,11 +257,11 @@ func roundTrip(method *grpcMethod, req *http.Request, reqBody, resBody proto.Mes
 }
 
 type testInvoker struct {
-	invoke func(ctx context.Context, method string, req, res interface{}, opts ...grpc.CallOption) error
+	invoke func(ctx context.Context, method string, req, res any, opts ...grpc.CallOption) error
 	codec  *codec.Codec
 }
 
-func (f *testInvoker) Invoke(ctx context.Context, method string, req, res interface{}, opts ...grpc.CallOption) error {
+func (f *testInvoker) Invoke(ctx context.Context, method string, req, res any, opts ...grpc.CallOption) error {
 	return f.invoke(ctx, method, req, res, opts...)
 }
 
@@ -291,7 +291,7 @@ func (m *MockInvoker) SetResponse(t testing.TB, msg proto.Message) {
 	m.SendResponse = dd
 }
 
-func (m *MockInvoker) Invoke(ctx context.Context, method string, req, res interface{}, opts ...grpc.CallOption) error {
+func (m *MockInvoker) Invoke(ctx context.Context, method string, req, res any, opts ...grpc.CallOption) error {
 	protoReq, ok := req.(proto.Message)
 	if !ok {
 		return fmt.Errorf("expected proto.Message, got %T", req)
@@ -370,7 +370,7 @@ func TestAuthMethods(t *testing.T) {
 		SendResponse: bodyData,
 		Codec:        codec.NewCodec(),
 	}
-	for idx := 0; idx < services.Len(); idx++ {
+	for idx := range services.Len() {
 		sd := services.Get(idx)
 		if err := rr.RegisterGRPCService(context.Background(), sd, invoker); err != nil {
 			t.Fatal(err)
