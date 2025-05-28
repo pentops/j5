@@ -153,11 +153,6 @@ func inferMessageType(src protoreflect.MessageDescriptor) messageType {
 	options := protosrc.GetExtension[*ext_j5pb.MessageOptions](src.Options(), ext_j5pb.E_Message)
 	if options != nil {
 
-		if options.IsOneofWrapper {
-			// this is deprecated.
-			return oneofMessage
-		}
-
 		switch options.Type.(type) {
 		case *ext_j5pb.MessageOptions_Oneof:
 			return oneofMessage
