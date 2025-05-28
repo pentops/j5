@@ -45,7 +45,7 @@ func (fn *FileNode) RangeRootElements(visitor FileVisitor) error {
 		switch element := element.Type.(type) {
 		case *sourcedef_j5pb.RootElement_Object:
 			source := source.child("object")
-			objectNode, err := newObjectNode(source.child("object"), nil, element.Object)
+			objectNode, err := newObjectNode(source, nil, element.Object)
 			if err != nil {
 				return wrapErr(source, err)
 			}

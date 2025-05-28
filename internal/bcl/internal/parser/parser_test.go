@@ -10,7 +10,7 @@ import (
 
 func tParseFile(t testing.TB, input string) *File {
 	t.Helper()
-	file, err := ParseFile(input, false)
+	file, err := ParseFile("filename", input, false)
 	if err != nil {
 		printErr(t, err)
 		t.Fatal("FATAL: unexpected error")
@@ -75,7 +75,7 @@ type errorAssertion func(*testing.T, *errpos.Err)
 func assertErr(t *testing.T, input string, assertions ...[]errorAssertion) {
 	t.Helper()
 
-	_, err := ParseFile(input, false)
+	_, err := ParseFile("filename", input, false)
 	if err == nil {
 		t.Fatalf("FATAL: expected errors, got none")
 	}

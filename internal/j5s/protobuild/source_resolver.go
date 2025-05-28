@@ -179,15 +179,18 @@ func (sr *sourceResolver) getFile(ctx context.Context, sourceFilename string) (*
 
 func (sr *sourceResolver) parseJ5s(sourceFilename string, data []byte) (*SourceFile, error) {
 
-	errs := errset.NewCollector()
 	sourceFile, err := sr.j5Parser.ParseFile(sourceFilename, string(data))
 	if err != nil {
-		return nil, errpos.AddSourceFile(err, sourceFilename, string(data))
+		return nil, err
 	}
 
+	errs := errset.NewCollector()
 	summary, err := j5convert.SourceSummary(sourceFile, errs)
 	if err != nil {
-		return nil, errpos.AddSourceFile(err, sourceFilename, string(data))
+		if ep, ok := errpos.AsErrors(err); ok {
+			return nil, ep.AsErrorsWithSource(sourceFilename, string(data))
+		}
+		return nil, err
 	}
 
 	return &SourceFile{

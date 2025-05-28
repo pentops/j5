@@ -9,9 +9,9 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-type descriptorFiles map[string]*descriptorpb.FileDescriptorProto
+type DescriptorFiles map[string]*descriptorpb.FileDescriptorProto
 
-func (df descriptorFiles) FindFileByPath(filename string) (*File, error) {
+func (df DescriptorFiles) FindFileByPath(filename string) (*File, error) {
 	file, ok := df[filename]
 	if !ok {
 		return nil, fmt.Errorf("file not found: %s", filename)
@@ -29,7 +29,7 @@ func (df descriptorFiles) FindFileByPath(filename string) (*File, error) {
 	}, nil
 }
 
-func (df descriptorFiles) ListPackageFiles(pkgName string) ([]string, error) {
+func (df DescriptorFiles) ListPackageFiles(pkgName string) ([]string, error) {
 	prefix := strings.ReplaceAll(pkgName, ".", "/")
 	files := make([]string, 0, len(df))
 	for filename := range df {

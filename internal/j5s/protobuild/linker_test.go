@@ -11,7 +11,7 @@ import (
 func TestLinkerDeps(t *testing.T) {
 	ctx := t.Context()
 
-	tf := testDeps{
+	tf := psrc.DescriptorFiles{
 		"test/v1/foo.proto": {
 			Name:    proto.String("test/v1/foo.proto"),
 			Syntax:  proto.String("proto3"),

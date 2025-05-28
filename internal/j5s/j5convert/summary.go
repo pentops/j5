@@ -48,6 +48,23 @@ func (typeRef TypeRef) protoTypeName() *string {
 	return gl.Ptr(fmt.Sprintf(".%s.%s", typeRef.Package, typeRef.Name))
 }
 
+func (typeRef TypeRef) typeName() string {
+	if typeRef.Enum != nil {
+		return "enum"
+	} else if typeRef.Object != nil {
+		return "object"
+	} else if typeRef.Oneof != nil {
+		return "oneof"
+	} else if typeRef.Polymorph != nil {
+		return "polymorph"
+	}
+	return "unknown"
+}
+
+func (typeRef TypeRef) debugName() string {
+	return fmt.Sprintf("%s.%s[%s]", typeRef.Package, typeRef.Name, typeRef.typeName())
+}
+
 type ObjectRef struct {
 }
 
@@ -120,10 +137,7 @@ func SourceSummary(sourceFile *sourcedef_j5pb.SourceFile, ec ErrCollector) (*Fil
 		if expanded == nil {
 			err := fmt.Errorf("package %q not imported (for schema %s)", refSrc.Package, refSrc.Schema)
 			err = errpos.AddContext(err, strings.Join(refSrc.Source.Path, "."))
-			loc := refSrc.Source.GetPos()
-			if loc != nil {
-				err = errpos.AddPosition(err, *loc)
-			}
+			err = errpos.AddPosition(err, refSrc.Source.GetPos())
 			return nil, err
 		}
 
@@ -134,7 +148,6 @@ func SourceSummary(sourceFile *sourcedef_j5pb.SourceFile, ec ErrCollector) (*Fil
 		export.Package = sourceFile.Package.Name
 		export.File = importPath
 		fs.Exports[export.Name] = export
-		//fmt.Printf("export from %s: %s\n", export.Package, export.Name)
 	}
 
 	for _, ref := range importMap.vals {
@@ -232,7 +245,7 @@ func (cc *summaryWalker) collectFileRefs(sourceFile *sourcedef_j5pb.SourceFile) 
 func objectTypeRef(node *sourcewalk.ObjectNode) *TypeRef {
 	return &TypeRef{
 		Name:     node.NameInPackage(),
-		Position: node.Source.GetPos(),
+		Position: gl.Ptr(node.Source.GetPos()),
 		Object:   &ObjectRef{},
 	}
 }
@@ -240,7 +253,7 @@ func objectTypeRef(node *sourcewalk.ObjectNode) *TypeRef {
 func oneofTypeRef(node *sourcewalk.OneofNode) *TypeRef {
 	return &TypeRef{
 		Name:     node.NameInPackage(),
-		Position: node.Source.GetPos(),
+		Position: gl.Ptr(node.Source.GetPos()),
 		Oneof:    &OneofRef{},
 	}
 }
@@ -252,7 +265,7 @@ func enumTypeRef(node *sourcewalk.EnumNode) *TypeRef {
 	}
 	return &TypeRef{
 		Name:     node.NameInPackage(),
-		Position: node.Source.GetPos(),
+		Position: gl.Ptr(node.Source.GetPos()),
 
 		Enum: &EnumRef{
 			Prefix: node.Schema.Prefix,
@@ -264,7 +277,7 @@ func enumTypeRef(node *sourcewalk.EnumNode) *TypeRef {
 func polymorphTypeRef(node *sourcewalk.PolymorphNode) *TypeRef {
 	return &TypeRef{
 		Name:     node.NameInPackage(),
-		Position: node.Source.GetPos(),
+		Position: gl.Ptr(node.Source.GetPos()),
 		Polymorph: &PolymorphRef{
 			Members:  node.Members,
 			Includes: node.Includes,

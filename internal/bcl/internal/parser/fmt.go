@@ -3,8 +3,6 @@ package parser
 import (
 	"fmt"
 	"strings"
-
-	"github.com/pentops/j5/internal/bcl/errpos"
 )
 
 type FmtDiff struct {
@@ -13,8 +11,8 @@ type FmtDiff struct {
 	NewText  string
 }
 
-func Fmt(input string) (string, error) {
-	diffs, err := collectFmtFragments(input)
+func Fmt(filename string, input string) (string, error) {
+	diffs, err := collectFmtFragments(filename, input)
 	if err != nil {
 		return "", err
 	}
@@ -31,14 +29,14 @@ func Fmt(input string) (string, error) {
 	return strings.Join(out, ""), nil
 }
 
-func FmtDiffs(input string) ([]FmtDiff, error) {
-	all, err := collectFmtFragments(input)
+func FmtDiffs(filename string, input string) ([]FmtDiff, error) {
+	all, err := collectFmtFragments(filename, input)
 	if err != nil {
 		return nil, err
 	}
 
 	lines := &lineSet{
-		lines: strings.Split(input, "\n"),
+		lines: strings.Split(string(input), "\n"),
 	}
 
 	out := make([]FmtDiff, 0, len(all))
@@ -80,15 +78,15 @@ func (ls *lineSet) rangeLines(from, to int) string {
 	return strings.Join(ls.lines[from:to], "\n") + "\n"
 }
 
-func collectFmtFragments(input string) ([]FmtDiff, error) {
-	l := NewLexer(input)
+func collectFmtFragments(filename string, input string) ([]FmtDiff, error) {
+	l := NewLexer(string(input))
 
 	tokens, ok, err := l.AllTokens(true)
 	if err != nil {
 		return nil, fmt.Errorf("unexpected lexer error: %w", err)
 	}
 	if !ok {
-		return nil, errpos.AddSource(l.Errors, input)
+		return nil, l.Errors.AsErrorsWithSource(filename, input)
 	}
 	ww := &Walker{
 		tokens:   tokens,
@@ -97,7 +95,7 @@ func collectFmtFragments(input string) ([]FmtDiff, error) {
 	fragments, err := ww.walkFragments()
 	if err != nil {
 		if err == ErrWalker {
-			return nil, errpos.AddSource(ww.errors, input)
+			return nil, ww.errors.AsErrorsWithSource(filename, input)
 		}
 
 		return nil, err

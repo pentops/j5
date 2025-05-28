@@ -81,7 +81,7 @@ message MessageOptions {
 }
 
 message ObjectMessageOptions {
-  repeated string any_member = 3;
+  repeated string polymorph_member = 3;
 }
 
 message OneofMessageOptions {}

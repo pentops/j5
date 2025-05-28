@@ -266,7 +266,7 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts
 	}
 
 	if opts != nil {
-		objectSchema.PolymorphMember = opts.AnyMember
+		objectSchema.PolymorphMember = opts.PolymorphMember
 	}
 
 	return objectSchema, nil

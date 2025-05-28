@@ -263,19 +263,17 @@ func (ent *entityNode) acceptEventOneof(visitor FileVisitor) error {
 		Properties: make([]*schema_j5pb.ObjectProperty, 0, len(entity.Events)),
 	}
 
-	eventObjects := make([]*sourcedef_j5pb.NestedSchema, 0, len(entity.Events))
+	nestedNodes := make([]*nestedNode, 0, len(entity.Events))
 
 	for idx, eventObjectSchema := range entity.Events {
 
 		nestedName := eventObjectSchema.Def.Name
 
-		nested := &sourcedef_j5pb.NestedSchema{
-			Type: &sourcedef_j5pb.NestedSchema_Object{
-				Object: eventObjectSchema,
-			},
-		}
-
-		eventObjects = append(eventObjects, nested)
+		nested := &sourcedef_j5pb.NestedSchema_Object{Object: eventObjectSchema}
+		nestedNodes = append(nestedNodes, &nestedNode{
+			schema: nested,
+			source: ent.Source.child("events", strconv.Itoa(idx)),
+		})
 
 		propSchema := &schema_j5pb.ObjectProperty{
 			Name:       strcase.ToLowerCamel(eventObjectSchema.Def.Name),
@@ -300,13 +298,14 @@ func (ent *entityNode) acceptEventOneof(visitor FileVisitor) error {
 		eventOneof.Properties = append(eventOneof.Properties, propSchema)
 	}
 
-	node, err := newOneofNode(ent.Source.child(virtualPathNode, "event_type"), nil, &sourcedef_j5pb.Oneof{
-		Def:     eventOneof,
-		Schemas: eventObjects,
-	})
-
+	node, err := newOneofSchemaNode(ent.Source.child(virtualPathNode, "event_type"), nil, eventOneof)
 	if err != nil {
 		return wrapErr(ent.Source, err)
+	}
+
+	node.nestedSet = nestedSet{
+		children: nestedNodes,
+		parent:   node,
 	}
 
 	return visitor.VisitOneof(node)

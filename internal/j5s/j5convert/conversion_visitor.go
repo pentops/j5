@@ -2,7 +2,6 @@ package j5convert
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/pentops/golib/gl"
@@ -36,11 +35,8 @@ func (rr *conversionVisitor) addErrorf(node sourcewalk.SourceNode, format string
 
 func (rr *conversionVisitor) addError(node sourcewalk.SourceNode, err error) {
 	loc := node.GetPos()
-	if loc != nil {
-		err = errpos.AddPosition(err, *loc)
-	}
-	log.Printf("walker error at %s: %v", strings.Join(node.Path, "."), err)
-	rr.root.errors = append(rr.root.errors, err)
+	wrapped := errpos.AddPosition(err, loc)
+	rr.root.errors = append(rr.root.errors, wrapped)
 }
 
 func (ww *conversionVisitor) inMessage(msg *MessageBuilder) *conversionVisitor {
@@ -92,10 +88,7 @@ func (ww *conversionVisitor) resolveType(ref *sourcewalk.RefNode) (*TypeRef, err
 	typeRef, err := ww.root.resolveType(ref.Ref)
 	if err != nil {
 		pos := ref.Source.GetPos()
-		if pos != nil {
-			err = errpos.AddPosition(err, *pos)
-		}
-		log.Printf("resolveType error at %s: %v", strings.Join(ref.Source.Path, "."), err)
+		err = errpos.AddPosition(err, pos)
 		return nil, err
 	}
 

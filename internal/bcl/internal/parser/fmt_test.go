@@ -26,7 +26,7 @@ func TestFmtDiff(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Helper()
 
-			actual, err := FmtDiffs(tc.input)
+			actual, err := FmtDiffs("name", tc.input)
 			if err != nil {
 				printErr(t, err)
 				t.Fatal(err)
@@ -205,7 +205,7 @@ func TestFmt(t *testing.T) {
 			}
 			for idx, input := range tc.inputs {
 				t.Run(fmt.Sprintf("%d", idx), func(t *testing.T) {
-					actual, err := Fmt(input)
+					actual, err := Fmt("name", input)
 					if err != nil {
 						printErr(t, err)
 						t.Fatal(err)

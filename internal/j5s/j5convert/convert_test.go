@@ -10,6 +10,7 @@ import (
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
+	"github.com/pentops/j5/internal/bcl/errpos"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -92,10 +93,28 @@ func (d *testDeps) ResolveType(pkg string, name string) (*TypeRef, error) {
 		Name:    name,
 	}
 }
+
+func unwrapSingleError(t *testing.T, err error) error {
+	t.Helper()
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	ee, ok := errpos.AsErrors(err)
+	if !ok {
+		return err
+	}
+	if len(ee) != 1 {
+		t.Fatalf("expected single error, got %d errors", len(ee))
+	}
+	return ee[0]
+}
+
 func assertIsTypeNotFound(t *testing.T, err error, want *TypeNotFoundError) {
+	t.Helper()
+	err = unwrapSingleError(t, err)
 	gotNotFound := &TypeNotFoundError{}
 	if !errors.As(err, &gotNotFound) {
-		t.Fatalf("got error %v, want TypeNotFoundError", err)
+		t.Fatalf("got error %T, want TypeNotFoundError", err)
 	}
 	if gotNotFound.Package != want.Package || gotNotFound.Name != want.Name {
 		t.Fatalf("got error %v, want %v", gotNotFound, want)
@@ -103,9 +122,11 @@ func assertIsTypeNotFound(t *testing.T, err error, want *TypeNotFoundError) {
 }
 
 func assertIsPackageNotFound(t *testing.T, err error, want *PackageNotFoundError) {
+	t.Helper()
+	err = unwrapSingleError(t, err)
 	gotErr := &PackageNotFoundError{}
 	if !errors.As(err, &gotErr) {
-		t.Fatalf("got error %v, want TypeNotFoundError", err)
+		t.Fatalf("got error %v, want PackageNotFoundError", err)
 	}
 	if gotErr.Package != want.Package {
 		t.Fatalf("got error %v, want %v", gotErr, want)

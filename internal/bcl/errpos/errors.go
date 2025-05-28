@@ -117,6 +117,30 @@ func (e Errors) Error() string {
 	return "multiple syntax errors"
 }
 
+func (e Errors) FilterToFile(filename string) Errors {
+	if len(e) == 0 {
+		return nil
+	}
+
+	filtered := make(Errors, 0, len(e))
+	for _, err := range e {
+		if err.Pos != nil && err.Pos.Filename != nil && *err.Pos.Filename == filename {
+			filtered = append(filtered, err)
+		}
+	}
+	return filtered
+}
+
+func (e Errors) AsErrorsWithSource(filename string, fileData string) *ErrorsWithSource {
+	return &ErrorsWithSource{
+		lines: map[string][]string{
+			filename: strings.Split(string(fileData), "\n"),
+		},
+		Errors: e,
+	}
+
+}
+
 func AsError(err error) (*Err, bool) {
 	if err == nil {
 		return nil, false
@@ -143,6 +167,9 @@ func AsErrors(err error) (Errors, bool) {
 	}
 
 	if errs, ok := err.(Errors); ok {
+		if len(errs) == 0 {
+			panic("AsErrors: empty Errors")
+		}
 		return errs, true
 	}
 
@@ -227,7 +254,6 @@ func (e *Err) mergeErr(err error, label string) {
 	if errors.Is(err, e.Err) {
 		return // no change
 	}
-	fmt.Printf("==========\nMERGE ERRORS %s\n    new: %v \n      %T \n  exist: %v\n      %T\n----\n", label, err, err, e.Err, e.Err)
 	e.Err = fmt.Errorf("%w: %v", e.Err, err)
 }
 
@@ -259,7 +285,7 @@ func AddContext(err error, ctx ...string) error {
 // If the error is nil, returns nil.
 // If the error already has a position (implements Position), it is returned
 // unmodified, as the existing value is likely more specific and useful.
-func AddPosition(err error, pos Position) error {
+func AddPosition(err error, pos Position) *Err {
 	if err == nil {
 		return nil
 	}
@@ -273,7 +299,7 @@ func AddPosition(err error, pos Position) error {
 	}
 
 	if existing.Pos != nil {
-		return err
+		return existing
 	}
 
 	existing.mergeErr(err, "Position")

@@ -2,8 +2,6 @@ package psrc
 
 import (
 	"fmt"
-
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type Resolver interface {
@@ -11,11 +9,9 @@ type Resolver interface {
 	ListPackageFiles(pkgName string) ([]string, error)
 }
 
-func ChainResolver(deps map[string]*descriptorpb.FileDescriptorProto) (Resolver, error) {
-	depResolver := descriptorFiles(deps)
+func ChainResolver(deps Resolver) (Resolver, error) {
 	builtinResolver := NewBuiltinResolver()
-	resolver := newResolverCache(builtinResolver, depResolver)
-
+	resolver := newResolverCache(builtinResolver, deps)
 	return resolver, nil
 }
 

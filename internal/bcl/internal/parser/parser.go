@@ -8,21 +8,21 @@ import (
 	"github.com/pentops/j5/internal/bcl/errpos"
 )
 
-func ParseFile(input string, failFast bool) (*File, error) {
-	l := NewLexer(input)
+func ParseFile(filename string, input string, failFast bool) (*File, error) {
+	l := NewLexer(string(input))
 
 	tokens, ok, err := l.AllTokens(failFast)
 	if err != nil {
 		return nil, fmt.Errorf("unexpected lexer error: %w", err)
 	}
 	if !ok {
-		return nil, errpos.AddSource(l.Errors, input)
+		return nil, l.Errors.AsErrorsWithSource(filename, input)
 	}
 
 	tree, err := Walk(tokens, failFast)
 	if err != nil {
 		if err == ErrWalker {
-			return tree, errpos.AddSource(tree.Errors, input)
+			return tree, tree.Errors.AsErrorsWithSource(filename, input)
 		}
 		return tree, fmt.Errorf("unexpected walk error: %w", err)
 	}

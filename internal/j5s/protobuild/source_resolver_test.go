@@ -31,6 +31,15 @@ func (tf *testFiles) tIncludePackage(pkg string) {
 	tf.localPackages = append(tf.localPackages, pkg)
 }
 
+func tFileToPackage(filename string) string {
+	parts := strings.Split(filename, "/")
+	if len(parts) < 2 {
+		return "default"
+	}
+	pkg := strings.Join(parts[:len(parts)-1], ".")
+	return pkg
+}
+
 func (tf *testFiles) tAddProtoFile(filename string, body ...string) {
 	pkg := tFileToPackage(filename)
 	body = append([]string{

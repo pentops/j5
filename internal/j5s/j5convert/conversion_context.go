@@ -9,6 +9,7 @@ import (
 	"slices"
 
 	"github.com/pentops/golib/gl"
+	"github.com/pentops/j5/internal/bcl/errpos"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -24,7 +25,7 @@ type rootContext struct {
 	packageName string
 	deps        TypeResolver
 	//source      sourceLink
-	errors []error
+	errors errpos.Errors
 
 	importAliases *importMap
 

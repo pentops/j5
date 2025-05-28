@@ -454,16 +454,16 @@ func TestSimple(t *testing.T) {
 				if err == nil {
 					t.Fatalf("expected error at %s but got none", tc.expectError)
 				}
-				posErrs, ok := errpos.AsErrorsWithSource(err)
+				posErrs, ok := errpos.AsErrors(err)
 				if !ok {
 					t.Fatalf("expected position error, got %T", err)
 				}
-				if len(posErrs.Errors) != 1 {
-					t.Fatalf("expected 1 error, got %d", len(posErrs.Errors))
+				if len(posErrs) != 1 {
+					t.Fatalf("expected 1 error, got %d", len(posErrs))
 				}
-				t.Logf("STR %s\n", posErrs.HumanString(0))
+				t.Logf("STR %s\n", posErrs[0].Err.Error())
 
-				pos := posErrs.Errors[0].Pos
+				pos := posErrs[0].Pos
 				if pos == nil {
 					t.Fatalf("no error position")
 				}
@@ -540,7 +540,7 @@ func scanAll(input string) ([]Token, error) {
 	for {
 		tok, err := lexer.NextToken()
 		if err != nil {
-			return tokens, errpos.AddSource(err, input)
+			return tokens, err
 		}
 		tokens = append(tokens, tok)
 		if tok.Type == EOF {

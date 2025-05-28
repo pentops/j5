@@ -80,8 +80,8 @@ func (sn SourceNode) child(path ...string) SourceNode {
 	return walk
 }
 
-func (sn SourceNode) GetPos() *errpos.Position {
-	return &errpos.Position{
+func (sn SourceNode) GetPos() errpos.Position {
+	return errpos.Position{
 		Start: errpos.Point{
 			Line:   int(sn.Source.StartLine),
 			Column: int(sn.Source.StartColumn),

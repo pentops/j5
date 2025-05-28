@@ -612,7 +612,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 				Options: extend(&descriptorpb.MessageOptions{}, ext_j5pb.E_Message, &ext_j5pb.MessageOptions{
 					Type: &ext_j5pb.MessageOptions_Object{
 						Object: &ext_j5pb.ObjectMessageOptions{
-							AnyMember: []string{"foo"},
+							PolymorphMember: []string{"foo"},
 						},
 					},
 				}),

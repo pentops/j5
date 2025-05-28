@@ -3,7 +3,9 @@ package linter
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
+	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/internal/bcl"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/bcl/internal/parser"
@@ -13,19 +15,21 @@ import (
 )
 
 type FileFactory func(filename string) protoreflect.Message
-type OnChange func(filename string, msg protoreflect.Message) error
+type OnChange func(ctx context.Context, filename string, sourceLocs *bcl_j5pb.SourceLocation, msg protoreflect.Message) error
 
 type Linter struct {
 	parser      *bcl.Parser
+	rootDir     string
 	fileFactory FileFactory
 	onChange    OnChange
 }
 
-func New(parser *bcl.Parser, fileFactory FileFactory, validate OnChange) *Linter {
+func New(parser *bcl.Parser, fileFactory FileFactory, validate OnChange, rootDir string) *Linter {
 	return &Linter{
 		parser:      parser,
 		fileFactory: fileFactory,
 		onChange:    validate,
+		rootDir:     rootDir,
 	}
 }
 
@@ -34,19 +38,19 @@ func NewGeneric() *Linter {
 }
 
 func errorToDiagnostics(ctx context.Context, mainError error) ([]protocol.Diagnostic, error) {
-	locErr, ok := errpos.AsErrorsWithSource(mainError)
+	locErr, ok := errpos.AsErrors(mainError)
 	if !ok {
 		log.WithError(ctx, mainError).Error("Error not ErrorsWithSource")
 		return nil, mainError
 	}
 
-	diagnostics := make([]protocol.Diagnostic, 0, len(locErr.Errors))
+	diagnostics := make([]protocol.Diagnostic, 0, len(locErr))
 
-	for _, err := range locErr.Errors {
-		log.WithFields(ctx, map[string]interface{}{
-			"pos":   err.Pos.String(),
-			"error": err.Err.Error(),
-		}).Debug("Lint Diagnostic")
+	for _, err := range locErr {
+		log.WithFields(ctx,
+			"pos", err.Pos.String(),
+			"error", err.Err.Error(),
+		).Debug("Lint Diagnostic")
 		diagnostics = append(diagnostics, protocol.Diagnostic{
 			Range: protocol.Range{
 				Start: protocol.Position{
@@ -69,14 +73,15 @@ func errorToDiagnostics(ctx context.Context, mainError error) ([]protocol.Diagno
 
 }
 func (l *Linter) FileChanged(ctx context.Context, req *protocol.TextDocumentItem) ([]protocol.Diagnostic, error) {
+	relFilename, err := filepath.Rel(l.rootDir, req.URI.Filename())
+	if err != nil {
+		return nil, err
+	}
 
 	// Step 1: Parse BCL
-	tree, err := parser.ParseFile(req.Text, false)
+	tree, err := parser.ParseFile(relFilename, req.Text, false)
 	if err != nil {
-		if err == parser.ErrWalker {
-			err = errpos.AddSourceFile(tree.Errors, req.URI.Filename(), req.Text)
-			return errorToDiagnostics(ctx, err)
-		} else if ews, ok := errpos.AsErrorsWithSource(err); ok {
+		if ews, ok := errpos.AsErrorsWithSource(err); ok {
 			return errorToDiagnostics(ctx, ews)
 		} else {
 			return nil, fmt.Errorf("parse file not HadErrors - : %w", err)
@@ -89,9 +94,8 @@ func (l *Linter) FileChanged(ctx context.Context, req *protocol.TextDocumentItem
 
 	// Step 2: Parse AST
 	msg := l.fileFactory(req.URI.Filename())
-	_, err = l.parser.ParseAST(tree, msg)
+	sourceLocs, err := l.parser.ParseAST(tree, msg)
 	if err != nil {
-		err = errpos.AddSourceFile(err, req.URI.Filename(), req.Text)
 		return errorToDiagnostics(ctx, err)
 	}
 
@@ -100,9 +104,10 @@ func (l *Linter) FileChanged(ctx context.Context, req *protocol.TextDocumentItem
 		return nil, nil
 	}
 
-	err = l.onChange(req.URI.Filename(), msg)
+	err = l.onChange(ctx, req.URI.Filename(), sourceLocs, msg)
 	if err != nil {
-		err = errpos.AddSourceFile(err, req.URI.Filename(), req.Text)
+
+		//err = errpos.AddSourceFile(err, req.URI.Filename(), req.Text)
 		return errorToDiagnostics(ctx, err)
 	}
 

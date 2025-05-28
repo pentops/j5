@@ -1,7 +1,6 @@
 package j5convert
 
 import (
-	"errors"
 	"fmt"
 	"path"
 	"regexp"
@@ -36,7 +35,7 @@ func ConvertJ5File(deps TypeResolver, source *sourcedef_j5pb.SourceFile) ([]*des
 	}
 
 	if len(root.errors) > 0 {
-		return nil, errors.Join(root.errors...)
+		return nil, root.errors
 	}
 
 	descriptors := []*descriptorpb.FileDescriptorProto{}

@@ -172,10 +172,14 @@ var J5SchemaSpec = &bcl_j5pb.Schema{
 		DescriptionField: gl.Ptr("description"),
 		Alias: []*bcl_j5pb.Alias{{
 			Name: "field",
+
 			Path: bclPath("properties"),
 		}, {
 			Name: "object",
 			Path: bclPath("schemas", "object"),
+		}, {
+			Name: "anyMember",
+			Path: bclPath("polymorphMember"),
 		}},
 	}, {
 		SchemaName:       "j5.schema.v1.Object",
