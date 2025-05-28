@@ -201,8 +201,8 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		}
 
 		desc.TypeName = typeRef.protoTypeName()
-		if typeRef.MessageRef == nil {
-			return nil, fmt.Errorf("type %s is not a message (for object)", *desc.TypeName)
+		if typeRef.Object == nil {
+			return nil, fmt.Errorf("%s is not an object", typeRef.debugName())
 		}
 
 		ext := ww.setJ5Ext(node.Source, desc.Options, "object", st.Object.Ext)
@@ -227,8 +227,8 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 			return nil, err
 		}
 		desc.TypeName = typeRef.protoTypeName()
-		if typeRef.MessageRef == nil {
-			return nil, fmt.Errorf("type %s is not a message (for oneof)", *desc.TypeName)
+		if typeRef.Oneof == nil {
+			return nil, fmt.Errorf("%s is not a oneof", typeRef.debugName())
 		}
 
 		ww.setJ5Ext(node.Source, desc.Options, "oneof", st.Oneof.Ext)
@@ -259,11 +259,10 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 			return nil, err
 		}
 		desc.TypeName = typeRef.protoTypeName()
-		if typeRef.EnumRef == nil {
-			return nil, fmt.Errorf("type %s is not an enum", *desc.TypeName)
+		if typeRef.Enum == nil {
+			return nil, fmt.Errorf("%s is not an enum", typeRef.debugName())
 		}
-		enumRef = typeRef.EnumRef
-
+		enumRef = typeRef.Enum
 		ww.setJ5Ext(node.Source, desc.Options, "enum", st.Enum.Ext)
 
 		enumRules := &validate.EnumRules{
@@ -770,10 +769,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 
 		proto.SetExtension(desc.Options, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
 			Type: &ext_j5pb.FieldOptions_Any{
-				Any: &ext_j5pb.AnyField{
-					OnlyDefined: st.Any.OnlyDefined,
-					Types:       st.Any.Types,
-				},
+				Any: &ext_j5pb.AnyField{},
 			},
 		})
 

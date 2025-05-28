@@ -15,7 +15,7 @@ type Config struct {
 	ProjectRoot string
 	Schema      *bcl_j5pb.Schema
 	FileFactory func(filename string) protoreflect.Message
-	OnChange    func(filename string, parsed protoreflect.Message) error
+	OnChange    func(ctx context.Context, filename string, sourceLocs *bcl_j5pb.SourceLocation, parsed protoreflect.Message) error
 }
 
 func BuildLSPHandler(config Config) (*lspConfig, error) {
@@ -36,7 +36,7 @@ func BuildLSPHandler(config Config) (*lspConfig, error) {
 		if err != nil {
 			return nil, err
 		}
-		lspc.OnChange = linter.New(parser, config.FileFactory, config.OnChange)
+		lspc.OnChange = linter.New(parser, config.FileFactory, config.OnChange, config.ProjectRoot)
 	} else {
 		lspc.OnChange = linter.NewGeneric()
 	}

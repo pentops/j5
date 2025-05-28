@@ -11,11 +11,14 @@ import (
 
 	"github.com/pentops/j5/internal/bcl"
 	"github.com/pentops/j5/internal/bcl/errpos"
+	"github.com/pentops/j5/internal/j5s/j5parse"
 	"github.com/pentops/j5/internal/j5s/protobuild"
+	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/j5/internal/j5s/protoprint"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
+	"google.golang.org/protobuf/reflect/protodesc"
 )
 
 func j5sSet() *commander.CommandSet {
@@ -48,94 +51,100 @@ func runJ5sLint(ctx context.Context, cfg struct {
 		return err
 	}
 
-	bundles := srcRoot.AllBundles()
 	if cfg.File != "" {
 		fullDir, err := filepath.Abs(cfg.Dir)
 		if err != nil {
 			return err
 		}
-		var bundle source.Bundle
-		var relToBundle string
-		for _, search := range bundles {
-			bundleDir := filepath.Join(fullDir, search.DirInRepo())
-			rel, err := filepath.Rel(bundleDir, cfg.File)
-			if err != nil {
-				continue
-			}
-			if strings.HasPrefix(rel, "..") {
-				continue
-			}
-			bundle = search
-			relToBundle = rel
-		}
-
-		if bundle == nil {
-			return fmt.Errorf("file %s not found in any bundle", cfg.File)
-		}
-
-		deps, err := bundle.GetDependencies(ctx, srcRoot)
+		fileRel, err := filepath.Rel(fullDir, cfg.File)
 		if err != nil {
 			return err
 		}
-		fileSource, err := bundle.FileSource()
-		if err != nil {
-			return err
-		}
-
-		compiler, err := protobuild.NewPackageSet(deps, fileSource)
-		if err != nil {
-			return err
-		}
-
-		data, err := fs.ReadFile(bundle.FS(), relToBundle)
-		if err != nil {
-			return err
-		}
-
-		lintErr, err := compiler.LintFile(ctx, relToBundle, string(data))
-		if err != nil {
-			return err
-		}
-		if lintErr == nil {
-			fmt.Fprintln(os.Stderr, "No linting errors")
-			return nil
-		}
-		fmt.Fprintln(os.Stderr, lintErr.HumanString(2))
-		return fmt.Errorf("linting failed")
+		return runJ5sLintFile(ctx, srcRoot, fileRel)
 	}
 
-	hadErrors := false
+	return runJ5sLintAll(ctx, srcRoot)
+}
+
+func runJ5sLintFile(ctx context.Context, srcRoot *source.RepoRoot, fileRel string) error {
+
+	bundle, relToBundle, err := srcRoot.BundleForFile(fileRel)
+	if err != nil {
+		return err
+	}
+
+	deps, err := bundle.GetDependencies(ctx, srcRoot)
+	if err != nil {
+		return err
+	}
+	fileSource, err := bundle.FileSource()
+	if err != nil {
+		return err
+	}
+
+	compiler, err := protobuild.NewPackageSet(psrc.DescriptorFiles(deps), fileSource)
+	if err != nil {
+		return err
+	}
+
+	data, err := fs.ReadFile(bundle.FS(), relToBundle)
+	if err != nil {
+		return err
+	}
+
+	sourceFile, err := j5parse.ParseFile(relToBundle, string(data))
+	if err != nil {
+		return err
+	}
+
+	lintErr, err := compiler.LintFile(ctx, relToBundle, sourceFile)
+	if err != nil {
+		return fmt.Errorf("root err: %w", err)
+	}
+	if lintErr == nil {
+		fmt.Fprintln(os.Stderr, "No linting errors")
+		return nil
+	}
+	withSource := lintErr.AsErrorsWithSource(relToBundle, string(data))
+	fmt.Fprintln(os.Stderr, withSource.HumanString(2))
+	return fmt.Errorf("linting failed")
+}
+
+func runJ5sLintAll(ctx context.Context, srcRoot *source.RepoRoot) error {
+
+	bundles, externalDeps, err := srcRoot.LocalBundlesSorted(ctx)
+	if err != nil {
+		return err
+	}
 
 	for _, bundle := range bundles {
 
-		deps, err := bundle.GetDependencies(ctx, srcRoot)
-		if err != nil {
-			return err
-		}
-
 		fileSource, err := bundle.FileSource()
 		if err != nil {
 			return err
 		}
 
-		compiler, err := protobuild.NewPackageSet(deps, fileSource)
+		ps, err := protobuild.NewPackageSet(externalDeps, fileSource)
 		if err != nil {
 			return err
 		}
 
-		lintErr, err := compiler.LintAll(ctx)
+		allPackages := ps.ListLocalPackages()
+
+		built, err := ps.BuildPackages(ctx, allPackages)
 		if err != nil {
+			if ep, ok := errpos.AsErrorsWithSource(err); ok {
+				fmt.Printf("Linting errors in bundle %s\n", bundle.DebugName())
+				fmt.Fprintln(os.Stderr, ep.HumanString(2))
+			}
 			return err
 		}
-		if lintErr == nil {
-			continue
+		for _, pkg := range built {
+			for _, file := range pkg.Proto {
+				protoFile := protodesc.ToFileDescriptorProto(file.Linked)
+				externalDeps[file.Linked.Path()] = protoFile
+			}
 		}
-		hadErrors = true
-		fmt.Fprintln(os.Stderr, lintErr.HumanString(2))
-	}
-
-	if hadErrors {
-		return fmt.Errorf("linting failed")
 	}
 
 	fmt.Fprintln(os.Stderr, "No linting errors")
@@ -151,7 +160,7 @@ func runJ5sFmt(ctx context.Context, cfg struct {
 	var outWriter *fileWriter
 
 	doFile := func(ctx context.Context, pathname string, data []byte) error {
-		fixed, err := bcl.Fmt(string(data))
+		fixed, err := bcl.Fmt(pathname, string(data))
 		if err != nil {
 			return err
 		}
@@ -182,7 +191,17 @@ func runJ5sFmt(ctx context.Context, cfg struct {
 		return nil
 	}
 
-	return runForJ5Files(ctx, os.DirFS(cfg.Dir), doFile)
+	var err error
+	if cfg.Dir == "" {
+		cfg.Dir, err = os.Getwd()
+		if err != nil {
+			return err
+		}
+	}
+	outWriter = &fileWriter{dir: cfg.Dir}
+	fsRoot := os.DirFS(cfg.Dir)
+
+	return runForJ5Files(ctx, fsRoot, doFile)
 }
 
 func runForJ5Files(ctx context.Context, root fs.FS, doFile func(ctx context.Context, pathname string, data []byte) error) error {
@@ -239,7 +258,7 @@ func runJ5sGenProto(ctx context.Context, cfg j5sGenProtoConfig) error {
 			return err
 		}
 
-		compiler, err := protobuild.NewPackageSet(deps, localFiles)
+		compiler, err := protobuild.NewPackageSet(psrc.DescriptorFiles(deps), localFiles)
 		if err != nil {
 			return err
 		}

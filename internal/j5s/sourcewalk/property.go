@@ -52,9 +52,10 @@ type RefNode struct {
 	Source SourceNode
 	Inline bool // Ref was converted from inline schema
 
-	InlineObject *ObjectNode
-	InlineOneof  *OneofNode
-	InlineEnum   *EnumNode
+	InlineObject    *ObjectNode
+	InlineOneof     *OneofNode
+	InlineEnum      *EnumNode
+	InlinePolymorph *PolymorphNode
 }
 
 type propertyNode struct {
@@ -147,6 +148,17 @@ func buildFieldNode(source SourceNode, parent parentNode, defaultNestingName str
 		}
 		return &FieldNode{
 			Source: source.child("enum"),
+			Schema: pt,
+			Ref:    ref,
+		}, nil
+
+	case *schema_j5pb.Field_Polymorph:
+		ref, err := replaceNesstedPolymorph(source.child("polymorph"), parent, defaultNestingName, pt.Polymorph, visitor)
+		if err != nil {
+			return nil, err
+		}
+		return &FieldNode{
+			Source: source.child("polymorph"),
 			Schema: pt,
 			Ref:    ref,
 		}, nil
@@ -270,6 +282,39 @@ func replaceNestedEnum(source SourceNode, parent parentNode, defaultName string,
 
 	default:
 		return nil, fmt.Errorf("unhandled enum schema type %T", st)
+	}
+
+}
+
+func replaceNesstedPolymorph(source SourceNode, parent parentNode, defaultName string, field *schema_j5pb.PolymorphField, visitor SchemaVisitor) (*RefNode, error) {
+	switch st := field.Schema.(type) {
+	case *schema_j5pb.PolymorphField_Ref:
+		return &RefNode{
+			Ref:    st.Ref,
+			Source: source.child("ref"),
+		}, nil
+	case *schema_j5pb.PolymorphField_Polymorph:
+		if st.Polymorph.Name == "" {
+			st.Polymorph.Name = defaultName
+		}
+		node, err := newPolymorphNode(source.child("polymorph"), parent, st.Polymorph, []string{})
+		if err != nil {
+			return nil, err
+		}
+		if err := visitor.VisitPolymorph(node); err != nil {
+			return nil, err
+		}
+		return &RefNode{
+			Ref: &schema_j5pb.Ref{
+				Schema: st.Polymorph.Name,
+			},
+			Source:          source.child("polymorph"),
+			Inline:          true,
+			InlinePolymorph: node,
+		}, nil
+
+	default:
+		return nil, fmt.Errorf("unhandled polymorph schema type %T", st)
 	}
 
 }

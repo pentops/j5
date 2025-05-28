@@ -10,7 +10,7 @@ import (
 type astFormatter struct{}
 
 func (f astFormatter) Format(ctx context.Context, doc *protocol.TextDocumentItem) ([]protocol.TextEdit, error) {
-	diffs, err := parser.FmtDiffs(doc.Text)
+	diffs, err := parser.FmtDiffs(doc.URI.Filename(), doc.Text)
 	if err != nil {
 		return nil, err
 	}

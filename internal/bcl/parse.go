@@ -52,17 +52,13 @@ func isTruthy(s string) bool {
 
 func (p *Parser) ParseFile(filename string, data string, msg protoreflect.Message) (*bcl_j5pb.SourceLocation, error) {
 
-	tree, err := parser.ParseFile(data, p.FailFast)
+	tree, err := parser.ParseFile(filename, data, p.FailFast)
 	if err != nil {
-		if err == parser.ErrWalker {
-			return nil, errpos.AddSourceFile(tree.Errors, filename, data)
-		}
-		return nil, fmt.Errorf("parse file not HadErrors - : %w", err)
+		return nil, err
 	}
 
 	loc, err := p.ParseAST(tree, msg)
 	if err != nil {
-		err = errpos.AddSourceFile(err, filename, data)
 		return loc, err
 	}
 	return loc, nil
@@ -194,15 +190,6 @@ func (ss sourceSet) err(err error) {
 	}
 	ss.base.errors = append(ss.base.errors, base)
 }
-
-/*
-func printSource(loc *sourcedef_j5pb.SourceLocation, prefix string) {
-	fmt.Printf("%03d,%03d - %03d,%03d %s\n", loc.StartLine, loc.StartColumn, loc.EndLine, loc.EndColumn, prefix)
-	for name, child := range loc.Children {
-		printSource(child, prefix+"."+name)
-	}
-}
-*/
 
 func validateFile(pv protovalidate.Validator, msg protoreflect.ProtoMessage, source *bcl_j5pb.SourceLocation) error {
 

@@ -53,7 +53,7 @@ enum FooStatus {
 // Comment on Bar
 message Bar {
   option (j5.ext.v1.message).object = {
-    any_member: ["foobar"]
+    polymorph_member: ["foobar"]
   };
   string id = 1 [(j5.list.v1.field).string.foreign_key.uuid.filtering.filterable = true];
   string field = 2 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];

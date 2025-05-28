@@ -76,14 +76,21 @@ message MessageOptions {
   oneof type {
     ObjectMessageOptions object = 10;
     OneofMessageOptions oneof = 11;
+    PolymorphMessageOptions polymorph = 12;
   }
 }
 
 message ObjectMessageOptions {
-  repeated string any_member = 3;
+  repeated string polymorph_member = 3;
 }
 
 message OneofMessageOptions {}
+
+message PolymorphMessageOptions {
+  // list of fully qualified proto names of the types that are allowed to be
+  // used in this polymorphic field.
+  repeated string members = 1;
+}
 
 extend google.protobuf.OneofOptions {
   OneofOptions oneof = 555000;
@@ -163,6 +170,7 @@ message FieldOptions {
     ObjectField object = 10;
     EnumField enum = 11;
     OneofField oneof = 12;
+    PolymorphField polymorph = 13;
 
     MapField map = 20;
     ArrayField array = 21;
@@ -188,17 +196,6 @@ message MessageFieldOptions {
 
 // AnyField is valid for j5.types.embed.v1.Any and google.protobuf.Any
 message AnyField {
-  // When false, this is fully 'any', in that it can contain any message type
-  // value.
-  // When true, only the types listed are permitted in the field, making it a
-  // constrained any, or a detached oneof.
-  // Note that even with only_defined, schemas may be added in the future, which
-  // is not considered a breaking change, even when the field is required.
-  bool only_defined = 1;
-
-  // The full proto name of the messages which may be encoded into the field.
-  // With 'only_defined', setting other messages is invalid.
-  repeated string types = 2;
 }
 
 message ObjectField {
@@ -210,6 +207,8 @@ message ObjectField {
 message EnumField {}
 
 message OneofField {}
+
+message PolymorphField {}
 
 message MapField {
   // The name of the singular form of the map pairs, used in documentation and

@@ -7,14 +7,14 @@ import (
 )
 
 type ErrorsWithSource struct {
-	lines  []string
+	lines  map[string][]string
 	Errors Errors
 }
 
 func (e ErrorsWithSource) HumanString(contextLines int) string {
 	if len(e.Errors) == 0 {
 		// should not happen, this is not an error.
-		return "<ErrorsWithWource[]>"
+		return "<ErrorsWithSource - no errors>"
 	}
 
 	lines := make([]string, 0)
@@ -24,7 +24,14 @@ func (e ErrorsWithSource) HumanString(contextLines int) string {
 			lines = append(lines, "-----")
 		}
 
-		str := humanString(err, e.lines, contextLines)
+		var srcLines []string
+		if err.Pos != nil && err.Pos.Filename != nil {
+			if lines, ok := e.lines[*err.Pos.Filename]; ok {
+				srcLines = lines
+			}
+		}
+
+		str := humanString(err, srcLines, contextLines)
 		lines = append(lines, str)
 	}
 
@@ -36,8 +43,12 @@ func (e ErrorsWithSource) Error() string {
 		return e.Errors[0].Error()
 	}
 
-	// should not happen, this is not an error.
-	return "<ErrorsWithWource[]>"
+	if len(e.Errors) == 0 {
+		// should not happen, this is not an error.
+		return "<ErrorsWithWource - no errors>"
+	}
+
+	return fmt.Sprintf("<ErrorsWithSource - %d errors>", len(e.Errors))
 }
 
 func AsErrorsWithSource(err error) (*ErrorsWithSource, bool) {
@@ -160,64 +171,16 @@ func replaceRunes(s string, cb func(string) string) string {
 	return strings.Join(out, "")
 }
 
-func MustAddSource(err error, fileSource string) (*ErrorsWithSource, error) {
+func MustAddSource(err error, filename string, fileSource []byte) (*ErrorsWithSource, error) {
 	input, ok := AsErrors(err)
 	if !ok {
 		return nil, fmt.Errorf("error not valid for source: (%T) %w", err, err)
 	}
 
 	return &ErrorsWithSource{
-		lines:  strings.Split(fileSource, "\n"),
+		lines: map[string][]string{
+			filename: strings.Split(string(fileSource), "\n"),
+		},
 		Errors: input,
 	}, nil
-}
-
-func setFilenames(input Errors, filename string) Errors {
-	for idx, err := range input {
-		if err.Pos == nil {
-			err.Pos = &Position{
-				Filename: &filename,
-			}
-		} else {
-			err.Pos.Filename = &filename
-		}
-		input[idx] = err
-	}
-
-	return input
-}
-
-func AddSourceFile(err error, filename string, fileData string) error {
-	if withSource, ok := AsErrorsWithSource(err); ok {
-		errors := setFilenames(withSource.Errors, filename)
-		return &ErrorsWithSource{
-			lines:  strings.Split(fileData, "\n"),
-			Errors: errors,
-		}
-	}
-
-	input, ok := AsErrors(err)
-	if !ok {
-		return err
-
-	}
-
-	input = setFilenames(input, filename)
-
-	return &ErrorsWithSource{
-		lines:  strings.Split(fileData, "\n"),
-		Errors: input,
-	}
-}
-
-func AddSource(err error, fileData string) error {
-	input, ok := AsErrors(err)
-	if !ok {
-		return err
-	}
-
-	return &ErrorsWithSource{
-		lines:  strings.Split(fileData, "\n"),
-		Errors: input,
-	}
 }

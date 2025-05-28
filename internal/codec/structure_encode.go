@@ -75,6 +75,15 @@ func (enc *encoder) encodeObject(object j5reflect.Object) error {
 	return enc.encodeObjectBody(object)
 }
 
+func (enc *encoder) encodePolymorph(polymorph j5reflect.PolymorphField) error {
+	wrapper, err := polymorph.Unwrap()
+	if err != nil {
+		return err
+	}
+
+	return enc.encodeAny(wrapper)
+}
+
 func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
 	val, err := anyField.GetJ5Any()
 	if err != nil {
@@ -153,6 +162,9 @@ func (enc *encoder) encodeValue(field j5reflect.Field) error {
 	case j5reflect.AnyField:
 		return enc.encodeAny(ft)
 
+	case j5reflect.PolymorphField:
+		return enc.encodePolymorph(ft)
+
 	default:
 		return fmt.Errorf("encode value of type %q, unsupported", field.FullTypeName())
 	}
@@ -195,7 +207,6 @@ func (enc *encoder) encodeEnum(enum j5reflect.EnumField) error {
 		return err
 	}
 	return enc.addString(val.Name())
-
 }
 
 func (enc *encoder) encodeScalarField(scalar j5reflect.ScalarField) error {

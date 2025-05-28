@@ -1,4 +1,4 @@
-package j5schema
+package j5schematest
 
 import (
 	"encoding/json"
@@ -8,6 +8,7 @@ import (
 	"github.com/pentops/flowtest/jsontest"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/lib/j5schema"
 
 	"github.com/pentops/j5/internal/gen/test/schema/v1/schema_testpb"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -19,7 +20,7 @@ import (
 )
 
 func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldConstraints) *jsontest.Asserter {
-	ss := NewSchemaCache()
+	ss := j5schema.NewSchemaCache()
 	proto := &descriptorpb.FileDescriptorProto{
 		Name:    proto.String("test.proto"),
 		Package: proto.String("test"),
@@ -207,7 +208,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 
 func TestTestProtoSchemaTypes(t *testing.T) {
 
-	ss := NewSchemaCache()
+	ss := j5schema.NewSchemaCache()
 
 	fooDesc := (&schema_testpb.FullSchema{}).ProtoReflect().Descriptor()
 
@@ -275,7 +276,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 
 	runTestCase := func(t *testing.T, tt testCase) {
 		t.Helper()
-		ss := NewSchemaCache()
+		ss := j5schema.NewSchemaCache()
 		reflectRoot, err := ss.Schema(msgDesscriptorToReflection(t, tt.proto))
 		if err != nil {
 			t.Fatal(err.Error())
@@ -293,14 +294,11 @@ func TestSchemaTypesComplex(t *testing.T) {
 			dd.AssertEqual(t, path, expected)
 		}
 
-		testPkg := ss.packages["test"]
-
 		for path, expectSet := range tt.expectedRefs {
-			ref, ok := testPkg.Schemas[path]
-			if !ok {
-				t.Fatalf("schema %q not found", path)
+			schema, err := ss.SchemaByName("test." + path)
+			if err != nil {
+				t.Fatalf("schema %q not found: %s", path, err.Error())
 			}
-			schema := ref.To
 			if schema == nil {
 				t.Fatalf("schema %q not linked", path)
 			}
@@ -545,10 +543,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 			Number:   proto.Int32(1),
 			Options: extend(&descriptorpb.FieldOptions{}, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
 				Type: &ext_j5pb.FieldOptions_Any{
-					Any: &ext_j5pb.AnyField{
-						OnlyDefined: true,
-						Types:       []string{"foo.v1.foo", "foo.v1.bar"},
-					},
+					Any: &ext_j5pb.AnyField{},
 				},
 			}),
 		})
@@ -556,10 +551,6 @@ func TestSchemaTypesComplex(t *testing.T) {
 		base.Dependency = []string{"google/protobuf/any.proto"}
 		runTestCase(t, testCase{
 			proto: base,
-			expected: map[string]interface{}{
-				"object.properties.0.schema.any.onlyDefined": true,
-				"object.properties.0.schema.any.types":       []interface{}{"foo.v1.foo", "foo.v1.bar"},
-			},
 		})
 
 	})
@@ -572,10 +563,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 			Number:   proto.Int32(1),
 			Options: extend(&descriptorpb.FieldOptions{}, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
 				Type: &ext_j5pb.FieldOptions_Any{
-					Any: &ext_j5pb.AnyField{
-						OnlyDefined: true,
-						Types:       []string{"foo.v1.foo", "foo.v1.bar"},
-					},
+					Any: &ext_j5pb.AnyField{},
 				},
 			}),
 		})
@@ -583,15 +571,11 @@ func TestSchemaTypesComplex(t *testing.T) {
 		base.Dependency = []string{"j5/types/any/v1/any.proto"}
 		runTestCase(t, testCase{
 			proto: base,
-			expected: map[string]interface{}{
-				"object.properties.0.schema.any.onlyDefined": true,
-				"object.properties.0.schema.any.types":       []interface{}{"foo.v1.foo", "foo.v1.bar"},
-			},
 		})
 
 	})
 
-	t.Run("any member", func(t *testing.T) {
+	t.Run("polymorph", func(t *testing.T) {
 		base := &descriptorpb.FileDescriptorProto{
 			Name:    proto.String("test.proto"),
 			Package: proto.String("test"),
@@ -599,9 +583,9 @@ func TestSchemaTypesComplex(t *testing.T) {
 				Name:  proto.String("TestMessage"),
 				Field: []*descriptorpb.FieldDescriptorProto{},
 				Options: extend(&descriptorpb.MessageOptions{}, ext_j5pb.E_Message, &ext_j5pb.MessageOptions{
-					Type: &ext_j5pb.MessageOptions_Object{
-						Object: &ext_j5pb.ObjectMessageOptions{
-							AnyMember: []string{"foo"},
+					Type: &ext_j5pb.MessageOptions_Polymorph{
+						Polymorph: &ext_j5pb.PolymorphMessageOptions{
+							Members: []string{"foo", "bar"},
 						},
 					},
 				}),
@@ -612,7 +596,34 @@ func TestSchemaTypesComplex(t *testing.T) {
 		runTestCase(t, testCase{
 			proto: base,
 			expected: map[string]interface{}{
-				"object.anyMember": []interface{}{"foo"},
+				"polymorph.members": []interface{}{"foo", "bar"},
+			},
+		})
+
+	})
+
+	t.Run("polymorph member", func(t *testing.T) {
+		base := &descriptorpb.FileDescriptorProto{
+			Name:    proto.String("test.proto"),
+			Package: proto.String("test"),
+			MessageType: []*descriptorpb.DescriptorProto{{
+				Name:  proto.String("TestMessage"),
+				Field: []*descriptorpb.FieldDescriptorProto{},
+				Options: extend(&descriptorpb.MessageOptions{}, ext_j5pb.E_Message, &ext_j5pb.MessageOptions{
+					Type: &ext_j5pb.MessageOptions_Object{
+						Object: &ext_j5pb.ObjectMessageOptions{
+							PolymorphMember: []string{"foo"},
+						},
+					},
+				}),
+			}},
+		}
+
+		base.Dependency = []string{"j5/ext/v1/annotations.proto"}
+		runTestCase(t, testCase{
+			proto: base,
+			expected: map[string]interface{}{
+				"object.polymorphMember": []interface{}{"foo"},
 			},
 		})
 
@@ -647,52 +658,4 @@ func msgDesscriptorToReflection(t testing.TB, fileDescriptor *descriptorpb.FileD
 
 	return file.Messages().Get(0)
 
-}
-
-func TestCommentBuilder(t *testing.T) {
-
-	for _, tc := range []struct {
-		name     string
-		leading  string
-		trailing string
-		expected string
-	}{{
-		name:     "leading",
-		leading:  "comment",
-		expected: "comment",
-	}, {
-		name:     "fallback",
-		expected: "fallback",
-	}, {
-		name:     "both",
-		leading:  "leading",
-		trailing: "trailing",
-		expected: "leading\ntrailing",
-	}, {
-		name:     "multiline",
-		leading:  "line1\n  line2",
-		trailing: "line3\n  line4",
-		expected: "line1\nline2\nline3\nline4",
-	}, {
-		name:     "multiline commented",
-		leading:  "#line1\nline2",
-		expected: "line2",
-	}, {
-		name:     "commented fallback",
-		leading:  "#line1",
-		expected: "fallback",
-	}} {
-		t.Run(tc.name, func(t *testing.T) {
-			sl := protoreflect.SourceLocation{
-				LeadingComments:  tc.leading,
-				TrailingComments: tc.trailing,
-			}
-
-			got := buildComment(sl, "fallback")
-			if got != tc.expected {
-				t.Errorf("expected comment: '%s', got '%s'", tc.expected, got)
-			}
-
-		})
-	}
 }

@@ -65,6 +65,7 @@ func (fs *fileSet) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocu
 	if err != nil {
 		return err
 	}
+	file := &params.TextDocument
 
 	log.WithFields(ctx, map[string]interface{}{
 		"version":  params.TextDocument.Version,
@@ -72,7 +73,11 @@ func (fs *fileSet) DidOpen(ctx context.Context, params *protocol.DidOpenTextDocu
 		"textLen":  len(params.TextDocument.Text),
 		"local":    local,
 	}).Debug("DidOpen")
-	fs.files[local] = &params.TextDocument
+	fs.files[local] = file
+
+	if fs.onChange != nil {
+		fs.onChange(ctx, file)
+	}
 	return nil
 }
 

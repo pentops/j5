@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/bufbuild/protocompile/linker"
+	"github.com/pentops/golib/gl"
+	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/j5/internal/j5s/protoprint"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -23,8 +25,12 @@ func (fs fileSet) expectFile(t *testing.T, filename string) linker.File {
 	return file
 }
 
-func testCompile(t *testing.T, tf *testFiles, td map[string]*descriptorpb.FileDescriptorProto, pkg string) fileSet {
+func testCompile(t *testing.T, tf *testFiles, td psrc.DescriptorFiles, pkg string) fileSet {
+	if td == nil {
+		td = psrc.DescriptorFiles{}
+	}
 	before := log.DefaultLogger
+
 	log.DefaultLogger = log.NewTestLogger(t)
 	defer func() {
 		log.DefaultLogger = before
@@ -64,10 +70,8 @@ func TestImportJ5FromProto(t *testing.T) {
 		"}",
 	)
 
-	td := newTestDeps()
-
 	{
-		files := testCompile(t, tf, td, "local.v1")
+		files := testCompile(t, tf, nil, "local.v1")
 		files.expectFile(t, "local/v1/foo.j5s.proto")
 		files.expectFile(t, "local/v1/bar.proto")
 	}
@@ -80,7 +84,7 @@ func TestImportJ5FromProto(t *testing.T) {
 			"}",
 		)
 
-		files := testCompile(t, tf, td, "local.v1")
+		files := testCompile(t, tf, nil, "local.v1")
 		files.expectFile(t, "local/v1/foo.j5s.proto")
 		files.expectFile(t, "local/v1/bar.proto")
 		files.expectFile(t, "local/v1/baz.proto")
@@ -102,9 +106,7 @@ func TestImportProtoToJ5Local(t *testing.T) {
 		"}",
 	)
 
-	td := newTestDeps()
-
-	files := testCompile(t, tf, td, "local.v1")
+	files := testCompile(t, tf, nil, "local.v1")
 	files.expectFile(t, "local/v1/foo.j5s.proto")
 	files.expectFile(t, "local/v1/bar.proto")
 }
@@ -125,9 +127,7 @@ func TestImportProtoToJ5Other(t *testing.T) {
 		"}",
 	)
 
-	td := newTestDeps()
-
-	files := testCompile(t, tf, td, "foo.v1")
+	files := testCompile(t, tf, nil, "foo.v1")
 	files.expectFile(t, "foo/v1/foo.j5s.proto")
 }
 
@@ -152,8 +152,16 @@ func TestImportDoubleExternal(t *testing.T) {
 		"}",
 	)
 
-	td := newTestDeps()
-	td.tAddSimple("external/v1/ext.proto").msg("Ext")
+	td := psrc.DescriptorFiles{
+		"external/v1/ext.proto": {
+			Name:    gl.Ptr("external/v1/ext.proto"),
+			Syntax:  gl.Ptr("proto3"),
+			Package: gl.Ptr("external.v1"),
+			MessageType: []*descriptorpb.DescriptorProto{{
+				Name: gl.Ptr("Ext"),
+			}},
+		},
+	}
 
 	files := testCompile(t, tf, td, "local.v1")
 	files.expectFile(t, "local/v1/foo.j5s.proto")
@@ -185,14 +193,12 @@ func TestCircularDependency(t *testing.T) {
 		localPackages: []string{"foo.v1", "bar.v1", "baz.v1"},
 	}
 
-	td := newTestDeps()
-
-	cc, err := NewPackageSet(td, tf)
+	cc, err := NewPackageSet(psrc.DescriptorFiles{}, tf)
 	if err != nil {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}
 
-	_, err = cc.LoadLocalPackage(ctx, "foo.v1")
+	_, err = cc.CompilePackage(ctx, "foo.v1")
 	if err == nil {
 		t.Fatalf("Expected error, got nil")
 	}
@@ -214,9 +220,7 @@ func TestPreserveComments(t *testing.T) {
 		"}",
 	)
 
-	td := newTestDeps()
-
-	files := testCompile(t, tf, td, "local.v1")
+	files := testCompile(t, tf, nil, "local.v1")
 	ff := files.expectFile(t, "local/v1/foo.j5s.proto")
 
 	foo := ff.Messages().ByName("Foo")

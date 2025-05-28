@@ -10,7 +10,9 @@ import (
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/j5/internal/j5s/protobuild"
+	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -27,11 +29,16 @@ type Bundle interface {
 }
 
 type bundleSource struct {
-	debugName string
-	fs        fs.FS
-	refConfig *config_j5pb.BundleReference
-	config    *config_j5pb.BundleConfigFile
-	dirInRepo string
+	nameInRepo *string
+	debugName  string
+	fs         fs.FS
+	refConfig  *config_j5pb.BundleReference
+	config     *config_j5pb.BundleConfigFile
+	dirInRepo  string
+}
+
+func (bs bundleSource) NameInRepo() *string {
+	return bs.nameInRepo
 }
 
 func (bs bundleSource) DirInRepo() string {
@@ -162,7 +169,8 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 		return nil, err
 	}
 
-	compiler, err := protobuild.NewPackageSet(deps.primary, localFiles)
+	depResolver := psrc.DescriptorFiles(deps.primary)
+	compiler, err := protobuild.NewPackageSet(depResolver, localFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -249,8 +257,15 @@ func listPackages(root fs.FS, pkgRoot string) ([]string, error) {
 		if dirEntry.IsDir() {
 			return nil
 		}
-		pkgPath := filepath.Dir(path)
-		packages[pkgPath] = struct{}{}
+		ext := filepath.Ext(path)
+		if ext != ".j5s" && ext != ".proto" {
+			return nil
+		}
+		pkgName, _, err := j5convert.SplitPackageFromFilename(path)
+		if err != nil {
+			return fmt.Errorf("split package from filename %s: %w", path, err)
+		}
+		packages[pkgName] = struct{}{}
 		return nil
 	})
 	if err != nil {
@@ -261,8 +276,7 @@ func listPackages(root fs.FS, pkgRoot string) ([]string, error) {
 		if k == "." {
 			continue
 		}
-		pkgName := strings.ReplaceAll(k, "/", ".")
-		pkgNames = append(pkgNames, pkgName)
+		pkgNames = append(pkgNames, k)
 	}
 
 	sort.Strings(pkgNames)

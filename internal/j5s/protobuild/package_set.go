@@ -4,17 +4,15 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"os"
 	"sort"
 	"strings"
 
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/dag"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/log.go/log"
 	"golang.org/x/exp/maps"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type PackageSet struct {
@@ -28,9 +26,8 @@ type PackageSet struct {
 	Packages map[string]*Package
 }
 
-func NewPackageSet(deps map[string]*descriptorpb.FileDescriptorProto, localFiles LocalFileSource) (*PackageSet, error) {
+func NewPackageSet(deps psrc.Resolver, localFiles LocalFileSource) (*PackageSet, error) {
 	resolver, err := psrc.ChainResolver(deps)
-
 	if err != nil {
 		return nil, fmt.Errorf("dependencyChainResolver: %w", err)
 	}
@@ -51,16 +48,6 @@ func NewPackageSet(deps map[string]*descriptorpb.FileDescriptorProto, localFiles
 
 func (ps *PackageSet) PackageForLocalFile(filename string) (string, bool, error) {
 	return ps.sourceResolver.packageForFile(filename)
-}
-
-func (ps *PackageSet) LoadLocalPackage(ctx context.Context, pkgName string) (*Package, error) {
-	rb := newResolveBaton()
-	pkg, err := ps.loadPackage(ctx, rb, pkgName)
-	if err != nil {
-		return nil, fmt.Errorf("loadPackage %s: %w", pkgName, err)
-	}
-	ps.Packages[pkgName] = pkg
-	return pkg, nil
 }
 
 func (ps *PackageSet) ListLocalPackages() []string {
@@ -113,17 +100,26 @@ func (ps *PackageSet) FindFileByPath(filename string) (*psrc.File, error) {
 
 func (ps *PackageSet) loadPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {
 	ctx = log.WithField(ctx, "loadPackage", name)
+	log.Debug(ctx, "Compiler: Load Package")
 	rb, err := rb.cloneFor(name)
 	if err != nil {
 		return nil, err
 	}
 
+	isLocal := ps.sourceResolver.isLocalPackage(name)
+
 	pkg, ok := ps.Packages[name]
 	if ok {
+		if pkg.Built == nil && isLocal {
+			err = ps.buildLocalPackage(ctx, pkg)
+			if err != nil {
+				return nil, fmt.Errorf("buildLocalPackage %s: %w", name, err)
+			}
+		}
 		return pkg, nil
 	}
 
-	if ps.sourceResolver.isLocalPackage(name) {
+	if isLocal {
 		log.Debug(ctx, "Loading Local Package")
 		pkg, err = ps.loadLocalPackage(ctx, rb, name)
 		if err != nil {
@@ -142,52 +138,80 @@ func (ps *PackageSet) loadPackage(ctx context.Context, rb *resolveBaton, name st
 	return pkg, nil
 }
 
-func (ps *PackageSet) resolveDependencies(ctx context.Context, rb *resolveBaton, pkg *Package, deps map[string]struct{}) error {
-	delete(deps, pkg.Name)
+func (ps *PackageSet) resolveDependencies(ctx context.Context, rb *resolveBaton, pkg *Package) error {
 	pkg.DirectDependencies = map[string]*Package{}
-	for dep := range deps {
+	for dep := range pkg.pkgDeps {
+		log.WithField(ctx, "dep", dep).Debug("resolve dependency")
 		depPkg, err := ps.loadPackage(ctx, rb, dep)
 		if err != nil {
-			return fmt.Errorf("loadPackage %s: %w", dep, err)
+			return fmt.Errorf("loadPackage %s, required for %s: %w", dep, pkg.Name, err)
 		}
 		pkg.DirectDependencies[dep] = depPkg
 	}
 	return nil
 }
 
-func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {
+func (ps *PackageSet) localPackageIO(ctx context.Context, name string) (*Package, error) {
+
+	pkg := ps.newPackage(name)
 
 	fileNames, err := ps.sourceResolver.listPackageFiles(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("package files for (local) %s: %w", name, err)
 	}
 
-	pkg := newPackage(name)
-	ps.Packages[name] = pkg
-
-	deps := map[string]struct{}{}
 	for _, filename := range fileNames {
 		file, err := ps.sourceResolver.getFile(ctx, filename)
 		if err != nil {
 			return nil, fmt.Errorf("GetLocalFile %s: %w", filename, err)
 		}
 		pkg.SourceFiles = append(pkg.SourceFiles, file)
-		pkg.includeIO(file.Summary, deps)
+		pkg.includeIO(file.Summary)
 	}
 
-	err = ps.resolveDependencies(ctx, rb, pkg, deps)
-	if err != nil {
-		return nil, fmt.Errorf("resolveDependencies for %s: %w", name, err)
-	}
+	delete(pkg.pkgDeps, pkg.Name)
 
+	return pkg, nil
+
+}
+
+func (pkg *Package) buildSearchResults() error {
 	for _, srcFile := range pkg.SourceFiles {
 		results, err := srcFile.toSearchResults(pkg)
 		if err != nil {
-			return nil, err
+			return err
 		}
 		for _, result := range results {
 			pkg.Files[result.Filename] = result
 		}
+	}
+	return nil
+}
+
+func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {
+
+	pkg, err := ps.localPackageIO(ctx, name)
+	if err != nil {
+		return nil, fmt.Errorf("localPackageIO %s: %w", name, err)
+	}
+
+	err = ps.resolveDependencies(ctx, rb, pkg)
+	if err != nil {
+		return nil, fmt.Errorf("resolveDependencies for %s: %w", name, err)
+	}
+
+	err = ps.buildLocalPackage(ctx, pkg)
+	if err != nil {
+		return nil, fmt.Errorf("buildLocalPackage for %s: %w", name, err)
+	}
+	return pkg, nil
+}
+
+func (ps *PackageSet) buildLocalPackage(ctx context.Context, pkg *Package) error {
+
+	err := pkg.buildSearchResults()
+	if err != nil {
+		return fmt.Errorf("buildSearchResults for %s: %w", pkg.Name, err)
 	}
 
 	filenames := make([]string, 0)
@@ -197,18 +221,15 @@ func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, na
 
 	sort.Strings(filenames) // for consistent error ordering
 
-	log.Debug(ctx, "Compiler: Link")
-
 	cc := newLinker(ps, ps.symbols)
 	files, err := cc.resolveAll(ctx, filenames)
 	if err != nil {
-		ps.debugState(os.Stderr)
-		return nil, fmt.Errorf("resolveAll files for %s: %w", name, err)
+		return fmt.Errorf("resolveAll files for %s: %w", pkg.Name, err)
 	}
 
-	prose, err := ps.sourceResolver.ProseFiles(name)
+	prose, err := ps.sourceResolver.ProseFiles(pkg.Name)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	packageDeps := make([]*BuiltPackage, 0, len(pkg.DirectDependencies))
@@ -226,20 +247,18 @@ func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, na
 		Dependencies: packageDeps,
 	}
 
-	return pkg, nil
+	return nil
 }
 
 func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {
 
-	pkg := newPackage(name)
-	ps.Packages[name] = pkg
+	pkg := ps.newPackage(name)
 
 	filenames, err := ps.dependencyResolver.ListPackageFiles(name)
 	if err != nil {
 		return nil, fmt.Errorf("package files for (dependency) %s: %w", name, err)
 	}
 
-	deps := map[string]struct{}{}
 	for _, filename := range filenames {
 		file, err := ps.dependencyResolver.FindFileByPath(filename)
 		if err != nil {
@@ -247,10 +266,11 @@ func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton,
 		}
 
 		pkg.Files[file.Summary.SourceFilename] = file
-		pkg.includeIO(file.Summary, deps)
+		pkg.includeIO(file.Summary)
 	}
+	delete(pkg.pkgDeps, pkg.Name)
 
-	err = ps.resolveDependencies(ctx, rb, pkg, deps)
+	err = ps.resolveDependencies(ctx, rb, pkg)
 	if err != nil {
 		return nil, fmt.Errorf("resolveDependencies for %s: %w", name, err)
 	}
@@ -279,18 +299,45 @@ func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (*
 	return pkg.Built, nil
 }
 
-func (ps *PackageSet) debugState(ww io.Writer) {
-
-	fmt.Fprintln(ww, "PackageSet State:")
-	for pkgName, pkg := range ps.Packages {
-		fmt.Fprintf(ww, "  Package: %s\n", pkgName)
-		for _, result := range pkg.Files {
-			fmt.Fprintf(ww, "    psrc.File: %s (%s)\n", result.Summary.SourceFilename, result.SourceType.String())
-		}
-	}
-}
-
 func (ps *PackageSet) BuildPackages(ctx context.Context, pkgNames []string) ([]*BuiltPackage, error) {
+	var packageNodes []dag.Node
+
+	packages := make(map[string]*Package)
+
+	// IO Summary for all packages
+	for _, pkgName := range pkgNames {
+		if !ps.sourceResolver.isLocalPackage(pkgName) {
+			return nil, fmt.Errorf("package %s is not a local package", pkgName)
+		}
+
+		pkg, err := ps.localPackageIO(ctx, pkgName)
+		if err != nil {
+			return nil, fmt.Errorf("localPackageIO %s: %w", pkgName, err)
+		}
+		packages[pkgName] = pkg
+	}
+
+	// Identify dependencies within provided packages
+	for _, pkg := range packages {
+		var deps []string
+		for dep := range pkg.pkgDeps {
+			if _, ok := packages[dep]; ok {
+				deps = append(deps, dep)
+			}
+		}
+
+		packageNodes = append(packageNodes, dag.Node{
+			Name:          pkg.Name,
+			IncomingEdges: deps,
+		})
+	}
+
+	// sort the packages in topological order
+	sortedPackages, err := dag.SortDAG(packageNodes)
+	if err != nil {
+		return nil, fmt.Errorf("sortDAG: %w", err)
+	}
+
 	done := map[string]struct{}{}
 	out := []*BuiltPackage{}
 
@@ -310,13 +357,21 @@ func (ps *PackageSet) BuildPackages(ctx context.Context, pkgNames []string) ([]*
 		return nil
 	}
 
-	for _, pkgName := range pkgNames {
-		built, err := ps.CompilePackage(ctx, pkgName)
+	for _, pkgName := range sortedPackages {
+		pkg := packages[pkgName]
+
+		rb := newResolveBaton()
+		err = ps.resolveDependencies(ctx, rb, pkg)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("resolveDependencies for %s: %w", pkg.Name, err)
 		}
 
-		if err := addPkg(built); err != nil {
+		err := ps.buildLocalPackage(ctx, pkg)
+		if err != nil {
+			return nil, fmt.Errorf("buildLocalPackage %s: %w", pkg.Name, err)
+		}
+
+		if err := addPkg(pkg.Built); err != nil {
 			return nil, fmt.Errorf("addPkg %s: %w", pkgName, err)
 		}
 	}

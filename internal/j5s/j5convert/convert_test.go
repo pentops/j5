@@ -5,14 +5,14 @@ import (
 	"testing"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	"github.com/google/go-cmp/cmp"
+	"github.com/pentops/flowtest/prototest"
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
+	"github.com/pentops/j5/internal/bcl/errpos"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -93,10 +93,28 @@ func (d *testDeps) ResolveType(pkg string, name string) (*TypeRef, error) {
 		Name:    name,
 	}
 }
+
+func unwrapSingleError(t *testing.T, err error) error {
+	t.Helper()
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	ee, ok := errpos.AsErrors(err)
+	if !ok {
+		return err
+	}
+	if len(ee) != 1 {
+		t.Fatalf("expected single error, got %d errors", len(ee))
+	}
+	return ee[0]
+}
+
 func assertIsTypeNotFound(t *testing.T, err error, want *TypeNotFoundError) {
+	t.Helper()
+	err = unwrapSingleError(t, err)
 	gotNotFound := &TypeNotFoundError{}
 	if !errors.As(err, &gotNotFound) {
-		t.Fatalf("got error %v, want TypeNotFoundError", err)
+		t.Fatalf("got error %T, want TypeNotFoundError", err)
 	}
 	if gotNotFound.Package != want.Package || gotNotFound.Name != want.Name {
 		t.Fatalf("got error %v, want %v", gotNotFound, want)
@@ -104,9 +122,11 @@ func assertIsTypeNotFound(t *testing.T, err error, want *TypeNotFoundError) {
 }
 
 func assertIsPackageNotFound(t *testing.T, err error, want *PackageNotFoundError) {
+	t.Helper()
+	err = unwrapSingleError(t, err)
 	gotErr := &PackageNotFoundError{}
 	if !errors.As(err, &gotErr) {
-		t.Fatalf("got error %v, want TypeNotFoundError", err)
+		t.Fatalf("got error %v, want PackageNotFoundError", err)
 	}
 	if gotErr.Package != want.Package {
 		t.Fatalf("got error %v, want %v", gotErr, want)
@@ -128,7 +148,7 @@ func TestSchemaToProto(t *testing.T) {
 				Package: "test.v1",
 				Name:    "TestEnum",
 				File:    "test/v1/test.j5s.proto",
-				EnumRef: &EnumRef{
+				Enum: &EnumRef{
 					Prefix: "TEST_ENUM_",
 					ValMap: map[string]int32{
 						"TEST_ENUM_FOO": 1,
@@ -212,12 +232,13 @@ func TestSchemaToProto(t *testing.T) {
 			},
 		},
 	}
-
-	gotFile, err := ConvertJ5File(deps, &sourcedef_j5pb.SourceFile{
+	sourceFile := &sourcedef_j5pb.SourceFile{
 		Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
 		Path:     "test/v1/test.j5s",
 		Elements: []*sourcedef_j5pb.RootElement{objectSchema, enumSchema},
-	})
+	}
+
+	gotFile, err := ConvertJ5File(deps, sourceFile)
 	if err != nil {
 		t.Fatalf("ConvertJ5File failed: %v", err)
 	}
@@ -293,24 +314,165 @@ func TestSchemaToProto(t *testing.T) {
 	}
 
 	gotFile[0].SourceCodeInfo = nil
-	equal(t, wantFile, gotFile[0])
+	prototest.AssertEqualProto(t, wantFile, gotFile[0])
+}
 
-	/*
-		fds := &descriptorpb.FileDescriptorSet{
-			File: []*descriptorpb.FileDescriptorProto{gotFile},
-		}
+func TestEnumConvert(t *testing.T) {
+	schema := &sourcedef_j5pb.RootElement{
+		Type: &sourcedef_j5pb.RootElement_Enum{
+			Enum: &schema_j5pb.Enum{
+				Name:   "TestEnum",
+				Prefix: "TEST_ENUM_",
+				Options: []*schema_j5pb.Enum_Option{{
+					Name: "TEST_ENUM_UNSPECIFIED",
+				}, {
+					Name: "FOO",
+				}, {
+					Name: "TEST_ENUM_BAR",
+				}},
+			},
+		},
+	}
 
-		fm := NewFileMap()
+	wantFile := &descriptorpb.FileDescriptorProto{
+		Syntax:  proto.String("proto3"),
+		Options: &descriptorpb.FileOptions{},
+		Name:    proto.String("test/v1/test.j5s.proto"),
+		Package: proto.String("test.v1"),
+		EnumType: []*descriptorpb.EnumDescriptorProto{{
+			Name: proto.String("TestEnum"),
+			Value: []*descriptorpb.EnumValueDescriptorProto{{
+				Name:   proto.String("TEST_ENUM_UNSPECIFIED"),
+				Number: proto.Int32(0),
+			}, {
+				Name:   proto.String("TEST_ENUM_FOO"),
+				Number: proto.Int32(1),
+			}, {
+				Name:   proto.String("TEST_ENUM_BAR"),
+				Number: proto.Int32(2),
+			}},
+		}},
+	}
 
-		if err := protoprint.PrintProtoFiles(context.Background(), fm, fds, protoprint.Options{}); err != nil {
-			t.Fatalf("PrintProtoFiles failed: %v", err)
-		}
+	gotFile := newTestConversion().element(schema).convert(t)
+	prototest.AssertEqualProto(t, wantFile, gotFile)
+}
 
-		for filename, content := range fm {
-			t.Logf("\n====== %s ======\n%s", filename, content)
-		}
-	*/
+func TestPolymorphConvert(t *testing.T) {
 
+	polymorphSchema := &sourcedef_j5pb.RootElement{
+		Type: &sourcedef_j5pb.RootElement_Polymorph{
+			Polymorph: &sourcedef_j5pb.Polymorph{
+				Def: &schema_j5pb.Polymorph{
+					Name:    "TestPolymorph",
+					Members: []string{"foo.v1.Foo", "bar.v1.Bar"},
+				},
+				Includes: []string{"baz.BazPoly"},
+			},
+		},
+	}
+
+	wantFile := &descriptorpb.FileDescriptorProto{
+		Syntax:  proto.String("proto3"),
+		Options: &descriptorpb.FileOptions{},
+		Name:    proto.String("test/v1/test.j5s.proto"),
+		Package: proto.String("test.v1"),
+		Dependency: []string{
+			"j5/ext/v1/annotations.proto",
+			"j5/types/any/v1/any.proto",
+		},
+		MessageType: []*descriptorpb.DescriptorProto{{
+			Name: proto.String("TestPolymorph"),
+			Options: withOption(&descriptorpb.MessageOptions{}, ext_j5pb.E_Message, &ext_j5pb.MessageOptions{
+				Type: &ext_j5pb.MessageOptions_Polymorph{
+					Polymorph: &ext_j5pb.PolymorphMessageOptions{
+						Members: []string{
+							"foo.v1.Foo",
+							"bar.v1.Bar",
+							"baz.v1.Baz",
+						},
+					},
+				},
+			}),
+			Field: []*descriptorpb.FieldDescriptorProto{{
+				Name:     proto.String("value"),
+				Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+				Number:   proto.Int32(1),
+				TypeName: proto.String(".j5.types.any.v1.Any"),
+				JsonName: proto.String("value"),
+			}},
+		}},
+	}
+
+	gotFile := newTestConversion().
+		element(polymorphSchema).
+		depType(&TypeRef{
+			Package: "baz.v1",
+			Name:    "BazPoly",
+			Polymorph: &PolymorphRef{
+				Members: []string{"baz.v1.Baz"},
+			},
+		}).
+		addImport("baz.v1", "baz").
+		convert(t)
+
+	prototest.AssertEqualProto(t, wantFile, gotFile)
+}
+
+type tConversion struct {
+	deps     *testDeps
+	elements []*sourcedef_j5pb.RootElement
+	imports  []*sourcedef_j5pb.Import
+}
+
+func newTestConversion() *tConversion {
+	return &tConversion{
+		deps: &testDeps{
+			pkg:   "test.v1",
+			types: map[string]*TypeRef{},
+		},
+	}
+}
+
+func (tc *tConversion) element(element *sourcedef_j5pb.RootElement) *tConversion {
+	tc.elements = append(tc.elements, element)
+	return tc
+}
+
+func (tc *tConversion) addImport(name, alias string) *tConversion {
+	tc.imports = append(tc.imports, &sourcedef_j5pb.Import{
+		Path:  name,
+		Alias: alias,
+	})
+	return tc
+}
+
+func (tc *tConversion) depType(typ *TypeRef) *tConversion {
+	if tc.deps.types == nil {
+		tc.deps.types = make(map[string]*TypeRef)
+	}
+	tc.deps.types[typ.Package+"."+typ.Name] = typ
+	return tc
+}
+
+func (tc *tConversion) convert(t testing.TB) *descriptorpb.FileDescriptorProto {
+	t.Helper()
+	sourceFile := &sourcedef_j5pb.SourceFile{
+		Path:     "test/v1/test.j5s",
+		Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
+		Elements: tc.elements,
+		Imports:  tc.imports,
+	}
+	gotFiles, err := ConvertJ5File(tc.deps, sourceFile)
+	if err != nil {
+		t.Fatalf("ConvertJ5File failed: %v", err)
+	}
+	if len(gotFiles) != 1 {
+		t.Fatalf("Expected 1 file, got %d", len(gotFiles))
+	}
+	gotFile := gotFiles[0]
+	gotFile.SourceCodeInfo = nil
+	return gotFile
 }
 
 // Copies the J5 extension object to the equivalent protoreflect extension type
@@ -338,13 +500,4 @@ func tEmptyTypeExt(t testing.TB, fieldType protoreflect.Name) *descriptorpb.Fiel
 
 	proto.SetExtension(fieldOptions, ext_j5pb.E_Field, extOptions)
 	return fieldOptions
-}
-
-func equal(t testing.TB, want, got proto.Message) {
-	t.Helper()
-	diff := cmp.Diff(want, got, protocmp.Transform())
-	if diff != "" {
-		t.Errorf("Mismatch (-want +got):\n%s", diff)
-	}
-
 }

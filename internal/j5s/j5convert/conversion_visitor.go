@@ -2,26 +2,17 @@ package j5convert
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
-	"github.com/iancoleman/strcase"
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/j5s/sourcewalk"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
-
-// parentContext is a file's root, or message, which can hold messages and
-// enums. Implemented by FileBuilder and MessageBuilder.
-type parentContext interface {
-	addMessage(*MessageBuilder)
-	addEnum(*enumBuilder)
-	addSyntheticOneof(nameHint string) (int32, error)
-}
 
 type conversionVisitor struct {
 	root          *rootContext
@@ -44,11 +35,8 @@ func (rr *conversionVisitor) addErrorf(node sourcewalk.SourceNode, format string
 
 func (rr *conversionVisitor) addError(node sourcewalk.SourceNode, err error) {
 	loc := node.GetPos()
-	if loc != nil {
-		err = errpos.AddPosition(err, *loc)
-	}
-	log.Printf("walker error at %s: %v", strings.Join(node.Path, "."), err)
-	rr.root.errors = append(rr.root.errors, err)
+	wrapped := errpos.AddPosition(err, loc)
+	rr.root.errors = append(rr.root.errors, wrapped)
 }
 
 func (ww *conversionVisitor) inMessage(msg *MessageBuilder) *conversionVisitor {
@@ -63,6 +51,19 @@ func (ww *conversionVisitor) subPackageFile(subPackage string) *conversionVisito
 	walk.file = file
 	walk.parentContext = file
 	return walk
+}
+
+func (ww *conversionVisitor) resolveTypeName(typeName string) (*TypeRef, error) {
+	parts := strings.Split(typeName, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid type name %q", typeName)
+	}
+	pkgName := strings.Join(parts[:len(parts)-1], ".")
+	typeName = parts[len(parts)-1]
+	return ww.root.resolveType(&schema_j5pb.Ref{
+		Package: pkgName,
+		Schema:  typeName,
+	})
 }
 
 func (ww *conversionVisitor) resolveType(ref *sourcewalk.RefNode) (*TypeRef, error) {
@@ -87,10 +88,7 @@ func (ww *conversionVisitor) resolveType(ref *sourcewalk.RefNode) (*TypeRef, err
 	typeRef, err := ww.root.resolveType(ref.Ref)
 	if err != nil {
 		pos := ref.Source.GetPos()
-		if pos != nil {
-			err = errpos.AddPosition(err, *pos)
-		}
-		log.Printf("resolveType error at %s: %v", strings.Join(ref.Source.Path, "."), err)
+		err = errpos.AddPosition(err, pos)
 		return nil, err
 	}
 
@@ -100,20 +98,7 @@ func (ww *conversionVisitor) resolveType(ref *sourcewalk.RefNode) (*TypeRef, err
 
 func (ww *conversionVisitor) visitFileNode(file *sourcewalk.FileNode) error {
 	return file.RangeRootElements(sourcewalk.FileCallbacks{
-		SchemaCallbacks: sourcewalk.SchemaCallbacks{
-			Object: func(on *sourcewalk.ObjectNode) error {
-				ww.visitObjectNode(on)
-				return nil
-			},
-			Oneof: func(on *sourcewalk.OneofNode) error {
-				ww.visitOneofNode(on)
-				return nil
-			},
-			Enum: func(en *sourcewalk.EnumNode) error {
-				ww.visitEnumNode(en)
-				return nil
-			},
-		},
+		SchemaCallbacks: walkerSchemaVisitor(ww),
 		TopicFile: func(tn *sourcewalk.TopicFileNode) error {
 			subWalk := ww.subPackageFile("topic")
 			return subWalk.visitTopicFileNode(tn)
@@ -125,8 +110,8 @@ func (ww *conversionVisitor) visitFileNode(file *sourcewalk.FileNode) error {
 	})
 }
 
-func walkerSchemaVisitor(ww *conversionVisitor) sourcewalk.SchemaVisitor {
-	return &sourcewalk.SchemaCallbacks{
+func walkerSchemaVisitor(ww *conversionVisitor) sourcewalk.SchemaCallbacks {
+	return sourcewalk.SchemaCallbacks{
 		Object: func(on *sourcewalk.ObjectNode) error {
 			ww.visitObjectNode(on)
 			return nil
@@ -139,11 +124,14 @@ func walkerSchemaVisitor(ww *conversionVisitor) sourcewalk.SchemaVisitor {
 			ww.visitEnumNode(en)
 			return nil
 		},
+		Polymorph: func(pn *sourcewalk.PolymorphNode) error {
+			ww.visitPolymorphNode(pn)
+			return nil
+		},
 	}
 }
 
 func (ww *conversionVisitor) visitTopicFileNode(tn *sourcewalk.TopicFileNode) error {
-
 	return tn.Accept(sourcewalk.TopicFileCallbacks{
 		Topic: func(tn *sourcewalk.TopicNode) error {
 			ww.visitTopicNode(tn)
@@ -193,9 +181,6 @@ func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
 	}
 
 	objectType := &ext_j5pb.ObjectMessageOptions{}
-	if node.AnyMember != nil {
-		objectType.AnyMember = node.AnyMember
-	}
 
 	ww.file.ensureImport(j5ExtImport)
 	ext := &ext_j5pb.MessageOptions{
@@ -296,25 +281,79 @@ func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 	ww.parentContext.addMessage(message)
 }
 
-func (ww *conversionVisitor) visitEnumNode(node *sourcewalk.EnumNode) {
+func (ww *conversionVisitor) resolvePolymorphIncludes(includes []string) ([]string, error) {
+	members := make([]string, 0)
+	for _, include := range includes {
+		typeRef, err := ww.resolveTypeName(include)
+		if err != nil {
+			return nil, err
+		}
 
-	prefix := node.Schema.Prefix
-	if prefix == "" {
-		prefix = strcase.ToScreamingSnake(node.Schema.Name) + "_"
+		if typeRef.Polymorph == nil {
+			return nil, fmt.Errorf("type %q is not a polymorph", typeRef.Name)
+		}
+
+		members = append(members, typeRef.Polymorph.Members...)
+
+		subIncluded, err := ww.resolvePolymorphIncludes(typeRef.Polymorph.Includes)
+		if err != nil {
+			return nil, err
+		}
+		members = append(members, subIncluded...)
 	}
-	eb := &enumBuilder{
-		prefix: prefix,
-		desc: &descriptorpb.EnumDescriptorProto{
-			Name: gl.Ptr(node.Schema.Name),
-			Value: []*descriptorpb.EnumValueDescriptorProto{{
-				Name:   gl.Ptr(fmt.Sprintf("%sUNSPECIFIED", prefix)),
-				Number: gl.Ptr(int32(0)),
-			}},
+
+	return members, nil
+}
+
+func (ww *conversionVisitor) visitPolymorphNode(node *sourcewalk.PolymorphNode) {
+	message := blankMessage(node.Name)
+
+	message.comment([]int32{}, node.Description)
+
+	valueField := &descriptorpb.FieldDescriptorProto{
+		Name:     proto.String("value"),
+		Type:     descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum(),
+		Number:   proto.Int32(1),
+		TypeName: proto.String(".j5.types.any.v1.Any"),
+		JsonName: proto.String("value"),
+	}
+	message.descriptor.Field = []*descriptorpb.FieldDescriptorProto{valueField}
+	pmm := &ext_j5pb.PolymorphMessageOptions{}
+
+	extraMembers, err := ww.resolvePolymorphIncludes(node.Includes)
+	if err != nil {
+		ww.addError(node.Source, err)
+	} else {
+		pmm.Members = append(node.Members, extraMembers...)
+	}
+
+	ww.file.ensureImport(j5AnyImport)
+	ww.file.ensureImport(j5ExtImport)
+
+	ext := &ext_j5pb.MessageOptions{
+		Type: &ext_j5pb.MessageOptions_Polymorph{
+			Polymorph: pmm,
 		},
 	}
+	proto.SetExtension(message.descriptor.Options, ext_j5pb.E_Message, ext)
+	ww.parentContext.addMessage(message)
+
+}
+
+func (ww *conversionVisitor) visitEnumNode(node *sourcewalk.EnumNode) {
+
+	desc := &descriptorpb.EnumDescriptorProto{
+		Name: gl.Ptr(node.Schema.Name),
+		Value: []*descriptorpb.EnumValueDescriptorProto{{
+			Name:   gl.Ptr(fmt.Sprintf("%sUNSPECIFIED", node.Prefix)),
+			Number: gl.Ptr(int32(0)),
+		}},
+	}
+
+	var comments commentSet
 
 	if node.Schema.Description != "" {
-		eb.comment([]int32{}, node.Schema.Description)
+		comments.comment([]int32{}, node.Schema.Description)
 	}
 
 	if node.Schema.Info != nil {
@@ -328,19 +367,33 @@ func (ww *conversionVisitor) visitEnumNode(node *sourcewalk.EnumNode) {
 			})
 		}
 
-		eb.desc.Options = &descriptorpb.EnumOptions{}
-		proto.SetExtension(eb.desc.Options, ext_j5pb.E_Enum, ext)
+		desc.Options = &descriptorpb.EnumOptions{}
+		proto.SetExtension(desc.Options, ext_j5pb.E_Enum, ext)
 	}
 
-	optionsToSet := node.Schema.Options
-	if len(optionsToSet) > 0 && optionsToSet[0].Number == 0 && strings.HasSuffix(optionsToSet[0].Name, "UNSPECIFIED") {
-		eb.addValue(0, optionsToSet[0])
-		optionsToSet = optionsToSet[1:]
+	for _, src := range node.Options {
+		value := &descriptorpb.EnumValueDescriptorProto{
+			Name:   gl.Ptr(src.Name),
+			Number: gl.Ptr(src.Number),
+		}
+
+		if len(src.Info) > 0 {
+			value.Options = &descriptorpb.EnumValueOptions{}
+			proto.SetExtension(value.Options, ext_j5pb.E_EnumValue, &ext_j5pb.EnumValueOptions{
+				Info: src.Info,
+			})
+		}
+
+		if src.Number == 0 {
+			desc.Value[0] = value
+		} else {
+			desc.Value = append(desc.Value, value)
+		}
+		if src.Description != "" {
+			comments.comment([]int32{2, src.Number}, src.Description)
+		}
+
 	}
 
-	for idx, value := range optionsToSet {
-		eb.addValue(int32(idx+1), value)
-	}
-
-	ww.parentContext.addEnum(eb)
+	ww.parentContext.addEnum(desc, comments)
 }

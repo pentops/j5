@@ -40,9 +40,6 @@ func (s *ScalarSchema) TypeName() string {
 type AnyField struct {
 	fieldContext
 
-	OnlyDefined bool
-	Types       []protoreflect.FullName
-
 	ListRules *list_j5pb.AnyRules
 }
 
@@ -52,9 +49,7 @@ func (s *AnyField) ToJ5Field() *schema_j5pb.Field {
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Any{
 			Any: &schema_j5pb.AnyField{
-				OnlyDefined: s.OnlyDefined,
-				Types:       stringSliceConvert[protoreflect.FullName, string](s.Types),
-				ListRules:   s.ListRules,
+				ListRules: s.ListRules,
 			},
 		},
 	}
@@ -158,6 +153,40 @@ func (s *ObjectField) ToJ5Field() *schema_j5pb.Field {
 			},
 		},
 	}
+}
+
+type PolymorphField struct {
+	fieldContext
+	Ref *RefSchema
+}
+
+var _ FieldSchema = (*PolymorphField)(nil)
+
+func (s *PolymorphField) ToJ5Field() *schema_j5pb.Field {
+	return &schema_j5pb.Field{
+		Type: &schema_j5pb.Field_Polymorph{
+			Polymorph: &schema_j5pb.PolymorphField{
+				Schema: &schema_j5pb.PolymorphField_Ref{
+					Ref: &schema_j5pb.Ref{
+						Package: s.Ref.Package.Name,
+						Schema:  s.Ref.Schema,
+					},
+				},
+			},
+		},
+	}
+}
+
+func (s *PolymorphField) TypeName() string {
+	return "polymorph"
+}
+
+func (s *PolymorphField) AsContainer() (Container, bool) {
+	return nil, false
+}
+
+func (s *PolymorphField) Mutable() bool {
+	return true
 }
 
 type OneofField struct {

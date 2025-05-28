@@ -164,9 +164,9 @@ func (s *EnumSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
 
 type ObjectSchema struct {
 	rootSchema
-	Entity     *schema_j5pb.EntityObject
-	AnyMember  []string
-	Properties PropertySet
+	Entity          *schema_j5pb.EntityObject
+	PolymorphMember []string
+	Properties      PropertySet
 }
 
 func (s *ObjectSchema) Clone() *ObjectSchema {
@@ -189,11 +189,11 @@ func (s *ObjectSchema) ToJ5Object() *schema_j5pb.Object {
 		properties = append(properties, property)
 	}
 	return &schema_j5pb.Object{
-		Description: s.description,
-		Name:        s.name,
-		Properties:  properties,
-		Entity:      s.Entity,
-		AnyMember:   s.AnyMember,
+		Description:     s.description,
+		Name:            s.name,
+		Properties:      properties,
+		Entity:          s.Entity,
+		PolymorphMember: s.PolymorphMember,
 	}
 }
 
@@ -248,6 +248,27 @@ func (s *ObjectSchema) ToJ5Root() *schema_j5pb.RootSchema {
 			Object: built,
 		},
 	}
+}
+
+type PolymorphSchema struct {
+	rootSchema
+	Members []string
+}
+
+func (s *PolymorphSchema) ToJ5Root() *schema_j5pb.RootSchema {
+	return &schema_j5pb.RootSchema{
+		Type: &schema_j5pb.RootSchema_Polymorph{
+			Polymorph: &schema_j5pb.Polymorph{
+				Description: s.description,
+				Name:        s.name,
+				Members:     s.Members,
+			},
+		},
+	}
+}
+
+func (s *PolymorphSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
+	return s.ToJ5Root()
 }
 
 type OneofSchema struct {

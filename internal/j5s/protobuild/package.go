@@ -33,26 +33,34 @@ type Package struct {
 	DirectDependencies map[string]*Package
 	Exports            map[string]*j5convert.TypeRef
 
+	pkgDeps map[string]struct{}
+
 	Built *BuiltPackage
 }
 
-func newPackage(name string) *Package {
+func (ps *PackageSet) newPackage(name string) *Package {
+	if _, ok := ps.Packages[name]; ok {
+		panic(fmt.Sprintf("package %s already exists", name))
+	}
+
 	pkg := &Package{
 		Name:               name,
 		DirectDependencies: map[string]*Package{},
 		Exports:            map[string]*j5convert.TypeRef{},
 		Files:              map[string]*psrc.File{},
+		pkgDeps:            map[string]struct{}{},
 	}
+	ps.Packages[name] = pkg
 	return pkg
 }
 
-func (pkg *Package) includeIO(summary *j5convert.FileSummary, deps map[string]struct{}) {
+func (pkg *Package) includeIO(summary *j5convert.FileSummary) {
 	for _, exp := range summary.Exports {
 		pkg.Exports[exp.Name] = exp
 	}
 
 	for _, ref := range summary.TypeDependencies {
-		deps[ref.Package] = struct{}{}
+		pkg.pkgDeps[ref.Package] = struct{}{}
 	}
 
 	for _, file := range summary.FileDependencies {
@@ -61,7 +69,7 @@ func (pkg *Package) includeIO(summary *j5convert.FileSummary, deps map[string]st
 			// fallback to full name
 			dependsOn = j5convert.PackageFromFilename(file)
 		}
-		deps[dependsOn] = struct{}{}
+		pkg.pkgDeps[dependsOn] = struct{}{}
 	}
 }
 

@@ -45,7 +45,7 @@ func (fn *FileNode) RangeRootElements(visitor FileVisitor) error {
 		switch element := element.Type.(type) {
 		case *sourcedef_j5pb.RootElement_Object:
 			source := source.child("object")
-			objectNode, err := newObjectNode(source.child("object"), nil, element.Object)
+			objectNode, err := newObjectNode(source, nil, element.Object)
 			if err != nil {
 				return wrapErr(source, err)
 			}
@@ -70,6 +70,15 @@ func (fn *FileNode) RangeRootElements(visitor FileVisitor) error {
 				return wrapErr(source, err)
 			}
 			if err := visitor.VisitEnum(enumNode); err != nil {
+				return err
+			}
+
+		case *sourcedef_j5pb.RootElement_Polymorph:
+			polymorphNode, err := newPolymorphNode(source.child("polymorph"), nil, element.Polymorph.Def, element.Polymorph.Includes)
+			if err != nil {
+				return wrapErr(source, err)
+			}
+			if err := visitor.VisitPolymorph(polymorphNode); err != nil {
 				return err
 			}
 
@@ -111,8 +120,9 @@ func (fn *FileNode) RangeRootElements(visitor FileVisitor) error {
 			if err := visitor.VisitServiceFile(serviceFileNode); err != nil {
 				return err
 			}
+
 		default:
-			return walkerErrorf("unknown root element %T", element)
+			return walkerErrorf("unknown root element in FileNode %T", element)
 		}
 	}
 	return nil

@@ -5,9 +5,14 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"path/filepath"
+	"strings"
 
+	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/dag"
+	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 )
 
 // A repo has:
@@ -167,11 +172,12 @@ func (src *RepoRoot) newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
 		}
 
 		thisRepo.bundles = append(thisRepo.bundles, &bundleSource{
-			debugName: debugName,
-			fs:        bundleRoot,
-			dirInRepo: refConfig.Dir,
-			refConfig: refConfig,
-			config:    bundleConfig,
+			nameInRepo: gl.Ptr(refConfig.Name),
+			debugName:  debugName,
+			fs:         bundleRoot,
+			dirInRepo:  refConfig.Dir,
+			refConfig:  refConfig,
+			config:     bundleConfig,
 		})
 	}
 
@@ -220,6 +226,84 @@ func (src RepoRoot) RepoConfig() *config_j5pb.RepoConfigFile {
 
 func (src RepoRoot) AllBundles() []*bundleSource {
 	return src.thisRepo.bundles
+}
+
+func (src RepoRoot) LocalBundlesSorted(ctx context.Context) ([]Bundle, psrc.DescriptorFiles, error) {
+	var bundleNodes []dag.Node
+	bundleMap := map[string]Bundle{}
+
+	resolverDeps := psrc.DescriptorFiles{}
+
+	for _, bundle := range src.AllBundles() {
+		name := bundle.NameInRepo()
+		if name == nil {
+			return nil, nil, fmt.Errorf("bundle %s has no name", bundle.DebugName())
+		}
+		node := dag.Node{
+			Name: *name,
+		}
+		bundleConfig, err := bundle.J5Config()
+		if err != nil {
+			return nil, nil, fmt.Errorf("reading bundle config: %w", err)
+		}
+		for _, dep := range bundleConfig.Dependencies {
+			switch dt := dep.Type.(type) {
+			case *config_j5pb.Input_Registry_:
+				img, err := src.GetSourceImage(ctx, dep)
+				if err != nil {
+					return nil, nil, fmt.Errorf("getting source image: %w", err)
+				}
+				for _, file := range img.File {
+					resolverDeps[*file.Name] = file
+				}
+
+			case *config_j5pb.Input_Local:
+				depName := dt.Local
+				node.IncomingEdges = append(node.IncomingEdges, depName)
+
+			default:
+				return nil, nil, fmt.Errorf("unsupported dependency type %T", dt)
+			}
+		}
+
+		bundleNodes = append(bundleNodes, node)
+		if _, ok := bundleMap[*name]; ok {
+			return nil, nil, fmt.Errorf("duplicate bundle name %q", *name)
+		}
+		bundleMap[*name] = bundle
+	}
+
+	depSorted, err := dag.SortDAG(bundleNodes)
+	if err != nil {
+		return nil, nil, fmt.Errorf("sorting bundle dependencies: %w", err)
+	}
+
+	bundles := []Bundle{}
+	for _, bundleName := range depSorted {
+		bundle, ok := bundleMap[bundleName]
+		if !ok {
+			return nil, nil, fmt.Errorf("bundle %q not found", bundleName)
+		}
+		bundles = append(bundles, bundle)
+	}
+
+	return bundles, resolverDeps, nil
+}
+
+func (src RepoRoot) BundleForFile(filename string) (Bundle, string, error) {
+	for _, search := range src.thisRepo.bundles {
+		bundleDir := search.DirInRepo()
+		rel, err := filepath.Rel(bundleDir, filename)
+		if err != nil {
+			continue
+		}
+		if strings.HasPrefix(rel, "..") {
+			continue
+		}
+
+		return search, rel, nil
+	}
+	return nil, "", fmt.Errorf("file %q not found in any bundle", filename)
 }
 
 func (src *RepoRoot) CombinedSourceImage(ctx context.Context, inputs []*config_j5pb.Input) (*source_j5pb.SourceImage, error) {

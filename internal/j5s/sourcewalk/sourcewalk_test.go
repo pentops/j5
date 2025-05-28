@@ -1,7 +1,6 @@
 package sourcewalk
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 
@@ -50,7 +49,7 @@ func TestSourceNode(t *testing.T) {
 
 func printSource(t testing.TB, loc *bcl_j5pb.SourceLocation, path []string) {
 	if loc == nil {
-		fmt.Printf("NIL LOC\n")
+		t.Logf("NIL LOC")
 		return
 	}
 	t.Logf("%03d:%03d %s\n",
