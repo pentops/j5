@@ -3,8 +3,10 @@ package cli
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/builder"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/log.go/log"
@@ -17,6 +19,9 @@ func runGenerate(ctx context.Context, cfg struct {
 
 	src, err := cfg.GetSource(ctx)
 	if err != nil {
+		if ep, ok := errpos.AsErrorsWithSource(err); ok {
+			fmt.Fprintln(os.Stderr, ep.ShortString())
+		}
 		return err
 	}
 
@@ -61,6 +66,9 @@ func runGeneratePlugin(ctx context.Context, bb *builder.Builder, src *source.Rep
 
 	img, err := src.CombinedSourceImage(ctx, generator.Inputs)
 	if err != nil {
+		if ep, ok := errpos.AsErrorsWithSource(err); ok {
+			fmt.Fprintln(os.Stderr, ep.ShortString())
+		}
 		return err
 	}
 

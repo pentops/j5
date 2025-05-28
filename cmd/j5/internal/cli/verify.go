@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/builder"
 	"github.com/pentops/j5/internal/j5client"
 	"github.com/pentops/j5/internal/source"
@@ -33,6 +34,9 @@ func runVerify(ctx context.Context, cfg struct {
 
 		img, err := bundle.SourceImage(ctx, src)
 		if err != nil {
+			if ep, ok := errpos.AsErrorsWithSource(err); ok {
+				fmt.Fprintln(os.Stderr, ep.ShortString())
+			}
 			return err
 		}
 
