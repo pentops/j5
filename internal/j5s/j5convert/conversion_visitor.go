@@ -2,12 +2,12 @@ package j5convert
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/j5s/sourcewalk"
 	"google.golang.org/protobuf/proto"
@@ -51,19 +51,6 @@ func (ww *conversionVisitor) subPackageFile(subPackage string) *conversionVisito
 	walk.file = file
 	walk.parentContext = file
 	return walk
-}
-
-func (ww *conversionVisitor) resolveTypeName(typeName string) (*TypeRef, error) {
-	parts := strings.Split(typeName, ".")
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid type name %q", typeName)
-	}
-	pkgName := strings.Join(parts[:len(parts)-1], ".")
-	typeName = parts[len(parts)-1]
-	return ww.root.resolveType(&schema_j5pb.Ref{
-		Package: pkgName,
-		Schema:  typeName,
-	})
 }
 
 func (ww *conversionVisitor) resolveType(ref *sourcewalk.RefNode) (*TypeRef, error) {
@@ -182,6 +169,31 @@ func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
 
 	objectType := &ext_j5pb.ObjectMessageOptions{}
 
+	fqn := ww.file.fullyQualifiedName(node)
+
+	for _, pm := range node.PolymorphMember {
+		tt, err := ww.resolveType(pm)
+		if err != nil {
+			ww.addError(pm.Source, err)
+			continue
+		}
+
+		if tt.Polymorph == nil {
+			ww.addErrorf(pm.Source, "type %q is not a polymorph", tt.Name)
+			continue
+		}
+
+		if !slices.Contains(tt.Polymorph.Members, fqn) {
+			names := make([]string, len(tt.Polymorph.Members))
+			for idx, member := range tt.Polymorph.Members {
+				names[idx] = fmt.Sprintf("%q", member)
+			}
+			ww.addErrorf(pm.Source, "type %q is not a polymorph member of %s.%s have %s", fqn, tt.Package, tt.Name, strings.Join(names, ", "))
+			continue
+		}
+
+	}
+
 	ww.file.ensureImport(j5ExtImport)
 	ext := &ext_j5pb.MessageOptions{
 		Type: &ext_j5pb.MessageOptions_Object{
@@ -281,10 +293,10 @@ func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 	ww.parentContext.addMessage(message)
 }
 
-func (ww *conversionVisitor) resolvePolymorphIncludes(includes []string) ([]string, error) {
+func (ww *conversionVisitor) resolvePolymorphIncludes(includes []*sourcewalk.RefNode) ([]string, error) {
 	members := make([]string, 0)
 	for _, include := range includes {
-		typeRef, err := ww.resolveTypeName(include)
+		typeRef, err := ww.resolveType(include)
 		if err != nil {
 			return nil, err
 		}

@@ -63,11 +63,6 @@ message EntityRef {
 // Allows anything
 message AnyField {
   j5.list.v1.AnyRules list_rules = 5;
-
-  // DEPRECATED: Use Polymorph instead.
-  bool only_defined = 6;
-  // DEPRECATED: Use Polymorph instead.
-  repeated string types = 7;
 }
 
 // ObjectAsField is an object as-a-field in an ObjectProperty

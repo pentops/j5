@@ -158,6 +158,11 @@ var J5SchemaSpec = &bcl_j5pb.Schema{
 			Path: bclPath("oneof", "properties"),
 		}},
 	}, {
+		SchemaName: "j5.schema.v1.PolymorphField",
+		Qualifier: &bcl_j5pb.Tag{
+			FieldName: ("ref"),
+		},
+	}, {
 		SchemaName: "j5.schema.v1.EnumField",
 		Qualifier: &bcl_j5pb.Tag{
 			FieldName: ("ref"),
@@ -177,9 +182,6 @@ var J5SchemaSpec = &bcl_j5pb.Schema{
 		}, {
 			Name: "object",
 			Path: bclPath("schemas", "object"),
-		}, {
-			Name: "anyMember",
-			Path: bclPath("polymorphMember"),
 		}},
 	}, {
 		SchemaName:       "j5.schema.v1.Object",
@@ -204,6 +206,15 @@ var J5SchemaSpec = &bcl_j5pb.Schema{
 		Alias: []*bcl_j5pb.Alias{{
 			Name: "option",
 			Path: bclPath("properties"),
+		}},
+	}, {
+
+		SchemaName:       "j5.sourcedef.v1.Polymorph",
+		Name:             &bcl_j5pb.Tag{FieldName: ("name")},
+		DescriptionField: gl.Ptr("description"),
+		Alias: []*bcl_j5pb.Alias{{
+			Name: "member",
+			Path: bclPath("members"),
 		}},
 	}, {
 		SchemaName:       "j5.schema.v1.Enum",
@@ -256,6 +267,9 @@ var J5SchemaSpec = &bcl_j5pb.Schema{
 		}, {
 			Name: "oneof",
 			Path: bclPath("elements", "oneof"),
+		}, {
+			Name: "polymorph",
+			Path: bclPath("elements", "polymorph"),
 		}, {
 			Name: "entity",
 			Path: bclPath("elements", "entity"),

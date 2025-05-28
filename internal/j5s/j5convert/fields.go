@@ -250,6 +250,22 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 
 		return desc, nil
 
+	case *schema_j5pb.Field_Polymorph:
+		desc.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
+		typeRef, err := ww.resolveType(node.Ref) //.Package, ref.Schema)
+		if err != nil {
+			return nil, err
+		}
+
+		desc.TypeName = typeRef.protoTypeName()
+		if typeRef.Polymorph == nil {
+			return nil, fmt.Errorf("%s is not a polymorph", typeRef.debugName())
+		}
+
+		ww.setJ5Ext(node.Source, desc.Options, "polymorph", st.Polymorph.Ext)
+
+		return desc, nil
+
 	case *schema_j5pb.Field_Enum:
 		desc.Type = descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum()
 		var enumRef *EnumRef

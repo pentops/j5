@@ -358,7 +358,7 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 					return fmt.Errorf("walk oneof: %w", err)
 				}
 			}
-		case *j5schema.EnumSchema:
+		case *j5schema.EnumSchema, *j5schema.PolymorphSchema:
 		// do nothing
 
 		default:
@@ -377,6 +377,11 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 		case *j5schema.OneofField:
 			if err := walkRefRoot(st.Ref); err != nil {
 				return fmt.Errorf("walk oneof as field: %w", err)
+			}
+
+		case *j5schema.PolymorphField:
+			if err := walkRefRoot(st.Ref); err != nil {
+				return fmt.Errorf("walk polymorph as field: %w", err)
 			}
 
 		case *j5schema.EnumField:

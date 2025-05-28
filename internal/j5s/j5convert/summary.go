@@ -73,7 +73,7 @@ type OneofRef struct {
 
 type PolymorphRef struct {
 	Members  []string
-	Includes []string
+	Includes []*sourcewalk.RefNode
 }
 
 // EnumRef is the summary of an enum definition
@@ -210,6 +210,9 @@ func (cc *summaryWalker) collectFileRefs(sourceFile *sourcedef_j5pb.SourceFile) 
 		},
 		Object: func(node *sourcewalk.ObjectNode) error {
 			cc.addExport(objectTypeRef(node))
+			for _, pm := range node.PolymorphMember {
+				cc.addRef(pm)
+			}
 			return nil
 		},
 		Oneof: func(node *sourcewalk.OneofNode) error {
@@ -226,6 +229,9 @@ func (cc *summaryWalker) collectFileRefs(sourceFile *sourcedef_j5pb.SourceFile) 
 		},
 		Polymorph: func(node *sourcewalk.PolymorphNode) error {
 			cc.addExport(polymorphTypeRef(node))
+			for _, include := range node.Includes {
+				cc.addRef(include)
+			}
 			return nil
 		},
 		Service: func(node *sourcewalk.ServiceNode) error {

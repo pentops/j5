@@ -103,9 +103,10 @@ func newEnumNode(source SourceNode, parent parentNode, schema *schema_j5pb.Enum)
 }
 
 type ObjectNode struct {
-	Name        string
-	Description string
-	Entity      *schema_j5pb.EntityObject
+	Name            string
+	Description     string
+	Entity          *schema_j5pb.EntityObject
+	PolymorphMember []*RefNode
 
 	rootType
 	propertySet
@@ -132,6 +133,18 @@ func newVirtualObjectNode(
 
 func newObjectSchemaNode(source SourceNode, parent parentNode, schema *schema_j5pb.Object, virtual ...*schema_j5pb.ObjectProperty) (*ObjectNode, error) {
 	root := newRoot(source, parent, schema.Name)
+	polymorphMembers := make([]*RefNode, 0, len(schema.PolymorphMember))
+	for idx, member := range schema.PolymorphMember {
+		ref, err := typeNameToRef(member)
+		if err != nil {
+			return nil, fmt.Errorf("invalid polymorph member %q: %w", member, err)
+		}
+		polymorphMembers = append(polymorphMembers, &RefNode{
+			Ref:    ref,
+			Source: source.child("polymorph_member", strconv.Itoa(idx)),
+		})
+	}
+
 	return &ObjectNode{
 		Name:        schema.Name,
 		Description: schema.Description,
@@ -140,6 +153,7 @@ func newObjectSchemaNode(source SourceNode, parent parentNode, schema *schema_j5
 		propertySet: propertySet{
 			properties: mapProperties(source, []string{"properties"}, root, schema.Properties, virtual),
 		},
+		PolymorphMember: polymorphMembers,
 	}, nil
 }
 
@@ -163,18 +177,45 @@ type PolymorphNode struct {
 	Name        string
 	Description string
 	Members     []string
-	Includes    []string
+	Includes    []*RefNode
 }
 
 func newPolymorphNode(source SourceNode, parent parentNode, schema *schema_j5pb.Polymorph, includes []string) (*PolymorphNode, error) {
+	includeRefs := make([]*RefNode, 0, len(includes))
+	for idx, include := range includes {
+		ref, err := typeNameToRef(include)
+		if err != nil {
+			return nil, fmt.Errorf("invalid include reference %q: %w", include, err)
+		}
+		node := &RefNode{
+			Ref:    ref,
+			Source: source.child("includes", strconv.Itoa(idx)),
+		}
+		includeRefs = append(includeRefs, node)
+	}
+
 	node := &PolymorphNode{
 		rootType:    newRoot(source, parent, schema.Name),
 		Name:        schema.Name,
 		Members:     schema.Members,
-		Includes:    includes,
+		Includes:    includeRefs,
 		Description: schema.Description,
 	}
 	return node, nil
+}
+
+func typeNameToRef(typeName string) (*schema_j5pb.Ref, error) {
+
+	parts := strings.Split(typeName, ".")
+	if len(parts) < 2 {
+		return nil, fmt.Errorf("invalid type name %q", typeName)
+	}
+	pkgName := strings.Join(parts[:len(parts)-1], ".")
+	typeName = parts[len(parts)-1]
+	return &schema_j5pb.Ref{
+		Package: pkgName,
+		Schema:  typeName,
+	}, nil
 }
 
 type OneofNode struct {

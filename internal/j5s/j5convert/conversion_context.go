@@ -89,6 +89,15 @@ func newFileContext(name string) *fileContext {
 	}
 }
 
+type rootNode interface {
+	NameInPackage() string
+}
+
+func (fb *fileContext) fullyQualifiedName(node rootNode) string {
+	nn := node.NameInPackage()
+	return fmt.Sprintf("%s.%s", *fb.fdp.Package, nn)
+}
+
 func (fb *fileContext) File() *descriptorpb.FileDescriptorProto {
 	last := int32(1)
 	for _, comment := range fb.commentSet {
