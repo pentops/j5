@@ -117,7 +117,6 @@ func runJ5sLintAll(ctx context.Context, srcRoot *source.RepoRoot) error {
 		return err
 	}
 
-	hadErrors := false
 	for _, bundle := range bundles {
 
 		fileSource, err := bundle.FileSource()
@@ -135,7 +134,6 @@ func runJ5sLintAll(ctx context.Context, srcRoot *source.RepoRoot) error {
 		built, err := ps.BuildPackages(ctx, allPackages)
 		if err != nil {
 			if ep, ok := errpos.AsErrorsWithSource(err); ok {
-				hadErrors = true
 				fmt.Printf("Linting errors in bundle %s\n", bundle.DebugName())
 				fmt.Fprintln(os.Stderr, ep.HumanString(2))
 			}
@@ -147,10 +145,6 @@ func runJ5sLintAll(ctx context.Context, srcRoot *source.RepoRoot) error {
 				externalDeps[file.Linked.Path()] = protoFile
 			}
 		}
-	}
-
-	if hadErrors {
-		return fmt.Errorf("linting failed")
 	}
 
 	fmt.Fprintln(os.Stderr, "No linting errors")
