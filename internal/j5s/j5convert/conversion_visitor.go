@@ -179,7 +179,7 @@ func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
 		}
 
 		if tt.Polymorph == nil {
-			ww.addErrorf(pm.Source, "type %q is not a polymorph", tt.Name)
+			ww.addErrorf(pm.Source, "type %q is not a polymorph", tt.debugName())
 			continue
 		}
 
@@ -296,13 +296,13 @@ func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 func (ww *conversionVisitor) resolvePolymorphIncludes(includes []*sourcewalk.RefNode) ([]string, error) {
 	members := make([]string, 0)
 	for _, include := range includes {
-		typeRef, err := ww.resolveType(include)
+		typeRef, err := ww.root.resolveType(include.Ref)
 		if err != nil {
 			return nil, err
 		}
 
 		if typeRef.Polymorph == nil {
-			return nil, fmt.Errorf("type %q is not a polymorph", typeRef.Name)
+			return nil, fmt.Errorf("type %q is not a polymorph", typeRef.debugName())
 		}
 
 		members = append(members, typeRef.Polymorph.Members...)

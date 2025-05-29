@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/j5/internal/j5s/protobuild/errset"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -20,14 +22,27 @@ func SummaryFromDescriptor(res *descriptorpb.FileDescriptorProto, errs *errset.E
 	exports := map[string]*j5convert.TypeRef{}
 
 	for _, msg := range res.MessageType {
-		exports[msg.GetName()] = &j5convert.TypeRef{
+		typeRef := &j5convert.TypeRef{
 			Name:    msg.GetName(),
 			File:    filename,
 			Package: res.GetPackage(),
-			Object:  &j5convert.ObjectRef{},
 		}
-		// TODO: Oneof
-		// TODO: Polymorph
+		exports[msg.GetName()] = typeRef
+		options := proto.GetExtension(msg.Options, ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+		if options != nil {
+			switch et := options.Type.(type) {
+			case *ext_j5pb.MessageOptions_Oneof:
+				typeRef.Oneof = &j5convert.OneofRef{}
+			case *ext_j5pb.MessageOptions_Polymorph:
+				typeRef.Polymorph = &j5convert.PolymorphRef{
+					Members: et.Polymorph.Members,
+				}
+			case *ext_j5pb.MessageOptions_Object:
+				typeRef.Object = &j5convert.ObjectRef{}
+			}
+		} else {
+			typeRef.Object = &j5convert.ObjectRef{}
+		}
 	}
 	for idx, en := range res.EnumType {
 		built, err := buildEnumRef(res, int32(idx), en, errs)
