@@ -234,10 +234,11 @@ func (s *ObjectSchema) ToJ5ClientObject() *schema_j5pb.Object {
 		properties = append(properties, property)
 	}
 	return &schema_j5pb.Object{
-		Description: s.description,
-		Name:        s.name,
-		Properties:  properties,
-		Entity:      s.Entity,
+		Description:     s.description,
+		Name:            s.name,
+		Properties:      properties,
+		Entity:          s.Entity,
+		PolymorphMember: s.PolymorphMember,
 	}
 }
 

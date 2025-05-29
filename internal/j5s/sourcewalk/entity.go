@@ -27,7 +27,7 @@ func newEntityNode(source SourceNode, packageName string, entity *sourcedef_j5pb
 		name:        strcase.ToSnake(entity.Name),
 		packageName: packageName,
 		Schema:      entity,
-		Source:      source.child("entity"),
+		Source:      source,
 	}
 	return entityNode, nil
 }

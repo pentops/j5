@@ -66,7 +66,7 @@ message FooEvent {
 }
 
 message FooEventType {
-  option (j5.ext.v1.message).is_oneof_wrapper = true;
+  option (j5.ext.v1.message).oneof = {};
 
   oneof type {
     Created created = 1;

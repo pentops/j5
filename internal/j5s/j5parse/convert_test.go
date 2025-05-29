@@ -13,7 +13,7 @@ func TestObject(t *testing.T) {
 	file := build()
 	obj := file.addObject("Foo")
 
-	obj.addField("foo_id").
+	obj.addField("fooId").
 		setRequired().
 		setSchema(basicKey())
 
@@ -22,7 +22,7 @@ func TestObject(t *testing.T) {
 
 	file.run(t, `
 		object Foo {
-			field foo_id key:uuid {
+			field fooId key:uuid {
 				required = true
 			}
 
@@ -65,12 +65,12 @@ func TestObjectField(t *testing.T) {
 	// The name isn't explicitly set in the source, it is automatically set from
 	// the field name when converting
 	fieldObj := field.inlineObject("")
-	fieldObj.addField("bar_id").setSchema(basicString())
+	fieldObj.addField("barId").setSchema(basicString())
 
 	file.run(t, `
 		object Foo {
 			field bar object {
-				field bar_id string {
+				field barId string {
 				}
 			}
 		}
@@ -81,13 +81,13 @@ func TestObjectField(t *testing.T) {
 func TestArrayObjectField(t *testing.T) {
 	file := build()
 	obj := file.addObject("FooListRequest")
-	fooIDs := obj.addField("foo_ids")
+	fooIDs := obj.addField("fooIds")
 	fooIDs.setSchema(basicArrayOf(&schema_j5pb.Field{Type: basicId62Key()}))
 	fooIDs.setRequired()
 
 	file.run(t, strings.Join([]string{
 		`object FooListRequest {`,
-		`  field foo_ids ! array:key:id62`,
+		`  field fooIds ! array:key:id62`,
 		`}`,
 	}, "\n"))
 }
@@ -96,11 +96,11 @@ func TestEmptyOneofBody(t *testing.T) {
 
 	file := build()
 	obj := file.addObject("Foo")
-	obj.addField("bar_id").setSchema(basicString())
+	obj.addField("barId").setSchema(basicString())
 
 	file.run(t, `
 		object Foo {
-			field bar_id string
+			field barId string
 		}
 	`, func(t *testing.T, file *sourcedef_j5pb.SourceFile) {
 		fieldProp := file.Elements[0].GetObject().Def.Properties[0]
@@ -138,12 +138,12 @@ func TestImplicitOneofName(t *testing.T) {
 	obj := file.addOneof("Foo")
 	field := obj.addOption("bar")
 	fieldObj := field.inlineObject("")
-	fieldObj.addField("bar_id").setSchema(basicString())
+	fieldObj.addField("barId").setSchema(basicString())
 
 	file.run(t, `
 		oneof Foo {
 			option bar object {
-				field bar_id string {
+				field barId string {
 				}
 			}
 		}
@@ -156,7 +156,7 @@ func TestEntity(t *testing.T) {
 
 	evt := ent.addEvent("DoThing")
 	evt.addField("bar").setSchema(basicString())
-	ent.addKey("foo_id").setSchema(basicKey())
+	ent.addKey("fooId").setSchema(basicKey())
 
 	ent.addStatus("S1", "S1 Desc")
 	ent.addStatus("S2", "S2 Desc")
@@ -167,7 +167,7 @@ func TestEntity(t *testing.T) {
 				field bar string
 			}
 
-			key foo_id key:uuid
+			key fooId key:uuid
 
 			status S1 | S1 Desc
 			status S2 | S2 Desc
@@ -290,21 +290,21 @@ func TestConvert(t *testing.T) {
 	file := build()
 	obj := file.addObject("Foo")
 	obj.obj.Description = "Foo Object Description"
-	key := obj.addField("foo_id")
+	key := obj.addField("fooId")
 
 	key.setSchema(basicKey())
 	key.setRequired()
 
-	obj.addField("bar_field").
+	obj.addField("barField").
 		setRequired().
 		setSchema(basicString(func(s *schema_j5pb.StringField) {
 			s.Rules = &schema_j5pb.StringField_Rules{MinLength: gl.Ptr(uint64(1))}
 		}))
 
-	baz := obj.addField("baz_field")
+	baz := obj.addField("bazField")
 	baz.refObject("path.to", "Type")
 
-	baz2 := obj.addField("baz_2")
+	baz2 := obj.addField("baz2")
 	baz2.prop.Schema = &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Array{
 			Array: &schema_j5pb.ArrayField{
@@ -328,20 +328,20 @@ func TestConvert(t *testing.T) {
 		`object Foo {`,
 		`| Foo Object Description`,
 		`  `,
-		`  field foo_id key:uuid {`,
+		`  field fooId key:uuid {`,
 		`    required = true`,
 		`  }`,
 		`  `,
-		`  field bar_field string {`,
+		`  field barField string {`,
 		`    required = true`,
 		`    rules.minLength = 1`,
 		`  }`,
 		`  `,
-		`  field baz_field object {`,
+		`  field bazField object {`,
 		`	 ref path.to.Type`,
 		`  }`,
 		`  `,
-		`  field baz_2 array:object {`,
+		`  field baz2 array:object {`,
 		`	 ref path.to.Type`,
 		`  }`,
 		`}`,

@@ -192,6 +192,8 @@ func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
 			continue
 		}
 
+		objectType.PolymorphMember = append(objectType.PolymorphMember, tt.j5FullName())
+
 	}
 
 	ww.file.ensureImport(j5ExtImport)

@@ -65,6 +65,10 @@ func (typeRef TypeRef) debugName() string {
 	return fmt.Sprintf("%s.%s[%s]", typeRef.Package, typeRef.Name, typeRef.typeName())
 }
 
+func (typeRef TypeRef) j5FullName() string {
+	return fmt.Sprintf("%s.%s", typeRef.Package, typeRef.Name)
+}
+
 type ObjectRef struct {
 }
 

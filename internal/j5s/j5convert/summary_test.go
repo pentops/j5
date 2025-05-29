@@ -9,13 +9,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func testSummary(t *testing.T, elements ...*sourcedef_j5pb.RootElement) *FileSummary {
+func testSummary(t *testing.T, fileSource *sourcedef_j5pb.SourceFile) *FileSummary {
 	ec := errset.NewCollector()
-	summary, err := SourceSummary(&sourcedef_j5pb.SourceFile{
-		Path:     "test/v1/test.j5s",
-		Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
-		Elements: elements,
-	}, ec)
+	summary, err := SourceSummary(fileSource, ec)
+	/*
+		&sourcedef_j5pb.SourceFile{
+			Path:     "test/v1/test.j5s",
+			Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
+			Elements: elements,
+		}, ec)*/
 	if err != nil {
 		t.Fatalf("ConvertJ5File failed: %v", err)
 	}
@@ -45,7 +47,11 @@ func TestEnumSummary(t *testing.T) {
 		},
 	}
 
-	summary := testSummary(t, enumSchema)
+	summary := testSummary(t, &sourcedef_j5pb.SourceFile{
+		Path:     "test/v1/test.j5s",
+		Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
+		Elements: []*sourcedef_j5pb.RootElement{enumSchema},
+	})
 
 	testEnum, ok := summary.Exports["TestEnum"]
 	if !ok {
@@ -90,7 +96,14 @@ func TestPolymorphSummary(t *testing.T) {
 		},
 	}
 
-	summary := testSummary(t, polymorphSchema)
+	summary := testSummary(t, &sourcedef_j5pb.SourceFile{
+		Path:    "test/v1/test.j5s",
+		Package: &sourcedef_j5pb.Package{Name: "test.v1"},
+		Imports: []*sourcedef_j5pb.Import{{
+			Path: "baz.v1",
+		}},
+		Elements: []*sourcedef_j5pb.RootElement{polymorphSchema},
+	})
 
 	testPolymorph, ok := summary.Exports["TestPolymorph"]
 	if !ok {
@@ -108,6 +121,7 @@ func TestPolymorphSummary(t *testing.T) {
 	assert.Equal(t, "bar.v1.Bar", testPolymorph.Polymorph.Members[1], "TypeRef.Types[1]")
 
 	assert.Equal(t, 1, len(testPolymorph.Polymorph.Includes), "TypeRef.Includes")
-	assert.Equal(t, "baz.v1.BazMorph", testPolymorph.Polymorph.Includes[0], "TypeRef.Includes[0]")
+	assert.Equal(t, "baz.v1", testPolymorph.Polymorph.Includes[0].Ref.Package, "TypeRef.Includes[0]")
+	assert.Equal(t, "BazMorph", testPolymorph.Polymorph.Includes[0].Ref.Schema, "TypeRef.Includes[0]")
 
 }

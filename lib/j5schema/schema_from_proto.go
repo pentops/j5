@@ -235,8 +235,13 @@ func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor, _ *ex
 }
 
 func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts *ext_j5pb.ObjectMessageOptions) (*ObjectSchema, error) {
+	if opts == nil {
+		opts = &ext_j5pb.ObjectMessageOptions{}
+	}
+
 	objectSchema := &ObjectSchema{
-		rootSchema: ss.schemaRootFromProto(srcMsg),
+		rootSchema:      ss.schemaRootFromProto(srcMsg),
+		PolymorphMember: opts.PolymorphMember,
 		// TODO: Rules
 	}
 
