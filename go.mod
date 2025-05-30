@@ -32,7 +32,7 @@ require (
 	github.com/pentops/golib v0.0.0-20250326060930-8c83d58ddb63
 	github.com/pentops/log.go v0.0.0-20250521181902-0b84b98a60de
 	github.com/pentops/o5-messaging v0.0.0-20250520213617-fba07334e9aa
-	github.com/pentops/runner v0.0.0-20250116202335-8635b2a42547
+	github.com/pentops/runner v0.0.0-20250530005558-0b8e943f923e
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/tidwall/gjson v1.18.0
