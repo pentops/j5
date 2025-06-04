@@ -124,6 +124,14 @@ func (sn *serviceBuilder) accept(visitor ServiceFileVisitor) error {
 			resolvedPath = path.Join(*sn.schema.BasePath, resolvedPath)
 		}
 
+		if method.Auth != nil {
+			if method.Options == nil {
+				method.Options = &ext_j5pb.MethodOptions{}
+			}
+
+			method.Options.Auth = method.Auth
+		}
+
 		methods = append(methods, &ServiceMethodNode{
 			Source:       source.child("request"),
 			InputType:    request.Name,
