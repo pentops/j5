@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
-	"github.com/bufbuild/protovalidate-go"
+	"buf.build/go/protovalidate"
 	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/bcl/internal/parser"
