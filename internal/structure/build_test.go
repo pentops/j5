@@ -59,7 +59,7 @@ func TestPackageSplit(t *testing.T) {
 	}
 }
 
-func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constraints *validate.FieldConstraints) *descriptorpb.FieldDescriptorProto {
+func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constraints *validate.FieldRules) *descriptorpb.FieldDescriptorProto {
 	return fieldWithExtension(field, validate.E_Field, constraints)
 }
 
@@ -110,7 +110,7 @@ func testImage() *source_j5pb.SourceImage {
 						Name:   proto.String("path_field"),
 						Type:   descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
 						Number: proto.Int32(1),
-					}, &validate.FieldConstraints{
+					}, &validate.FieldRules{
 						Required: proto.Bool(true),
 					}), {
 						Name:   proto.String("query_field"),

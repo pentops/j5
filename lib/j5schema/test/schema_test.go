@@ -19,7 +19,7 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldConstraints) *jsontest.Asserter {
+func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, validate *validate.FieldRules) *jsontest.Asserter {
 	ss := j5schema.NewSchemaCache()
 	proto := &descriptorpb.FileDescriptorProto{
 		Name:    proto.String("test.proto"),
@@ -101,8 +101,8 @@ func TestStringSchemaTypes(t *testing.T) {
 				Name:   proto.String("test_field"),
 				Type:   descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
 				Number: proto.Int32(1),
-			}, &validate.FieldConstraints{
-				Type: &validate.FieldConstraints_String_{
+			}, &validate.FieldRules{
+				Type: &validate.FieldRules_String_{
 					String_: tt.constraint,
 				},
 			})
@@ -118,7 +118,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 	for _, tt := range []struct {
 		name     string
 		proto    *descriptorpb.FieldDescriptorProto
-		validate *validate.FieldConstraints
+		validate *validate.FieldRules
 		expected map[string]any
 	}{{
 		name: "int32",
@@ -127,8 +127,8 @@ func TestSchemaTypesSimple(t *testing.T) {
 			Type:   descriptorpb.FieldDescriptorProto_TYPE_INT32.Enum(),
 			Number: proto.Int32(1),
 		},
-		validate: &validate.FieldConstraints{
-			Type: &validate.FieldConstraints_Int32{
+		validate: &validate.FieldRules{
+			Type: &validate.FieldRules_Int32{
 				Int32: &validate.Int32Rules{
 					LessThan: &validate.Int32Rules_Lt{
 						Lt: 10,
@@ -152,8 +152,8 @@ func TestSchemaTypesSimple(t *testing.T) {
 			Type:   descriptorpb.FieldDescriptorProto_TYPE_INT64.Enum(),
 			Number: proto.Int32(1),
 		},
-		validate: &validate.FieldConstraints{
-			Type: &validate.FieldConstraints_Int64{
+		validate: &validate.FieldRules{
+			Type: &validate.FieldRules_Int64{
 				Int64: &validate.Int64Rules{
 					LessThan: &validate.Int64Rules_Lt{
 						Lt: 10,
@@ -177,8 +177,8 @@ func TestSchemaTypesSimple(t *testing.T) {
 			Type:   descriptorpb.FieldDescriptorProto_TYPE_UINT32.Enum(),
 			Number: proto.Int32(1),
 		},
-		validate: &validate.FieldConstraints{
-			Type: &validate.FieldConstraints_Uint32{
+		validate: &validate.FieldRules{
+			Type: &validate.FieldRules_Uint32{
 				Uint32: &validate.UInt32Rules{
 					LessThan: &validate.UInt32Rules_Lt{
 						Lt: 10,
@@ -484,8 +484,8 @@ func TestSchemaTypesComplex(t *testing.T) {
 							Type:     descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
 							TypeName: proto.String("test.TestEnum"),
 							Number:   proto.Int32(1),
-						}, &validate.FieldConstraints{
-							Type: &validate.FieldConstraints_Enum{
+						}, &validate.FieldRules{
+							Type: &validate.FieldRules_Enum{
 								Enum: &validate.EnumRules{
 									DefinedOnly: proto.Bool(true),
 									NotIn:       []int32{0},
@@ -631,7 +631,7 @@ func TestSchemaTypesComplex(t *testing.T) {
 
 }
 
-func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constraints *validate.FieldConstraints) *descriptorpb.FieldDescriptorProto {
+func fieldWithValidateExtension(field *descriptorpb.FieldDescriptorProto, constraints *validate.FieldRules) *descriptorpb.FieldDescriptorProto {
 	return fieldWithExtension(field, validate.E_Field, constraints)
 }
 

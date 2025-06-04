@@ -112,7 +112,7 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 
 		ww.setJ5Ext(node.Source, fieldDesc.Options, "array", st.Array.Ext)
 
-		validateExt := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldConstraints)
+		validateExt := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldRules)
 
 		// Add validation rules based on the type of the array regardless of array
 		// rules being specified. This is specifically to cover cases where types
@@ -128,8 +128,8 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 				repeated.Unique = st.Array.Rules.UniqueItems
 			}
 
-			rules := &validate.FieldConstraints{
-				Type: &validate.FieldConstraints_Repeated{
+			rules := &validate.FieldRules{
+				Type: &validate.FieldRules_Repeated{
 					Repeated: repeated,
 				},
 			}
@@ -154,9 +154,9 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 	}
 
 	if required {
-		ext := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldConstraints)
+		ext := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldRules)
 		if ext == nil {
-			ext = &validate.FieldConstraints{}
+			ext = &validate.FieldRules{}
 		}
 		ww.file.ensureImport(bufValidateImport)
 		ext.Required = gl.Ptr(true)
@@ -212,7 +212,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		}
 
 		if st.Object.Rules != nil {
-			rules := &validate.FieldConstraints{}
+			rules := &validate.FieldRules{}
 			proto.SetExtension(desc.Options, validate.E_Field, rules)
 			ww.file.ensureImport(bufValidateImport)
 		}
@@ -234,7 +234,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		ww.setJ5Ext(node.Source, desc.Options, "oneof", st.Oneof.Ext)
 
 		if st.Oneof.Rules != nil {
-			rules := &validate.FieldConstraints{}
+			rules := &validate.FieldRules{}
 			proto.SetExtension(desc.Options, validate.E_Field, rules)
 			ww.file.ensureImport(bufValidateImport)
 		}
@@ -296,8 +296,8 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 			}
 		}
 
-		rules := &validate.FieldConstraints{
-			Type: &validate.FieldConstraints_Enum{
+		rules := &validate.FieldRules{
+			Type: &validate.FieldRules_Enum{
 				Enum: enumRules,
 			},
 		}
@@ -321,8 +321,8 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		ww.setJ5Ext(node.Source, desc.Options, "bool", st.Bool.Ext)
 
 		if st.Bool.Rules != nil {
-			rules := &validate.FieldConstraints{
-				Type: &validate.FieldConstraints_Bool{
+			rules := &validate.FieldRules{
+				Type: &validate.FieldRules_Bool{
 					Bool: &validate.BoolRules{
 						Const: st.Bool.Rules.Const,
 					},
@@ -347,8 +347,8 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		ww.setJ5Ext(node.Source, desc.Options, "bytes", st.Bytes.Ext)
 
 		if st.Bytes.Rules != nil {
-			rules := &validate.FieldConstraints{
-				Type: &validate.FieldConstraints_Bytes{
+			rules := &validate.FieldRules{
+				Type: &validate.FieldRules_Bytes{
 					Bytes: &validate.BytesRules{
 						MinLen: st.Bytes.Rules.MinLength,
 						MaxLen: st.Bytes.Rules.MaxLength,
@@ -474,11 +474,11 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				return nil, fmt.Errorf("integer rules: exclusive maximum requires maximum to be set")
 			}
 
-			rules := &validate.FieldConstraints{}
+			rules := &validate.FieldRules{}
 
 			switch st.Integer.Format {
 			case schema_j5pb.IntegerField_FORMAT_INT32:
-				rules.Type = &validate.FieldConstraints_Int32{
+				rules.Type = &validate.FieldRules_Int32{
 					Int32: &validate.Int32Rules{},
 				}
 
@@ -507,7 +507,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				}
 
 			case schema_j5pb.IntegerField_FORMAT_INT64:
-				rules.Type = &validate.FieldConstraints_Int64{
+				rules.Type = &validate.FieldRules_Int64{
 					Int64: &validate.Int64Rules{},
 				}
 
@@ -536,7 +536,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				}
 
 			case schema_j5pb.IntegerField_FORMAT_UINT32:
-				rules.Type = &validate.FieldConstraints_Uint32{
+				rules.Type = &validate.FieldRules_Uint32{
 					Uint32: &validate.UInt32Rules{},
 				}
 
@@ -565,7 +565,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				}
 
 			case schema_j5pb.IntegerField_FORMAT_UINT64:
-				rules.Type = &validate.FieldConstraints_Uint64{
+				rules.Type = &validate.FieldRules_Uint64{
 					Uint64: &validate.UInt64Rules{},
 				}
 
@@ -717,8 +717,8 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				return nil, fmt.Errorf("unknown key format %T", st.Key.Format.Type)
 			}
 			ww.file.ensureImport(bufValidateImport)
-			proto.SetExtension(desc.Options, validate.E_Field, &validate.FieldConstraints{
-				Type: &validate.FieldConstraints_String_{
+			proto.SetExtension(desc.Options, validate.E_Field, &validate.FieldRules{
+				Type: &validate.FieldRules_String_{
 					String_: stringRules,
 				},
 			})
@@ -732,8 +732,8 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		ww.setJ5Ext(node.Source, desc.Options, "string", st.String_.Ext)
 
 		if st.String_.Rules != nil {
-			rules := &validate.FieldConstraints{
-				Type: &validate.FieldConstraints_String_{
+			rules := &validate.FieldRules{
+				Type: &validate.FieldRules_String_{
 					String_: &validate.StringRules{
 						MinLen:  st.String_.Rules.MinLength,
 						MaxLen:  st.String_.Rules.MaxLength,
@@ -767,8 +767,8 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		ww.setJ5Ext(node.Source, desc.Options, "timestamp", st.Timestamp.Ext)
 
 		if st.Timestamp.Rules != nil {
-			rules := &validate.FieldConstraints{
-				Type: &validate.FieldConstraints_Timestamp{
+			rules := &validate.FieldRules{
+				Type: &validate.FieldRules_Timestamp{
 					Timestamp: &validate.TimestampRules{},
 					// None Implemented.
 				},

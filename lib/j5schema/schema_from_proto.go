@@ -563,25 +563,25 @@ func buildComment(sourceLocation protoreflect.SourceLocation, fallback string) s
 }
 
 type protoFieldExtensions struct {
-	validate *validate.FieldConstraints
+	validate *validate.FieldRules
 	list     *list_j5pb.FieldConstraint
 	j5       *ext_j5pb.FieldOptions
 }
 
 func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensions {
-	validateConstraint := protosrc.GetExtension[*validate.FieldConstraints](src.Options(), validate.E_Field)
+	validateConstraint := protosrc.GetExtension[*validate.FieldRules](src.Options(), validate.E_Field)
 	if validateConstraint != nil && validateConstraint.Ignore != nil && *validateConstraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
 		// constraint.IgnoreEmpty doesn't really apply
 
 		// if the constraint is repeated, unwrap it
-		repeatedConstraint, ok := validateConstraint.Type.(*validate.FieldConstraints_Repeated)
+		repeatedConstraint, ok := validateConstraint.Type.(*validate.FieldRules_Repeated)
 		if ok {
 			validateConstraint = repeatedConstraint.Repeated.Items
 		}
 	}
 
 	if validateConstraint == nil {
-		validateConstraint = &validate.FieldConstraints{}
+		validateConstraint = &validate.FieldRules{}
 	}
 
 	listConstraint := protosrc.GetExtension[*list_j5pb.FieldConstraint](src.Options(), list_j5pb.E_Field)
