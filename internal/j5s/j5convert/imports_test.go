@@ -304,9 +304,9 @@ func TestImportEnum(t *testing.T) {
 		Type:     descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
 		Number:   proto.Int32(1),
 		TypeName: proto.String(".test.v1.TestEnum"),
-		Options: withOption(tEmptyTypeExt(t, "enum"), validate.E_Field, &validate.FieldConstraints{
+		Options: withOption(tEmptyTypeExt(t, "enum"), validate.E_Field, &validate.FieldRules{
 
-			Type: &validate.FieldConstraints_Enum{
+			Type: &validate.FieldRules_Enum{
 				Enum: &validate.EnumRules{
 					DefinedOnly: gl.Ptr(true),
 					In:          []int32{1, 2},

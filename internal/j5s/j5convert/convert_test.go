@@ -269,8 +269,8 @@ func TestSchemaToProto(t *testing.T) {
 					Type:     descriptorpb.FieldDescriptorProto_TYPE_ENUM.Enum(),
 					Number:   proto.Int32(2),
 					TypeName: proto.String(".test.v1.TestEnum"),
-					Options: withOption(tEmptyTypeExt(t, "enum"), validate.E_Field, &validate.FieldConstraints{
-						Type: &validate.FieldConstraints_Enum{
+					Options: withOption(tEmptyTypeExt(t, "enum"), validate.E_Field, &validate.FieldRules{
+						Type: &validate.FieldRules_Enum{
 							Enum: &validate.EnumRules{
 								DefinedOnly: gl.Ptr(true),
 							},
@@ -283,11 +283,11 @@ func TestSchemaToProto(t *testing.T) {
 					Type:   descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
 					Label:  descriptorpb.FieldDescriptorProto_LABEL_REPEATED.Enum(),
 					Number: proto.Int32(3),
-					Options: withOption(tEmptyTypeExt(t, "array"), validate.E_Field, &validate.FieldConstraints{
-						Type: &validate.FieldConstraints_Repeated{
+					Options: withOption(tEmptyTypeExt(t, "array"), validate.E_Field, &validate.FieldRules{
+						Type: &validate.FieldRules_Repeated{
 							Repeated: &validate.RepeatedRules{
-								Items: &validate.FieldConstraints{
-									Type: &validate.FieldConstraints_String_{
+								Items: &validate.FieldRules{
+									Type: &validate.FieldRules_String_{
 										String_: &validate.StringRules{
 											MinLen: proto.Uint64(1),
 										},
