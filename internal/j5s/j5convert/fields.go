@@ -759,7 +759,6 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		return desc, nil
 
 	case *schema_j5pb.Field_Timestamp:
-
 		desc.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
 		desc.TypeName = gl.Ptr(".google.protobuf.Timestamp")
 		ww.file.ensureImport(pbTimestamp)
@@ -776,9 +775,18 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 			proto.SetExtension(desc.Options, validate.E_Field, rules)
 		}
 
-		return desc, nil
-	case *schema_j5pb.Field_Any:
+		if st.Timestamp.ListRules != nil {
+			ww.file.ensureImport(j5ListAnnotationsImport)
+			proto.SetExtension(desc.Options, list_j5pb.E_Field, &list_j5pb.FieldConstraint{
+				Type: &list_j5pb.FieldConstraint_Timestamp{
+					Timestamp: st.Timestamp.ListRules,
+				},
+			})
+		}
 
+		return desc, nil
+
+	case *schema_j5pb.Field_Any:
 		desc.Type = descriptorpb.FieldDescriptorProto_TYPE_MESSAGE.Enum()
 		desc.TypeName = gl.Ptr(".j5.types.any.v1.Any")
 		ww.file.ensureImport(j5AnyImport)
@@ -790,6 +798,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		})
 
 		return desc, nil
+
 	default:
 		return nil, fmt.Errorf("unknown schema type %T", st)
 	}
