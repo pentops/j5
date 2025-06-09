@@ -28,6 +28,7 @@ type MessageCauseHeader struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// appliction level message_id field (from o5.messaging.v1.Message)
 	MessageId string `protobuf:"bytes,1,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	// Then o5.application.name which sent the message
 	SourceApp string `protobuf:"bytes,5,opt,name=source_app,json=sourceApp,proto3" json:"source_app,omitempty"`
@@ -93,7 +94,8 @@ type MessageCause struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Method    string `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
+	Method string `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
+	// appliction level message_id field (from o5.messaging.v1.Message)
 	MessageId string `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
 	// Then o5.application.name which sent the message
 	SourceApp string `protobuf:"bytes,3,opt,name=source_app,json=sourceApp,proto3" json:"source_app,omitempty"`

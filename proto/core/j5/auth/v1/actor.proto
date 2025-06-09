@@ -10,8 +10,8 @@ option go_package = "github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb";
 message Action {
   string method = 1 [(buf.validate.field).required = true];
   Actor actor = 2 [(buf.validate.field).required = true];
-
   Fingerprint fingerprint = 3;
+  string idempotency_key = 4;
 }
 
 message Fingerprint {
