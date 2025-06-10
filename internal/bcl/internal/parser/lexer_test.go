@@ -226,6 +226,7 @@ func TestSimple(t *testing.T) {
 		name: "literal types",
 		input: []string{
 			`vv = 123`,
+			`vv = -123`,
 			`vv = "value"`,
 			`vv = 123.456`,
 			`vv = true`,
@@ -233,6 +234,7 @@ func TestSimple(t *testing.T) {
 		},
 		expected: []Token{
 			tTokIdent("vv"), tTokAssign, tTokInt("123"), tTokEOL,
+			tTokIdent("vv"), tTokAssign, tTokInt("-123"), tTokEOL,
 			tTokIdent("vv"), tTokAssign, tTokString("value"), tTokEOL,
 			tTokIdent("vv"), tTokAssign, tTokDecimal("123.456"), tTokEOL,
 			tTokIdent("vv"), tTokAssign, tTokBool("true"), tTokEOL,
