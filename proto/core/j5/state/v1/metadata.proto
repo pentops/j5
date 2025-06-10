@@ -26,7 +26,7 @@ message StateMetadata {
 }
 
 message EventMetadata {
-  string event_id = 1 [(buf.validate.field).string.uuid = true];
+  string event_id = 1;
 
   // Sequence within the state machine. Discrete, 1,2,3
   uint64 sequence = 2;
@@ -48,7 +48,7 @@ message EventMetadata {
 // EventPublishMetadata is like EventMetadata but used in publish messages, and
 // doesn't cause protostate/psm parsers to think the message is an event.
 message EventPublishMetadata {
-  string event_id = 1 [(buf.validate.field).string.uuid = true];
+  string event_id = 1;
 
   // Sequence within the state machine. Discrete, 1,2,3
   uint64 sequence = 2;
@@ -108,7 +108,7 @@ message InitCause {
 // The event was caused by a transition in this or another state machine
 message PSMEventCause {
   // The ID of the event that caused this event
-  string event_id = 1 [(buf.validate.field).string.uuid = true];
+  string event_id = 1;
 
   // The identity of the state machine for the event.
   // {package}.{name}, where name is the annotated name in
