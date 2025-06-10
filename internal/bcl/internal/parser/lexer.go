@@ -215,6 +215,8 @@ func (l *Lexer) NextToken() (Token, error) {
 				continue
 			} else if unicode.IsDigit(l.ch) {
 				return l.lexNumber()
+			} else if l.ch == '-' && unicode.IsDigit(l.peek()) {
+				return l.lexNumber()
 			} else if unicode.IsLetter(l.ch) {
 				lit := l.lexIdent()
 				if keyword, ok := asKeyword(lit); ok {
@@ -273,9 +275,12 @@ func (l *Lexer) lexNumber() (Token, error) {
 		} else {
 			// scanned something not in the integer
 			tt.End = l.getPosition()
-			return tt, nil
+			break
 		}
 	}
+
+	return tt, nil
+
 }
 
 // lexIdent scans the input until the end of an identifier and then returns the

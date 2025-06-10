@@ -139,6 +139,8 @@ version = "v1"
 number = 123
 bool = true
 float = 1.23
+negative = -123
+negfloat = -1.23
 `
 
 	file := tParseFile(t, input)
@@ -149,6 +151,8 @@ float = 1.23
 		tAssign("number", tDecimal("123")),
 		tAssign("bool", tTrue),
 		tAssign("float", tDecimal("1.23")),
+		tAssign("negative", tDecimal("-123")),
+		tAssign("negfloat", tDecimal("-1.23")),
 	)
 }
 
