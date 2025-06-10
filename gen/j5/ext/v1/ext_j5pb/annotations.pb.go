@@ -7,14 +7,15 @@
 package ext_j5pb
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	auth_j5pb "github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	ext_j5pb "github.com/pentops/j5/gen/j5/oxt/v1/ext_j5pb"
 	schema_j5pb "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	descriptorpb "google.golang.org/protobuf/types/descriptorpb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

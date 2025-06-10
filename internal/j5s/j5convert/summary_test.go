@@ -121,7 +121,7 @@ func TestPolymorphSummary(t *testing.T) {
 	assert.Equal(t, "bar.v1.Bar", testPolymorph.Polymorph.Members[1], "TypeRef.Types[1]")
 
 	assert.Equal(t, 1, len(testPolymorph.Polymorph.Includes), "TypeRef.Includes")
-	assert.Equal(t, "baz.v1", testPolymorph.Polymorph.Includes[0].Ref.Package, "TypeRef.Includes[0]")
-	assert.Equal(t, "BazMorph", testPolymorph.Polymorph.Includes[0].Ref.Schema, "TypeRef.Includes[0]")
+	assert.Equal(t, "baz.v1", testPolymorph.Polymorph.Includes[0].Package, "TypeRef.Includes[0]")
+	assert.Equal(t, "BazMorph", testPolymorph.Polymorph.Includes[0].Schema, "TypeRef.Includes[0]")
 
 }

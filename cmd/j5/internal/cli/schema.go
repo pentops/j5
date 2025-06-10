@@ -38,7 +38,7 @@ type BuildConfig struct {
 
 func (cfg BuildConfig) GetSource(ctx context.Context) (*source_j5pb.SourceImage, error) {
 	if cfg.Remote == "" {
-		img, _, err := cfg.SourceConfig.GetBundleImage(ctx)
+		img, _, err := cfg.GetBundleImage(ctx)
 		return img, err
 	}
 

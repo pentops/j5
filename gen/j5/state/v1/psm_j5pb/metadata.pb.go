@@ -7,6 +7,9 @@
 package psm_j5pb
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	auth_j5pb "github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	_ "github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
@@ -15,8 +18,6 @@ import (
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	_ "google.golang.org/protobuf/types/descriptorpb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (

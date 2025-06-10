@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"maps"
+
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/plugin/v1/plugin_j5pb"
@@ -20,7 +22,6 @@ import (
 	"golang.org/x/mod/modfile"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
-	"maps"
 )
 
 func NewBuilder(runner PipeRunner) *Builder {

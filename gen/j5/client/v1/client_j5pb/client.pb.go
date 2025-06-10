@@ -7,14 +7,15 @@
 package client_j5pb
 
 import (
+	reflect "reflect"
+	sync "sync"
+
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	auth_j5pb "github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	schema_j5pb "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
 )
 
 const (
