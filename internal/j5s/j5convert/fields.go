@@ -103,9 +103,7 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 		if st.Array.Ext != nil {
 			proto.SetExtension(fieldDesc.Options, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
 				Type: &ext_j5pb.FieldOptions_Array{
-					Array: &ext_j5pb.ArrayField{
-						SingleForm: st.Array.Ext.SingleForm,
-					},
+					Array: st.Array.Ext,
 				},
 			})
 		}
@@ -832,7 +830,7 @@ func (ww *conversionVisitor) setJ5Ext(node sourcewalk.SourceNode, dest *descript
 	// as the Proto extension.
 	j5ExtRefl := j5Ext.ProtoReflect()
 	if j5ExtRefl.IsValid() {
-		j5ExtFields := j5ExtRefl.Descriptor().Fields()
+		j5ExtFields := extTypedRefl.Descriptor().Fields()
 
 		// Copy each field from the J5 extension to the Proto extension.
 		err := RangeField(j5ExtRefl, func(fd protoreflect.FieldDescriptor, v protoreflect.Value) error {

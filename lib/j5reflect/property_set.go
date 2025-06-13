@@ -54,6 +54,10 @@ type PropertySet interface {
 	// the *schema* for the property set.
 	HasProperty(name string) bool
 
+	// HasAvailableProperty is like HasProperty, but returns false in a oneof
+	// which is already set to another value
+	HasAvailableProperty(name string) bool
+
 	// GetProperty returns the property with the given name in the schema for
 	// the property set. The property may not be set to a value.
 	GetProperty(name string) (Property, error)
@@ -188,7 +192,7 @@ type hasProps interface {
 	ClientProperties() []*j5schema.ObjectProperty
 }
 
-var _ PropertySet = &propSet{}
+//var _ PropertySet = &propSet{}
 
 type propSet struct {
 	asMap   map[string]*property

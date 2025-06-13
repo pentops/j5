@@ -20,6 +20,8 @@ type ASTValue interface {
 	IsArray() bool
 	IsScalar() bool
 	AsArray() ([]ASTValue, bool)
+
+	GoString() string
 }
 
 type unknownValue struct {
@@ -100,6 +102,8 @@ func (v Value) AsString() (string, error) {
 	if v.token.Type != STRING &&
 		v.token.Type != DESCRIPTION &&
 		v.token.Type != IDENT &&
+		v.token.Type != DECIMAL &&
+		v.token.Type != INT &&
 		v.token.Type != REGEX {
 
 		return "", &TypeError{
@@ -172,6 +176,10 @@ func NewIntValue(val int64, pos Position) ASTValue {
 	}
 }
 
+func (iv IntValue) GoString() string {
+	return fmt.Sprintf("IntValue(%d)", iv.val)
+}
+
 func (iv IntValue) IsScalar() bool {
 	return true
 }
@@ -197,6 +205,10 @@ func NewStringValue(val string, src SourceNode) ASTValue {
 		val:          val,
 		SourceNode:   src,
 	}
+}
+
+func (sv StringValue) GoString() string {
+	return fmt.Sprintf("StringValue(%q)", sv.val)
 }
 
 func (sv StringValue) AsString() (string, error) {
@@ -226,7 +238,7 @@ type TagValue struct {
 var _ ASTValue = TagValue{}
 
 func (tv TagValue) GoString() string {
-	return fmt.Sprintf("tag(%s, %#v)", tv.Reference, tv.Value)
+	return fmt.Sprintf("TagValue(ref: %s, val: %#v)", tv.Reference, tv.Value)
 }
 
 func (tv TagValue) IsScalar() bool {
@@ -254,6 +266,10 @@ func NewBoolValue(val bool, pos Position) ASTValue {
 		unknownValue: unknownValue{typeName: "bool"},
 		val:          val,
 	}
+}
+
+func (iv BoolValue) GoString() string {
+	return fmt.Sprintf("BoolValue(%t)", iv.val)
 }
 
 func (iv BoolValue) IsScalar() bool {

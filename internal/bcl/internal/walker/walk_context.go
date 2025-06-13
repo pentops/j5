@@ -17,6 +17,7 @@ type ScopeFlag int
 const (
 	// Reset the scope to the new block
 	ResetScope ScopeFlag = iota
+
 	// Keep the current scope and add the new block
 	KeepScope
 )
@@ -147,12 +148,17 @@ func walkScope(scope *schema.Scope, path []pathElement, loc schema.SourceLocatio
 }
 
 func (sc *walkContext) BuildScope(schemaPath schema.PathSpec, userPath []parser.Ident, flag ScopeFlag) (*schema.Scope, error) {
+	sc.Logf("BuildScope(%#v, %#v, %s)", schemaPath, userPath, flag)
 	fullPath := combinePath(schemaPath, userPath)
 	if len(fullPath) == 0 {
-		if flag == KeepScope {
+		switch flag {
+		case ResetScope:
+			return sc.scope.TailScope(), nil
+		case KeepScope:
 			return sc.scope, nil
+		default:
+			return nil, newSchemaError(fmt.Errorf("unknown flag %d", flag))
 		}
-		return sc.scope.TailScope(), nil
 	}
 
 	container, err := sc.walkScopePath(fullPath)

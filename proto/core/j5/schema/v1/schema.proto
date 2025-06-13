@@ -127,6 +127,13 @@ message Object {
 
   // The names of any Polymorph types this object is a member of.
   repeated string polymorph_member = 5;
+
+  BCLObject bcl = 6;
+}
+
+message BCLObject {
+  repeated string tags = 1;
+  repeated string qualifiers = 2;
 }
 
 message EntityObject {

@@ -636,7 +636,6 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 						},
 					},
 				},
-				Required: true,
 			}, {
 				Name:       "page",
 				ProtoField: []int32{100},

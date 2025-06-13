@@ -16,6 +16,11 @@ type Formatter interface {
 }
 
 type ChangeHandler interface {
+	MatchFilename(string) bool
+	FileHandler
+}
+
+type FileHandler interface {
 	FileChanged(context.Context, *protocol.TextDocumentItem) ([]protocol.Diagnostic, error)
 }
 
@@ -23,15 +28,15 @@ type lspConfig struct {
 	ProjectRoot string
 
 	Formatter Formatter
-	OnChange  ChangeHandler
+	Handlers  []ChangeHandler
 }
 
 type serverStream struct {
 	files      *fileSet
 	dispatcher replyServer
 
-	Formatter     Formatter
-	ChangeHandler ChangeHandler
+	Formatter Formatter
+	Handlers  []ChangeHandler
 }
 
 type replyServer interface {
@@ -44,9 +49,9 @@ func newServerStream(cfg lspConfig) (*serverStream, error) {
 		return nil, fmt.Errorf("failed to create file set: %w", err)
 	}
 	ss := &serverStream{
-		files:         files,
-		Formatter:     cfg.Formatter,
-		ChangeHandler: cfg.OnChange,
+		files:     files,
+		Formatter: cfg.Formatter,
+		Handlers:  cfg.Handlers,
 	}
 
 	dbchange := newDebounce(500, ss.fileDidChange)
@@ -62,11 +67,25 @@ func (ss *serverStream) fileDidChange(ctx context.Context, doc *protocol.TextDoc
 	}
 }
 
-func (ss *serverStream) fileDidChangeErr(ctx context.Context, doc *protocol.TextDocumentItem) error {
-	if ss.ChangeHandler == nil {
-		return nil
+func (ss *serverStream) findHandler(doc *protocol.TextDocumentItem) (ChangeHandler, error) {
+	relPath, err := ss.files.relativeURL(doc.URI)
+	if err != nil {
+		return nil, err
 	}
-	diagnostics, err := ss.ChangeHandler.FileChanged(ctx, doc)
+	for _, handler := range ss.Handlers {
+		if handler.MatchFilename(relPath) {
+			return handler, nil
+		}
+	}
+	return nil, fmt.Errorf("no handler found for file %s", relPath)
+}
+
+func (ss *serverStream) fileDidChangeErr(ctx context.Context, doc *protocol.TextDocumentItem) error {
+	handler, err := ss.findHandler(doc)
+	if err != nil {
+		return err
+	}
+	diagnostics, err := handler.FileChanged(ctx, doc)
 	if err != nil {
 		return err
 	}
@@ -84,6 +103,13 @@ func (ss *serverStream) Run(ctx context.Context, rwc io.ReadWriteCloser) error {
 	conn := jsonrpc2.NewConn(jsonrpc2.NewStream(rwc))
 	ss.dispatcher = conn
 	conn.Go(ctx, ss.handle)
+	go func() {
+		<-ctx.Done()
+		log.Info(ctx, "closing JSON-RPC connection")
+		if err := conn.Close(); err != nil {
+			log.WithError(ctx, err).Error("failed to close JSON-RPC connection")
+		}
+	}()
 	<-conn.Done()
 	return nil
 }

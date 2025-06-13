@@ -147,6 +147,9 @@ var J5SchemaSpec = &bcl_j5pb.Schema{
 		Alias: []*bcl_j5pb.Alias{{
 			Name: "field",
 			Path: bclPath("object", "properties"),
+		}, {
+			Name: "bcl",
+			Path: bclPath("object", "bcl"),
 		}},
 	}, {
 		SchemaName: "j5.schema.v1.OneofField",

@@ -77,6 +77,7 @@ message MessageOptions {
 
 message ObjectMessageOptions {
   repeated string polymorph_member = 3;
+  j5.schema.v1.BCLObject bcl = 4;
 }
 
 message OneofMessageOptions {}
@@ -167,8 +168,8 @@ message FieldOptions {
     OneofField oneof = 12;
     PolymorphField polymorph = 13;
 
-    MapField map = 20;
-    ArrayField array = 21;
+    j5.schema.v1.MapField.Ext map = 20;
+    j5.schema.v1.ArrayField.Ext array = 21;
 
     StringField string = 30;
     IntegerField integer = 31;

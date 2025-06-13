@@ -27,19 +27,9 @@ func (bs containerSet) schemaNames() []string {
 func (bs containerSet) allChildFields() map[string]*schema_j5pb.Field {
 	children := map[string]*schema_j5pb.Field{}
 	for _, blockSchema := range bs {
-		_ = blockSchema.container.RangePropertySchemas(func(name string, required bool, schema *schema_j5pb.Field) error {
+		for name, schema := range blockSchema.allFields() {
 			if _, ok := children[name]; !ok {
 				children[name] = schema
-			}
-			return nil
-		})
-		for name, path := range blockSchema.spec.Aliases {
-			schema, err := blockSchema.container.ContainerSchema().WalkToProperty(path...)
-			if err != nil {
-				continue
-			}
-			if _, ok := children[name]; !ok {
-				children[name] = schema.ToJ5Field()
 			}
 		}
 	}
@@ -86,7 +76,7 @@ type schemaFlags struct {
 }
 
 func (sf schemaFlags) GoString() string {
-	return fmt.Sprintf("schema: Attr %v, Block: %v}", sf.canAttribute, sf.canBlock)
+	return fmt.Sprintf("schema: Attr %t, Block: %t}", sf.canAttribute, sf.canBlock)
 }
 
 func schemaCan(st schema_j5pb.IsField_Type) schemaFlags {

@@ -205,7 +205,7 @@ func checkBang(sc Context, tagSpec schema.Tag, gotTag parser.TagValue) error {
 		path = schema.PathSpec{*tagSpec.QuestionFieldName}
 	}
 
-	sc.Logf("Applying Tag Mark, %#v %s", tagSpec, gotTag)
+	sc.Logf("Applying Tag Mark, %#v %#v", tagSpec, gotTag)
 	err := sc.SetAttribute(path, nil, parser.NewBoolValue(true, gotTag.Start))
 	if err != nil {
 		return err
@@ -214,6 +214,7 @@ func checkBang(sc Context, tagSpec schema.Tag, gotTag parser.TagValue) error {
 }
 
 func walkTags(sc Context, spec schema.BlockSpec, gotTags popSet, outerCallback SpanCallback) error {
+	sc.Logf("remaining tags: %#v", gotTags.items)
 
 	if spec.Name != nil {
 		gotTag, ok := gotTags.popFirst()
@@ -254,7 +255,7 @@ func walkTags(sc Context, spec schema.BlockSpec, gotTags popSet, outerCallback S
 
 		tagSpec := *spec.TypeSelect
 
-		sc.Logf("TypeSelect %#v %s", tagSpec, gotTag)
+		sc.Logf("TypeSelect %#v %#v", tagSpec, gotTag)
 		if gotTag.Reference == nil {
 			return fmt.Errorf("type-select %s needs to be a reference", tagSpec.FieldName)
 		}
@@ -318,7 +319,7 @@ func walkQualifiers(sc Context, spec schema.BlockSpec, gotQualifiers popSet, out
 	}
 
 	tagSpec := spec.Qualifier
-	sc.Logf("Qualifier %#v %s", tagSpec, qualifier)
+	sc.Logf("Qualifier %#v %#v", tagSpec, qualifier)
 
 	if !tagSpec.IsBlock {
 		if err := checkBang(sc, *tagSpec, qualifier); err != nil {

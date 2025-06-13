@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -54,16 +55,35 @@ func runLSP(ctx context.Context, cfg struct {
 	}
 	log.DefaultLogger = logger
 
+	fileTypes := []genlsp.FileTypeConfig{}
 	cc, err := newLspCompiler(ctx, cfg.Dir)
 	if err != nil {
-		return err
+		if !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+		log.WithError(ctx, err).Warn("No j5 config found, running in basic mode")
+	} else {
+		j5s := genlsp.FileTypeConfig{
+			Schema:      j5parse.J5SchemaSpec,
+			FileFactory: j5parse.FileStub,
+			OnChange:    cc.updateFile,
+			Match: func(filename string) bool {
+				return strings.HasSuffix(filename, ".j5")
+			},
+		}
+		fileTypes = append(fileTypes, j5s)
 	}
+
+	// generic fallback for basic bcl syntax and format
+	fileTypes = append(fileTypes, genlsp.FileTypeConfig{
+		Match: func(filename string) bool {
+			return true
+		},
+	})
 
 	return genlsp.RunLSP(ctx, genlsp.Config{
 		ProjectRoot: cfg.Dir,
-		Schema:      j5parse.J5SchemaSpec,
-		FileFactory: j5parse.FileStub,
-		OnChange:    cc.updateFile,
+		FileTypes:   fileTypes,
 	})
 }
 

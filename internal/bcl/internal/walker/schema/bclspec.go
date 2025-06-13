@@ -74,6 +74,24 @@ func (t *Tag) Validate(tagType TagType) error {
 	return nil
 }
 
+func (t Tag) GoString() string {
+	base := fmt.Sprintf("Tag(%s", t.FieldName)
+	if t.BangFieldName != nil {
+		base += fmt.Sprintf(", !%s", *t.BangFieldName)
+	}
+	if t.QuestionFieldName != nil {
+		base += fmt.Sprintf(", ?%s", *t.QuestionFieldName)
+	}
+	if t.IsOptional {
+		base += ", optional"
+	}
+	if t.IsBlock {
+		base += ", block"
+	}
+	base += ")"
+	return base
+}
+
 type ChildSpec struct {
 	Path PathSpec
 	//IsContainer  bool
