@@ -178,6 +178,19 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 		}
 	}
 
+	if node.Schema.EntityKey != nil {
+		entityExt := &ext_j5pb.PSMKeyFieldOptions{}
+
+		if node.Schema.EntityKey.PrimaryKey { // May be explicitly false to self-document
+			entityExt.PrimaryKey = true
+		}
+
+		if node.Schema.EntityKey.TenantKey != nil {
+			entityExt.TenantType = node.Schema.EntityKey.TenantKey
+		}
+		proto.SetExtension(fieldDesc.Options, ext_j5pb.E_Key, entityExt)
+	}
+
 	fieldDesc.Name = gl.Ptr(protoFieldName)
 	fieldDesc.JsonName = gl.Ptr(jsonFieldName)
 	fieldDesc.Number = gl.Ptr(node.Number)
@@ -636,23 +649,11 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		desc.Type = descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()
 		ww.file.ensureImport(j5ExtImport)
 
-		if st.Key.Entity != nil {
-			entityExt := &ext_j5pb.PSMKeyFieldOptions{}
-			switch et := st.Key.Entity.Type.(type) {
-			case *schema_j5pb.EntityKey_PrimaryKey:
-				if et.PrimaryKey { // May be explicitly false to self-document
-					entityExt.PrimaryKey = true
-				}
-			case *schema_j5pb.EntityKey_ForeignKey:
-				entityExt.ForeignKey = et.ForeignKey
-			}
-			if st.Key.Entity.TenantKey != nil {
-				entityExt.TenantType = st.Key.Entity.TenantKey
-			}
-			proto.SetExtension(desc.Options, ext_j5pb.E_Key, entityExt)
-		}
-
-		ww.setJ5Ext(node.Source, desc.Options, "key", st.Key.Ext)
+		proto.SetExtension(desc.Options, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
+			Type: &ext_j5pb.FieldOptions_Key{
+				Key: &ext_j5pb.KeyField{},
+			},
+		})
 
 		if st.Key.ListRules != nil {
 			var fkt list_j5pb.IsForeignKeyRules_Type

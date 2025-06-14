@@ -246,9 +246,7 @@ func (container *containerField) walkPath(path []string, loc SourceLocation) ([]
 	}
 
 	name, resst := path[0], path[1:]
-	fmt.Printf("Walk path %q in %s\n", path, container.SchemaName())
 	if !container.container.HasAvailableProperty(name) {
-		fmt.Printf("Err walking path %q, available: %v\n", name, container.container.ListPropertyNames())
 		return nil, &WalkPathError{
 			Field:     name,
 			Type:      NodeNotFound,

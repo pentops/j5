@@ -29,8 +29,6 @@ message PSMKeyFieldOptions {
   // Marks the key as participating in the primary key of this entity
   bool primary_key = 1;
 
-  // Marks the field as a foreign key to the given entity.
-  j5.schema.v1.EntityRef foreign_key = 2;
 
   // Marks the field as containing a tenant_id for the given tenant. Copies to
   // j5.state.v1.PublishAuth.tenant_keys on publish
@@ -268,4 +266,5 @@ message KeyField {
     FORMAT_UUID = 2;
     FORMAT_ID62 = 3;
   }
+  j5.schema.v1.EntityRef foreign = 3;
 }

@@ -17,7 +17,7 @@ message FooKeys {
   ];
 
   string bar_id = 2 [
-    (j5.ext.v1.key).foreign_key = {
+    (j5.ext.v1.field).key.foreign = {
       package: "test.foo.v1"
       entity: "bar"
     },

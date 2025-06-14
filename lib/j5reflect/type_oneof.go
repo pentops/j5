@@ -36,7 +36,7 @@ type oneofImpl struct {
 }
 
 func (oneof *oneofImpl) HasAvailableProperty(name string) bool {
-	field, ok, err := oneof.propSet.GetOne()
+	field, ok, err := oneof.GetOne()
 	if !ok || err != nil {
 		// err is that it's already set to multiple types
 		return oneof.HasProperty(name)

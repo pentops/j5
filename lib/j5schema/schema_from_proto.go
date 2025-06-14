@@ -563,9 +563,10 @@ func buildComment(sourceLocation protoreflect.SourceLocation, fallback string) s
 }
 
 type protoFieldExtensions struct {
-	validate *validate.FieldRules
-	list     *list_j5pb.FieldConstraint
-	j5       *ext_j5pb.FieldOptions
+	validate  *validate.FieldRules
+	list      *list_j5pb.FieldConstraint
+	j5        *ext_j5pb.FieldOptions
+	entityKey *ext_j5pb.PSMKeyFieldOptions
 }
 
 func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensions {
@@ -588,10 +589,13 @@ func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensi
 
 	fieldOptions := protosrc.GetExtension[*ext_j5pb.FieldOptions](src.Options(), ext_j5pb.E_Field)
 
+	psmKeyExt := protosrc.GetExtension[*ext_j5pb.PSMKeyFieldOptions](src.Options(), ext_j5pb.E_Key)
+
 	exts := protoFieldExtensions{
-		validate: validateConstraint,
-		list:     listConstraint,
-		j5:       fieldOptions,
+		validate:  validateConstraint,
+		list:      listConstraint,
+		j5:        fieldOptions,
+		entityKey: psmKeyExt,
 	}
 
 	return exts
@@ -617,6 +621,12 @@ func (pkg *Package) buildSchemaProperty(context fieldContext, src protoreflect.F
 	}
 	prop.Schema = fieldSchema
 
+	if ext.entityKey != nil {
+		ee := &schema_j5pb.EntityKey{
+			PrimaryKey: ext.entityKey.PrimaryKey,
+		}
+		prop.Entity = ee
+	}
 	return prop, nil
 }
 
@@ -1414,6 +1424,7 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 	if fkRules != nil {
 		looksLikeKey = true
 	} else if psmKeyExt != nil {
+		// strings which are entity keys are... keys
 		looksLikeKey = true
 	} else if stringItem.Format != nil && *stringItem.Format == id62Format {
 		looksLikeKey = true
@@ -1435,6 +1446,11 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 	}
 
 	if keyFieldOpt != nil {
+		if keyFieldOpt.Foreign != nil {
+			keyField.Ext = &schema_j5pb.KeyField_Ext{
+				Foreign: keyFieldOpt.Foreign,
+			}
+		}
 		if keyFieldOpt.Type != nil {
 			switch keyType := keyFieldOpt.Type.(type) {
 			case *ext_j5pb.KeyField_Pattern:
@@ -1469,19 +1485,6 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 
 		}
 
-	}
-	if psmKeyExt != nil {
-		ee := &schema_j5pb.EntityKey{}
-		if psmKeyExt.PrimaryKey {
-			ee.Type = &schema_j5pb.EntityKey_PrimaryKey{
-				PrimaryKey: true,
-			}
-		} else if psmKeyExt.ForeignKey != nil {
-			ee.Type = &schema_j5pb.EntityKey_ForeignKey{
-				ForeignKey: psmKeyExt.ForeignKey,
-			}
-		}
-		keyField.Entity = ee
 	}
 
 	if stringItem.Format != nil {

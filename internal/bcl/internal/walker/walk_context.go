@@ -12,34 +12,13 @@ import (
 	"github.com/pentops/j5/internal/bcl/internal/walker/schema"
 )
 
-type ScopeFlag int
-
-const (
-	// Reset the scope to the new block
-	ResetScope ScopeFlag = iota
-
-	// Keep the current scope and add the new block
-	KeepScope
-)
-
-func (sf ScopeFlag) String() string {
-	switch sf {
-	case ResetScope:
-		return "ResetScope"
-	case KeepScope:
-		return "KeepScope"
-	default:
-		return "Unknown"
-	}
-}
-
 type Context interface {
-	BuildScope(schemaPath schema.PathSpec, userPath []parser.Ident, flag ScopeFlag) (*schema.Scope, error)
-	WithScope(newScope *schema.Scope, fn SpanCallback) error
+	WithFreshScope(path ScopePath, fn SpanCallback) error
+	WithMergedScope(path ScopePath, fn SpanCallback) error
 
 	SetDescription(desc parser.ASTValue) error
-	SetAttribute(path schema.PathSpec, ref []parser.Ident, value parser.ASTValue) error
-	AppendAttribute(path schema.PathSpec, ref []parser.Ident, value parser.ASTValue) error
+	SetAttribute(path ScopePath, value parser.ASTValue) error
+	AppendAttribute(path ScopePath, value parser.ASTValue) error
 
 	setContainerFromScalar(bs schema.BlockSpec, vals parser.ASTValue) error
 
@@ -72,6 +51,27 @@ type pathElement struct {
 	position *schema.SourceLocation
 }
 
+type ScopePath struct {
+	Schema schema.PathSpec
+	User   []parser.Ident
+}
+
+func (sp ScopePath) GoString() string {
+	nn := make([]string, 0, len(sp.Schema)+len(sp.User))
+	for _, ident := range sp.Schema {
+		nn = append(nn, ident)
+	}
+	uu := make([]string, 0, len(sp.User))
+	for _, ident := range sp.User {
+		uu = append(uu, ident.String())
+	}
+	return fmt.Sprintf("idents{%s/%s}", strings.Join(nn, "."), strings.Join(uu, "."))
+}
+
+func (sp ScopePath) combined() []pathElement {
+	return combinePath(sp.Schema, sp.User)
+}
+
 func combinePath(path schema.PathSpec, ref []parser.Ident) []pathElement {
 	pathToBlock := make([]pathElement, len(path)+len(ref))
 	for i, ident := range path {
@@ -97,10 +97,8 @@ func (sc *walkContext) SetLocation(loc schema.SourceLocation) {
 }
 
 func (sc *walkContext) walkScopePath(path []pathElement) (*schema.Scope, error) {
-	return walkScope(sc.scope, path, sc.blockLocation)
-}
-
-func walkScope(scope *schema.Scope, path []pathElement, loc schema.SourceLocation) (*schema.Scope, error) {
+	scope := sc.scope
+	loc := sc.blockLocation
 	for _, ident := range path {
 		if ident.position != nil {
 			loc = *ident.position
@@ -108,7 +106,8 @@ func walkScope(scope *schema.Scope, path []pathElement, loc schema.SourceLocatio
 
 		next, werr := scope.ChildBlock(ident.name, loc)
 		if werr == nil { // INVERSION
-			scope = next
+			sc.Logf("walkScopePath %q found %s", ident.name, next.CurrentBlock().SchemaName())
+			scope = next.Orphan()
 			continue
 		}
 
@@ -147,35 +146,6 @@ func walkScope(scope *schema.Scope, path []pathElement, loc schema.SourceLocatio
 	return scope, nil
 }
 
-func (sc *walkContext) BuildScope(schemaPath schema.PathSpec, userPath []parser.Ident, flag ScopeFlag) (*schema.Scope, error) {
-	sc.Logf("BuildScope(%#v, %#v, %s)", schemaPath, userPath, flag)
-	fullPath := combinePath(schemaPath, userPath)
-	if len(fullPath) == 0 {
-		switch flag {
-		case ResetScope:
-			return sc.scope.TailScope(), nil
-		case KeepScope:
-			return sc.scope, nil
-		default:
-			return nil, newSchemaError(fmt.Errorf("unknown flag %d", flag))
-		}
-	}
-
-	container, err := sc.walkScopePath(fullPath)
-	if err != nil {
-		return nil, err
-	}
-
-	switch flag {
-	case ResetScope:
-		return container, nil
-	case KeepScope:
-		return sc.scope.MergeScope(container), nil
-	default:
-		return nil, newSchemaError(fmt.Errorf("unknown flag %d", flag))
-	}
-}
-
 type BadTypeError struct {
 	WantType string
 	GotType  string
@@ -192,32 +162,39 @@ func (sc *walkContext) SetDescription(description parser.ASTValue) error {
 		return newSchemaError(fmt.Errorf("no description field"))
 	}
 
-	return sc.SetAttribute(schema.PathSpec{*descSpec}, nil, description)
+	return sc.SetAttribute(ScopePath{Schema: schema.PathSpec{*descSpec}}, description)
 }
 
-func (sc *walkContext) AppendAttribute(path schema.PathSpec, ref []parser.Ident, val parser.ASTValue) error {
-	sc.Logf("AppendAttribute(%#v, %#v, %#v, %s)", path, ref, val, val.Position())
-	return sc.setAttribute(path, ref, val, true)
+func (sc *walkContext) AppendAttribute(path ScopePath, val parser.ASTValue) error {
+	sc.Logf("AppendAttribute(%#v, %#v, %s)", path, val, val.Position())
+	return sc.setAttribute(path, val, true)
 }
 
-func (sc *walkContext) SetAttribute(path schema.PathSpec, ref []parser.Ident, val parser.ASTValue) error {
-	sc.Logf("SetAttribute(%#v, %#v, %#v, %s)", path, ref, val, val.Position())
-	return sc.setAttribute(path, ref, val, false)
+func (sc *walkContext) SetAttribute(path ScopePath, val parser.ASTValue) error {
+	sc.Logf("SetAttribute(%#v,  %#v, %s)", path, val, val.Position())
+	return sc.setAttribute(path, val, false)
 }
 
-func (sc *walkContext) setAttribute(path schema.PathSpec, ref []parser.Ident, val parser.ASTValue, appendValue bool) error {
+func (sc *walkContext) setAttribute(path ScopePath, val parser.ASTValue, appendValue bool) error {
 
-	fullPath := combinePath(path, ref)
+	fullPath := path.combined()
 	if len(fullPath) == 0 {
 		return newSchemaError(fmt.Errorf("empty path for SetAttribute"))
 	}
 
 	last := fullPath[len(fullPath)-1]
 	pathToBlock := fullPath[:len(fullPath)-1]
-	parentScope, err := sc.walkScopePath(pathToBlock)
-	if err != nil {
-		return err
+	parentScope := sc.scope
+	if len(pathToBlock) > 0 {
+		foundScope, err := sc.walkScopePath(pathToBlock)
+		if err != nil {
+			return err
+		}
+		parentScope = foundScope.Orphan()
 	}
+
+	sc.Logf(">> SetAttribute %q in %q", last.name, parentScope.CurrentBlock().SchemaName())
+	sc.logScope(parentScope)
 
 	field, walkPathErr := parentScope.Field(last.name, val.Position(), appendValue)
 	if walkPathErr != nil {
@@ -239,7 +216,8 @@ func (sc *walkContext) setAttribute(path schema.PathSpec, ref []parser.Ident, va
 			return sc.WrapErr(err, val.Position())
 		}
 
-		return sc.WithScope(containerScope, func(sc Context, bs schema.BlockSpec) error {
+		sc.Logf("|>>> Entering Clean Container for Block-Attribute >>>")
+		return sc.withScope(containerScope.Orphan(), func(sc Context, bs schema.BlockSpec) error {
 			return sc.setContainerFromScalar(bs, val)
 		})
 	}
@@ -263,6 +241,7 @@ func (sc *walkContext) setAttribute(path schema.PathSpec, ref []parser.Ident, va
 					return sc.WrapErr(err, val.Position())
 				}
 			}
+			sc.Logf("SetAttribute Array Done")
 			return nil
 		}
 
@@ -272,8 +251,6 @@ func (sc *walkContext) setAttribute(path schema.PathSpec, ref []parser.Ident, va
 		}, val.Position())
 	}
 
-	sc.Logf("Attribute is not Array")
-
 	scalarField, ok := field.AsScalar()
 	if !ok {
 		return sc.WrapErr(BadTypeError{
@@ -282,11 +259,13 @@ func (sc *walkContext) setAttribute(path schema.PathSpec, ref []parser.Ident, va
 		}, val.Position())
 	}
 
-	err = scalarField.SetASTValue(val)
+	err := scalarField.SetASTValue(val)
 	if err != nil {
 		err = fmt.Errorf("SetAttribute %s: %w", field.FullTypeName(), err)
 		return sc.WrapErr(err, val.Position())
 	}
+
+	sc.Logf("SetAttribute Non-Array Done")
 	return nil
 }
 
@@ -334,7 +313,7 @@ func (sc *walkContext) setContainerFromScalar(bs schema.BlockSpec, val parser.AS
 	intoRequired, remaining := setVals[:len(ss.Required)], setVals[len(ss.Required):]
 	for idx, val := range intoRequired {
 		rr := ss.Required[idx]
-		if err := sc.SetAttribute(rr, nil, val); err != nil {
+		if err := sc.SetAttribute(ScopePath{Schema: rr}, val); err != nil {
 			return err
 		}
 	}
@@ -352,7 +331,7 @@ func (sc *walkContext) setContainerFromScalar(bs schema.BlockSpec, val parser.AS
 
 	for idx, val := range optional {
 		ro := ss.Optional[idx]
-		if err := sc.SetAttribute(ro, nil, val); err != nil {
+		if err := sc.SetAttribute(ScopePath{Schema: ro}, val); err != nil {
 			return err
 		}
 	}
@@ -388,44 +367,66 @@ func (sc *walkContext) setContainerFromScalar(bs schema.BlockSpec, val parser.AS
 	}
 	singleString := strings.Join(remainingStr, delim)
 
-	return sc.SetAttribute(*ss.Remainder, nil, parser.NewStringValue(singleString, parser.SourceNode{
+	return sc.SetAttribute(ScopePath{Schema: *ss.Remainder}, parser.NewStringValue(singleString, parser.SourceNode{
 		Start: remaining[0].Position().Start,
 		End:   remaining[len(remaining)-1].Position().End,
 	}))
 
 }
 
-func (wc *walkContext) run(fn func(Context) error) error {
-	err := fn(wc)
-	if err != nil {
-		// already scoped, pass it up the tree.
-		scoped := &scopedError{}
-		if errors.As(err, &scoped) {
-			return err
+func (wc *walkContext) WithFreshScope(path ScopePath, fn SpanCallback) error {
+	fullPath := path.combined()
+	if len(fullPath) == 0 {
+		newScope := wc.scope.TailScope()
+		if wc.verbose {
+			wc.Logf("|>>> Entering FRESH Reset %q >>>", newScope.CurrentBlock().Name())
 		}
-
-		wc.Logf("New Error %s", err)
-
-		posErr, ok := errpos.AsError(err)
-		if !ok {
-			wc.Logf("Not errpos")
-			posErr = &errpos.Err{
-				Err: err,
-			}
-		}
-
-		return &scopedError{
-			err:    posErr,
-			schema: wc.scope,
-		}
+		return wc.withScope(newScope, fn)
 	}
-	return nil
+
+	container, err := wc.walkScopePath(fullPath)
+	if err != nil {
+		return err
+	}
+
+	if wc.verbose {
+		wc.Logf("|>>> Entering FRESH %q >>>", container.CurrentBlock().Name())
+	}
+
+	return wc.withScope(container.Orphan(), fn)
 }
 
-func (wc *walkContext) WithScope(newScope *schema.Scope, fn SpanCallback) error {
-	return wc.withSchema(newScope, fn)
+func (wc *walkContext) WithMergedScope(path ScopePath, fn SpanCallback) error {
+	fullPath := path.combined()
+	if len(fullPath) == 0 {
+		if wc.verbose {
+			wc.Logf("|>>> Entering MERGED Re-Entry %q >>>", wc.scope.CurrentBlock().Name())
+		}
+		return wc.withScope(wc.scope, fn)
+	}
+	container, err := wc.walkScopePath(fullPath)
+	if err != nil {
+		return err
+	}
+	newScope := wc.scope.MergeScope(container)
+
+	if wc.verbose {
+		wc.Logf("|>>> Entering MERGED %q >>>", container.CurrentBlock().Name())
+	}
+	return wc.withScope(newScope, fn)
 }
-func (wc *walkContext) withSchema(newScope *schema.Scope, fn SpanCallback) error {
+
+func (wc *walkContext) logScope(scope *schema.Scope) {
+	if !wc.verbose {
+		return
+	}
+	wc.Logf("|>>> SCOPE %q >>>", scope.CurrentBlock().SchemaName())
+	prefix := strings.Repeat("| ", wc.depth) + "|> "
+	entry := prefixer(log.Printf, prefix)
+	scope.PrintScope(entry)
+}
+
+func (wc *walkContext) withScope(newScope *schema.Scope, fn SpanCallback) error {
 	lastBlock := newScope.CurrentBlock()
 
 	newPath := append(wc.path, lastBlock.Name())
@@ -448,16 +449,32 @@ func (wc *walkContext) withSchema(newScope *schema.Scope, fn SpanCallback) error
 		blockLocation: wc.blockLocation,
 	}
 
-	err := childContext.run(func(sc Context) error {
-		return fn(sc, lastBlock.Spec())
-	})
-	if err != nil {
+	err := fn(childContext, lastBlock.Spec())
+	if err == nil {
+		wc.Logf("|<<< Exiting OK %q <<<", lastBlock.Name())
+		return nil
+	}
+
+	// already scoped, pass it up the tree.
+	scoped := &scopedError{}
+	if errors.As(err, &scoped) {
 		return err
 	}
-	if wc.verbose {
-		wc.Logf("|<<< Exiting %q <<<", lastBlock.Name())
+
+	wc.Logf("New Error %s", err)
+
+	posErr, ok := errpos.AsError(err)
+	if !ok {
+		wc.Logf("Not errpos")
+		posErr = &errpos.Err{
+			Err: err,
+		}
 	}
-	return nil
+
+	return &scopedError{
+		err:    posErr,
+		schema: newScope,
+	}
 }
 
 type HasPosition interface {

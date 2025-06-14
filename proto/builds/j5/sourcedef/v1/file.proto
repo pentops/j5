@@ -142,6 +142,9 @@ message EntityKey {
   // The order in the path, like primary keys, is defined by the >
   // of the fields in the source file.
   bool shard_key = 2;
+
+  bool primary = 4;
+  string tenant = 5;
 }
 
 message Oneof {

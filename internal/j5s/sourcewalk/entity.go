@@ -559,12 +559,7 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 	listHttpPath := []string{}
 
 	for _, key := range ent.Schema.Keys {
-		kk := key.Def.Schema.GetKey()
-		if kk == nil {
-			// The field is an entity Key, but is not a 'Key' field
-			continue
-		}
-		if kk.Entity != nil && kk.Entity.GetPrimaryKey() {
+		if key.Primary || key.Def.EntityKey != nil && key.Def.EntityKey.GetPrimaryKey() {
 			// The field is a Primary Key of the entity
 			getKeys = append(getKeys, key.Def)
 			httpPath = append(httpPath, fmt.Sprintf(":%s", key.Def.Name))

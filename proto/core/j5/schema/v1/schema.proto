@@ -410,29 +410,14 @@ message KeyField {
   KeyFormat format = 2;
   j5.list.v1.KeyRules list_rules = 3;
   Ext ext = 4;
-  EntityKey entity = 5;
 
   message Rules {}
-  message Ext {}
-}
-
-message EntityKey {
-  //# unexposed oneof, mainly because of the circular dependency between ext and
-  //# schema, but also to avoid further clutter in the proto tags.
-  oneof type {
-    // the field is the primary key of the state entity. It is only valid in the
-    // keys object of an entity.
-    bool primary_key = 1;
-
-    // When set, this key should be in the keys of an entity, and references the
-    // primary key of another entity.
-    EntityRef foreign_key = 2;
+  message Ext {
+    // Marks the field as a foreign key to the given entity.
+    EntityRef foreign = 2;
   }
-
-  // Marks the field as containing a tenant_id for the given tenant. Copies to
-  // j5.state.v1.PublishAuth.tenant_keys on publish
-  optional string tenant_key = 5;
 }
+
 
 message KeyFormat {
   oneof type {
@@ -459,9 +444,21 @@ message ObjectProperty {
   //bool write_only = 7;
   string description = 8;
 
+  EntityKey entityKey = 9;
+
   // For flattened objects,
   // Defines the path from the root proto message to the field. All but the last
   // node will be message fields holding a message kind, and the last node is
   // the field containing the property type.
   repeated int32 proto_field = 11;
+}
+  
+message EntityKey {
+  // the field is the primary key of the state entity. It is only valid in the
+  // keys object of an entity.
+  bool primary_key = 1;
+
+  // Marks the field as containing a tenant_id for the given tenant. Copies to
+  // j5.state.v1.PublishAuth.tenant_keys on publish
+  optional string tenant_key = 5;
 }

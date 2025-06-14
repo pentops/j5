@@ -345,6 +345,7 @@ func (ps PropertySet) WalkToProperty(name ...string) (FieldSchema, error) {
 type ObjectProperty struct {
 	Parent RootSchema
 	Schema FieldSchema
+	Entity *schema_j5pb.EntityKey
 
 	ProtoField []protoreflect.FieldNumber
 
@@ -385,6 +386,7 @@ func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 	}
 	return &schema_j5pb.ObjectProperty{
 		Schema:             prop.Schema.ToJ5Field(),
+		EntityKey:          prop.Entity,
 		Name:               prop.JSONName,
 		Required:           prop.Required,
 		ExplicitlyOptional: prop.ExplicitlyOptional,
@@ -399,6 +401,7 @@ func (prop *ObjectProperty) nestedClone(inParent []protoreflect.FieldNumber) *Ob
 	return &ObjectProperty{
 		Parent:             prop.Parent,
 		Schema:             prop.Schema,
+		Entity:             prop.Entity,
 		ProtoField:         protoField,
 		JSONName:           prop.JSONName,
 		Required:           prop.Required,

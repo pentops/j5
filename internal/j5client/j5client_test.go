@@ -109,14 +109,12 @@ func wantFooState() *schema_j5pb.RootSchema {
 			Name:       "fooId",
 			Required:   true,
 			ProtoField: []int32{1, 1}, // flattened
+			EntityKey: &schema_j5pb.EntityKey{
+				PrimaryKey: true,
+			},
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Key{
 					Key: &schema_j5pb.KeyField{
-						Entity: &schema_j5pb.EntityKey{
-							Type: &schema_j5pb.EntityKey_PrimaryKey{
-								PrimaryKey: true,
-							},
-						},
 						ListRules: &list_j5pb.KeyRules{
 							Filtering: &list_j5pb.FilteringConstraint{
 								Filterable: true,
@@ -136,17 +134,15 @@ func wantFooState() *schema_j5pb.RootSchema {
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Key{
 					Key: &schema_j5pb.KeyField{
-						Entity: &schema_j5pb.EntityKey{
-							Type: &schema_j5pb.EntityKey_ForeignKey{
-								ForeignKey: &schema_j5pb.EntityRef{
-									Package: "test.foo.v1",
-									Entity:  "bar",
-								},
-							},
-						},
 						Format: &schema_j5pb.KeyFormat{
 							Type: &schema_j5pb.KeyFormat_Uuid{
 								Uuid: &schema_j5pb.KeyFormat_UUID{},
+							},
+						},
+						Ext: &schema_j5pb.KeyField_Ext{
+							Foreign: &schema_j5pb.EntityRef{
+								Package: "test.foo.v1",
+								Entity:  "bar",
 							},
 						},
 					},

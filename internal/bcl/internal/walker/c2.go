@@ -16,9 +16,7 @@ func WalkSchema(scope *schema.Scope, body parser.Body, verbose bool) error {
 		verbose: verbose,
 	}
 
-	rootErr := rootContext.run(func(sc Context) error {
-		return doBody(sc, body)
-	})
+	rootErr := doBody(rootContext, body)
 	if rootErr == nil {
 		return nil
 	}
@@ -97,9 +95,9 @@ func doBody(sc Context, body parser.Body) error {
 
 func doAssign(sc Context, a *parser.Assignment) error {
 	if a.Append {
-		return sc.AppendAttribute(nil, a.Key.Idents, a.Value)
+		return sc.AppendAttribute(ScopePath{User: a.Key.Idents}, a.Value)
 	}
-	return sc.SetAttribute(nil, a.Key.Idents, a.Value)
+	return sc.SetAttribute(ScopePath{User: a.Key.Idents}, a.Value)
 }
 
 func doDescription(sc Context, decl *parser.Description) error {
@@ -111,15 +109,11 @@ func doDescription(sc Context, decl *parser.Description) error {
 }
 
 func doFullBlock(sc Context, decl *parser.Block) error {
-
 	typeTag := decl.Type
-
-	newScope, err := sc.BuildScope(nil, typeTag.Idents, ResetScope)
-	if err != nil {
-		return fmt.Errorf("WithContainer, building scope: %w", err)
-	}
-
-	err = sc.WithScope(newScope, func(sc Context, blockSpec schema.BlockSpec) error {
+	err := sc.WithFreshScope(ScopePath{
+		Schema: nil,
+		User:   typeTag.Idents,
+	}, func(sc Context, blockSpec schema.BlockSpec) error {
 		return doBlock(sc, blockSpec, decl)
 	})
 	if err != nil {
@@ -173,7 +167,9 @@ func doBlock(sc Context, spec schema.BlockSpec, bs *parser.Block) error {
 				if rootBlockSpec.Description == nil {
 					return sc.WrapErr(fmt.Errorf("block %q has no description field", spec.ErrName()), bs.Description)
 				}
-				if err := sc.SetAttribute(schema.PathSpec{*rootBlockSpec.Description}, nil, parser.NewStringValue(bs.Description.Value, bs.SourceNode)); err != nil {
+				if err := sc.SetAttribute(ScopePath{
+					Schema: schema.PathSpec{*rootBlockSpec.Description},
+				}, parser.NewStringValue(bs.Description.Value, bs.SourceNode)); err != nil {
 					return err
 				}
 			}
@@ -206,7 +202,7 @@ func checkBang(sc Context, tagSpec schema.Tag, gotTag parser.TagValue) error {
 	}
 
 	sc.Logf("Applying Tag Mark, %#v %#v", tagSpec, gotTag)
-	err := sc.SetAttribute(path, nil, parser.NewBoolValue(true, gotTag.Start))
+	err := sc.SetAttribute(ScopePath{Schema: path}, parser.NewBoolValue(true, gotTag.Start))
 	if err != nil {
 		return err
 	}
@@ -236,7 +232,7 @@ func walkTags(sc Context, spec schema.BlockSpec, gotTags popSet, outerCallback S
 		}
 
 		sc.Logf("Applying Name tag, %#v %#v", tagSpec, gotTag)
-		err := sc.SetAttribute(schema.PathSpec{tagSpec.FieldName}, nil, gotTag)
+		err := sc.SetAttribute(ScopePath{Schema: schema.PathSpec{tagSpec.FieldName}}, gotTag)
 		if err != nil {
 			return err
 		}
@@ -264,12 +260,11 @@ func walkTags(sc Context, spec schema.BlockSpec, gotTags popSet, outerCallback S
 		if tagSpec.FieldName == "" || tagSpec.FieldName == "." {
 			pathToType = nil
 		}
-		typeScope, err := sc.BuildScope(pathToType, gotTag.Reference.Idents, KeepScope)
-		if err != nil {
-			return err
-		}
 
-		return sc.WithScope(typeScope, func(sc Context, spec schema.BlockSpec) error {
+		return sc.WithMergedScope(ScopePath{
+			Schema: pathToType,
+			User:   gotTag.Reference.Idents,
+		}, func(sc Context, spec schema.BlockSpec) error {
 			if err := checkBang(sc, tagSpec, gotTag); err != nil {
 				return err
 			}
@@ -326,7 +321,9 @@ func walkQualifiers(sc Context, spec schema.BlockSpec, gotQualifiers popSet, out
 			return err
 		}
 
-		if err := sc.SetAttribute(schema.PathSpec{tagSpec.FieldName}, nil, qualifier); err != nil {
+		if err := sc.SetAttribute(ScopePath{
+			Schema: schema.PathSpec{tagSpec.FieldName},
+		}, qualifier); err != nil {
 			return err
 		}
 
@@ -348,12 +345,10 @@ func walkQualifiers(sc Context, spec schema.BlockSpec, gotQualifiers popSet, out
 	// The node it finds at givenName should must be a block, which is appended to
 	// the scope and becomes the new leaf for the callback.
 
-	newScope, err := sc.BuildScope(schema.PathSpec{tagSpec.FieldName}, qualifier.Reference.Idents, KeepScope)
-	if err != nil {
-		return fmt.Errorf("building scope: %w", err)
-	}
-
-	return sc.WithScope(newScope, func(sc Context, spec schema.BlockSpec) error {
+	return sc.WithMergedScope(ScopePath{
+		Schema: schema.PathSpec{tagSpec.FieldName},
+		User:   qualifier.Reference.Idents,
+	}, func(sc Context, spec schema.BlockSpec) error {
 		if err := checkBang(sc, *tagSpec, qualifier); err != nil {
 			return err
 		}
