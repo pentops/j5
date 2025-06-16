@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -203,7 +204,6 @@ func (s *ObjectSchema) ClientProperties() []*ObjectProperty {
 		switch propType := prop.Schema.(type) {
 		case *ObjectField:
 			if propType.Flatten {
-
 				children := propType.Schema().ClientProperties()
 				for _, child := range children {
 					child := child.nestedClone(prop.ProtoField)
@@ -212,6 +212,7 @@ func (s *ObjectSchema) ClientProperties() []*ObjectProperty {
 
 				continue
 			}
+
 		}
 		properties = append(properties, prop)
 	}
@@ -384,8 +385,33 @@ func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 	for idx, field := range prop.ProtoField {
 		fieldPath[idx] = int32(field)
 	}
+
+	propSchema := prop.Schema.ToJ5Field()
+
+	switch propSchema.Type.(type) {
+	case *schema_j5pb.Field_Key:
+		// add deprecated key fields
+		propSchema = proto.Clone(propSchema).(*schema_j5pb.Field)
+		key := propSchema.GetKey()
+
+		if prop.Entity != nil && prop.Entity.Primary {
+			key.Entity = &schema_j5pb.KeyField_DeprecatedEntityKey{
+				Type: &schema_j5pb.KeyField_DeprecatedEntityKey_PrimaryKey{
+					PrimaryKey: true,
+				},
+			}
+		} else if key.Ext != nil && key.Ext.Foreign != nil {
+			key.Entity = &schema_j5pb.KeyField_DeprecatedEntityKey{
+				Type: &schema_j5pb.KeyField_DeprecatedEntityKey_ForeignKey{
+					ForeignKey: key.Ext.Foreign,
+				},
+			}
+		}
+
+	}
+
 	return &schema_j5pb.ObjectProperty{
-		Schema:             prop.Schema.ToJ5Field(),
+		Schema:             propSchema,
 		EntityKey:          prop.Entity,
 		Name:               prop.JSONName,
 		Required:           prop.Required,

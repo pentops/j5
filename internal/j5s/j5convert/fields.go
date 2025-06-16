@@ -640,9 +640,15 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		desc.Type = descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()
 		ww.file.ensureImport(j5ExtImport)
 
+		keyExt := &ext_j5pb.KeyField{}
+		if st.Key.Ext != nil {
+			if st.Key.Ext.Foreign != nil {
+				keyExt.Foreign = st.Key.Ext.Foreign
+			}
+		}
 		proto.SetExtension(desc.Options, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
 			Type: &ext_j5pb.FieldOptions_Key{
-				Key: &ext_j5pb.KeyField{},
+				Key: keyExt,
 			},
 		})
 
@@ -694,12 +700,21 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				stringRules.WellKnown = &validate.StringRules_Uuid{
 					Uuid: true,
 				}
+				keyExt.Type = &ext_j5pb.KeyField_Format_{
+					Format: ext_j5pb.KeyField_FORMAT_UUID,
+				}
 
 			case *schema_j5pb.KeyFormat_Id62:
 				stringRules.Pattern = gl.Ptr(id62.PatternString)
+				keyExt.Type = &ext_j5pb.KeyField_Format_{
+					Format: ext_j5pb.KeyField_FORMAT_ID62,
+				}
 
 			case *schema_j5pb.KeyFormat_Custom_:
 				stringRules.Pattern = &ff.Custom.Pattern
+				keyExt.Type = &ext_j5pb.KeyField_Pattern{
+					Pattern: ff.Custom.Pattern,
+				}
 
 			case *schema_j5pb.KeyFormat_Informal_:
 

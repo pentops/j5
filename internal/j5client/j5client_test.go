@@ -125,6 +125,11 @@ func wantFooState() *schema_j5pb.RootSchema {
 								Uuid: &schema_j5pb.KeyFormat_UUID{},
 							},
 						},
+						Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
+							Type: &schema_j5pb.KeyField_DeprecatedEntityKey_PrimaryKey{
+								PrimaryKey: true,
+							},
+						},
 					},
 				},
 			},
@@ -143,6 +148,14 @@ func wantFooState() *schema_j5pb.RootSchema {
 							Foreign: &schema_j5pb.EntityRef{
 								Package: "test.foo.v1",
 								Entity:  "bar",
+							},
+						},
+						Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
+							Type: &schema_j5pb.KeyField_DeprecatedEntityKey_ForeignKey{
+								ForeignKey: &schema_j5pb.EntityRef{
+									Package: "test.foo.v1",
+									Entity:  "bar",
+								},
 							},
 						},
 					},

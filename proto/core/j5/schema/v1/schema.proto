@@ -410,11 +410,21 @@ message KeyField {
   KeyFormat format = 2;
   j5.list.v1.KeyRules list_rules = 3;
   Ext ext = 4;
+  DeprecatedEntityKey entity = 5;
 
   message Rules {}
   message Ext {
     // Marks the field as a foreign key to the given entity.
     EntityRef foreign = 2;
+  }
+
+  message DeprecatedEntityKey {
+    oneof type {
+      // deprecated, use ObjectProperty.entityKey.primary
+      bool primary_key = 1;
+      // deprecated, use ext.foreign
+      EntityRef foreign_key = 2;
+    }
   }
 }
 

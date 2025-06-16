@@ -13,6 +13,7 @@ type IsObjectField_Schema = isObjectField_Schema
 type IsPolymorphField_Schema = isPolymorphField_Schema
 type IsOneofField_Schema = isOneofField_Schema
 type IsEnumField_Schema = isEnumField_Schema
+type IsKeyField_DeprecatedEntityKey_Type = isKeyField_DeprecatedEntityKey_Type
 type IsKeyFormat_Type = isKeyFormat_Type
 
 // EntityPart
