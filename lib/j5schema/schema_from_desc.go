@@ -431,6 +431,7 @@ func (pkg *Package) objectPropertyFromDesc(parent RootSchema, prop *schema_j5pb.
 
 	return &ObjectProperty{
 		Parent:             parent,
+		Entity:             prop.EntityKey,
 		Schema:             propSchema,
 		ProtoField:         protoField,
 		JSONName:           prop.Name,

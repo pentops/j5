@@ -21,20 +21,7 @@ message PSMOptions {
 }
 
 extend google.protobuf.FieldOptions {
-  PSMKeyFieldOptions key = 555101;
-}
-
-// Annotations for j5.schema.v1.EntityKey on a KeyField
-message PSMKeyFieldOptions {
-  // Marks the key as participating in the primary key of this entity
-  bool primary_key = 1;
-
-  // Marks the field as a foreign key to the given entity.
-  j5.schema.v1.EntityRef foreign_key = 2;
-
-  // Marks the field as containing a tenant_id for the given tenant. Copies to
-  // j5.state.v1.PublishAuth.tenant_keys on publish
-  optional string tenant_type = 3;
+  j5.schema.v1.EntityKey key = 555101;
 }
 
 extend google.protobuf.ServiceOptions {
@@ -77,6 +64,7 @@ message MessageOptions {
 
 message ObjectMessageOptions {
   repeated string polymorph_member = 3;
+  j5.schema.v1.BCLObject bcl = 4;
 }
 
 message OneofMessageOptions {}
@@ -167,8 +155,8 @@ message FieldOptions {
     OneofField oneof = 12;
     PolymorphField polymorph = 13;
 
-    MapField map = 20;
-    ArrayField array = 21;
+    j5.schema.v1.MapField.Ext map = 20;
+    j5.schema.v1.ArrayField.Ext array = 21;
 
     StringField string = 30;
     IntegerField integer = 31;
@@ -267,4 +255,5 @@ message KeyField {
     FORMAT_UUID = 2;
     FORMAT_ID62 = 3;
   }
+  j5.schema.v1.EntityRef foreign = 3;
 }

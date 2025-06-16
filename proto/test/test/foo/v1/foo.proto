@@ -11,13 +11,13 @@ message FooKeys {
   option (j5.ext.v1.psm).entity_name = "foo";
 
   string foo_id = 1 [
-    (j5.ext.v1.key).primary_key = true,
+    (j5.ext.v1.key).primary = true,
     (buf.validate.field).required = true,
     (j5.list.v1.field).string.foreign_key.uuid.filtering.filterable = true
   ];
 
   string bar_id = 2 [
-    (j5.ext.v1.key).foreign_key = {
+    (j5.ext.v1.field).key.foreign = {
       package: "test.foo.v1"
       entity: "bar"
     },

@@ -103,9 +103,7 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 		if st.Array.Ext != nil {
 			proto.SetExtension(fieldDesc.Options, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
 				Type: &ext_j5pb.FieldOptions_Array{
-					Array: &ext_j5pb.ArrayField{
-						SingleForm: st.Array.Ext.SingleForm,
-					},
+					Array: st.Array.Ext,
 				},
 			})
 		}
@@ -146,8 +144,8 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 	}
 
 	required := node.Schema.Required
-	if ext := proto.GetExtension(fieldDesc.Options, ext_j5pb.E_Key).(*ext_j5pb.PSMKeyFieldOptions); ext != nil {
-		if ext.PrimaryKey {
+	if ext := proto.GetExtension(fieldDesc.Options, ext_j5pb.E_Key).(*schema_j5pb.EntityKey); ext != nil {
+		if ext.Primary {
 			// even if not explicitly set, a primary key is required, we don't support partial primary keys.
 			required = true
 		}
@@ -178,6 +176,10 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 			}
 			fieldDesc.OneofIndex = gl.Ptr(index)
 		}
+	}
+
+	if node.Schema.EntityKey != nil {
+		proto.SetExtension(fieldDesc.Options, ext_j5pb.E_Key, node.Schema.EntityKey)
 	}
 
 	fieldDesc.Name = gl.Ptr(protoFieldName)
@@ -638,23 +640,17 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		desc.Type = descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum()
 		ww.file.ensureImport(j5ExtImport)
 
-		if st.Key.Entity != nil {
-			entityExt := &ext_j5pb.PSMKeyFieldOptions{}
-			switch et := st.Key.Entity.Type.(type) {
-			case *schema_j5pb.EntityKey_PrimaryKey:
-				if et.PrimaryKey { // May be explicitly false to self-document
-					entityExt.PrimaryKey = true
-				}
-			case *schema_j5pb.EntityKey_ForeignKey:
-				entityExt.ForeignKey = et.ForeignKey
+		keyExt := &ext_j5pb.KeyField{}
+		if st.Key.Ext != nil {
+			if st.Key.Ext.Foreign != nil {
+				keyExt.Foreign = st.Key.Ext.Foreign
 			}
-			if st.Key.Entity.TenantKey != nil {
-				entityExt.TenantType = st.Key.Entity.TenantKey
-			}
-			proto.SetExtension(desc.Options, ext_j5pb.E_Key, entityExt)
 		}
-
-		ww.setJ5Ext(node.Source, desc.Options, "key", st.Key.Ext)
+		proto.SetExtension(desc.Options, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
+			Type: &ext_j5pb.FieldOptions_Key{
+				Key: keyExt,
+			},
+		})
 
 		if st.Key.ListRules != nil {
 			var fkt list_j5pb.IsForeignKeyRules_Type
@@ -704,12 +700,21 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				stringRules.WellKnown = &validate.StringRules_Uuid{
 					Uuid: true,
 				}
+				keyExt.Type = &ext_j5pb.KeyField_Format_{
+					Format: ext_j5pb.KeyField_FORMAT_UUID,
+				}
 
 			case *schema_j5pb.KeyFormat_Id62:
 				stringRules.Pattern = gl.Ptr(id62.PatternString)
+				keyExt.Type = &ext_j5pb.KeyField_Format_{
+					Format: ext_j5pb.KeyField_FORMAT_ID62,
+				}
 
 			case *schema_j5pb.KeyFormat_Custom_:
 				stringRules.Pattern = &ff.Custom.Pattern
+				keyExt.Type = &ext_j5pb.KeyField_Pattern{
+					Pattern: ff.Custom.Pattern,
+				}
 
 			case *schema_j5pb.KeyFormat_Informal_:
 
@@ -832,7 +837,7 @@ func (ww *conversionVisitor) setJ5Ext(node sourcewalk.SourceNode, dest *descript
 	// as the Proto extension.
 	j5ExtRefl := j5Ext.ProtoReflect()
 	if j5ExtRefl.IsValid() {
-		j5ExtFields := j5ExtRefl.Descriptor().Fields()
+		j5ExtFields := extTypedRefl.Descriptor().Fields()
 
 		// Copy each field from the J5 extension to the Proto extension.
 		err := RangeField(j5ExtRefl, func(fd protoreflect.FieldDescriptor, v protoreflect.Value) error {

@@ -5,7 +5,6 @@ package client_j5pb
 import (
 	driver "database/sql/driver"
 	fmt "fmt"
-
 	proto "google.golang.org/protobuf/proto"
 )
 
