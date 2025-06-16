@@ -115,6 +115,11 @@ func wantFooState() *schema_j5pb.RootSchema {
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Key{
 					Key: &schema_j5pb.KeyField{
+						Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
+							Type: &schema_j5pb.KeyField_DeprecatedEntityKey_PrimaryKey{
+								PrimaryKey: true,
+							},
+						},
 						ListRules: &list_j5pb.KeyRules{
 							Filtering: &list_j5pb.FilteringConstraint{
 								Filterable: true,
@@ -123,11 +128,6 @@ func wantFooState() *schema_j5pb.RootSchema {
 						Format: &schema_j5pb.KeyFormat{
 							Type: &schema_j5pb.KeyFormat_Uuid{
 								Uuid: &schema_j5pb.KeyFormat_UUID{},
-							},
-						},
-						Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
-							Type: &schema_j5pb.KeyField_DeprecatedEntityKey_PrimaryKey{
-								PrimaryKey: true,
 							},
 						},
 					},
@@ -139,6 +139,14 @@ func wantFooState() *schema_j5pb.RootSchema {
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Key{
 					Key: &schema_j5pb.KeyField{
+						Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
+							Type: &schema_j5pb.KeyField_DeprecatedEntityKey_ForeignKey{
+								ForeignKey: &schema_j5pb.EntityRef{
+									Package: "test.foo.v1",
+									Entity:  "bar",
+								},
+							},
+						},
 						Format: &schema_j5pb.KeyFormat{
 							Type: &schema_j5pb.KeyFormat_Uuid{
 								Uuid: &schema_j5pb.KeyFormat_UUID{},
@@ -148,14 +156,6 @@ func wantFooState() *schema_j5pb.RootSchema {
 							Foreign: &schema_j5pb.EntityRef{
 								Package: "test.foo.v1",
 								Entity:  "bar",
-							},
-						},
-						Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
-							Type: &schema_j5pb.KeyField_DeprecatedEntityKey_ForeignKey{
-								ForeignKey: &schema_j5pb.EntityRef{
-									Package: "test.foo.v1",
-									Entity:  "bar",
-								},
 							},
 						},
 					},
