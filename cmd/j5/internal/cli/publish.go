@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/builder"
 )
 
@@ -17,6 +18,11 @@ func runPublish(ctx context.Context, cfg struct {
 
 	img, inputConfig, err := cfg.GetBundleImage(ctx)
 	if err != nil {
+		if ep, ok := errpos.AsErrorsWithSource(err); ok {
+			fmt.Fprintln(os.Stderr, ep.ShortString())
+			os.Exit(1)
+			return nil
+		}
 		return err
 	}
 

@@ -35,6 +35,16 @@ type oneofImpl struct {
 	*propSet
 }
 
+func (oneof *oneofImpl) HasAvailableProperty(name string) bool {
+	field, ok, err := oneof.GetOne()
+	if !ok || err != nil {
+		// err is that it's already set to multiple types
+		return oneof.HasProperty(name)
+	}
+	return name == field.NameInParent()
+
+}
+
 type oneofField struct {
 	fieldDefaults
 	fieldContext

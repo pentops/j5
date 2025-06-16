@@ -35,6 +35,10 @@ type objectImpl struct {
 	*propSet
 }
 
+func (obj *objectImpl) HasAvailableProperty(name string) bool {
+	return obj.HasProperty(name)
+}
+
 var _ Object = &objectImpl{}
 
 func (fs *objectImpl) HasAnyValue() bool {

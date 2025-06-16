@@ -2,8 +2,10 @@ package schema
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/lib/j5reflect"
 )
@@ -30,9 +32,8 @@ type field struct {
 type SourceLocation = errpos.Position
 
 type Scope struct {
-	blockSet  containerSet
+	parent    *Scope // parent scope, if any
 	leafBlock *containerField
-	rootBlock *containerField
 	schemaSet *SchemaSet
 }
 
@@ -41,7 +42,10 @@ func (sw *Scope) CurrentBlock() Container {
 }
 
 func (sw *Scope) RootBlock() Container {
-	return sw.rootBlock
+	if sw.parent != nil {
+		return sw.parent.RootBlock()
+	}
+	return sw.leafBlock
 }
 
 func NewRootSchemaWalker(ss *SchemaSet, root j5reflect.Object, sourceLoc *bcl_j5pb.SourceLocation) (*Scope, error) {
@@ -61,38 +65,57 @@ func NewRootSchemaWalker(ss *SchemaSet, root j5reflect.Object, sourceLoc *bcl_j5
 	rootWrapped.isRoot = true
 	return &Scope{
 		schemaSet: ss,
-
-		blockSet:  containerSet{*rootWrapped},
 		leafBlock: rootWrapped,
-		rootBlock: rootWrapped,
 	}, nil
 }
 
 func (sw *Scope) newChild(container *containerField, newScope bool) *Scope {
-	var newBlockSet containerSet
+	var parent *Scope
 	if newScope {
-		newBlockSet = containerSet{*container}
-	} else {
-		newBlockSet = append(sw.blockSet, *container)
+		parent = sw
 	}
 	return &Scope{
-		blockSet:  newBlockSet,
+		parent:    parent,
 		leafBlock: container,
-		rootBlock: container,
 		schemaSet: sw.schemaSet,
 	}
 }
 
 func (sw *Scope) SchemaNames() []string {
-	return sw.blockSet.schemaNames()
+	var parent []string
+	if sw.parent != nil {
+		parent = sw.parent.SchemaNames()
+	}
+	return append(parent, sw.leafBlock.schemaName)
 }
 
-func (sw *Scope) ListAttributes() []string {
-	return sw.blockSet.listAttributes()
+func (sw *Scope) allChildFields() map[string]*schema_j5pb.Field {
+	var children map[string]*schema_j5pb.Field
+	if sw.parent != nil {
+		children = sw.parent.allChildFields()
+	} else {
+		children = map[string]*schema_j5pb.Field{}
+	}
+
+	for name, schema := range sw.leafBlock.allFields() {
+		if _, ok := children[name]; !ok {
+			children[name] = schema
+		}
+	}
+	return children
 }
 
-func (sw *Scope) ListBlocks() []string {
-	return sw.blockSet.listBlocks()
+func (sw *Scope) listBlocks() []string {
+	fields := sw.allChildFields()
+	fieldNames := []string{}
+
+	for name, field := range fields {
+		if schemaCan(field.GetType()).canBlock {
+			fieldNames = append(fieldNames, name)
+		}
+	}
+	sort.Strings(fieldNames)
+	return fieldNames
 }
 
 func (sw *Scope) ChildBlock(name string, source SourceLocation) (*Scope, *WalkPathError) {
@@ -101,7 +124,7 @@ func (sw *Scope) ChildBlock(name string, source SourceLocation) (*Scope, *WalkPa
 		return nil, &WalkPathError{
 			Field:     name,
 			Type:      RootNotFound,
-			Available: sw.blockSet.listBlocks(),
+			Available: sw.listBlocks(),
 		}
 	}
 
@@ -165,7 +188,7 @@ func (sw *Scope) field(name string, source SourceLocation, existingIsOk bool) (F
 			Field:     name,
 			Type:      RootNotFound,
 			Schema:    sw.leafBlock.schemaName,
-			Available: sw.blockSet.listChildren(),
+			Available: sw.listBlocks(),
 		}
 	}
 	if len(spec.Path) == 0 {
@@ -183,12 +206,12 @@ func (sw *Scope) field(name string, source SourceLocation, existingIsOk bool) (F
 		return nil, nil, err
 	}
 
-	if !parentScope.container.HasProperty(final) {
+	if !parentScope.container.HasAvailableProperty(final) {
 		return nil, nil, &WalkPathError{
 			Field:     final,
 			Schema:    parentScope.schemaName,
 			Type:      NodeNotFound,
-			Available: sw.blockSet.listChildren(),
+			Available: sw.listBlocks(),
 		}
 	}
 
@@ -239,19 +262,28 @@ func (sw *Scope) walkToChild(blockSchema *containerField, path []string, sourceL
 }
 
 func (sw *Scope) findBlock(name string) (*containerField, *ChildSpec, bool) {
-	for _, blockSchema := range sw.blockSet {
-		pathToChild, ok := blockSchema.spec.Aliases[name]
+	// Search parents first, then search the current scope.
+	if sw.parent != nil {
+		f, s, ok := sw.parent.findBlock(name)
 		if ok {
-			return &blockSchema, &ChildSpec{
-				Path: pathToChild,
-			}, true
+			return f, s, true
 		}
+	}
+	return sw.findLeafBlock(name)
+}
 
-		if blockSchema.container.HasProperty(name) {
-			return &blockSchema, &ChildSpec{
-				Path: []string{name},
-			}, true
-		}
+func (sw *Scope) findLeafBlock(name string) (*containerField, *ChildSpec, bool) {
+	pathToChild, ok := sw.leafBlock.spec.Aliases[name]
+	if ok {
+		return sw.leafBlock, &ChildSpec{
+			Path: pathToChild,
+		}, true
+	}
+
+	if sw.leafBlock.container.HasAvailableProperty(name) {
+		return sw.leafBlock, &ChildSpec{
+			Path: []string{name},
+		}, true
 	}
 
 	return nil, nil, false
@@ -263,47 +295,65 @@ func popLast[T any](list []T) (T, []T) {
 
 func (sw *Scope) TailScope() *Scope {
 	return &Scope{
-		blockSet:  containerSet{*sw.leafBlock},
 		leafBlock: sw.leafBlock,
 		schemaSet: sw.schemaSet,
 	}
 }
 
+func (sw *Scope) Parent() *Scope {
+	if sw.parent == nil {
+		return nil
+	}
+	return sw.parent
+}
+
 func (sw *Scope) MergeScope(other *Scope) *Scope {
-	newBlockSet := append(sw.blockSet, other.blockSet...)
 	return &Scope{
-		blockSet:  newBlockSet,
+		parent:    sw,
 		leafBlock: other.leafBlock,
-		rootBlock: sw.rootBlock,
+		schemaSet: sw.schemaSet,
+	}
+}
+
+func (sw *Scope) Orphan() *Scope {
+	return &Scope{
+		leafBlock: sw.leafBlock,
 		schemaSet: sw.schemaSet,
 	}
 }
 
 func (sw *Scope) PrintScope(logf func(string, ...any)) {
 	logf("available blocks:")
-	for _, block := range sw.blockSet {
-		if block.spec.DebugName != "" {
-			logf("from %s : %s %q", block.schemaName, block.spec.source, block.spec.DebugName)
-		} else {
-			logf("from %s : %s", block.schemaName, block.spec.source)
-		}
-		for name, block := range sw.blockSet.allChildFields() {
-			logf(" - [%s] %q %#v", name, schemaCan(block.GetType()))
-		}
-	}
-
+	sw.printScope(logf)
 	if sw.leafBlock == nil {
 		logf("no leaf spec")
-		return
+	} else {
+
+		spec := sw.leafBlock.spec
+		logf("leaf spec Tags: %s", spec.ErrName())
+		if spec.Name != nil {
+			logf(" - tag[name]: %#v", spec.Name)
+		}
+		if spec.TypeSelect != nil {
+			logf(" - tag[type]: %#v", spec.TypeSelect)
+		}
+	}
+	logf("-------")
+}
+
+func (sw *Scope) printScope(logf func(string, ...any)) {
+	if sw.parent != nil {
+		sw.parent.printScope(logf)
 	}
 
-	spec := sw.leafBlock.spec
-	logf("leaf spec: %s", spec.ErrName())
-	if spec.Name != nil {
-		logf(" - tag[name]: %#v", spec.Name)
+	if sw.leafBlock.spec.DebugName != "" {
+		logf("from %s : %s %q", sw.leafBlock.schemaName, sw.leafBlock.spec.source, sw.leafBlock.spec.DebugName)
+	} else {
+		logf("from %s : %s", sw.leafBlock.schemaName, sw.leafBlock.spec.source)
 	}
-	if spec.TypeSelect != nil {
-		logf(" - tag[type]: %#v", spec.TypeSelect)
+	for name, subBlock := range sw.leafBlock.allFields() {
+		logf(" - [%s] %#v", name, schemaCan(subBlock.GetType()))
 	}
+
 	logf("-------")
 }

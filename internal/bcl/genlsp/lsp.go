@@ -13,9 +13,24 @@ import (
 
 type Config struct {
 	ProjectRoot string
+
+	FileTypes []FileTypeConfig
+}
+
+type FileTypeConfig struct {
+	Match       func(filename string) bool
 	Schema      *bcl_j5pb.Schema
 	FileFactory func(filename string) protoreflect.Message
 	OnChange    func(ctx context.Context, filename string, sourceLocs *bcl_j5pb.SourceLocation, parsed protoreflect.Message) error
+}
+
+type fileType struct {
+	match func(filename string) bool
+	FileHandler
+}
+
+func (ft fileType) MatchFilename(filename string) bool {
+	return ft.match(filename)
 }
 
 func BuildLSPHandler(config Config) (*lspConfig, error) {
@@ -31,14 +46,21 @@ func BuildLSPHandler(config Config) (*lspConfig, error) {
 		config.ProjectRoot = pwd
 	}
 
-	if config.Schema != nil && config.FileFactory != nil {
-		parser, err := bcl.NewParser(config.Schema)
-		if err != nil {
-			return nil, err
+	for _, ft := range config.FileTypes {
+		built := fileType{
+			match: ft.Match,
 		}
-		lspc.OnChange = linter.New(parser, config.FileFactory, config.OnChange, config.ProjectRoot)
-	} else {
-		lspc.OnChange = linter.NewGeneric()
+
+		if ft.Schema != nil && ft.FileFactory != nil {
+			parser, err := bcl.NewParser(ft.Schema)
+			if err != nil {
+				return nil, err
+			}
+			built.FileHandler = linter.New(parser, ft.FileFactory, ft.OnChange, config.ProjectRoot)
+		} else {
+			built.FileHandler = linter.NewGeneric(config.ProjectRoot)
+		}
+		lspc.Handlers = append(lspc.Handlers, built)
 	}
 
 	lspc.Formatter = astFormatter{}

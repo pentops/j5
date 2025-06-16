@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/lib/j5reflect"
 	"github.com/pentops/j5/lib/j5schema"
 )
@@ -27,11 +28,11 @@ type j5PropSet interface {
 	SchemaName() string
 	RangePropertySchemas(j5reflect.RangePropertySchemasCallback) error
 	NewValue(name string) (j5reflect.Field, error)
-	HasProperty(name string) bool
 	GetProperty(name string) (j5reflect.Property, error)
 	GetOrCreateValue(name string) (j5reflect.Field, error)
 	ContainerSchema() j5schema.Container
 	ListPropertyNames() []string
+	HasAvailableProperty(string) bool
 }
 
 type mapContainer struct {
@@ -54,8 +55,12 @@ func (mc mapContainer) GetOrCreateValue(name string) (j5reflect.Field, error) {
 	return mc.mapNode.GetOrCreateElement(name)
 }
 
-func (mc mapContainer) HasProperty(name string) bool {
+func (mc mapContainer) HasAvailableProperty(name string) bool {
 	return true
+}
+
+func (mc mapContainer) AsOneof() (j5reflect.OneofField, bool) {
+	return nil, false
 }
 
 type mapSchema struct {
@@ -211,6 +216,27 @@ func unexpectedPathError(field string, err error) *WalkPathError {
 	}
 }
 
+func (container *containerField) allFields() map[string]*schema_j5pb.Field {
+
+	children := map[string]*schema_j5pb.Field{}
+	_ = container.container.RangePropertySchemas(func(name string, required bool, schema *schema_j5pb.Field) error {
+		if _, ok := children[name]; !ok {
+			children[name] = schema
+		}
+		return nil
+	})
+	for name, path := range container.spec.Aliases {
+		schema, err := container.container.ContainerSchema().WalkToProperty(path...)
+		if err != nil {
+			continue
+		}
+		if _, ok := children[name]; !ok {
+			children[name] = schema.ToJ5Field()
+		}
+	}
+	return children
+}
+
 func (container *containerField) walkPath(path []string, loc SourceLocation) ([]*containerField, *WalkPathError) {
 	if len(path) == 0 {
 		return nil, &WalkPathError{
@@ -220,7 +246,7 @@ func (container *containerField) walkPath(path []string, loc SourceLocation) ([]
 	}
 
 	name, resst := path[0], path[1:]
-	if !container.container.HasProperty(name) {
+	if !container.container.HasAvailableProperty(name) {
 		return nil, &WalkPathError{
 			Field:     name,
 			Type:      NodeNotFound,

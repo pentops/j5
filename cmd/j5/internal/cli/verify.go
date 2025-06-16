@@ -17,6 +17,7 @@ import (
 
 func runVerify(ctx context.Context, cfg struct {
 	SourceConfig
+	FailFast bool `flag:"fail-fast" desc:"stop on first error"`
 }) error {
 
 	src, err := cfg.GetSource(ctx)

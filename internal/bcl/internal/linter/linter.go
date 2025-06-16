@@ -33,8 +33,10 @@ func New(parser *bcl.Parser, fileFactory FileFactory, validate OnChange, rootDir
 	}
 }
 
-func NewGeneric() *Linter {
-	return &Linter{}
+func NewGeneric(rootDir string) *Linter {
+	return &Linter{
+		rootDir: rootDir,
+	}
 }
 
 func errorToDiagnostics(ctx context.Context, relFilename string, mainError error) ([]protocol.Diagnostic, error) {
