@@ -566,7 +566,7 @@ type protoFieldExtensions struct {
 	validate  *validate.FieldRules
 	list      *list_j5pb.FieldConstraint
 	j5        *ext_j5pb.FieldOptions
-	entityKey *ext_j5pb.PSMKeyFieldOptions
+	entityKey *schema_j5pb.EntityKey
 }
 
 func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensions {
@@ -589,7 +589,7 @@ func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensi
 
 	fieldOptions := protosrc.GetExtension[*ext_j5pb.FieldOptions](src.Options(), ext_j5pb.E_Field)
 
-	psmKeyExt := protosrc.GetExtension[*ext_j5pb.PSMKeyFieldOptions](src.Options(), ext_j5pb.E_Key)
+	psmKeyExt := protosrc.GetExtension[*schema_j5pb.EntityKey](src.Options(), ext_j5pb.E_Key)
 
 	exts := protoFieldExtensions{
 		validate:  validateConstraint,
@@ -622,10 +622,7 @@ func (pkg *Package) buildSchemaProperty(context fieldContext, src protoreflect.F
 	prop.Schema = fieldSchema
 
 	if ext.entityKey != nil {
-		ee := &schema_j5pb.EntityKey{
-			PrimaryKey: ext.entityKey.PrimaryKey,
-		}
-		prop.Entity = ee
+		prop.Entity = ext.entityKey
 	}
 	return prop, nil
 }
@@ -1408,7 +1405,7 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		}
 	}
 
-	psmKeyExt := protosrc.GetExtension[*ext_j5pb.PSMKeyFieldOptions](src.Options(), ext_j5pb.E_Key)
+	psmKeyExt := protosrc.GetExtension[*schema_j5pb.EntityKey](src.Options(), ext_j5pb.E_Key)
 
 	if openText := listRules.GetOpenText(); openText != nil {
 		if stringItem.Format != nil {

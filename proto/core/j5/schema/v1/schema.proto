@@ -456,9 +456,19 @@ message ObjectProperty {
 message EntityKey {
   // the field is the primary key of the state entity. It is only valid in the
   // keys object of an entity.
-  bool primary_key = 1;
+  bool primary = 1;
+  
+  // When true, this field will be added included in all endpoint>
+  // the DB shard.
+  // The field must be required
+  // If it is a primary key, the Get and GetEvents endpoints are >
+  // but it is added to the ListEvents endpoint.
+  // If it is not a primary key, it is added to all endpoints.
+  // The order in the path, like primary keys, is defined by the >
+  // of the fields in the source file.
+  bool shard_key = 2;
 
   // Marks the field as containing a tenant_id for the given tenant. Copies to
   // j5.state.v1.PublishAuth.tenant_keys on publish
-  optional string tenant_key = 5;
+  optional string tenant = 5;
 }

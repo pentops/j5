@@ -110,6 +110,11 @@ func (ent *entityNode) acceptKeys(visitor FileVisitor) error {
 
 	keyProps := make([]*schema_j5pb.ObjectProperty, 0, len(ent.Schema.Keys))
 	for _, key := range ent.Schema.Keys {
+		if key.Key == nil {
+			key.Key = &schema_j5pb.EntityKey{}
+		}
+		key.Def.EntityKey = key.Key
+
 		keyProps = append(keyProps, key.Def)
 	}
 	object, err := newVirtualObjectNode(
@@ -559,18 +564,18 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 	listHttpPath := []string{}
 
 	for _, key := range ent.Schema.Keys {
-		if key.Primary || key.Def.EntityKey != nil && key.Def.EntityKey.GetPrimaryKey() {
+		if key.Key.Primary || key.Def.EntityKey != nil && key.Def.EntityKey.Primary {
 			// The field is a Primary Key of the entity
 			getKeys = append(getKeys, key.Def)
 			httpPath = append(httpPath, fmt.Sprintf(":%s", key.Def.Name))
 
-			if key.ShardKey {
+			if key.Key.ShardKey {
 				// primary and shard.
 				listKeys = append(listKeys, key.Def)
 				listHttpPath = append(listHttpPath, fmt.Sprintf(":%s", key.Def.Name))
 			}
 		} else {
-			if key.ShardKey {
+			if key.Key.ShardKey {
 				// just shard, not primary - still part of the URL
 
 				listKeys = append(listKeys, key.Def)

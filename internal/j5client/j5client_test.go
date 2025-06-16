@@ -110,7 +110,7 @@ func wantFooState() *schema_j5pb.RootSchema {
 			Required:   true,
 			ProtoField: []int32{1, 1}, // flattened
 			EntityKey: &schema_j5pb.EntityKey{
-				PrimaryKey: true,
+				Primary: true,
 			},
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Key{

@@ -11,7 +11,7 @@ message FooKeys {
   option (j5.ext.v1.psm).entity_name = "foo";
 
   string foo_id = 1 [
-    (j5.ext.v1.key).primary_key = true,
+    (j5.ext.v1.key).primary = true,
     (buf.validate.field).required = true,
     (j5.list.v1.field).string.foreign_key.uuid.filtering.filterable = true
   ];

@@ -133,18 +133,7 @@ message EntityKey {
     (j5.ext.v1.field).message.flatten = true
   ];
 
-  // When true, this field will be added included in all endpoint>
-  // the DB shard.
-  // The field must be required
-  // If it is a primary key, the Get and GetEvents endpoints are >
-  // but it is added to the ListEvents endpoint.
-  // If it is not a primary key, it is added to all endpoints.
-  // The order in the path, like primary keys, is defined by the >
-  // of the fields in the source file.
-  bool shard_key = 2;
-
-  bool primary = 4;
-  string tenant = 5;
+  j5.schema.v1.EntityKey key = 2 [(j5.ext.v1.field).message.flatten = true];
 }
 
 message Oneof {
