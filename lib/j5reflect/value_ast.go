@@ -114,7 +114,12 @@ func scalarReflectFromAST(schema *schema_j5pb.Field, value ASTValue) (protorefle
 
 		//	case *schema_j5pb.Field_Timestamp:
 
-		//	case *schema_j5pb.Field_Decimal:
+	case *schema_j5pb.Field_Decimal:
+		val, err := value.AsString()
+		if err != nil {
+			return pv, err
+		}
+		return decimalFromString(val)
 
 		//	case *schema_j5pb.Field_Date:
 

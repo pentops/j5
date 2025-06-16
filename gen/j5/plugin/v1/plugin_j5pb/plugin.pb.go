@@ -7,12 +7,11 @@
 package plugin_j5pb
 
 import (
-	reflect "reflect"
-	sync "sync"
-
 	client_j5pb "github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	reflect "reflect"
+	sync "sync"
 )
 
 const (

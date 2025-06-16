@@ -109,11 +109,14 @@ func wantFooState() *schema_j5pb.RootSchema {
 			Name:       "fooId",
 			Required:   true,
 			ProtoField: []int32{1, 1}, // flattened
+			EntityKey: &schema_j5pb.EntityKey{
+				Primary: true,
+			},
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Key{
 					Key: &schema_j5pb.KeyField{
-						Entity: &schema_j5pb.EntityKey{
-							Type: &schema_j5pb.EntityKey_PrimaryKey{
+						Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
+							Type: &schema_j5pb.KeyField_DeprecatedEntityKey_PrimaryKey{
 								PrimaryKey: true,
 							},
 						},
@@ -136,8 +139,8 @@ func wantFooState() *schema_j5pb.RootSchema {
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Key{
 					Key: &schema_j5pb.KeyField{
-						Entity: &schema_j5pb.EntityKey{
-							Type: &schema_j5pb.EntityKey_ForeignKey{
+						Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
+							Type: &schema_j5pb.KeyField_DeprecatedEntityKey_ForeignKey{
 								ForeignKey: &schema_j5pb.EntityRef{
 									Package: "test.foo.v1",
 									Entity:  "bar",
@@ -147,6 +150,12 @@ func wantFooState() *schema_j5pb.RootSchema {
 						Format: &schema_j5pb.KeyFormat{
 							Type: &schema_j5pb.KeyFormat_Uuid{
 								Uuid: &schema_j5pb.KeyFormat_UUID{},
+							},
+						},
+						Ext: &schema_j5pb.KeyField_Ext{
+							Foreign: &schema_j5pb.EntityRef{
+								Package: "test.foo.v1",
+								Entity:  "bar",
 							},
 						},
 					},
