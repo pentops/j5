@@ -144,8 +144,8 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 	}
 
 	required := node.Schema.Required
-	if ext := proto.GetExtension(fieldDesc.Options, ext_j5pb.E_Key).(*schema_j5pb.EntityKey); ext != nil {
-		if ext.Primary {
+	if ext := proto.GetExtension(fieldDesc.Options, ext_j5pb.E_Key).(*ext_j5pb.PSMKeyFieldOptions); ext != nil {
+		if ext.Primary || ext.PrimaryKey {
 			// even if not explicitly set, a primary key is required, we don't support partial primary keys.
 			required = true
 		}

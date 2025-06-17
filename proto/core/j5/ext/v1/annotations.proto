@@ -21,7 +21,28 @@ message PSMOptions {
 }
 
 extend google.protobuf.FieldOptions {
-  j5.schema.v1.EntityKey key = 555101;
+  PSMKeyFieldOptions key = 555101;
+}
+
+
+// Annotations for j5.schema.v1.EntityKey on a KeyField
+message PSMKeyFieldOptions {
+  // DEPREGATED use primary
+  bool primary_key = 1;
+  // DEPRECATED use schema.v1.KeyField.Ext.foreign
+  j5.schema.v1.EntityRef foreign_key = 2;
+  // DEPRECATED use tenant
+  optional string tenant_type = 3;
+
+  // TODO: When removing deprecated fields, replace this entire message
+  // with j5.schema.v1.EntityKey
+
+  // Marks the key as participating in the primary key of this entity
+  bool primary = 4;
+
+  // Marks the field as containing a tenant_id for the given tenant. Copies to
+  // j5.state.v1.PublishAuth.tenant_keys on publish
+  optional string tenant = 5;
 }
 
 extend google.protobuf.ServiceOptions {

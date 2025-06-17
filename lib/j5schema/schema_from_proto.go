@@ -589,13 +589,40 @@ func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensi
 
 	fieldOptions := protosrc.GetExtension[*ext_j5pb.FieldOptions](src.Options(), ext_j5pb.E_Field)
 
-	psmKeyExt := protosrc.GetExtension[*schema_j5pb.EntityKey](src.Options(), ext_j5pb.E_Key)
-
 	exts := protoFieldExtensions{
-		validate:  validateConstraint,
-		list:      listConstraint,
-		j5:        fieldOptions,
-		entityKey: psmKeyExt,
+		validate: validateConstraint,
+		list:     listConstraint,
+		j5:       fieldOptions,
+	}
+
+	psmKeyExt := protosrc.GetExtension[*ext_j5pb.PSMKeyFieldOptions](src.Options(), ext_j5pb.E_Key)
+	if psmKeyExt != nil {
+		exts.entityKey = &schema_j5pb.EntityKey{}
+		if psmKeyExt.Primary || psmKeyExt.PrimaryKey {
+			exts.entityKey.Primary = true
+		}
+		if psmKeyExt.TenantType != nil {
+			exts.entityKey.Tenant = psmKeyExt.TenantType
+		} else if psmKeyExt.Tenant != nil {
+			exts.entityKey.Tenant = psmKeyExt.Tenant
+		}
+		if psmKeyExt.ForeignKey != nil {
+			if exts.j5 == nil {
+				exts.j5 = &ext_j5pb.FieldOptions{
+					Type: &ext_j5pb.FieldOptions_Key{
+						Key: &ext_j5pb.KeyField{
+							Foreign: psmKeyExt.ForeignKey,
+						},
+					},
+				}
+			} else {
+				ext := exts.j5.GetKey()
+				if ext == nil {
+					panic(fmt.Sprintf("field %s has a foreign key, but is not a key", src.FullName()))
+				}
+				ext.Foreign = psmKeyExt.ForeignKey
+			}
+		}
 	}
 
 	return exts
@@ -1405,7 +1432,7 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		}
 	}
 
-	psmKeyExt := protosrc.GetExtension[*schema_j5pb.EntityKey](src.Options(), ext_j5pb.E_Key)
+	psmKeyExt := ext.entityKey
 
 	if openText := listRules.GetOpenText(); openText != nil {
 		if stringItem.Format != nil {
