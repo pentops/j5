@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/pentops/golib/gl"
+	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
@@ -167,6 +168,11 @@ func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
 		})
 	}
 
+	if node.BCLBlock != nil {
+		ww.file.ensureImport(bclExtImport)
+		proto.SetExtension(message.descriptor.Options, bcl_j5pb.E_Block, node.BCLBlock)
+	}
+
 	objectType := &ext_j5pb.ObjectMessageOptions{}
 
 	fqn := ww.file.fullyQualifiedName(node)
@@ -260,6 +266,11 @@ func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 		},
 	}
 	proto.SetExtension(message.descriptor.Options, ext_j5pb.E_Message, ext)
+
+	if node.Schema.Bcl != nil {
+		ww.file.ensureImport(bclExtImport)
+		proto.SetExtension(message.descriptor.Options, bcl_j5pb.E_Block, node.Schema.Bcl)
+	}
 
 	err := node.RangeProperties(&sourcewalk.PropertyCallbacks{
 		SchemaVisitor: walkerSchemaVisitor(ww.inMessage(message)),

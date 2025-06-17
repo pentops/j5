@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/iancoleman/strcase"
+	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 )
@@ -107,6 +108,7 @@ type ObjectNode struct {
 	Description     string
 	Entity          *schema_j5pb.EntityObject
 	PolymorphMember []*RefNode
+	BCLBlock        *bcl_j5pb.Block
 
 	rootType
 	propertySet
@@ -154,6 +156,7 @@ func newObjectSchemaNode(source SourceNode, parent parentNode, schema *schema_j5
 			properties: mapProperties(source, []string{"properties"}, root, schema.Properties, virtual),
 		},
 		PolymorphMember: polymorphMembers,
+		BCLBlock:        schema.Bcl,
 	}, nil
 }
 
