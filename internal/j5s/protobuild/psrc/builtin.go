@@ -12,6 +12,7 @@ import (
 
 	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
+	_ "github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	_ "github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	_ "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	_ "github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"

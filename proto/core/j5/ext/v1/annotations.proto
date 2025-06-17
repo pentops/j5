@@ -6,6 +6,7 @@ import "google/protobuf/descriptor.proto";
 import "j5/auth/v1/method.proto";
 import "j5/ext/v1/query_annotations.proto";
 import "j5/schema/v1/schema.proto";
+import "j5/bcl/v1/spec.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb";
 
@@ -21,28 +22,7 @@ message PSMOptions {
 }
 
 extend google.protobuf.FieldOptions {
-  PSMKeyFieldOptions key = 555101;
-}
-
-
-// Annotations for j5.schema.v1.EntityKey on a KeyField
-message PSMKeyFieldOptions {
-  // DEPREGATED use primary
-  bool primary_key = 1;
-  // DEPRECATED use schema.v1.KeyField.Ext.foreign
-  j5.schema.v1.EntityRef foreign_key = 2;
-  // DEPRECATED use tenant
-  optional string tenant_type = 3;
-
-  // TODO: When removing deprecated fields, replace this entire message
-  // with j5.schema.v1.EntityKey
-
-  // Marks the key as participating in the primary key of this entity
-  bool primary = 4;
-
-  // Marks the field as containing a tenant_id for the given tenant. Copies to
-  // j5.state.v1.PublishAuth.tenant_keys on publish
-  optional string tenant = 5;
+  schema.v1.EntityKey key = 555101;
 }
 
 extend google.protobuf.ServiceOptions {
@@ -85,10 +65,10 @@ message MessageOptions {
 
 message ObjectMessageOptions {
   repeated string polymorph_member = 3;
-  j5.schema.v1.BCLObject bcl = 4;
 }
 
-message OneofMessageOptions {}
+message OneofMessageOptions {
+}
 
 message PolymorphMessageOptions {
   // list of fully qualified proto names of the types that are allowed to be

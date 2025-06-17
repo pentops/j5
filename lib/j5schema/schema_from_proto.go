@@ -422,7 +422,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 				return nil, patherr.Wrap(err, string(field.Name()))
 			}
 
-			arrayField.Schema = fieldSchema
+			arrayField.ItemSchema = fieldSchema
 
 			prop := &ObjectProperty{
 				Parent:      parent,
@@ -477,7 +477,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 				return nil, patherr.Wrap(err, string(field.Name()))
 			}
 
-			mapField.Schema = valueSchema
+			mapField.ItemSchema = valueSchema
 
 			prop := &ObjectProperty{
 				ProtoField:  []protoreflect.FieldNumber{field.Number()},
@@ -589,40 +589,13 @@ func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensi
 
 	fieldOptions := protosrc.GetExtension[*ext_j5pb.FieldOptions](src.Options(), ext_j5pb.E_Field)
 
-	exts := protoFieldExtensions{
-		validate: validateConstraint,
-		list:     listConstraint,
-		j5:       fieldOptions,
-	}
+	psmKeyExt := protosrc.GetExtension[*schema_j5pb.EntityKey](src.Options(), ext_j5pb.E_Key)
 
-	psmKeyExt := protosrc.GetExtension[*ext_j5pb.PSMKeyFieldOptions](src.Options(), ext_j5pb.E_Key)
-	if psmKeyExt != nil {
-		exts.entityKey = &schema_j5pb.EntityKey{}
-		if psmKeyExt.Primary || psmKeyExt.PrimaryKey {
-			exts.entityKey.Primary = true
-		}
-		if psmKeyExt.TenantType != nil {
-			exts.entityKey.Tenant = psmKeyExt.TenantType
-		} else if psmKeyExt.Tenant != nil {
-			exts.entityKey.Tenant = psmKeyExt.Tenant
-		}
-		if psmKeyExt.ForeignKey != nil {
-			if exts.j5 == nil {
-				exts.j5 = &ext_j5pb.FieldOptions{
-					Type: &ext_j5pb.FieldOptions_Key{
-						Key: &ext_j5pb.KeyField{
-							Foreign: psmKeyExt.ForeignKey,
-						},
-					},
-				}
-			} else {
-				ext := exts.j5.GetKey()
-				if ext == nil {
-					panic(fmt.Sprintf("field %s has a foreign key, but is not a key", src.FullName()))
-				}
-				ext.Foreign = psmKeyExt.ForeignKey
-			}
-		}
+	exts := protoFieldExtensions{
+		validate:  validateConstraint,
+		list:      listConstraint,
+		j5:        fieldOptions,
+		entityKey: psmKeyExt,
 	}
 
 	return exts
@@ -1176,7 +1149,7 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 
 	case "google.protobuf.Struct", "google.protobuf.FileDescriptorProto":
 		return &MapField{
-			Schema: &AnyField{},
+			ItemSchema: &AnyField{},
 		}, true, nil
 
 	case "j5.types.any.v1.Any", "google.protobuf.Any":

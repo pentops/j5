@@ -3,7 +3,6 @@ package j5reflect
 import (
 	"fmt"
 
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -18,6 +17,7 @@ type MapField interface {
 	Range(RangeMapCallback) error
 	NewElement(key string) (Field, error)
 	GetOrCreateElement(key string) (Field, error)
+	GetElement(key string) (Field, bool, error)
 }
 
 type MutableMapField interface {
@@ -48,7 +48,7 @@ func (mapField *baseMapField) IsSet() bool {
 }
 
 func (mapField *baseMapField) ItemSchema() j5schema.FieldSchema {
-	return mapField.schema.Schema
+	return mapField.schema.ItemSchema
 }
 
 func newMessageMapField(context fieldContext, schema *j5schema.MapField, value protoreflect.Map, factory messageFieldFactory) (MutableMapField, error) {
@@ -59,7 +59,7 @@ func newMessageMapField(context fieldContext, schema *j5schema.MapField, value p
 		schema:       schema,
 	}
 
-	switch schema.Schema.(type) {
+	switch schema.ItemSchema.(type) {
 	case *j5schema.ObjectField:
 		return &mapOfObjectField{
 			MutableMapField: &mutableMapField{
@@ -76,7 +76,7 @@ func newMessageMapField(context fieldContext, schema *j5schema.MapField, value p
 			},
 		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported schema type %T", schema.Schema)
+		return nil, fmt.Errorf("unsupported schema type %T", schema.ItemSchema)
 	}
 }
 
@@ -88,7 +88,7 @@ func newLeafMapField(context fieldContext, schema *j5schema.MapField, value prot
 		schema:       schema,
 	}
 
-	switch st := schema.Schema.(type) {
+	switch st := schema.ItemSchema.(type) {
 	case *j5schema.ScalarSchema:
 		return &mapOfScalarField{
 			leafMapField: leafMapField{
@@ -108,7 +108,7 @@ func newLeafMapField(context fieldContext, schema *j5schema.MapField, value prot
 		}, nil
 
 	default:
-		return nil, fmt.Errorf("unsupported schema type %T", schema.Schema)
+		return nil, fmt.Errorf("unsupported schema type %T", schema.ItemSchema)
 	}
 
 }
@@ -122,6 +122,15 @@ var _ MutableMapField = (*mutableMapField)(nil)
 
 func (mapField *mutableMapField) AsMap() (MapField, bool) {
 	return mapField, true
+}
+
+func (mapField *mutableMapField) GetElement(key string) (Field, bool, error) {
+	mapKey := protoreflect.ValueOfString(key).MapKey()
+	if mapField.value.Has(mapKey) {
+		existing := mapField.value.Get(mapKey)
+		return mapField.wrapValue(key, existing), true, nil
+	}
+	return nil, false, nil
 }
 
 func (mapField *mutableMapField) GetOrCreateElement(key string) (Field, error) {
@@ -176,6 +185,19 @@ var _ LeafMapField = (*leafMapField)(nil)
 
 func (mapField *leafMapField) AsMap() (MapField, bool) {
 	return mapField, true
+}
+
+func (mapField *leafMapField) GetElement(name string) (Field, bool, error) {
+	if !mapField.value.IsValid() {
+		return nil, false, fmt.Errorf("map is not set")
+	}
+
+	key := protoreflect.ValueOfString(name).MapKey()
+	if mapField.value.Has(key) {
+		return mapField.wrapValue(name), true, nil
+	}
+
+	return nil, false, nil
 }
 
 func (mapField *leafMapField) NewElement(name string) (Field, error) {
@@ -285,14 +307,14 @@ func (c *mapContext) IndexInParent() int {
 	return -1
 }
 
-func (c *mapContext) FieldSchema() schema_j5pb.IsField_Type {
-	return c.schema.Schema.ToJ5Field().Type
+func (c *mapContext) FieldSchema() j5schema.FieldSchema {
+	return c.schema.ItemSchema
 }
 
 func (c *mapContext) TypeName() string {
-	return c.schema.Schema.TypeName()
+	return c.schema.ItemSchema.TypeName()
 }
-func (c *mapContext) PropertySchema() *schema_j5pb.ObjectProperty {
+func (c *mapContext) PropertySchema() *j5schema.ObjectProperty {
 	return nil
 }
 
@@ -301,5 +323,5 @@ func (c *mapContext) ProtoPath() []string {
 }
 
 func (c *mapContext) FullTypeName() string {
-	return fmt.Sprintf("%s.{}%s", c.schema.FullName(), c.schema.Schema.TypeName())
+	return fmt.Sprintf("%s.{}%s", c.schema.FullName(), c.schema.ItemSchema.TypeName())
 }

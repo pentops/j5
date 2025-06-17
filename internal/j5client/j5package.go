@@ -267,7 +267,7 @@ func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
 		if !ok {
 			return nil, fmt.Errorf("event field is not oneof")
 		}
-		eventOneof = oneofField.Schema()
+		eventOneof = oneofField.OneofSchema()
 		break
 	}
 
@@ -281,7 +281,7 @@ func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
 		if !ok {
 			return nil, fmt.Errorf("event property %q is not object", prop.JSONName)
 		}
-		desc := objectField.Schema().Description()
+		desc := objectField.ObjectSchema().Description()
 
 		events = append(events, &client_j5pb.StateEvent{
 			Name:        prop.JSONName,
@@ -390,12 +390,12 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 			}
 
 		case *j5schema.ArrayField:
-			if err := walkRefs(st.Schema); err != nil {
+			if err := walkRefs(st.ItemSchema); err != nil {
 				return fmt.Errorf("walk array: %w", err)
 			}
 
 		case *j5schema.MapField:
-			if err := walkRefs(st.Schema); err != nil {
+			if err := walkRefs(st.ItemSchema); err != nil {
 				return fmt.Errorf("walk map: %w", err)
 			}
 		}

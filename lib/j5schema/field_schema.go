@@ -129,11 +129,15 @@ func (s *ObjectField) AsContainer() (Container, bool) {
 	return s.Ref.To.(*ObjectSchema).Properties, true
 }
 
+func (s *ObjectField) AsObject() (*ObjectSchema, bool) {
+	return s.Ref.To.(*ObjectSchema), true
+}
+
 func (s *ObjectField) Mutable() bool {
 	return true
 }
 
-func (s *ObjectField) Schema() *ObjectSchema {
+func (s *ObjectField) ObjectSchema() *ObjectSchema {
 	return s.Ref.To.(*ObjectSchema)
 }
 
@@ -211,7 +215,7 @@ func (s *OneofField) TypeName() string {
 	return fmt.Sprintf("oneof(%s)", s.Ref.FullName())
 }
 
-func (s *OneofField) Schema() *OneofSchema {
+func (s *OneofField) OneofSchema() *OneofSchema {
 	return s.Ref.To.(*OneofSchema)
 }
 
@@ -235,9 +239,9 @@ func (s *OneofField) ToJ5Field() *schema_j5pb.Field {
 
 type MapField struct {
 	fieldContext
-	Schema FieldSchema
-	Rules  *schema_j5pb.MapField_Rules
-	Ext    *schema_j5pb.MapField_Ext
+	ItemSchema FieldSchema
+	Rules      *schema_j5pb.MapField_Rules
+	Ext        *schema_j5pb.MapField_Ext
 }
 
 var _ FieldSchema = (*MapField)(nil)
@@ -251,11 +255,11 @@ func (s *MapField) Mutable() bool {
 }
 
 func (s *MapField) TypeName() string {
-	return fmt.Sprintf("map(string,%s)", s.Schema.TypeName())
+	return fmt.Sprintf("map(string,%s)", s.ItemSchema.TypeName())
 }
 
 func (s *MapField) ToJ5Field() *schema_j5pb.Field {
-	item := s.Schema.ToJ5Field()
+	item := s.ItemSchema.ToJ5Field()
 
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Map{
@@ -271,9 +275,9 @@ func (s *MapField) ToJ5Field() *schema_j5pb.Field {
 
 type ArrayField struct {
 	fieldContext
-	Schema FieldSchema
-	Rules  *schema_j5pb.ArrayField_Rules
-	Ext    *schema_j5pb.ArrayField_Ext
+	ItemSchema FieldSchema
+	Rules      *schema_j5pb.ArrayField_Rules
+	Ext        *schema_j5pb.ArrayField_Ext
 }
 
 var _ FieldSchema = (*ArrayField)(nil)
@@ -287,11 +291,11 @@ func (s *ArrayField) AsContainer() (Container, bool) {
 }
 
 func (s *ArrayField) TypeName() string {
-	return fmt.Sprintf("array(%s)", s.Schema.TypeName())
+	return fmt.Sprintf("array(%s)", s.ItemSchema.TypeName())
 }
 
 func (s *ArrayField) ToJ5Field() *schema_j5pb.Field {
-	item := s.Schema.ToJ5Field()
+	item := s.ItemSchema.ToJ5Field()
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Array{
 			Array: &schema_j5pb.ArrayField{

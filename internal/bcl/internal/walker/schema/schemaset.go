@@ -6,7 +6,7 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/lib/j5reflect"
+	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -32,47 +32,55 @@ type SchemaSet struct {
 func convertBlocks(given []*bcl_j5pb.Block) (map[string]*BlockSpec, error) {
 	givenBlocks := map[string]*BlockSpec{}
 	for _, src := range given {
-		aliases := map[string]PathSpec{}
-		for _, alias := range src.Alias {
-			aliases[alias.Name] = PathSpec(alias.Path.Path)
-		}
-
-		block := &BlockSpec{
-			Name:        convertTag(src.Name),
-			TypeSelect:  convertTag(src.TypeSelect),
-			Qualifier:   convertTag(src.Qualifier),
-			OnlyDefined: src.OnlyExplicit,
-			Aliases:     aliases,
-		}
-		if src.DescriptionField != nil {
-			block.Description = src.DescriptionField
-		}
-
-		if src.ScalarSplit != nil {
-			ss := src.ScalarSplit
-			block.ScalarSplit = &ScalarSplit{
-				Delimiter:   ss.Delimiter,
-				RightToLeft: ss.RightToLeft,
-			}
-			for _, required := range ss.RequiredFields {
-				block.ScalarSplit.Required = append(block.ScalarSplit.Required, PathSpec(required.Path))
-			}
-			for _, optional := range ss.OptionalFields {
-				block.ScalarSplit.Optional = append(block.ScalarSplit.Optional, PathSpec(optional.Path))
-			}
-			if ss.RemainderField != nil {
-				ps := PathSpec(ss.RemainderField.Path)
-				block.ScalarSplit.Remainder = &ps
-			}
-		}
-
-		if err := block.Validate(); err != nil {
-			return nil, fmt.Errorf("invalid block spec for %s: %s", src.SchemaName, err)
+		block, err := convertBlock(src)
+		if err != nil {
+			return nil, err
 		}
 
 		givenBlocks[src.SchemaName] = block
 	}
 	return givenBlocks, nil
+}
+
+func convertBlock(src *bcl_j5pb.Block) (*BlockSpec, error) {
+	aliases := map[string]PathSpec{}
+	for _, alias := range src.Alias {
+		aliases[alias.Name] = PathSpec(alias.Path.Path)
+	}
+
+	block := &BlockSpec{
+		Name:        convertTag(src.Name),
+		TypeSelect:  convertTag(src.TypeSelect),
+		Qualifier:   convertTag(src.Qualifier),
+		OnlyDefined: src.OnlyExplicit,
+		Aliases:     aliases,
+	}
+	if src.DescriptionField != nil {
+		block.Description = src.DescriptionField
+	}
+
+	if src.ScalarSplit != nil {
+		ss := src.ScalarSplit
+		block.ScalarSplit = &ScalarSplit{
+			Delimiter:   ss.Delimiter,
+			RightToLeft: ss.RightToLeft,
+		}
+		for _, required := range ss.RequiredFields {
+			block.ScalarSplit.Required = append(block.ScalarSplit.Required, PathSpec(required.Path))
+		}
+		for _, optional := range ss.OptionalFields {
+			block.ScalarSplit.Optional = append(block.ScalarSplit.Optional, PathSpec(optional.Path))
+		}
+		if ss.RemainderField != nil {
+			ps := PathSpec(ss.RemainderField.Path)
+			block.ScalarSplit.Remainder = &ps
+		}
+	}
+
+	if err := block.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid block spec for %s: %s", src.SchemaName, err)
+	}
+	return block, nil
 }
 
 func NewSchemaSet(given *bcl_j5pb.Schema) (*SchemaSet, error) {
@@ -87,16 +95,50 @@ func NewSchemaSet(given *bcl_j5pb.Schema) (*SchemaSet, error) {
 	}, nil
 }
 
-func (ss *SchemaSet) _buildSpec(node j5PropSet) (*BlockSpec, error) {
+func (ss *SchemaSet) lookupBlockSpec(node j5PropSet) (*BlockSpec, error) {
+	var err error
 	schemaName := node.SchemaName()
+
+	// First search passed in specs
 	blockSpec := ss.givenSpecs[schemaName]
-	if blockSpec == nil {
-		blockSpec = &BlockSpec{}
-		blockSpec.source = specSourceAuto
-	} else {
+	if blockSpec != nil {
 		blockSpec.source = specSourceSchema
+		blockSpec.schema = schemaName
+		return blockSpec, nil
 	}
+
+	// Check for BCL in schema
+	var bclBlock *bcl_j5pb.Block
+	root, ok := node.RootSchema()
+	if ok {
+		switch nt := root.(type) {
+		case *j5schema.ObjectSchema:
+			bclBlock = nt.BCL
+		case *j5schema.OneofSchema:
+			bclBlock = nt.BCL
+		}
+	}
+
+	if bclBlock == nil {
+		blockSpec = &BlockSpec{}
+	} else {
+		blockSpec, err = convertBlock(bclBlock)
+		if err != nil {
+			return nil, err
+		}
+
+	}
+
+	blockSpec.source = specSourceAuto
 	blockSpec.schema = schemaName
+	return blockSpec, nil
+}
+
+func (ss *SchemaSet) _buildSpec(node j5PropSet) (*BlockSpec, error) {
+	blockSpec, err := ss.lookupBlockSpec(node)
+	if err != nil {
+		return nil, err
+	}
 
 	if blockSpec.OnlyDefined {
 		return blockSpec, nil
@@ -108,7 +150,7 @@ func (ss *SchemaSet) _buildSpec(node j5PropSet) (*BlockSpec, error) {
 
 	newAliases := map[string]PathSpec{}
 
-	err := node.RangePropertySchemas(func(name string, required bool, schema *schema_j5pb.Field) error {
+	err = node.RangePropertySchemas(func(name string, required bool, schema *schema_j5pb.Field) error {
 
 		switch field := schema.Type.(type) {
 		case *schema_j5pb.Field_Object:
@@ -172,7 +214,7 @@ func (ss *SchemaSet) _buildSpec(node j5PropSet) (*BlockSpec, error) {
 	return blockSpec, nil
 }
 
-func (ss *SchemaSet) wrapContainer(node j5reflect.PropertySet, path []string, loc *bcl_j5pb.SourceLocation) (*containerField, error) {
+func (ss *SchemaSet) wrapContainer(node j5PropSet, path []string, loc *bcl_j5pb.SourceLocation) (*containerField, error) {
 	spec, err := ss.blockSpec(node)
 	if err != nil {
 		return nil, err

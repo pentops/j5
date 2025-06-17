@@ -12,6 +12,7 @@ type Object interface {
 
 	// HasAnyValue returns true if any of the properties have a valid value
 	HasAnyValue() bool
+	ObjectSchema() *j5schema.ObjectSchema
 }
 
 type ObjectField interface {
@@ -50,6 +51,14 @@ func (fs *objectImpl) HasAnyValue() bool {
 	return false
 }
 
+func (fs *objectImpl) ObjectSchema() *j5schema.ObjectSchema {
+	return fs.schema
+}
+
+func (fs *objectImpl) RootSchema() (j5schema.RootSchema, bool) {
+	return fs.schema, true
+}
+
 type objectFieldFactory struct {
 	schema  *j5schema.ObjectField
 	propSet propSetFactory
@@ -60,7 +69,7 @@ var _ messageFieldFactory = (*objectFieldFactory)(nil)
 func (f *objectFieldFactory) buildField(context fieldContext, value protoreflect.Message) Field {
 	obj := &objectImpl{
 		propSet: f.propSet.newMessage(value),
-		schema:  f.schema.Schema(),
+		schema:  f.schema.ObjectSchema(),
 	}
 	return newObjectField(context, obj)
 }

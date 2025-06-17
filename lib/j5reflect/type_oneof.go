@@ -45,6 +45,10 @@ func (oneof *oneofImpl) HasAvailableProperty(name string) bool {
 
 }
 
+func (fs *oneofImpl) RootSchema() (j5schema.RootSchema, bool) {
+	return fs.schema, true
+}
+
 type oneofField struct {
 	fieldDefaults
 	fieldContext
@@ -61,7 +65,7 @@ var _ messageFieldFactory = (*oneofFieldFactory)(nil)
 
 func (f *oneofFieldFactory) buildField(context fieldContext, value protoreflect.Message) Field {
 	oneof := &oneofImpl{
-		schema:  f.schema.Schema(),
+		schema:  f.schema.OneofSchema(),
 		propSet: f.propSet.newMessage(value),
 	}
 	return newOneofField(context, f.schema, oneof)
