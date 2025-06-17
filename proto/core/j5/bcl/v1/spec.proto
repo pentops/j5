@@ -60,7 +60,7 @@ message Tag {
 
 message Alias {
   string name = 1;
-  Path path = 2;
+  repeated string path = 2;
 }
 
 // ScalarSplit is a way to set a block (container/object type) from a scalar,

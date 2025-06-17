@@ -81,10 +81,7 @@ message EntityRef {
 message AnyField {
   j5.list.v1.AnyRules list_rules = 5;
 
-  option (j5.bcl.v1.block).alias = {
-    name: "type"
-    path: {path: "types"}
-  };
+  option (j5.bcl.v1.block).alias = { name: "type" path: "types" };
 }
 
 // ObjectAsField is an object as-a-field in an ObjectProperty
@@ -132,8 +129,8 @@ message ObjectField {
   }
 
   option (j5.bcl.v1.block).qualifier.field_name = "ref";
-  option (j5.bcl.v1.block).alias = {name: "field", path: {path: ["object","properties"]}};
-  option (j5.bcl.v1.block).alias = {name: "bcl", path: {path: ["object","bcl"]}};
+  option (j5.bcl.v1.block).alias = {name: "field", path:  ["object","properties"]};
+  option (j5.bcl.v1.block).alias = {name: "bcl", path:  ["object","bcl"]};
 }
 
 message InlineObject {
@@ -158,7 +155,7 @@ message Object {
  
   option (j5.bcl.v1.block).description_field = "description";
   option (j5.bcl.v1.block).name.field_name = "name";
-  option (j5.bcl.v1.block).alias = {name: "field", path: {path: ["properties"]}};
+  option (j5.bcl.v1.block).alias = {name: "field", path: ["properties"]};
 }
 
 message EntityObject {
@@ -218,8 +215,8 @@ message OneofField {
   message Ext {}
   
   option (j5.bcl.v1.block).qualifier.field_name = "ref";
-  option (j5.bcl.v1.block).alias = {name: "option", path: {path: ["oneof","properties"]}};
-  option (j5.bcl.v1.block).alias = {name: "bcl", path: {path: ["oneof","bcl"]}};
+  option (j5.bcl.v1.block).alias = {name: "option", path:  ["oneof","properties"]};
+  option (j5.bcl.v1.block).alias = {name: "bcl", path: ["oneof","bcl"]};
 }
 
 // Similar to ObjectItem (it is an object in JSON Schema), but where exactly one
@@ -233,7 +230,7 @@ message Oneof {
   
   option (j5.bcl.v1.block).description_field = "description";
   option (j5.bcl.v1.block).name.field_name = "name";
-  option (j5.bcl.v1.block).alias = {name: "option", path: {path: ["properties"]}};
+  option (j5.bcl.v1.block).alias = {name: "option", path: ["properties"]};
 }
 
 message EnumField {
@@ -253,7 +250,7 @@ message EnumField {
   message Ext {}
   
   option (j5.bcl.v1.block).qualifier.field_name = "ref";
-  option (j5.bcl.v1.block).alias = {name: "option", path: {path: ["enum","options"]}};
+  option (j5.bcl.v1.block).alias = {name: "option", path: ["enum","options"]};
 }
 
 message Enum {
@@ -278,7 +275,7 @@ message Enum {
   
   option (j5.bcl.v1.block).description_field = "description";
   option (j5.bcl.v1.block).name.field_name = "name";
-  option (j5.bcl.v1.block).alias = {name: "option", path: {path: ["options"]}};
+  option (j5.bcl.v1.block).alias = {name: "option", path: ["options"]};
 }
 
 message ArrayField {
@@ -492,10 +489,7 @@ message KeyField {
     is_block: true
   };
 
-  option (j5.bcl.v1.block).alias = {
-    name: "foreign"
-    path: {path: ["ext","foreign"]}
-  };
+  option (j5.bcl.v1.block).alias = { name: "foreign" path: ["ext","foreign"]};
 
 }
 
@@ -545,7 +539,7 @@ message ObjectProperty {
     question_bool: "optional"
   };
   option (j5.bcl.v1.block).name.field_name = "name";
-  option (j5.bcl.v1.block).alias = {name: "optional", path: {path: "explicitlyOptional"}};
+  option (j5.bcl.v1.block).alias = {name: "optional", path: "explicitlyOptional"};
 }
   
 message EntityKey {

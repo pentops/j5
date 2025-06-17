@@ -14,7 +14,8 @@ import (
 
 func runGenerate(ctx context.Context, cfg struct {
 	SourceConfig
-	NoClean bool `flag:"no-clean" description:"Do not remove the directories in config as 'managedPaths' before generating"`
+	Name    string `flag:"name" required:"false" description:"Name of the generate to build"`
+	NoClean bool   `flag:"no-clean" description:"Do not remove the directories in config as 'managedPaths' before generating"`
 }) error {
 
 	src, err := cfg.GetSource(ctx)
@@ -54,6 +55,9 @@ func runGenerate(ctx context.Context, cfg struct {
 
 	j5Config := src.RepoConfig()
 	for _, generator := range j5Config.Generate {
+		if cfg.Name != "" && generator.Name != cfg.Name {
+			continue
+		}
 		if err := runGeneratePlugin(ctx, bb, src, generator, outRoot); err != nil {
 			return err
 
