@@ -13,6 +13,7 @@ import (
 const (
 	bufValidateImport          = "buf/validate/validate.proto"
 	j5ExtImport                = "j5/ext/v1/annotations.proto"
+	bclExtImport               = "j5/bcl/v1/annotations.proto"
 	j5DateImport               = "j5/types/date/v1/date.proto"
 	j5DecimalImport            = "j5/types/decimal/v1/decimal.proto"
 	j5ListAnnotationsImport    = "j5/list/v1/annotations.proto"
