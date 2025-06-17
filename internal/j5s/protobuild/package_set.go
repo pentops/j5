@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strings"
 
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -13,7 +12,6 @@ import (
 	"github.com/pentops/j5/internal/dag"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/log.go/log"
-	"golang.org/x/exp/maps"
 )
 
 type PackageSet struct {
@@ -96,7 +94,7 @@ func (ps *PackageSet) FindFileByPath(filename string) (*psrc.File, error) {
 		return res, nil
 	}
 
-	return nil, fmt.Errorf("file %s not found in package %s, have %s", filename, pkgName, strings.Join(maps.Keys(pkg.Files), ", "))
+	return nil, fmt.Errorf("file %s not found in package %s", filename, pkgName)
 }
 
 func (ps *PackageSet) loadPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {

@@ -38,7 +38,7 @@ func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) ([]*
 	for _, filename := range filenames {
 		file, err := ll._resolveFile(ctx, filename)
 		if err != nil {
-			return nil, fmt.Errorf("linker, resolve file %s: %w", filename, err)
+			return nil, err
 		}
 
 		files = append(files, file)
