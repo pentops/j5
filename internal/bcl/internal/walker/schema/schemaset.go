@@ -32,7 +32,7 @@ type SchemaSet struct {
 func convertBlock(src *bcl_j5pb.Block) (*BlockSpec, error) {
 	aliases := map[string]PathSpec{}
 	for _, alias := range src.Alias {
-		aliases[alias.Name] = PathSpec(alias.Path.Path)
+		aliases[alias.Name] = PathSpec(alias.Path)
 	}
 
 	block := &BlockSpec{

@@ -22,13 +22,13 @@ message SourceFile {
   j5.bcl.v1.SourceLocation source_locations = 6;
   
 
-  option (j5.bcl.v1.block).alias = {name: "object", path: {path: ["elements", "object"]}};
-  option (j5.bcl.v1.block).alias = {name: "enum", path: {path: ["elements", "enum"]}};
-  option (j5.bcl.v1.block).alias = {name: "oneof", path: {path: ["elements", "oneof"]}};
-  option (j5.bcl.v1.block).alias = {name: "polymorph", path: {path: ["elements", "polymorph"]}};
-  option (j5.bcl.v1.block).alias = {name: "entity", path: {path: ["elements", "entity"]}};
-  option (j5.bcl.v1.block).alias = {name: "service", path: {path: ["elements", "service"]}};
-  option (j5.bcl.v1.block).alias = {name: "topic", path: {path: ["elements", "topic"]}};
+  option (j5.bcl.v1.block).alias = {name: "object", path: ["elements", "object"]};
+  option (j5.bcl.v1.block).alias = {name: "enum", path: ["elements", "enum"]};
+  option (j5.bcl.v1.block).alias = {name: "oneof", path:  ["elements", "oneof"]};
+  option (j5.bcl.v1.block).alias = {name: "polymorph", path: ["elements", "polymorph"]};
+  option (j5.bcl.v1.block).alias = {name: "entity", path: ["elements", "entity"]};
+  option (j5.bcl.v1.block).alias = {name: "service", path: ["elements", "service"]};
+  option (j5.bcl.v1.block).alias = {name: "topic", path: ["elements", "topic"]};
 }
 
 message Package {
@@ -77,13 +77,13 @@ message Entity {
   repeated EntitySummary summaries = 10 [(j5.ext.v1.field).array.single_form = "summary"];
   
   option (j5.bcl.v1.block).name.field_name = "name";
-  option (j5.bcl.v1.block).alias = {name: "key", path: {path: "keys"}};
-  option (j5.bcl.v1.block).alias = {name: "data", path: {path: "data"}};
-  option (j5.bcl.v1.block).alias = {name: "status", path: {path: "status"}};
-  option (j5.bcl.v1.block).alias = {name: "event", path: {path: "events"}};
-  option (j5.bcl.v1.block).alias = {name: "object", path: {path: ["schemas", "object"]}};
-  option (j5.bcl.v1.block).alias = {name: "enum", path: {path: ["schemas", "enum"]}};
-  option (j5.bcl.v1.block).alias = {name: "oneof", path: {path: ["schemas", "oneof"]}};
+  option (j5.bcl.v1.block).alias = {name: "key", path: "keys"};
+  option (j5.bcl.v1.block).alias = {name: "data", path: "data"};
+  option (j5.bcl.v1.block).alias = {name: "status", path: "status"};
+  option (j5.bcl.v1.block).alias = {name: "event", path: "events"};
+  option (j5.bcl.v1.block).alias = {name: "object", path: ["schemas", "object"]};
+  option (j5.bcl.v1.block).alias = {name: "enum", path: ["schemas", "enum"]};
+  option (j5.bcl.v1.block).alias = {name: "oneof", path: ["schemas", "oneof"]};
 }
 
 message EntityQuery {
@@ -164,7 +164,7 @@ message EntityKey {
     question_bool: "optional"
   };
   option (j5.bcl.v1.block).name.field_name = "name";
-  option (j5.bcl.v1.block).alias = {name: "optional", path: {path: "explicitlyOptional"}};
+  option (j5.bcl.v1.block).alias = {name: "optional", path: "explicitlyOptional"};
 }
 
 message Oneof {
@@ -174,8 +174,8 @@ message Oneof {
   
   option (j5.bcl.v1.block).description_field = "description";
   option (j5.bcl.v1.block).name.field_name = "name";
-  option (j5.bcl.v1.block).alias = {name: "option", path: {path: ["properties"]}};
-  option (j5.bcl.v1.block).alias = {name: "object", path: {path: ["schemas", "object"]}};
+  option (j5.bcl.v1.block).alias = {name: "option", path: ["properties"]};
+  option (j5.bcl.v1.block).alias = {name: "object", path: ["schemas", "object"]};
 }
 
 message Object {
@@ -185,8 +185,8 @@ message Object {
   
   option (j5.bcl.v1.block).description_field = "description";
   option (j5.bcl.v1.block).name.field_name = "name";
-  option (j5.bcl.v1.block).alias = {name: "field", path: {path: ["properties"]}};
-  option (j5.bcl.v1.block).alias = {name: "object", path: {path: ["schemas", "object"]}};
+  option (j5.bcl.v1.block).alias = {name: "field", path: ["properties"]};
+  option (j5.bcl.v1.block).alias = {name: "object", path: ["schemas", "object"]};
 }
 
 message Polymorph {
@@ -196,7 +196,7 @@ message Polymorph {
   // The members of the listed types are included in this type.
   repeated string includes = 2; 
   
-  option (j5.bcl.v1.block).alias = {name: "member", path: {path: ["members"]}};
+  option (j5.bcl.v1.block).alias = {name: "member", path: ["members"]};
 }
 
 message EntityElement {
