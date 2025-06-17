@@ -321,7 +321,7 @@ message MapField {
   
   option (j5.bcl.v1.block) = {
     qualifier: {
-      field_name: "item_schema"
+      field_name: "itemSchema"
       is_block: true
    }
   };
