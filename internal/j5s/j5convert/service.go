@@ -97,14 +97,16 @@ func (ww *conversionVisitor) visitServiceMethodNode(service *serviceBuilder, nod
 	for idx, part := range reqPathParts {
 		if strings.HasPrefix(part, ":") {
 			var field *schema_j5pb.ObjectProperty
+			found := make([]string, 0)
 			for _, search := range method.Request.Properties {
+				found = append(found, search.Name)
 				if search.Name == part[1:] {
 					field = search
 					break
 				}
 			}
 			if field == nil {
-				ww.addErrorf(node.Source, "missing field %s in request", part[1:])
+				ww.addErrorf(node.Source, "field %s from request path not found in %s/%s, have %s", part[1:], *service.desc.Name, method.Name, strings.Join(found, ", "))
 			}
 
 			fieldName := strcase.ToSnake(part[1:])

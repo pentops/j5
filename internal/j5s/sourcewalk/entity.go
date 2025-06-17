@@ -563,19 +563,28 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 	listKeys := make([]*schema_j5pb.ObjectProperty, 0)
 	listHttpPath := []string{}
 
+	baseURLParts := strings.Split(entity.BaseUrlPath, "/")
+	baseURLFields := map[string]bool{}
+	for _, part := range baseURLParts {
+		if !strings.HasPrefix(part, ":") {
+			continue
+		}
+		baseURLFields[part[1:]] = true
+	}
 	for _, key := range ent.Schema.Keys {
+		isPathKey := key.Key.ShardKey || baseURLFields[key.Def.Name]
 		if key.Key.Primary || key.Def.EntityKey != nil && key.Def.EntityKey.Primary {
 			// The field is a Primary Key of the entity
 			getKeys = append(getKeys, key.Def)
 			httpPath = append(httpPath, fmt.Sprintf(":%s", key.Def.Name))
 
-			if key.Key.ShardKey {
+			if isPathKey {
 				// primary and shard.
 				listKeys = append(listKeys, key.Def)
 				listHttpPath = append(listHttpPath, fmt.Sprintf(":%s", key.Def.Name))
 			}
 		} else {
-			if key.Key.ShardKey {
+			if isPathKey {
 				// just shard, not primary - still part of the URL
 
 				listKeys = append(listKeys, key.Def)
