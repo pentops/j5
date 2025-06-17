@@ -68,12 +68,13 @@ var J5SchemaSpec = &bcl_j5pb.Schema{
 			Path: bclPath("types"),
 		}},
 	}, {
-		SchemaName: "j5.schema.v1.ArrayField",
-		Qualifier: &bcl_j5pb.Tag{
-			FieldName: ("items"),
-			IsBlock:   true,
-		},
-	}, {
+		/*
+			SchemaName: "j5.schema.v1.ArrayField",
+			Qualifier: &bcl_j5pb.Tag{
+				FieldName: ("items"),
+				IsBlock:   true,
+			},
+		}, {*/
 		SchemaName: "j5.schema.v1.MapField",
 		Qualifier: &bcl_j5pb.Tag{
 			FieldName: ("itemSchema"),

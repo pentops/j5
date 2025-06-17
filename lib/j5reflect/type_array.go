@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -47,7 +46,7 @@ func (array *baseArrayField) IsSet() bool {
 }
 
 func (array *baseArrayField) ItemSchema() j5schema.FieldSchema {
-	return array.schema.Schema
+	return array.schema.ItemSchema
 }
 
 func (array *baseArrayField) Length() int {
@@ -65,7 +64,7 @@ func newMessageArrayField(context fieldContext, schema *j5schema.ArrayField, val
 		value:        value,
 	}
 
-	switch schema.Schema.(type) {
+	switch schema.ItemSchema.(type) {
 	case *j5schema.ObjectField:
 		return &arrayOfObjectField{
 			mutableArrayField: mutableArrayField{
@@ -83,7 +82,7 @@ func newMessageArrayField(context fieldContext, schema *j5schema.ArrayField, val
 		}, nil
 
 	default:
-		return nil, fmt.Errorf("unsupported array item schema %T", schema.Schema)
+		return nil, fmt.Errorf("unsupported array item schema %T", schema.ItemSchema)
 	}
 }
 
@@ -98,7 +97,7 @@ func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value 
 		value:        value,
 	}
 
-	switch st := schema.Schema.(type) {
+	switch st := schema.ItemSchema.(type) {
 
 	case *j5schema.ScalarSchema:
 		return &arrayOfScalarField{
@@ -106,7 +105,7 @@ func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value 
 				baseArrayField: base,
 				factory:        factory,
 			},
-			itemSchema: schema.Schema.(*j5schema.ScalarSchema),
+			itemSchema: schema.ItemSchema.(*j5schema.ScalarSchema),
 		}, nil
 
 	case *j5schema.EnumField:
@@ -118,7 +117,7 @@ func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value 
 			itemSchema: st.Schema(),
 		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported array item schema %T", schema.Schema)
+		return nil, fmt.Errorf("unsupported array item schema %T", schema.ItemSchema)
 	}
 
 }
@@ -263,19 +262,19 @@ func (c *arrayContext) IndexInParent() int {
 	return c.index
 }
 
-func (c *arrayContext) FieldSchema() schema_j5pb.IsField_Type {
-	return c.schema.Schema.ToJ5Field().Type
+func (c *arrayContext) FieldSchema() j5schema.FieldSchema {
+	return c.schema.ItemSchema
 }
 
 func (c *arrayContext) TypeName() string {
-	return c.schema.Schema.TypeName()
+	return c.schema.ItemSchema.TypeName()
 }
 
 func (c *arrayContext) FullTypeName() string {
-	return fmt.Sprintf("%s[%d] (%s)", c.schema.FullName(), c.index, c.schema.Schema.TypeName())
+	return fmt.Sprintf("%s[%d] (%s)", c.schema.FullName(), c.index, c.schema.ItemSchema.TypeName())
 }
 
-func (c *arrayContext) PropertySchema() *schema_j5pb.ObjectProperty {
+func (c *arrayContext) PropertySchema() *j5schema.ObjectProperty {
 	return nil
 }
 

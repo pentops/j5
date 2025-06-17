@@ -25,6 +25,7 @@ type containerField struct {
 }
 
 type j5PropSet interface {
+	// subset of j5reflect.PropertySet
 	SchemaName() string
 	RangePropertySchemas(j5reflect.RangePropertySchemasCallback) error
 	NewValue(name string) (j5reflect.Field, error)
@@ -33,26 +34,38 @@ type j5PropSet interface {
 	ContainerSchema() j5schema.Container
 	ListPropertyNames() []string
 	HasAvailableProperty(string) bool
+
+	RootSchema() (j5schema.RootSchema, bool)
 }
 
 type mapContainer struct {
-	mapNode j5reflect.MapField
+	j5reflect.MapField
 }
 
+var _ j5PropSet = mapContainer{}
+
 func (mc mapContainer) SchemaName() string {
-	return mc.mapNode.FullTypeName()
+	return mc.FullTypeName()
+}
+
+func (mc mapContainer) RootSchema() (j5schema.RootSchema, bool) {
+	return nil, false
 }
 
 func (mc mapContainer) RangePropertySchemas(cb j5reflect.RangePropertySchemasCallback) error {
-	return cb("*", false, mc.mapNode.ItemSchema().ToJ5Field())
+	return cb("*", false, mc.ItemSchema().ToJ5Field())
 }
 
 func (mc mapContainer) NewValue(name string) (j5reflect.Field, error) {
-	return mc.mapNode.NewElement(name)
+	return mc.NewElement(name)
+}
+
+func (mc mapContainer) HasProperty(name string) bool {
+	return true
 }
 
 func (mc mapContainer) GetOrCreateValue(name string) (j5reflect.Field, error) {
-	return mc.mapNode.GetOrCreateElement(name)
+	return mc.GetOrCreateElement(name)
 }
 
 func (mc mapContainer) HasAvailableProperty(name string) bool {
@@ -87,7 +100,7 @@ func (ms mapSchema) WalkToProperty(name ...string) (j5schema.FieldSchema, error)
 }
 
 func (mc mapContainer) ContainerSchema() j5schema.Container {
-	return mapSchema{itemSchema: mc.mapNode.ItemSchema()}
+	return mapSchema{itemSchema: mc.ItemSchema()}
 }
 
 func (mc mapContainer) GetProperty(name string) (j5reflect.Property, error) {
@@ -273,7 +286,7 @@ func (container *containerField) walkPath(path []string, loc SourceLocation) ([]
 		fieldWithContainer = container
 		schemaPath = append(schemaPath, name)
 	} else if mapNode, ok := val.AsMap(); ok {
-		fieldWithContainer = mapContainer{mapNode: mapNode}
+		fieldWithContainer = mapContainer{MapField: mapNode}
 		schemaPath = append(schemaPath, name)
 	} else {
 		return nil, &WalkPathError{

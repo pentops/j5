@@ -224,7 +224,7 @@ func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Fie
 		if err != nil {
 			return nil, patherr.Wrap(err, "items")
 		}
-		field.Schema = itemSchema
+		field.ItemSchema = itemSchema
 		return field, nil
 
 	case *schema_j5pb.Field_Map:
@@ -241,7 +241,7 @@ func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Fie
 		if err != nil {
 			return nil, patherr.Wrap(err, "items")
 		}
-		field.Schema = valueSchema
+		field.ItemSchema = valueSchema
 		return field, nil
 
 	case *schema_j5pb.Field_Timestamp:
@@ -343,6 +343,7 @@ func (pkg *Package) objectSchemaFromDesc(sch *schema_j5pb.Object) (*ObjectSchema
 		Properties:      make([]*ObjectProperty, len(sch.Properties)),
 		Entity:          sch.Entity,
 		PolymorphMember: sch.PolymorphMember,
+		BCL:             sch.Bcl,
 		rootSchema: rootSchema{
 			description: sch.Description,
 			name:        sch.Name,
@@ -365,6 +366,7 @@ func (pkg *Package) oneofSchemaFromDesc(sch *schema_j5pb.Oneof) (*OneofSchema, e
 
 	oneof := &OneofSchema{
 		Properties: make([]*ObjectProperty, len(sch.Properties)),
+		BCL:        sch.Bcl,
 		rootSchema: rootSchema{
 			description: sch.Description,
 			name:        sch.Name,

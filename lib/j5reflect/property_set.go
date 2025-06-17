@@ -45,6 +45,7 @@ type PropertySet interface {
 	SchemaName() string // Returns the full name of the entity wrapping the properties.
 
 	ContainerSchema() j5schema.Container
+	RootSchema() (j5schema.RootSchema, bool)
 
 	RangeProperties(RangePropertiesCallback) error
 	RangePropertySchemas(RangePropertySchemasCallback) error
@@ -402,14 +403,14 @@ func (fs *propSet) buildValue(prop *property, create bool) (Field, bool, error) 
 
 		descriptor := msg.Descriptor()
 
-		propSetFactory, err := newPropSet(wrapper.Schema(), descriptor)
+		propSetFactory, err := newPropSet(wrapper.OneofSchema(), descriptor)
 		if err != nil {
 			return nil, false, patherr.Wrap(err, prop.schema.JSONName)
 		}
 
 		propSet := propSetFactory.newMessage(fs.value)
 		oneof := &oneofImpl{
-			schema:  wrapper.Schema(),
+			schema:  wrapper.OneofSchema(),
 			propSet: propSet,
 		}
 
@@ -474,9 +475,9 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 		}
 		listVal := valVal.List()
 
-		if st.Schema.Mutable() {
+		if st.ItemSchema.Mutable() {
 
-			ff, err := newMessageFieldFactory(st.Schema, value.fieldInParent.Message())
+			ff, err := newMessageFieldFactory(st.ItemSchema, value.fieldInParent.Message())
 			if err != nil {
 				return nil, err
 			}
@@ -489,7 +490,7 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 			return field, nil
 		}
 
-		ff, err := newFieldFactory(st.Schema, value.fieldInParent)
+		ff, err := newFieldFactory(st.ItemSchema, value.fieldInParent)
 		if err != nil {
 			return nil, err
 		}
@@ -511,8 +512,8 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 		}
 		mapVal := valVal.Map()
 
-		if st.Schema.Mutable() {
-			ff, err := newMessageFieldFactory(st.Schema, value.fieldInParent.MapValue().Message())
+		if st.ItemSchema.Mutable() {
+			ff, err := newMessageFieldFactory(st.ItemSchema, value.fieldInParent.MapValue().Message())
 			if err != nil {
 				return nil, err
 			}
@@ -523,7 +524,7 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 			return field, nil
 		}
 
-		ff, err := newFieldFactory(st.Schema, value.fieldInParent.MapValue())
+		ff, err := newFieldFactory(st.ItemSchema, value.fieldInParent.MapValue())
 		if err != nil {
 			return nil, err
 		}
@@ -583,7 +584,7 @@ func newMessageFieldFactory(schema j5schema.FieldSchema, desc protoreflect.Messa
 
 	switch st := schema.(type) {
 	case *j5schema.ObjectField:
-		propSetFactory, err := newPropSet(st.Schema(), desc)
+		propSetFactory, err := newPropSet(st.ObjectSchema(), desc)
 		if err != nil {
 			return nil, err
 		}
@@ -593,7 +594,7 @@ func newMessageFieldFactory(schema j5schema.FieldSchema, desc protoreflect.Messa
 		}, nil
 
 	case *j5schema.OneofField:
-		propSetFactory, err := newPropSet(st.Schema(), desc)
+		propSetFactory, err := newPropSet(st.OneofSchema(), desc)
 		if err != nil {
 			return nil, err
 		}

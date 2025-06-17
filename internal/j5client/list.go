@@ -34,9 +34,9 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 		return nil, fmt.Errorf("no array found in response")
 	}
 
-	rootSchema, ok := foundArray.Schema.(*j5schema.ObjectField)
+	rootSchema, ok := foundArray.ItemSchema.(*j5schema.ObjectField)
 	if !ok {
-		return nil, fmt.Errorf("expected object schema, got %T", foundArray.Schema)
+		return nil, fmt.Errorf("expected object schema, got %T", foundArray.ItemSchema)
 	}
 
 	out := &client_j5pb.ListRequest{}
@@ -76,7 +76,7 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 		})
 	}
 
-	if err := j5schema.WalkSchemaFields(rootSchema.Schema(), true, func(schema j5schema.WalkProperty) error {
+	if err := j5schema.WalkSchemaFields(rootSchema.ObjectSchema(), true, func(schema j5schema.WalkProperty) error {
 		switch st := schema.Schema.(type) {
 		case *j5schema.EnumField:
 			if st.ListRules != nil {

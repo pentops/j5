@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option go_package = "github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb";
+import "google/protobuf/descriptor.proto";
+import "j5/bcl/v1/spec.proto";
+
+package j5.bcl.v1;
+
+message SourceLocation {
+  map<string, SourceLocation> children = 1;
+  int32 start_line = 2;
+  int32 start_column = 3;
+  int32 end_line = 4;
+  int32 end_column = 5;
+}
+
+extend google.protobuf.MessageOptions {
+  Block block = 556000;
+}
+

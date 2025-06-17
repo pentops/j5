@@ -4,6 +4,7 @@ packages:
   - name: j5.auth.v1
   - name: j5.client.v1
   - name: j5.ext.v1
+  - name: j5.bcl.v1
   - name: j5.list.v1
   - name: j5.messaging.v1
   - name: j5.plugin.v1

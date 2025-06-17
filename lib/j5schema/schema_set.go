@@ -134,12 +134,12 @@ func (pkg *Package) assertRefsLink() error {
 			return walkRef(tt.Ref)
 
 		case *MapField:
-			if err := walkFieldSchema(tt.Schema); err != nil {
+			if err := walkFieldSchema(tt.ItemSchema); err != nil {
 				return err
 			}
 
 		case *ArrayField:
-			if err := walkFieldSchema(tt.Schema); err != nil {
+			if err := walkFieldSchema(tt.ItemSchema); err != nil {
 				return err
 			}
 		}

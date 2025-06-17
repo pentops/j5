@@ -1,7 +1,6 @@
 package j5reflect
 
 import (
-	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/lib/j5schema"
 )
 
@@ -43,8 +42,8 @@ type FieldContext interface {
 
 	// IndexInParent returns -1 for non array fields
 	IndexInParent() int
-	PropertySchema() *schema_j5pb.ObjectProperty
-	FieldSchema() schema_j5pb.IsField_Type
+	PropertySchema() *j5schema.ObjectProperty
+	FieldSchema() j5schema.FieldSchema
 	TypeName() string
 	FullTypeName() string
 	ProtoPath() []string
@@ -89,16 +88,15 @@ func (c propertyContext) IndexInParent() int {
 	return -1
 }
 
-func (c propertyContext) PropertySchema() *schema_j5pb.ObjectProperty {
-	return c.schema.ToJ5Proto()
-}
-
 func (c propertyContext) TypeName() string {
 	return c.schema.Schema.TypeName()
 }
 
-func (c propertyContext) FieldSchema() schema_j5pb.IsField_Type {
-	return c.schema.Schema.ToJ5Field().Type
+func (c propertyContext) PropertySchema() *j5schema.ObjectProperty {
+	return c.schema
+}
+func (c propertyContext) FieldSchema() j5schema.FieldSchema { //schema_j5pb.IsField_Type {
+	return c.schema.Schema //.ToJ5Field().Type
 }
 
 func (c propertyContext) FullTypeName() string {

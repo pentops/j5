@@ -5,6 +5,8 @@ package j5.schema.v1;
 import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/list/v1/annotations.proto";
+import "j5/bcl/v1/spec.proto";
+import "j5/bcl/v1/annotations.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
 
@@ -128,12 +130,7 @@ message Object {
   // The names of any Polymorph types this object is a member of.
   repeated string polymorph_member = 5;
 
-  BCLObject bcl = 6;
-}
-
-message BCLObject {
-  repeated string tags = 1;
-  repeated string qualifiers = 2;
+  bcl.v1.Block bcl = 6;
 }
 
 message EntityObject {
@@ -196,6 +193,7 @@ message OneofField {
 message Oneof {
   string name = 1 [(buf.validate.field).string.pattern = "^(|[A-Z][a-zA-Z0-9]*)$"];
   string description = 2;
+  bcl.v1.Block bcl = 4;
 
   repeated ObjectProperty properties = 3;
 }
@@ -254,6 +252,13 @@ message ArrayField {
     optional uint64 max_items = 2;
     optional bool unique_items = 3;
   }
+
+  /*
+  option (j5.bcl.v1).block = {
+    qualifier: {
+      field_name: "items"
+   }
+  };*/
 }
 
 message MapField {

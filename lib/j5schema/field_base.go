@@ -1,6 +1,8 @@
 package j5schema
 
-import "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+import (
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+)
 
 type FieldSchema interface {
 	ToJ5Field() *schema_j5pb.Field
@@ -18,6 +20,7 @@ type FieldSchema interface {
 	Mutable() bool
 
 	AsContainer() (Container, bool)
+	AsRootSchema() (RootSchema, bool)
 }
 
 type Container interface {
@@ -35,6 +38,10 @@ type fieldContext struct {
 	//mapParent      *MapField
 	parent       ContainerSchema
 	nameInParent string
+}
+
+func (s *fieldContext) AsRootSchema() (RootSchema, bool) {
+	return nil, false
 }
 
 func (f *fieldContext) ParentContext() (ContainerSchema, string) {

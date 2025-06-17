@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -168,6 +169,7 @@ type ObjectSchema struct {
 	Entity          *schema_j5pb.EntityObject
 	PolymorphMember []string
 	Properties      PropertySet
+	BCL             *bcl_j5pb.Block
 }
 
 func (s *ObjectSchema) Clone() *ObjectSchema {
@@ -180,6 +182,8 @@ func (s *ObjectSchema) Clone() *ObjectSchema {
 			name:        s.name,
 		},
 		Properties: properties,
+		BCL:        proto.Clone(s.BCL).(*bcl_j5pb.Block),
+		Entity:     proto.Clone(s.Entity).(*schema_j5pb.EntityObject),
 	}
 }
 
@@ -195,6 +199,7 @@ func (s *ObjectSchema) ToJ5Object() *schema_j5pb.Object {
 		Properties:      properties,
 		Entity:          s.Entity,
 		PolymorphMember: s.PolymorphMember,
+		Bcl:             s.BCL,
 	}
 }
 
@@ -204,7 +209,7 @@ func (s *ObjectSchema) ClientProperties() []*ObjectProperty {
 		switch propType := prop.Schema.(type) {
 		case *ObjectField:
 			if propType.Flatten {
-				children := propType.Schema().ClientProperties()
+				children := propType.ObjectSchema().ClientProperties()
 				for _, child := range children {
 					child := child.nestedClone(prop.ProtoField)
 					properties = append(properties, child)
@@ -276,6 +281,7 @@ func (s *PolymorphSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
 type OneofSchema struct {
 	rootSchema
 	Properties PropertySet
+	BCL        *bcl_j5pb.Block
 }
 
 func (s *OneofSchema) ToJ5Root() *schema_j5pb.RootSchema {
@@ -291,6 +297,7 @@ func (s *OneofSchema) ToJ5Root() *schema_j5pb.RootSchema {
 				Description: s.description,
 				Name:        s.name,
 				Properties:  properties,
+				Bcl:         s.BCL,
 			},
 		},
 	}
