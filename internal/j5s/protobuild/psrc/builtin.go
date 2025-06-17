@@ -75,7 +75,7 @@ func (br *BuiltinResolver) ListPackageFiles(pkgName string) ([]string, error) {
 
 func (br *BuiltinResolver) FindFileByPath(filename string) (*File, error) {
 	if !isBuiltin(filename) {
-		return nil, errFileNotFound
+		return nil, ErrFileNotFound
 	}
 
 	refl, err := protoregistry.GlobalFiles.FindFileByPath(filename)

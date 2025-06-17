@@ -496,6 +496,7 @@ type EntityQuery struct {
 	ListRequest         *list_j5pb.ListRequestMessage `protobuf:"bytes,2,opt,name=list_request,json=listRequest,proto3" json:"list_request,omitempty"`
 	EventsListRequest   *list_j5pb.ListRequestMessage `protobuf:"bytes,3,opt,name=events_list_request,json=eventsListRequest,proto3" json:"events_list_request,omitempty"`
 	DefaultStatusFilter []string                      `protobuf:"bytes,4,rep,name=default_status_filter,json=defaultStatusFilter,proto3" json:"default_status_filter,omitempty"`
+	Auth                *auth_j5pb.MethodAuthType     `protobuf:"bytes,5,opt,name=auth,proto3" json:"auth,omitempty"`
 }
 
 func (x *EntityQuery) Reset() {
@@ -554,6 +555,13 @@ func (x *EntityQuery) GetEventsListRequest() *list_j5pb.ListRequestMessage {
 func (x *EntityQuery) GetDefaultStatusFilter() []string {
 	if x != nil {
 		return x.DefaultStatusFilter
+	}
+	return nil
+}
+
+func (x *EntityQuery) GetAuth() *auth_j5pb.MethodAuthType {
+	if x != nil {
+		return x.Auth
 	}
 	return nil
 }
@@ -1779,7 +1787,7 @@ var file_j5_sourcedef_v1_file_proto_rawDesc = []byte{
 	0x65, 0x66, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x53, 0x75, 0x6d, 0x6d,
 	0x61, 0x72, 0x79, 0x42, 0x11, 0xc2, 0xff, 0x8e, 0x02, 0x0c, 0xaa, 0x01, 0x09, 0x1a, 0x07, 0x73,
 	0x75, 0x6d, 0x6d, 0x61, 0x72, 0x79, 0x52, 0x09, 0x73, 0x75, 0x6d, 0x6d, 0x61, 0x72, 0x69, 0x65,
-	0x73, 0x22, 0xf8, 0x01, 0x0a, 0x0b, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x51, 0x75, 0x65, 0x72,
+	0x73, 0x22, 0xa8, 0x02, 0x0a, 0x0b, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x51, 0x75, 0x65, 0x72,
 	0x79, 0x12, 0x22, 0x0a, 0x0d, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x73, 0x5f, 0x69, 0x6e, 0x5f, 0x67,
 	0x65, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0b, 0x65, 0x76, 0x65, 0x6e, 0x74, 0x73,
 	0x49, 0x6e, 0x47, 0x65, 0x74, 0x12, 0x41, 0x0a, 0x0c, 0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72, 0x65,
@@ -1794,7 +1802,10 @@ var file_j5_sourcedef_v1_file_proto_rawDesc = []byte{
 	0x74, 0x52, 0x65, 0x71, 0x75, 0x65, 0x73, 0x74, 0x12, 0x32, 0x0a, 0x15, 0x64, 0x65, 0x66, 0x61,
 	0x75, 0x6c, 0x74, 0x5f, 0x73, 0x74, 0x61, 0x74, 0x75, 0x73, 0x5f, 0x66, 0x69, 0x6c, 0x74, 0x65,
 	0x72, 0x18, 0x04, 0x20, 0x03, 0x28, 0x09, 0x52, 0x13, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74,
-	0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x22, 0xf2, 0x03, 0x0a,
+	0x53, 0x74, 0x61, 0x74, 0x75, 0x73, 0x46, 0x69, 0x6c, 0x74, 0x65, 0x72, 0x12, 0x2e, 0x0a, 0x04,
+	0x61, 0x75, 0x74, 0x68, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x6a, 0x35, 0x2e,
+	0x61, 0x75, 0x74, 0x68, 0x2e, 0x76, 0x31, 0x2e, 0x4d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x41, 0x75,
+	0x74, 0x68, 0x54, 0x79, 0x70, 0x65, 0x52, 0x04, 0x61, 0x75, 0x74, 0x68, 0x22, 0xf2, 0x03, 0x0a,
 	0x09, 0x41, 0x50, 0x49, 0x4d, 0x65, 0x74, 0x68, 0x6f, 0x64, 0x12, 0x2e, 0x0a, 0x04, 0x6e, 0x61,
 	0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1a, 0xba, 0x48, 0x17, 0x72, 0x15, 0x32,
 	0x13, 0x5e, 0x5b, 0x41, 0x2d, 0x5a, 0x5d, 0x5b, 0x41, 0x2d, 0x5a, 0x61, 0x2d, 0x7a, 0x30, 0x2d,
@@ -2019,8 +2030,8 @@ var file_j5_sourcedef_v1_file_proto_goTypes = []any{
 	(*schema_j5pb.Enum_Option)(nil),      // 25: j5.schema.v1.Enum.Option
 	(*schema_j5pb.ObjectProperty)(nil),   // 26: j5.schema.v1.ObjectProperty
 	(*list_j5pb.ListRequestMessage)(nil), // 27: j5.list.v1.ListRequestMessage
-	(client_j5pb.HTTPMethod)(0),          // 28: j5.client.v1.HTTPMethod
-	(*auth_j5pb.MethodAuthType)(nil),     // 29: j5.auth.v1.MethodAuthType
+	(*auth_j5pb.MethodAuthType)(nil),     // 28: j5.auth.v1.MethodAuthType
+	(client_j5pb.HTTPMethod)(0),          // 29: j5.client.v1.HTTPMethod
 	(*ext_j5pb.MethodOptions)(nil),       // 30: j5.ext.v1.MethodOptions
 	(*ext_j5pb.ServiceOptions)(nil),      // 31: j5.ext.v1.ServiceOptions
 	(*schema_j5pb.EntityKey)(nil),        // 32: j5.schema.v1.EntityKey
@@ -2050,43 +2061,44 @@ var file_j5_sourcedef_v1_file_proto_depIdxs = []int32{
 	9,  // 18: j5.sourcedef.v1.Entity.summaries:type_name -> j5.sourcedef.v1.EntitySummary
 	27, // 19: j5.sourcedef.v1.EntityQuery.list_request:type_name -> j5.list.v1.ListRequestMessage
 	27, // 20: j5.sourcedef.v1.EntityQuery.events_list_request:type_name -> j5.list.v1.ListRequestMessage
-	28, // 21: j5.sourcedef.v1.APIMethod.http_method:type_name -> j5.client.v1.HTTPMethod
-	7,  // 22: j5.sourcedef.v1.APIMethod.request:type_name -> j5.sourcedef.v1.AnonymousObject
-	7,  // 23: j5.sourcedef.v1.APIMethod.response:type_name -> j5.sourcedef.v1.AnonymousObject
-	29, // 24: j5.sourcedef.v1.APIMethod.auth:type_name -> j5.auth.v1.MethodAuthType
-	30, // 25: j5.sourcedef.v1.APIMethod.options:type_name -> j5.ext.v1.MethodOptions
-	27, // 26: j5.sourcedef.v1.APIMethod.list_request:type_name -> j5.list.v1.ListRequestMessage
-	26, // 27: j5.sourcedef.v1.AnonymousObject.properties:type_name -> j5.schema.v1.ObjectProperty
-	6,  // 28: j5.sourcedef.v1.Service.methods:type_name -> j5.sourcedef.v1.APIMethod
-	31, // 29: j5.sourcedef.v1.Service.options:type_name -> j5.ext.v1.ServiceOptions
-	26, // 30: j5.sourcedef.v1.EntitySummary.fields:type_name -> j5.schema.v1.ObjectProperty
-	12, // 31: j5.sourcedef.v1.NestedSchema.oneof:type_name -> j5.sourcedef.v1.Oneof
-	13, // 32: j5.sourcedef.v1.NestedSchema.object:type_name -> j5.sourcedef.v1.Object
-	24, // 33: j5.sourcedef.v1.NestedSchema.enum:type_name -> j5.schema.v1.Enum
-	26, // 34: j5.sourcedef.v1.EntityKey.def:type_name -> j5.schema.v1.ObjectProperty
-	32, // 35: j5.sourcedef.v1.EntityKey.key:type_name -> j5.schema.v1.EntityKey
-	33, // 36: j5.sourcedef.v1.Oneof.def:type_name -> j5.schema.v1.Oneof
-	10, // 37: j5.sourcedef.v1.Oneof.schemas:type_name -> j5.sourcedef.v1.NestedSchema
-	34, // 38: j5.sourcedef.v1.Object.def:type_name -> j5.schema.v1.Object
-	10, // 39: j5.sourcedef.v1.Object.schemas:type_name -> j5.sourcedef.v1.NestedSchema
-	35, // 40: j5.sourcedef.v1.Polymorph.def:type_name -> j5.schema.v1.Polymorph
-	4,  // 41: j5.sourcedef.v1.EntityElement.entity:type_name -> j5.sourcedef.v1.Entity
-	17, // 42: j5.sourcedef.v1.Topic.type:type_name -> j5.sourcedef.v1.TopicType
-	19, // 43: j5.sourcedef.v1.TopicType.publish:type_name -> j5.sourcedef.v1.TopicType.Publish
-	20, // 44: j5.sourcedef.v1.TopicType.reqres:type_name -> j5.sourcedef.v1.TopicType.ReqRes
-	21, // 45: j5.sourcedef.v1.TopicType.upsert:type_name -> j5.sourcedef.v1.TopicType.Upsert
-	22, // 46: j5.sourcedef.v1.TopicType.event:type_name -> j5.sourcedef.v1.TopicType.Event
-	26, // 47: j5.sourcedef.v1.TopicMethod.fields:type_name -> j5.schema.v1.ObjectProperty
-	18, // 48: j5.sourcedef.v1.TopicType.Publish.messages:type_name -> j5.sourcedef.v1.TopicMethod
-	18, // 49: j5.sourcedef.v1.TopicType.ReqRes.request:type_name -> j5.sourcedef.v1.TopicMethod
-	18, // 50: j5.sourcedef.v1.TopicType.ReqRes.reply:type_name -> j5.sourcedef.v1.TopicMethod
-	18, // 51: j5.sourcedef.v1.TopicType.Upsert.message:type_name -> j5.sourcedef.v1.TopicMethod
-	18, // 52: j5.sourcedef.v1.TopicType.Event.message:type_name -> j5.sourcedef.v1.TopicMethod
-	53, // [53:53] is the sub-list for method output_type
-	53, // [53:53] is the sub-list for method input_type
-	53, // [53:53] is the sub-list for extension type_name
-	53, // [53:53] is the sub-list for extension extendee
-	0,  // [0:53] is the sub-list for field type_name
+	28, // 21: j5.sourcedef.v1.EntityQuery.auth:type_name -> j5.auth.v1.MethodAuthType
+	29, // 22: j5.sourcedef.v1.APIMethod.http_method:type_name -> j5.client.v1.HTTPMethod
+	7,  // 23: j5.sourcedef.v1.APIMethod.request:type_name -> j5.sourcedef.v1.AnonymousObject
+	7,  // 24: j5.sourcedef.v1.APIMethod.response:type_name -> j5.sourcedef.v1.AnonymousObject
+	28, // 25: j5.sourcedef.v1.APIMethod.auth:type_name -> j5.auth.v1.MethodAuthType
+	30, // 26: j5.sourcedef.v1.APIMethod.options:type_name -> j5.ext.v1.MethodOptions
+	27, // 27: j5.sourcedef.v1.APIMethod.list_request:type_name -> j5.list.v1.ListRequestMessage
+	26, // 28: j5.sourcedef.v1.AnonymousObject.properties:type_name -> j5.schema.v1.ObjectProperty
+	6,  // 29: j5.sourcedef.v1.Service.methods:type_name -> j5.sourcedef.v1.APIMethod
+	31, // 30: j5.sourcedef.v1.Service.options:type_name -> j5.ext.v1.ServiceOptions
+	26, // 31: j5.sourcedef.v1.EntitySummary.fields:type_name -> j5.schema.v1.ObjectProperty
+	12, // 32: j5.sourcedef.v1.NestedSchema.oneof:type_name -> j5.sourcedef.v1.Oneof
+	13, // 33: j5.sourcedef.v1.NestedSchema.object:type_name -> j5.sourcedef.v1.Object
+	24, // 34: j5.sourcedef.v1.NestedSchema.enum:type_name -> j5.schema.v1.Enum
+	26, // 35: j5.sourcedef.v1.EntityKey.def:type_name -> j5.schema.v1.ObjectProperty
+	32, // 36: j5.sourcedef.v1.EntityKey.key:type_name -> j5.schema.v1.EntityKey
+	33, // 37: j5.sourcedef.v1.Oneof.def:type_name -> j5.schema.v1.Oneof
+	10, // 38: j5.sourcedef.v1.Oneof.schemas:type_name -> j5.sourcedef.v1.NestedSchema
+	34, // 39: j5.sourcedef.v1.Object.def:type_name -> j5.schema.v1.Object
+	10, // 40: j5.sourcedef.v1.Object.schemas:type_name -> j5.sourcedef.v1.NestedSchema
+	35, // 41: j5.sourcedef.v1.Polymorph.def:type_name -> j5.schema.v1.Polymorph
+	4,  // 42: j5.sourcedef.v1.EntityElement.entity:type_name -> j5.sourcedef.v1.Entity
+	17, // 43: j5.sourcedef.v1.Topic.type:type_name -> j5.sourcedef.v1.TopicType
+	19, // 44: j5.sourcedef.v1.TopicType.publish:type_name -> j5.sourcedef.v1.TopicType.Publish
+	20, // 45: j5.sourcedef.v1.TopicType.reqres:type_name -> j5.sourcedef.v1.TopicType.ReqRes
+	21, // 46: j5.sourcedef.v1.TopicType.upsert:type_name -> j5.sourcedef.v1.TopicType.Upsert
+	22, // 47: j5.sourcedef.v1.TopicType.event:type_name -> j5.sourcedef.v1.TopicType.Event
+	26, // 48: j5.sourcedef.v1.TopicMethod.fields:type_name -> j5.schema.v1.ObjectProperty
+	18, // 49: j5.sourcedef.v1.TopicType.Publish.messages:type_name -> j5.sourcedef.v1.TopicMethod
+	18, // 50: j5.sourcedef.v1.TopicType.ReqRes.request:type_name -> j5.sourcedef.v1.TopicMethod
+	18, // 51: j5.sourcedef.v1.TopicType.ReqRes.reply:type_name -> j5.sourcedef.v1.TopicMethod
+	18, // 52: j5.sourcedef.v1.TopicType.Upsert.message:type_name -> j5.sourcedef.v1.TopicMethod
+	18, // 53: j5.sourcedef.v1.TopicType.Event.message:type_name -> j5.sourcedef.v1.TopicMethod
+	54, // [54:54] is the sub-list for method output_type
+	54, // [54:54] is the sub-list for method input_type
+	54, // [54:54] is the sub-list for extension type_name
+	54, // [54:54] is the sub-list for extension extendee
+	0,  // [0:54] is the sub-list for field type_name
 }
 
 func init() { file_j5_sourcedef_v1_file_proto_init() }

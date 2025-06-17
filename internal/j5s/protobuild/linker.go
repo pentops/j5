@@ -51,7 +51,7 @@ func (ll *searchLinker) _resolveFile(ctx context.Context, filename string) (*psr
 	ctx = log.WithField(ctx, "askFilename", filename)
 	result, err := ll.resolver.FindFileByPath(filename)
 	if err != nil {
-		return nil, fmt.Errorf("findFileByPath: %w", err)
+		return nil, err
 	}
 
 	err = ll.linkResult(ctx, result)
@@ -79,7 +79,7 @@ func (ll *searchLinker) linkResult(ctx context.Context, result *psrc.File) error
 
 	dependencies, err := ll.resolveAll(ctx, dependencyFilenames)
 	if err != nil {
-		return fmt.Errorf("loading dependencies: %w", err)
+		return fmt.Errorf("loading dependencies for %s: %w", result.Filename, err)
 	}
 
 	result.Dependencies = dependencies
