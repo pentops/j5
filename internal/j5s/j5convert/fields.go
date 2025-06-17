@@ -179,7 +179,11 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 	}
 
 	if node.Schema.EntityKey != nil {
-		proto.SetExtension(fieldDesc.Options, ext_j5pb.E_Key, node.Schema.EntityKey)
+		key := &ext_j5pb.PSMKeyFieldOptions{
+			Primary: node.Schema.EntityKey.Primary,
+			Tenant:  node.Schema.EntityKey.Tenant,
+		}
+		proto.SetExtension(fieldDesc.Options, ext_j5pb.E_Key, key)
 	}
 
 	fieldDesc.Name = gl.Ptr(protoFieldName)
