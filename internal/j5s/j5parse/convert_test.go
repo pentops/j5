@@ -243,7 +243,8 @@ func TestArrayOfObject(t *testing.T) {
 		array.attr("rules.minItems", "1")
 		// sets the scalar in ArrayField.Rules
 
-		objItem := array.block("items", "object")
+		itemsSchema := array.block("items")
+		objItem := itemsSchema.block("object")
 		// Fresh Scope: j5.schema.v1.ObjectField
 
 		objItem.attr("rules.minProperties", "1")

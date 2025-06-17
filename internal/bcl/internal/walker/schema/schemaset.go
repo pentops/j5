@@ -13,8 +13,9 @@ import (
 type specSource string
 
 const (
-	specSourceAuto   specSource = "reflect"
-	specSourceSchema specSource = "global"
+	specSourceAuto       specSource = "reflect"
+	specSourceSchema     specSource = "schema"
+	specSourceAnnotation specSource = "annotation"
 )
 
 func (bs *BlockSpec) ErrName() string {
@@ -25,21 +26,7 @@ func (bs *BlockSpec) ErrName() string {
 }
 
 type SchemaSet struct {
-	givenSpecs  map[string]*BlockSpec
 	cachedSpecs map[string]*BlockSpec
-}
-
-func convertBlocks(given []*bcl_j5pb.Block) (map[string]*BlockSpec, error) {
-	givenBlocks := map[string]*BlockSpec{}
-	for _, src := range given {
-		block, err := convertBlock(src)
-		if err != nil {
-			return nil, err
-		}
-
-		givenBlocks[src.SchemaName] = block
-	}
-	return givenBlocks, nil
 }
 
 func convertBlock(src *bcl_j5pb.Block) (*BlockSpec, error) {
@@ -83,14 +70,9 @@ func convertBlock(src *bcl_j5pb.Block) (*BlockSpec, error) {
 	return block, nil
 }
 
-func NewSchemaSet(given *bcl_j5pb.Schema) (*SchemaSet, error) {
-	givenBlocks, err := convertBlocks(given.Blocks)
-	if err != nil {
-		return nil, err
-	}
+func NewSchemaSet() (*SchemaSet, error) {
 
 	return &SchemaSet{
-		givenSpecs:  givenBlocks,
 		cachedSpecs: map[string]*BlockSpec{},
 	}, nil
 }
@@ -99,15 +81,8 @@ func (ss *SchemaSet) lookupBlockSpec(node j5PropSet) (*BlockSpec, error) {
 	var err error
 	schemaName := node.SchemaName()
 
-	// First search passed in specs
-	blockSpec := ss.givenSpecs[schemaName]
-	if blockSpec != nil {
-		blockSpec.source = specSourceSchema
-		blockSpec.schema = schemaName
-		return blockSpec, nil
-	}
+	blockSpec := &BlockSpec{}
 
-	// Check for BCL in schema
 	var bclBlock *bcl_j5pb.Block
 	root, ok := node.RootSchema()
 	if ok {
@@ -120,16 +95,15 @@ func (ss *SchemaSet) lookupBlockSpec(node j5PropSet) (*BlockSpec, error) {
 	}
 
 	if bclBlock == nil {
-		blockSpec = &BlockSpec{}
+		blockSpec.source = specSourceAuto
 	} else {
 		blockSpec, err = convertBlock(bclBlock)
 		if err != nil {
 			return nil, err
 		}
-
+		blockSpec.source = specSourceAnnotation
 	}
 
-	blockSpec.source = specSourceAuto
 	blockSpec.schema = schemaName
 	return blockSpec, nil
 }

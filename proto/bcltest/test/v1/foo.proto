@@ -14,6 +14,9 @@ message File {
   string s_string = 11;
   repeated string r_string = 12;
   map<string, string> tags = 13 [(j5.ext.v1.field).map.single_form = "tag"];
+
+  option (j5.bcl.v1.block).alias = {name: "foo", path: {path:["elements", "foo"]}};
+  option (j5.bcl.v1.block).alias = {name: "bar", path: {path:["elements", "bar"]}};
 }
 
 message Element {

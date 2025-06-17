@@ -25,13 +25,13 @@ type Parser struct {
 	schema   *schema.SchemaSet
 }
 
-func NewParser(schemaSpec *bcl_j5pb.Schema) (*Parser, error) {
+func NewParser() (*Parser, error) {
 	pv, err := protovalidate.New()
 	if err != nil {
 		return nil, err
 	}
 
-	ss, err := schema.NewSchemaSet(schemaSpec)
+	ss, err := schema.NewSchemaSet()
 	if err != nil {
 		return nil, err
 	}

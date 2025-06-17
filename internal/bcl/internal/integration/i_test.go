@@ -12,20 +12,22 @@ import (
 
 func TestEndToEnd(t *testing.T) {
 
-	schema := &bcl_j5pb.Schema{
-		Blocks: []*bcl_j5pb.Block{{
-			SchemaName: "test.v1.File",
-			Alias: []*bcl_j5pb.Alias{{
-				Name: "foo",
-				Path: &bcl_j5pb.Path{Path: []string{"elements", "foo"}},
-			}, {
-				Name: "bar",
-				Path: &bcl_j5pb.Path{Path: []string{"elements", "bar"}},
+	/*
+		schema := &bcl_j5pb.Schema{
+			Blocks: []*bcl_j5pb.Block{{
+				SchemaName: "test.v1.File",
+				Alias: []*bcl_j5pb.Alias{{
+					Name: "foo",
+					Path: &bcl_j5pb.Path{Path: []string{"elements", "foo"}},
+				}, {
+					Name: "bar",
+					Path: &bcl_j5pb.Path{Path: []string{"elements", "bar"}},
+				}},
 			}},
-		}},
-	}
+		}
+	*/
 
-	pp, err := bcl.NewParser(schema)
+	pp, err := bcl.NewParser()
 	if err != nil {
 		t.Fatal(err)
 	}

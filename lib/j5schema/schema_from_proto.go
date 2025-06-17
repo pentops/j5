@@ -8,6 +8,7 @@ import (
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 
 	"github.com/iancoleman/strcase"
+	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
@@ -231,6 +232,11 @@ func (ss *Package) buildOneofSchema(srcMsg protoreflect.MessageDescriptor, _ *ex
 
 	oneofSchema.Properties = properties
 
+	bclOpts := protosrc.GetExtension[*bcl_j5pb.Block](srcMsg.Options(), bcl_j5pb.E_Block)
+	if bclOpts != nil {
+		oneofSchema.BCL = bclOpts
+	}
+
 	return oneofSchema, nil
 }
 
@@ -267,6 +273,11 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts
 
 	if opts != nil {
 		objectSchema.PolymorphMember = opts.PolymorphMember
+	}
+
+	bclOpts := protosrc.GetExtension[*bcl_j5pb.Block](srcMsg.Options(), bcl_j5pb.E_Block)
+	if bclOpts != nil {
+		objectSchema.BCL = bclOpts
 	}
 
 	return objectSchema, nil

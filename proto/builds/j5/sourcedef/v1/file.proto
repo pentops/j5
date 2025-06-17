@@ -20,6 +20,15 @@ message SourceFile {
   repeated RootElement elements = 5;
 
   j5.bcl.v1.SourceLocation source_locations = 6;
+  
+
+  option (j5.bcl.v1.block).alias = {name: "object", path: {path: ["elements", "object"]}};
+  option (j5.bcl.v1.block).alias = {name: "enum", path: {path: ["elements", "enum"]}};
+  option (j5.bcl.v1.block).alias = {name: "oneof", path: {path: ["elements", "oneof"]}};
+  option (j5.bcl.v1.block).alias = {name: "polymorph", path: {path: ["elements", "polymorph"]}};
+  option (j5.bcl.v1.block).alias = {name: "entity", path: {path: ["elements", "entity"]}};
+  option (j5.bcl.v1.block).alias = {name: "service", path: {path: ["elements", "service"]}};
+  option (j5.bcl.v1.block).alias = {name: "topic", path: {path: ["elements", "topic"]}};
 }
 
 message Package {
@@ -29,6 +38,9 @@ message Package {
 message Import {
   string path = 1;
   string alias = 2;
+
+  option (j5.bcl.v1.block).name.field_name = "path";
+  option (j5.bcl.v1.block).qualifier.field_name = "alias";
 }
 
 message RootElement {
@@ -63,6 +75,15 @@ message Entity {
   repeated Service commands = 8 [(j5.ext.v1.field).array.single_form = "command"];
 
   repeated EntitySummary summaries = 10 [(j5.ext.v1.field).array.single_form = "summary"];
+  
+  option (j5.bcl.v1.block).name.field_name = "name";
+  option (j5.bcl.v1.block).alias = {name: "key", path: {path: "keys"}};
+  option (j5.bcl.v1.block).alias = {name: "data", path: {path: "data"}};
+  option (j5.bcl.v1.block).alias = {name: "status", path: {path: "status"}};
+  option (j5.bcl.v1.block).alias = {name: "event", path: {path: "events"}};
+  option (j5.bcl.v1.block).alias = {name: "object", path: {path: ["schemas", "object"]}};
+  option (j5.bcl.v1.block).alias = {name: "enum", path: {path: ["schemas", "enum"]}};
+  option (j5.bcl.v1.block).alias = {name: "oneof", path: {path: ["schemas", "oneof"]}};
 }
 
 message EntityQuery {
@@ -136,18 +157,36 @@ message EntityKey {
   ];
 
   j5.schema.v1.EntityKey key = 2 [(j5.ext.v1.field).message.flatten = true];
+
+  option (j5.bcl.v1.block).type_select = {
+    field_name: "schema",
+    bang_bool: "required"
+    question_bool: "optional"
+  };
+  option (j5.bcl.v1.block).name.field_name = "name";
+  option (j5.bcl.v1.block).alias = {name: "optional", path: {path: "explicitlyOptional"}};
 }
 
 message Oneof {
   j5.schema.v1.Oneof def = 1 [(j5.ext.v1.field).message.flatten = true];
 
   repeated NestedSchema schemas = 3;
+  
+  option (j5.bcl.v1.block).description_field = "description";
+  option (j5.bcl.v1.block).name.field_name = "name";
+  option (j5.bcl.v1.block).alias = {name: "option", path: {path: ["properties"]}};
+  option (j5.bcl.v1.block).alias = {name: "object", path: {path: ["schemas", "object"]}};
 }
 
 message Object {
   j5.schema.v1.Object def = 1 [(j5.ext.v1.field).message.flatten = true];
 
   repeated NestedSchema schemas = 3;
+  
+  option (j5.bcl.v1.block).description_field = "description";
+  option (j5.bcl.v1.block).name.field_name = "name";
+  option (j5.bcl.v1.block).alias = {name: "field", path: {path: ["properties"]}};
+  option (j5.bcl.v1.block).alias = {name: "object", path: {path: ["schemas", "object"]}};
 }
 
 message Polymorph {
@@ -156,6 +195,8 @@ message Polymorph {
   // list of other polymorph types
   // The members of the listed types are included in this type.
   repeated string includes = 2; 
+  
+  option (j5.bcl.v1.block).alias = {name: "member", path: {path: ["members"]}};
 }
 
 message EntityElement {
@@ -167,6 +208,9 @@ message Topic {
   string description = 2;
 
   TopicType type = 3;
+  
+  option (j5.bcl.v1.block).name.field_name = "name";
+  option (j5.bcl.v1.block).type_select.field_name = "type";
 }
 
 message TopicType {

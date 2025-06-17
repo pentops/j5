@@ -47,6 +47,7 @@ message Field {
     TimestampField timestamp = 38;
     KeyField key = 39;
   }
+
 }
 
 // Ref is a reference to a RootSchema (object, oneof or enum) which is used in
@@ -54,17 +55,36 @@ message Field {
 message Ref {
   string package = 1; // Dot notation, 'j5.schema.v1'
   string schema = 2; // Schema name, 'Ref'
+  
+  option (j5.bcl.v1.block).scalar_split = {
+    delimiter: "."
+    right_to_left: true
+    required_fields: [{path: "schema"}]
+    remainder_field: {path: "package"}
+  };
 }
 
 // Like Ref but to an entity rather than a schema
 message EntityRef {
   string package = 1; // Dot notation, 'foo.bar.v1'
   string entity = 2; // The *entity* name, not schema, 'foo' not 'FooState'
+                     //
+  option (j5.bcl.v1.block).scalar_split = {
+    delimiter: "."
+    right_to_left: true
+    required_fields: [{path: "entity"}]
+    remainder_field: {path: "package"}
+  };
 }
 
 // Allows anything
 message AnyField {
   j5.list.v1.AnyRules list_rules = 5;
+
+  option (j5.bcl.v1.block).alias = {
+    name: "type"
+    path: {path: "types"}
+  };
 }
 
 // ObjectAsField is an object as-a-field in an ObjectProperty
@@ -110,6 +130,10 @@ message ObjectField {
     // i.e. a summary of the parts important to this representation.
     EntityPart entity_part = 3;
   }
+
+  option (j5.bcl.v1.block).qualifier.field_name = "ref";
+  option (j5.bcl.v1.block).alias = {name: "field", path: {path: ["object","properties"]}};
+  option (j5.bcl.v1.block).alias = {name: "bcl", path: {path: ["object","bcl"]}};
 }
 
 message InlineObject {
@@ -131,6 +155,10 @@ message Object {
   repeated string polymorph_member = 5;
 
   bcl.v1.Block bcl = 6;
+ 
+  option (j5.bcl.v1.block).description_field = "description";
+  option (j5.bcl.v1.block).name.field_name = "name";
+  option (j5.bcl.v1.block).alias = {name: "field", path: {path: ["properties"]}};
 }
 
 message EntityObject {
@@ -160,6 +188,8 @@ message PolymorphField {
 
   message Rules {}
   message Ext {}
+  
+  option (j5.bcl.v1.block).qualifier.field_name = "ref";
 }
 
 // A polymorph is like an any, however only the types listed are permitted in the field, making it a
@@ -186,6 +216,10 @@ message OneofField {
 
   message Rules {}
   message Ext {}
+  
+  option (j5.bcl.v1.block).qualifier.field_name = "ref";
+  option (j5.bcl.v1.block).alias = {name: "option", path: {path: ["oneof","properties"]}};
+  option (j5.bcl.v1.block).alias = {name: "bcl", path: {path: ["oneof","bcl"]}};
 }
 
 // Similar to ObjectItem (it is an object in JSON Schema), but where exactly one
@@ -196,6 +230,10 @@ message Oneof {
   bcl.v1.Block bcl = 4;
 
   repeated ObjectProperty properties = 3;
+  
+  option (j5.bcl.v1.block).description_field = "description";
+  option (j5.bcl.v1.block).name.field_name = "name";
+  option (j5.bcl.v1.block).alias = {name: "option", path: {path: ["properties"]}};
 }
 
 message EnumField {
@@ -213,6 +251,9 @@ message EnumField {
     repeated string not_in = 2;
   }
   message Ext {}
+  
+  option (j5.bcl.v1.block).qualifier.field_name = "ref";
+  option (j5.bcl.v1.block).alias = {name: "option", path: {path: ["enum","options"]}};
 }
 
 message Enum {
@@ -234,6 +275,10 @@ message Enum {
     string label = 2;
     string description = 3;
   }
+  
+  option (j5.bcl.v1.block).description_field = "description";
+  option (j5.bcl.v1.block).name.field_name = "name";
+  option (j5.bcl.v1.block).alias = {name: "option", path: {path: ["options"]}};
 }
 
 message ArrayField {
@@ -253,12 +298,11 @@ message ArrayField {
     optional bool unique_items = 3;
   }
 
-  /*
-  option (j5.bcl.v1).block = {
-    qualifier: {
-      field_name: "items"
-   }
-  };*/
+  
+  option (j5.bcl.v1.block).qualifier = {
+    field_name: "items"
+    is_block: true
+  };
 }
 
 message MapField {
@@ -277,6 +321,13 @@ message MapField {
     // block parsing.
     optional string single_form = 3;
   }
+  
+  option (j5.bcl.v1.block) = {
+    qualifier: {
+      field_name: "item_schema"
+      is_block: true
+   }
+  };
 }
 
 message StringField {
@@ -314,6 +365,8 @@ message FloatField {
     optional double multiple_of = 5;
   }
   message Ext {}
+  
+  option (j5.bcl.v1.block).qualifier.field_name = "format";
 }
 
 message IntegerField {
@@ -342,6 +395,8 @@ message IntegerField {
   }
 
   message Ext {}
+
+  option (j5.bcl.v1.block).qualifier.field_name = "format";
 }
 
 message BoolField {
@@ -431,6 +486,17 @@ message KeyField {
       EntityRef foreign_key = 2;
     }
   }
+
+  option (j5.bcl.v1.block).qualifier = {
+    field_name: "format"
+    is_block: true
+  };
+
+  option (j5.bcl.v1.block).alias = {
+    name: "foreign"
+    path: {path: ["ext","foreign"]}
+  };
+
 }
 
 
@@ -448,6 +514,11 @@ message KeyFormat {
   }
   message UUID {}
   message ID62 {}
+
+  option (j5.bcl.v1.block).type_select = {
+    field_name: "."
+  };
+
 }
 
 message ObjectProperty {
@@ -466,6 +537,15 @@ message ObjectProperty {
   // node will be message fields holding a message kind, and the last node is
   // the field containing the property type.
   repeated int32 proto_field = 11;
+  
+  
+  option (j5.bcl.v1.block).type_select = {
+    field_name: "schema",
+    bang_bool: "required"
+    question_bool: "optional"
+  };
+  option (j5.bcl.v1.block).name.field_name = "name";
+  option (j5.bcl.v1.block).alias = {name: "optional", path: {path: "explicitlyOptional"}};
 }
   
 message EntityKey {
