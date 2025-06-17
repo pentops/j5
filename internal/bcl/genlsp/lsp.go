@@ -19,7 +19,6 @@ type Config struct {
 
 type FileTypeConfig struct {
 	Match       func(filename string) bool
-	Schema      *bcl_j5pb.Schema
 	FileFactory func(filename string) protoreflect.Message
 	OnChange    func(ctx context.Context, filename string, sourceLocs *bcl_j5pb.SourceLocation, parsed protoreflect.Message) error
 }
@@ -51,8 +50,8 @@ func BuildLSPHandler(config Config) (*lspConfig, error) {
 			match: ft.Match,
 		}
 
-		if ft.Schema != nil && ft.FileFactory != nil {
-			parser, err := bcl.NewParser(ft.Schema)
+		if ft.FileFactory != nil {
+			parser, err := bcl.NewParser()
 			if err != nil {
 				return nil, err
 			}

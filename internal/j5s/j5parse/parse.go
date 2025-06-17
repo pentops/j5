@@ -22,7 +22,7 @@ type Parser struct {
 }
 
 func NewParser() (*Parser, error) {
-	p, err := bcl.NewParser(J5SchemaSpec)
+	p, err := bcl.NewParser()
 	if err != nil {
 		return nil, err
 	}

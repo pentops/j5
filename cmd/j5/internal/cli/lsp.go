@@ -64,7 +64,6 @@ func runLSP(ctx context.Context, cfg struct {
 		log.WithError(ctx, err).Warn("No j5 config found, running in basic mode")
 	} else {
 		j5s := genlsp.FileTypeConfig{
-			Schema:      j5parse.J5SchemaSpec,
 			FileFactory: j5parse.FileStub,
 			OnChange:    cc.updateFile,
 			Match: func(filename string) bool {

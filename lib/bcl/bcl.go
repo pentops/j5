@@ -10,8 +10,8 @@ type Parser struct {
 	impl *bcl.Parser
 }
 
-func NewParser(schemaSpec *bcl_j5pb.Schema) (*Parser, error) {
-	p, err := bcl.NewParser(schemaSpec)
+func NewParser() (*Parser, error) {
+	p, err := bcl.NewParser()
 	if err != nil {
 		return nil, err
 	}
