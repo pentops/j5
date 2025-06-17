@@ -8,6 +8,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/pentops/golib/gl"
+	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
@@ -576,22 +577,28 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 		if key.Key.Primary || key.Def.EntityKey != nil && key.Def.EntityKey.Primary {
 			// The field is a Primary Key of the entity
 			getKeys = append(getKeys, key.Def)
-			httpPath = append(httpPath, fmt.Sprintf(":%s", key.Def.Name))
+			if !baseURLFields[key.Def.Name] {
+				httpPath = append(httpPath, fmt.Sprintf(":%s", key.Def.Name))
+			}
 
 			if isPathKey {
 				// primary and shard.
 				listKeys = append(listKeys, key.Def)
-				listHttpPath = append(listHttpPath, fmt.Sprintf(":%s", key.Def.Name))
+				if !baseURLFields[key.Def.Name] {
+					listHttpPath = append(listHttpPath, fmt.Sprintf(":%s", key.Def.Name))
+				}
 			}
 		} else {
 			if isPathKey {
 				// just shard, not primary - still part of the URL
 
 				listKeys = append(listKeys, key.Def)
-				listHttpPath = append(listHttpPath, fmt.Sprintf(":%s", key.Def.Name))
-
 				getKeys = append(getKeys, key.Def)
-				httpPath = append(httpPath, fmt.Sprintf(":%s", key.Def.Name))
+
+				if !baseURLFields[key.Def.Name] {
+					listHttpPath = append(listHttpPath, fmt.Sprintf(":%s", key.Def.Name))
+					httpPath = append(httpPath, fmt.Sprintf(":%s", key.Def.Name))
+				}
 			}
 		}
 
@@ -697,6 +704,7 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 		},
 	}
 
+	var auth *auth_j5pb.MethodAuthType
 	if ent.Schema.Query != nil {
 		if ent.Schema.Query.EventsInGet {
 			getMethod.Response.Properties = append(getMethod.Response.Properties, &schema_j5pb.ObjectProperty{
@@ -719,6 +727,8 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 		if ent.Schema.Query.EventsListRequest != nil {
 			eventsMethod.ListRequest = ent.Schema.Query.EventsListRequest
 		}
+
+		auth = ent.Schema.Query.Auth
 	}
 
 	query := &sourcedef_j5pb.Service{
@@ -735,6 +745,7 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 					Entity: name,
 				},
 			},
+			DefaultAuth: auth,
 		},
 	}
 

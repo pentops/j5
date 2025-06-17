@@ -72,6 +72,8 @@ message EntityQuery {
   j5.list.v1.ListRequestMessage events_list_request = 3;
 
   repeated string default_status_filter = 4;
+  
+  j5.auth.v1.MethodAuthType auth = 5;
 }
 
 message APIMethod {

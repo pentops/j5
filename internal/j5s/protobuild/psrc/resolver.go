@@ -15,7 +15,7 @@ func ChainResolver(deps Resolver) (Resolver, error) {
 	return resolver, nil
 }
 
-var errFileNotFound = fmt.Errorf("file not found")
+var ErrFileNotFound = fmt.Errorf("file not found")
 var errPackageNotFound = fmt.Errorf("package not found")
 
 type resolverCache struct {
@@ -52,7 +52,7 @@ func (rc *resolverCache) FindFileByPath(filename string) (*File, error) {
 	for _, source := range rc.sources {
 		file, err := source.FindFileByPath(filename)
 		if err != nil {
-			if err == errFileNotFound {
+			if err == ErrFileNotFound {
 				continue // try next source
 			}
 			return nil, err
@@ -61,5 +61,5 @@ func (rc *resolverCache) FindFileByPath(filename string) (*File, error) {
 		return file, nil
 	}
 
-	return nil, errFileNotFound
+	return nil, ErrFileNotFound
 }
