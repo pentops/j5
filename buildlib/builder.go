@@ -10,6 +10,7 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/builder"
+	"github.com/pentops/j5/internal/j5s/protobuild/protomod"
 	"github.com/pentops/j5/internal/source"
 )
 
@@ -50,6 +51,10 @@ func (b *Builder) RunPublishBuild(ctx context.Context, pc PluginContext, input *
 
 func (b *Builder) RunGenerateBuild(ctx context.Context, pc PluginContext, input *source_j5pb.SourceImage, build *config_j5pb.GenerateConfig) error {
 	return b.impl.RunGenerateBuild(ctx, pc.toBuilder(), input, build)
+}
+
+func (b *Builder) MutateImageWithMods(img *source_j5pb.SourceImage, mods []*config_j5pb.ProtoMod) error {
+	return protomod.MutateImageWithMods(img, mods)
 }
 
 func (b *Builder) SourceImage(ctx context.Context, fs fs.FS, bundleName string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {
