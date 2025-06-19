@@ -28,6 +28,7 @@ message RepoConfigFile {
   repeated PublishConfig publish = 10;
   PackageOptions options = 11;
   repeated Input dependencies = 12;
+  repeated ProtoMod mods = 13;
 }
 
 message BundleReference {
@@ -55,5 +56,5 @@ message GenerateConfig {
   repeated BuildPlugin plugins = 5;
 
   string output = 3;
-  repeated ImageMod mods = 6;
+  repeated ProtoMod mods = 6;
 }

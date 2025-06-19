@@ -2,4 +2,4 @@
 
 package config_j5pb
 
-type IsImageMod_Type = isImageMod_Type
+type IsProtoMod_Type = isProtoMod_Type

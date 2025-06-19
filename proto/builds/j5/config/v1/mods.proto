@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package j5.config.v1;
 
-message ImageMod {
+message ProtoMod {
   oneof type {
     GoPackageNames go_package_names = 2;
   }
@@ -22,7 +22,12 @@ message ImageMod {
     // multiple sub-packages with the same suffix will 'work' but probably best
     // avoided.
     // Empty string is the package root, which also maps to just _pb by default.
-    map<string, string> suffixes = 4;
+    // deprecated, use specific suffixes instead.
+    map<string, string> suffixes = 6;
+
+    string base_suffix = 3; // default is "_pb"
+    string service_suffix = 4; // default is "_spb"
+    string topic_suffix = 5; // default is "_tpb"
 
     // These are stripped off the start package name before running the rest,
     // but does not act as a filter - if the package doesn't begin with the

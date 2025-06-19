@@ -8,6 +8,7 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/builder"
+	"github.com/pentops/j5/internal/j5s/protobuild/protomod"
 )
 
 func runPublish(ctx context.Context, cfg struct {
@@ -44,7 +45,7 @@ func runPublish(ctx context.Context, cfg struct {
 		}
 	}
 
-	if err := builder.MutateImageWithMods(img, publish.Mods); err != nil {
+	if err := protomod.MutateImageWithMods(img, publish.Mods); err != nil {
 		return fmt.Errorf("MutateImageWithMods: %w", err)
 	}
 
