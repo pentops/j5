@@ -19,6 +19,8 @@ message BundleConfigFile {
   // All packages from the included input will be included in the output.
   repeated Include includes = 7;
   repeated BuildPlugin plugins = 6;
+
+  repeated ProtoMod mods = 9;
 }
 
 message Include {
@@ -41,7 +43,7 @@ message PublishConfig {
   OutputType output_format = 2;
   map<string, string> opts = 3;
   repeated BuildPlugin plugins = 4;
-  repeated ImageMod mods = 5;
+  repeated ProtoMod mods = 5;
 }
 
 message PackageOptions {

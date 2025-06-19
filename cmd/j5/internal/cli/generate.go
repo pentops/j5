@@ -8,6 +8,7 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/builder"
+	"github.com/pentops/j5/internal/j5s/protobuild/protomod"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/log.go/log"
 )
@@ -90,7 +91,7 @@ func runGeneratePlugin(ctx context.Context, bb *builder.Builder, src *source.Rep
 		ErrOut:    errOut,
 	}
 
-	if err := builder.MutateImageWithMods(img, generator.Mods); err != nil {
+	if err := protomod.MutateImageWithMods(img, generator.Mods); err != nil {
 		return fmt.Errorf("MutateImageWithMods: %w", err)
 	}
 

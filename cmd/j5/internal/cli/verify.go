@@ -9,6 +9,7 @@ import (
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/builder"
 	"github.com/pentops/j5/internal/j5client"
+	"github.com/pentops/j5/internal/j5s/protobuild/protomod"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/j5/internal/structure"
 	"github.com/pentops/j5/lib/j5schema"
@@ -70,7 +71,7 @@ func runVerify(ctx context.Context, cfg struct {
 			if len(bundleConfig.Publish) > 1 {
 				img = proto.Clone(img).(*source_j5pb.SourceImage)
 			}
-			if err := builder.MutateImageWithMods(img, publish.Mods); err != nil {
+			if err := protomod.MutateImageWithMods(img, publish.Mods); err != nil {
 				return fmt.Errorf("MutateImageWithMods: %w", err)
 			}
 			if err := bb.RunPublishBuild(ctx, builder.PluginContext{

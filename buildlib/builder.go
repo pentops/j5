@@ -52,10 +52,6 @@ func (b *Builder) RunGenerateBuild(ctx context.Context, pc PluginContext, input 
 	return b.impl.RunGenerateBuild(ctx, pc.toBuilder(), input, build)
 }
 
-func (b *Builder) MutateImageWithMods(img *source_j5pb.SourceImage, mods []*config_j5pb.ImageMod) error {
-	return builder.MutateImageWithMods(img, mods)
-}
-
 func (b *Builder) SourceImage(ctx context.Context, fs fs.FS, bundleName string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {
 	src, err := source.NewFSRepoRoot(ctx, fs, b.resolver)
 	if err != nil {
