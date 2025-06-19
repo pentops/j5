@@ -31,7 +31,7 @@ func (ms ModSet) MutateImage(img *source_j5pb.SourceImage) error {
 
 func (ms ModSet) MutateFile(file *descriptorpb.FileDescriptorProto) error {
 	for _, m := range ms {
-		if err := m.MutateFile(file, false); err != nil {
+		if err := m.MutateFile(file); err != nil {
 			return fmt.Errorf("mutating file %q: %w", *file.Name, err)
 		}
 	}
@@ -60,9 +60,11 @@ func runMods(img *source_j5pb.SourceImage, mods []mutator) error {
 	}
 
 	for _, file := range img.File {
-		fileIsSource := isSource[*file.Name]
+		if !isSource[*file.Name] {
+			continue
+		}
 		for _, m := range mods {
-			if err := m.MutateFile(file, fileIsSource); err != nil {
+			if err := m.MutateFile(file); err != nil {
 				return fmt.Errorf("mutating file %q: %w", *file.Name, err)
 			}
 		}
@@ -80,7 +82,7 @@ func firstNonEmptyString(ss ...string) string {
 }
 
 type mutator interface {
-	MutateFile(file *descriptorpb.FileDescriptorProto, isSource bool) error
+	MutateFile(file *descriptorpb.FileDescriptorProto) error
 }
 
 type goPackageNames struct {
@@ -107,14 +109,13 @@ func newGoPackageNames(mod *config_j5pb.ProtoMod_GoPackageNames) *goPackageNames
 	}
 }
 
-func (mod goPackageNames) MutateFile(file *descriptorpb.FileDescriptorProto, isSource bool) error {
-
-	if !isSource && file.Options != nil && file.Options.GoPackage != nil {
-		return nil // already set in external package
-	}
+func (mod goPackageNames) MutateFile(file *descriptorpb.FileDescriptorProto) error {
 
 	if file.Options == nil {
 		file.Options = &descriptorpb.FileOptions{}
+	} else if file.Options.GoPackage != nil {
+		// already set, nothing to do.
+		return nil
 	}
 
 	pkg := *file.Package
