@@ -12,6 +12,7 @@ import (
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/j5/internal/j5s/protobuild"
+	"github.com/pentops/j5/internal/j5s/protobuild/protomod"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -210,7 +211,11 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 		if err != nil {
 			return nil, err
 		}
+	}
 
+	err = protomod.MutateImageWithMods(img.img, bundle.config.Mods)
+	if err != nil {
+		return nil, fmt.Errorf("MutateImageWithMods: %w", err)
 	}
 
 	return img.img, nil
