@@ -72,6 +72,9 @@ func FromShop(d decimal.Decimal) *Decimal {
 }
 
 func (d *Decimal) ToString() string {
+	if d == nil {
+		return "null"
+	}
 	return d.Value
 }
 

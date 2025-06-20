@@ -395,21 +395,13 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value any) (protoreflect.Val
 			return protoreflect.ValueOfMessage(val.ProtoReflect()), nil
 
 		case string:
-			dat, err := date_j5t.DateFromString(val)
-			if err != nil {
-				return pv, err
-			}
-			return protoreflect.ValueOfMessage(dat.ProtoReflect()), nil
+			return dateFromString(val)
 
 		case *string:
 			if val == nil {
 				return protoreflect.Value{}, nil
 			}
-			dat, err := date_j5t.DateFromString(*val)
-			if err != nil {
-				return pv, err
-			}
-			return protoreflect.ValueOfMessage(dat.ProtoReflect()), nil
+			return dateFromString(*val)
 
 		default:
 			return pv, fmt.Errorf("expected *date_j5t.Date, got %T", value)
@@ -436,6 +428,14 @@ func timestampFromString(val string) (protoreflect.Value, error) {
 	}
 	msg := timestamppb.New(t)
 	return protoreflect.ValueOfMessage(msg.ProtoReflect()), nil
+}
+
+func dateFromString(val string) (protoreflect.Value, error) {
+	d, err := date_j5t.DateFromString(val)
+	if err != nil {
+		return protoreflect.Value{}, err
+	}
+	return protoreflect.ValueOfMessage(d.ProtoReflect()), nil
 }
 
 func byteValueFromString(val string) (protoreflect.Value, error) {

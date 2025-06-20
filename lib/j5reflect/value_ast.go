@@ -121,9 +121,14 @@ func scalarReflectFromAST(schema *schema_j5pb.Field, value ASTValue) (protorefle
 		}
 		return decimalFromString(val)
 
-		//	case *schema_j5pb.Field_Date:
+	case *schema_j5pb.Field_Date:
+		val, err := value.AsString()
+		if err != nil {
+			return pv, err
+		}
+		return dateFromString(val)
 
 	default:
-		return pv, fmt.Errorf("unsupported scalar type %T", schema.Type)
+		return pv, fmt.Errorf("unsupported scalar type %T (AST)", schema.Type)
 	}
 }
