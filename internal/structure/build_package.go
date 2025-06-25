@@ -115,12 +115,12 @@ func (bb *packageSet) addSchemas(descFiles *protoregistry.Files, selector func(f
 		return fmt.Errorf("package set from files: %w", err)
 	}
 
-	for _, schemaPkg := range packageSet.Packages {
+	for _, schemaPkg := range packageSet.IteratePackages {
 		ss, err := bb.getSchemaSet(schemaPkg.Name)
 		if err != nil {
 			return fmt.Errorf("get schema set: %w", err)
 		}
-		for name, schema := range schemaPkg.Schemas {
+		for name, schema := range schemaPkg.IterateSchemas {
 			ss[name] = schema.To.ToJ5Root()
 		}
 

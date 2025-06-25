@@ -12,53 +12,29 @@ type RootSet interface {
 }
 
 type SchemaSet struct {
-	Packages map[string]*Package
+	*packageSet
 }
 
 func newSchemaSet() *SchemaSet {
 	return &SchemaSet{
-		Packages: map[string]*Package{},
+		packageSet: newPackageSet(),
 	}
 }
 
 func (ss *SchemaSet) SchemaByName(packageName, name string) (RootSchema, error) {
-	pkg, ok := ss.Packages[packageName]
-	if !ok {
-		return nil, fmt.Errorf("package %q not found", packageName)
-	}
-	ref, ok := pkg.Schemas[name]
+	ref, ok := ss.getSchema(packageName, name)
 	if !ok {
 		return nil, fmt.Errorf("schema %q not found in package %q", name, packageName)
 	}
 	return ref.To, nil
 }
 
-func (ss *SchemaSet) refTo(pkg, schema string) (*RefSchema, bool) {
-	refPackage := ss.Package(pkg)
-	if existing, ok := refPackage.Schemas[schema]; ok {
-		return existing, true
-	}
-
-	refSchema := &RefSchema{
-		Package: refPackage,
-		Schema:  schema,
-	}
-	refPackage.Schemas[schema] = refSchema
-
-	return refSchema, false
+func (ss *SchemaSet) IteratePackages(yield func(string, *Package) bool) {
+	ss.packages.iterate(yield)
 }
 
-func (ps *SchemaSet) referencePackage(name string) *Package {
-	if pkg, ok := ps.Packages[name]; ok {
-		return pkg
-	}
-	pkg := &Package{
-		Name:       name,
-		PackageSet: ps,
-		Schemas:    map[string]*RefSchema{},
-	}
-	ps.Packages[name] = pkg
-	return pkg
+func (ss *SchemaSet) GetPackage(name string) (*Package, bool) {
+	return ss.getPackage(name)
 }
 
 func (ps *SchemaSet) Package(name string) *Package {
@@ -67,8 +43,20 @@ func (ps *SchemaSet) Package(name string) *Package {
 
 type Package struct {
 	Name       string
-	Schemas    map[string]*RefSchema
+	Schemas    *cacheMap[RefSchema]
 	PackageSet RootSet
+}
+
+func NewPackage(name string, set RootSet) *Package {
+	return &Package{
+		Name:       name,
+		Schemas:    newCacheMap[RefSchema](),
+		PackageSet: set,
+	}
+}
+
+func (pkg *Package) IterateSchemas(yield func(string, *RefSchema) bool) {
+	pkg.Schemas.iterate(yield)
 }
 
 func (pkg *Package) assertRefsLink() error {
@@ -148,7 +136,7 @@ func (pkg *Package) assertRefsLink() error {
 
 	}
 
-	for schemaName, ref := range pkg.Schemas {
+	for schemaName, ref := range pkg.Schemas.iterate {
 		if err := walkRef(ref); err != nil {
 			return patherr.Wrap(err, "schemas", schemaName)
 		}

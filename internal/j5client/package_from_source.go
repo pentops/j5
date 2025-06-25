@@ -48,7 +48,7 @@ func (sb *sourceBuilder) apiBaseFromSource(api *source_j5pb.API) (*API, error) {
 		}
 		apiPkg.Packages = append(apiPkg.Packages, pkg)
 
-		schemaPackage, ok := sb.schemas.Packages[pkg.Name]
+		schemaPackage, ok := sb.schemas.GetPackage(pkg.Name)
 		if ok {
 			err := sb.walkSourceSchemas(pkg, schemaPackage)
 			if err != nil {
@@ -134,7 +134,7 @@ func (sp *subPackage) FullName() string {
 // package even when not referenced by any service or topic.
 func (sb *sourceBuilder) walkSourceSchemas(pkg *Package, schemaPackage *j5schema.Package) error {
 
-	for _, schema := range schemaPackage.Schemas {
+	for _, schema := range schemaPackage.IterateSchemas {
 		if schema.To == nil {
 			continue
 		}
