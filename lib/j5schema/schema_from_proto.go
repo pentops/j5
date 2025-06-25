@@ -73,7 +73,13 @@ func SchemaSetFromFiles(descFiles *protoregistry.Files, include func(protoreflec
 func (ps *SchemaSet) messageSchema(src protoreflect.MessageDescriptor) (RootSchema, error) {
 	packageName, nameInPackage := splitDescriptorName(src)
 	schemaPackage := ps.Package(packageName)
-	if built, ok := schemaPackage.Schemas[nameInPackage]; ok {
+	built, didExist := schemaPackage.Schemas.getOrCreate(nameInPackage, func() *RefSchema {
+		return &RefSchema{
+			Package: schemaPackage,
+			Schema:  nameInPackage,
+		}
+	})
+	if didExist {
 		if built.To == nil {
 			// When building from reflection, the 'to' should be linked by the
 			// caller which created the ref.
@@ -83,19 +89,12 @@ func (ps *SchemaSet) messageSchema(src protoreflect.MessageDescriptor) (RootSche
 		return built.To, nil
 	}
 
-	placeholder := &RefSchema{
-		Package: schemaPackage,
-		Schema:  nameInPackage,
-	}
-
-	schemaPackage.Schemas[nameInPackage] = placeholder
-
 	var err error
-	placeholder.To, err = schemaPackage.buildMessageSchema(src)
+	built.To, err = schemaPackage.buildMessageSchema(src)
 	if err != nil {
 		return nil, err
 	}
-	return placeholder.To, nil
+	return built.To, nil
 }
 
 func (pkg *Package) schemaRootFromProto(descriptor protoreflect.Descriptor) rootSchema {

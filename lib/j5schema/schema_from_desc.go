@@ -27,7 +27,7 @@ func PackageSetFromSourceAPI(packages []*source_j5pb.Package) (*SchemaSet, error
 		}
 	}
 
-	for _, pkg := range pkgSet.Packages {
+	for _, pkg := range pkgSet.IteratePackages {
 		// make sure every ref has a To set, meaning it eventually got built in
 		// a buildSchemas call for any package.
 		// If not, the source api does not contain all schemas it references.
@@ -61,7 +61,7 @@ func (pkg *Package) buildSchemas(src map[string]*schema_j5pb.RootSchema) error {
 		// fully linked schemas.
 
 		refSchema, _ := pkg.PackageSet.refTo(pkg.Name, name)
-		pkg.Schemas[name] = refSchema
+		pkg.Schemas.set(name, refSchema)
 
 		// the schema should only be built in this loop, for refs which already
 		// existed,
