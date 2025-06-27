@@ -403,6 +403,11 @@ func (ent *entityNode) acceptCommands(visitor FileVisitor) error {
 			servicePath = fmt.Sprintf("/%s/c", entity.BaseUrlPath)
 		}
 
+		var auth *auth_j5pb.MethodAuthType
+		if serviceSrc.Options != nil {
+			auth = serviceSrc.Options.DefaultAuth
+		}
+
 		service := &sourcedef_j5pb.Service{
 			Name:        &serviceName,
 			BasePath:    &servicePath,
@@ -414,6 +419,7 @@ func (ent *entityNode) acceptCommands(visitor FileVisitor) error {
 						Entity: ent.name,
 					},
 				},
+				DefaultAuth: auth,
 			},
 		}
 
