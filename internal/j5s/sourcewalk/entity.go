@@ -414,6 +414,7 @@ func (ent *entityNode) acceptCommands(visitor FileVisitor) error {
 						Entity: ent.name,
 					},
 				},
+				DefaultAuth: serviceSrc.Options.DefaultAuth,
 			},
 		}
 
