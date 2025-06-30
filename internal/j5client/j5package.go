@@ -244,15 +244,6 @@ func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
 
 	primaryKeys := make([]string, 0)
 	for _, prop := range entity.KeysSchema.Properties {
-		scalar, ok := prop.Schema.(*j5schema.ScalarSchema)
-		if !ok {
-			continue
-		}
-		keyField := scalar.Proto.GetKey()
-		if keyField == nil {
-			continue
-		}
-
 		if prop.Entity != nil && prop.Entity.Primary {
 			primaryKeys = append(primaryKeys, prop.JSONName)
 		}
