@@ -21,7 +21,7 @@ func TestEntity(t *testing.T) {
 			},
 		}},
 
-		Events: []*sourcedef_j5pb.Object{{
+		Events: []*sourcedef_j5pb.Event{{
 			Def: &schema_j5pb.Object{
 				Name: "FooCreated",
 				Properties: []*schema_j5pb.ObjectProperty{{
