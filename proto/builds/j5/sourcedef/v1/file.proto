@@ -68,14 +68,15 @@ message Entity {
 
   repeated j5.schema.v1.ObjectProperty data = 5;
 
-  repeated Object events = 6;
+  repeated Event events = 6;
 
   repeated NestedSchema schemas = 7;
 
   repeated Service commands = 8 [(j5.ext.v1.field).array.single_form = "command"];
 
   repeated EntitySummary summaries = 10 [(j5.ext.v1.field).array.single_form = "summary"];
-  
+
+
   option (j5.bcl.v1.block).name.field_name = "name";
   option (j5.bcl.v1.block).alias = {name: "key", path: "keys"};
   option (j5.bcl.v1.block).alias = {name: "data", path: "data"};
@@ -85,6 +86,30 @@ message Entity {
   option (j5.bcl.v1.block).alias = {name: "enum", path: ["schemas", "enum"]};
   option (j5.bcl.v1.block).alias = {name: "oneof", path: ["schemas", "oneof"]};
 }
+
+message Event {
+  j5.schema.v1.Object def = 1 [(j5.ext.v1.field).message.flatten = true];
+  
+  repeated Transition transitions = 2 [(j5.ext.v1.field).array.single_form = "transition"];
+
+  repeated NestedSchema schemas = 3;
+  
+  option (j5.bcl.v1.block).description_field = "description";
+  option (j5.bcl.v1.block).name.field_name = "name";
+  option (j5.bcl.v1.block).alias = {name: "field", path: ["properties"]};
+  option (j5.bcl.v1.block).alias = {name: "object", path: ["schemas", "object"]};
+}
+
+message Transition {
+  // value of a status enum 'ACTIVE', or 'any' for every status
+  string from_status = 1 [(buf.validate.field).required = true];
+  // value of a status enum 'ACTIVE', or 'keep' for every status
+  string to_status = 2 [(buf.validate.field).required = true];
+}
+
+// transition 0 : created {
+//   setState = ACTIVE
+// }
 
 message EntityQuery {
   bool events_in_get = 1; // Include events in the query API's GET response

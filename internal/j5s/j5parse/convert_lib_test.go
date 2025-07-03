@@ -280,7 +280,7 @@ func (eb *entityBuild) addKey(name string) *fieldBuild {
 }
 
 func (eb *entityBuild) addEvent(name string) *objBuild {
-	evt := &sourcedef_j5pb.Object{
+	evt := &sourcedef_j5pb.Event{
 		Def: &schema_j5pb.Object{
 			Name: name,
 		},

@@ -281,18 +281,21 @@ func (ent *entityNode) acceptEventOneof(visitor FileVisitor) error {
 
 	nestedNodes := make([]*nestedNode, 0, len(entity.Events))
 
-	for idx, eventObjectSchema := range entity.Events {
+	for idx, eventSchema := range entity.Events {
 
-		nestedName := eventObjectSchema.Def.Name
+		nestedName := eventSchema.Def.Name
 
-		nested := &sourcedef_j5pb.NestedSchema_Object{Object: eventObjectSchema}
+		nested := &sourcedef_j5pb.NestedSchema_Object{Object: &sourcedef_j5pb.Object{
+			Def:     eventSchema.Def,
+			Schemas: eventSchema.Schemas,
+		}}
 		nestedNodes = append(nestedNodes, &nestedNode{
 			schema: nested,
 			source: ent.Source.child("events", strconv.Itoa(idx)),
 		})
 
 		propSchema := &schema_j5pb.ObjectProperty{
-			Name:       strcase.ToLowerCamel(eventObjectSchema.Def.Name),
+			Name:       strcase.ToLowerCamel(eventSchema.Def.Name),
 			ProtoField: []int32{int32(idx + 1)},
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Object{
