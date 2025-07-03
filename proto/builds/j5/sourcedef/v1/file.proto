@@ -102,9 +102,9 @@ message Event {
 
 message Transition {
   // value of a status enum 'ACTIVE', or 'any' for every status
-  string from_status = 1 [(buf.validate.field).required = true];
+  string from = 1 [(buf.validate.field).required = true];
   // value of a status enum 'ACTIVE', or 'keep' for every status
-  string to_status = 2 [(buf.validate.field).required = true];
+  string to = 2 [(buf.validate.field).required = true];
 }
 
 // transition 0 : created {
