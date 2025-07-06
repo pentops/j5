@@ -1,7 +1,6 @@
 package id62
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -39,7 +38,7 @@ func TestEdges(t *testing.T) {
 	}
 
 	for _, tc := range tcs {
-		t.Run(fmt.Sprintf("%s", tc.name), func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			str := tc.uuid.String()
 			t.Logf("uuid: %s", tc.uuid.UUIDString())
 			t.Logf("id62: %s", str)
