@@ -69,6 +69,17 @@ func TestEdges(t *testing.T) {
 			if asID != tc.uuid {
 				t.Errorf("expected %v, got %v", tc.uuid, asID)
 			}
+
+			// Can parse from UUID string
+			asID, err = ParseUUID(tc.uuid.UUIDString())
+			if err != nil {
+				t.Errorf("unexpected error: %v", err)
+			}
+
+			// Parsed matches original
+			if asID != tc.uuid {
+				t.Errorf("expected %v, got %v", tc.uuid, asID)
+			}
 		})
 	}
 }

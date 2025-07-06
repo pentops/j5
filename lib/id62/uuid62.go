@@ -54,6 +54,18 @@ func Parse(s string) (UUID, error) {
 	if err := parseBase62(s, uuid[:]); err != nil {
 		return UUID{}, err
 	}
+
+	return uuid, nil
+}
+
+func ParseUUID(s string) (UUID, error) {
+	u, err := uuid.Parse(s)
+	if err != nil {
+		return UUID{}, fmt.Errorf("cannot parse UUID: %w", err)
+	}
+
+	var uuid UUID
+	copy(uuid[:], u[:])
 	return uuid, nil
 }
 
