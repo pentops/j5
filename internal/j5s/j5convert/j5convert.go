@@ -16,10 +16,14 @@ func ConvertJ5File(deps TypeResolver, source *sourcedef_j5pb.SourceFile) ([]*des
 	importMap, err := j5Imports(source)
 	if err != nil {
 		return nil, err
+
 	}
 
-	file := newFileContext(source.Path + ".proto")
-	root := newRootContext(deps, importMap, file)
+	rr := newRootResolver(deps, importMap)
+
+	file := newFileContext(source.Path+".proto", rr)
+	fs := newFileSet(file.fdp.GetPackage(), file)
+	root := newRootContext(fs)
 
 	walker := &conversionVisitor{
 		root:          root,

@@ -73,7 +73,7 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 
 		entryName := mapName(protoFieldName)
 
-		mb := blankMessage(entryName)
+		mb := newMessageContext(entryName, ww.file)
 		mb.descriptor.Field = []*descriptorpb.FieldDescriptorProto{
 			keyDesc,
 			itemDesc,

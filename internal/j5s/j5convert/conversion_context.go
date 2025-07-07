@@ -9,6 +9,7 @@ import (
 	"slices"
 
 	"github.com/pentops/golib/gl"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -19,27 +20,30 @@ type parentContext interface {
 	addMessage(*MessageBuilder)
 	addEnum(*descriptorpb.EnumDescriptorProto, commentSet)
 	addSyntheticOneof(nameHint string) (int32, error)
+
+	addLocalType(name string, ref *TypeRef) error
+	refResolver
 }
 
-type rootContext struct {
-	packageName string
-	deps        TypeResolver
-	//source      sourceLink
-	errors errpos.Errors
-
-	importAliases *importMap
-
-	mainFile *fileContext
-	files    []*fileContext
+type refResolver interface {
+	resolveType(ref *schema_j5pb.Ref) (*TypeRef, error)
 }
 
-func newRootContext(deps TypeResolver, imports *importMap, file *fileContext) *rootContext {
-	return &rootContext{
-		packageName:   file.fdp.GetPackage(),
-		deps:          deps,
-		mainFile:      file,
-		importAliases: imports,
-		files:         []*fileContext{file},
+type TypeResolver interface {
+	ResolveType(pkg string, name string) (*TypeRef, error)
+}
+
+type fileSet struct {
+	_packageName string
+	mainFile     *fileContext
+	files        []*fileContext
+}
+
+func newFileSet(packageName string, mainFile *fileContext) *fileSet {
+	return &fileSet{
+		_packageName: packageName,
+		mainFile:     mainFile,
+		files:        []*fileContext{mainFile},
 	}
 }
 
@@ -51,8 +55,8 @@ func subPackageFileName(sourceFilename, subPackage string) string {
 	return subName
 }
 
-func (rr *rootContext) subPackageFile(subPackage string) *fileContext {
-	fullPackage := fmt.Sprintf("%s.%s", rr.packageName, subPackage)
+func (rr *fileSet) subPackageFile(subPackage string) *fileContext {
+	fullPackage := fmt.Sprintf("%s.%s", rr._packageName, subPackage)
 
 	for _, search := range rr.files {
 		if search.fdp.GetPackage() == fullPackage {
@@ -62,21 +66,67 @@ func (rr *rootContext) subPackageFile(subPackage string) *fileContext {
 	rootName := *rr.mainFile.fdp.Name
 	subName := subPackageFileName(rootName, subPackage)
 
-	found := newFileContext(subName)
+	found := newFileContext(subName, rr.mainFile.refResolver)
 
 	found.fdp.Package = &fullPackage
 	rr.files = append(rr.files, found)
 	return found
 }
 
+type rootResolver struct {
+	importAliases *importMap
+	deps          TypeResolver
+}
+
+func newRootResolver(deps TypeResolver, imports *importMap) *rootResolver {
+	return &rootResolver{
+		importAliases: imports,
+		deps:          deps,
+	}
+}
+
+func (fb *rootResolver) resolveType(refSrc *schema_j5pb.Ref) (*TypeRef, error) {
+	ref := fb.importAliases.expand(refSrc)
+	if ref == nil {
+		return nil, &PackageNotFoundError{
+			Package: refSrc.Package,
+			Name:    refSrc.Schema,
+		}
+	}
+
+	if ref.implicit != nil {
+		return ref.implicit, nil
+	}
+
+	typeRef, err := fb.deps.ResolveType(ref.ref.Package, ref.ref.Schema)
+	if err != nil {
+		return nil, err
+	}
+	return typeRef, nil
+}
+
+type rootContext struct {
+	*fileSet
+
+	errors errpos.Errors
+}
+
+func newRootContext(files *fileSet) *rootContext {
+	return &rootContext{
+		fileSet: files,
+	}
+}
+
 type fileContext struct {
 	fdp *descriptorpb.FileDescriptorProto
+	refResolver
 	commentSet
 }
 
-func newFileContext(name string) *fileContext {
+func newFileContext(name string, parentResolver refResolver) *fileContext {
 	pkgName := PackageFromFilename(name)
 	return &fileContext{
+		refResolver: parentResolver,
 		fdp: &descriptorpb.FileDescriptorProto{
 			Syntax:  gl.Ptr("proto3"),
 			Package: gl.Ptr(pkgName),
@@ -120,7 +170,7 @@ func (fb *fileContext) File() *descriptorpb.FileDescriptorProto {
 func (fb *fileContext) ensureImport(importPath string) {
 
 	if importPath == "" {
-		panic("empty alias")
+		panic("empty import path")
 	}
 	if !strings.Contains(importPath, "/") {
 		panic("invalid import path " + importPath)
@@ -161,19 +211,37 @@ func (fb *fileContext) addService(service *serviceBuilder) {
 	fb.fdp.Service = append(fb.fdp.Service, service.desc)
 }
 
+func (fb *fileContext) addLocalType(name string, ref *TypeRef) error {
+	// NOP, file level references are already resolvable
+	return nil
+}
+
 type MessageBuilder struct {
-	descriptor *descriptorpb.DescriptorProto
+	parentResolver refResolver
+	localTypes     map[string]*TypeRef
+	descriptor     *descriptorpb.DescriptorProto
 	commentSet
 }
 
-func blankMessage(name string) *MessageBuilder {
+func newMessageContext(name string, parent refResolver) *MessageBuilder {
 	message := &MessageBuilder{
+		parentResolver: parent,
 		descriptor: &descriptorpb.DescriptorProto{
 			Name:    gl.Ptr(name),
 			Options: &descriptorpb.MessageOptions{},
 		},
+		localTypes: make(map[string]*TypeRef),
 	}
 	return message
+}
+
+func (msg *MessageBuilder) resolveType(ref *schema_j5pb.Ref) (*TypeRef, error) {
+	if ref.Package == "" {
+		if local, ok := msg.localTypes[ref.Schema]; ok {
+			return local, nil
+		}
+	}
+	return msg.parentResolver.resolveType(ref)
 }
 
 func (msg *MessageBuilder) addMessage(message *MessageBuilder) {
@@ -184,6 +252,14 @@ func (msg *MessageBuilder) addMessage(message *MessageBuilder) {
 func (msg *MessageBuilder) addEnum(desc *descriptorpb.EnumDescriptorProto, comments commentSet) {
 	msg.mergeAt([]int32{4, int32(len(msg.descriptor.EnumType))}, comments)
 	msg.descriptor.EnumType = append(msg.descriptor.EnumType, desc)
+}
+
+func (msg *MessageBuilder) addLocalType(name string, ref *TypeRef) error {
+	if _, exists := msg.localTypes[name]; exists {
+		return fmt.Errorf("local type %q already defined in message %q", name, msg.descriptor.GetName())
+	}
+	msg.localTypes[name] = ref
+	return nil
 }
 
 func (msg *MessageBuilder) addSyntheticOneof(nameHint string) (int32, error) {

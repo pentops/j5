@@ -243,25 +243,3 @@ func (im importMap) expand(ref *schema_j5pb.Ref) *expandedRef {
 	}
 
 }
-
-func (fb *rootContext) resolveType(refSrc *schema_j5pb.Ref) (*TypeRef, error) {
-
-	ref := fb.importAliases.expand(refSrc)
-	if ref == nil {
-		return nil, &PackageNotFoundError{
-			Package: refSrc.Package,
-			Name:    refSrc.Schema,
-		}
-	}
-
-	if ref.implicit != nil {
-		return ref.implicit, nil
-	}
-
-	typeRef, err := fb.deps.ResolveType(ref.ref.Package, ref.ref.Schema)
-	if err != nil {
-		return nil, err
-	}
-	return typeRef, nil
-
-}

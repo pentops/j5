@@ -132,15 +132,20 @@ message APIMethod {
     defined_only: true
   }];
 
-  AnonymousObject request = 5 [(buf.validate.field).required = true];
+  AnonymousObject request = 5 [(buf.validate.field).required = false];
+  bool http_request = 12;
 
   // The response object for the endpoint, when empty indicates a raw http
   // response.
   AnonymousObject response = 6 [(buf.validate.field).required = false];
+  bool http_response = 13;
 
   j5.auth.v1.MethodAuthType auth = 7;
   j5.ext.v1.MethodOptions options = 8;
   j5.list.v1.ListRequestMessage list_request = 9;
+
+  bool paged = 10; // Adds list paging fields to request and response
+  bool query = 11; // Adds query field to request
 }
 
 message AnonymousObject {

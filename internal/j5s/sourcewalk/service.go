@@ -84,27 +84,62 @@ func (sn *serviceBuilder) accept(visitor ServiceFileVisitor) error {
 	for idx, method := range sn.schema.Methods {
 		source := sn.source.child("methods", strconv.Itoa(idx))
 
-		request := &schema_j5pb.Object{
-			Name:       fmt.Sprintf("%sRequest", method.Name),
-			Properties: method.Request.Properties,
-		}
+		var inputType string
+		if method.HttpRequest {
+			inputType = "google.api.HttpBody"
+		} else {
+			request := &schema_j5pb.Object{
+				Name: fmt.Sprintf("%sRequest", method.Name),
+			}
 
-		requestNode, err := newObjectSchemaNode(source.child("request"), nil, request)
-		if err != nil {
-			return fmt.Errorf("method %s request: %w", method.Name, err)
-		}
+			inputType = request.Name
+			if method.Request != nil {
+				request.Properties = method.Request.Properties
+			}
 
-		if err := visitor.VisitObject(requestNode); err != nil {
-			return fmt.Errorf("method %s request: %w", method.Name, err)
+			if method.Paged {
+				request.Properties = append(request.Properties, &schema_j5pb.ObjectProperty{
+					Name:       "page",
+					ProtoField: []int32{100},
+					Schema:     schemaRefField("j5.list.v1", "PageRequest"),
+				})
+			}
+
+			if method.Query {
+				request.Properties = append(request.Properties, &schema_j5pb.ObjectProperty{
+					Name:       "query",
+					ProtoField: []int32{101},
+					Schema:     schemaRefField("j5.list.v1", "QueryRequest"),
+				})
+			}
+
+			requestNode, err := newObjectSchemaNode(source.child("request"), nil, request)
+			if err != nil {
+				return fmt.Errorf("method %s request: %w", method.Name, err)
+			}
+
+			if err := visitor.VisitObject(requestNode); err != nil {
+				return fmt.Errorf("method %s request: %w", method.Name, err)
+			}
 		}
 
 		var outputType string
-		if method.Response == nil {
+		if method.HttpResponse || method.Response == nil {
+			if method.Paged {
+				return fmt.Errorf("method %s is paged but has no response defined", method.Name)
+			}
 			outputType = "google.api.HttpBody"
 		} else {
 			response := &schema_j5pb.Object{
 				Name:       fmt.Sprintf("%sResponse", method.Name),
 				Properties: method.Response.Properties,
+			}
+			if method.Paged {
+				response.Properties = append(response.Properties, &schema_j5pb.ObjectProperty{
+					Name:       "page",
+					ProtoField: []int32{100},
+					Schema:     schemaRefField("j5.list.v1", "PageResponse"),
+				})
 			}
 
 			responseNode, err := newObjectSchemaNode(source.child("response"), nil, response)
@@ -134,7 +169,7 @@ func (sn *serviceBuilder) accept(visitor ServiceFileVisitor) error {
 
 		methods = append(methods, &ServiceMethodNode{
 			Source:       source.child("request"),
-			InputType:    request.Name,
+			InputType:    inputType,
 			OutputType:   outputType,
 			Schema:       method,
 			ResolvedPath: resolvedPath,

@@ -20,6 +20,7 @@ import (
 	"github.com/pentops/j5/internal/j5s/protobuild"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/j5/internal/source"
+	"github.com/pentops/j5/lib/id62"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -187,7 +188,8 @@ func makeLogFile() (io.WriteCloser, error) {
 	if err := os.MkdirAll(logDir, 0755); err != nil {
 		return nil, fmt.Errorf("mkdir %s: %w", logDir, err)
 	}
-	logFile := filepath.Join(logDir, "j5-lsp.log")
+	filename := fmt.Sprintf("%s-j5-lsp.log", id62.NewString())
+	logFile := filepath.Join(logDir, filename)
 	fileOut, err := os.OpenFile(logFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
 	if err != nil {
 		return nil, fmt.Errorf("create log file %s: %w", logFile, err)

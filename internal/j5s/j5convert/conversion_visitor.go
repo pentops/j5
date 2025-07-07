@@ -73,14 +73,16 @@ func (ww *conversionVisitor) resolveType(ref *sourcewalk.RefNode) (*TypeRef, err
 		}
 	}
 
-	typeRef, err := ww.root.resolveType(ref.Ref)
+	typeRef, err := ww.parentContext.resolveType(ref.Ref)
 	if err != nil {
 		pos := ref.Source.GetPos()
 		err = errpos.AddPosition(err, pos)
 		return nil, err
 	}
 
-	ww.file.ensureImport(typeRef.File)
+	if typeRef.File != "" {
+		ww.file.ensureImport(typeRef.File)
+	}
 	return typeRef, nil
 }
 
@@ -158,7 +160,21 @@ func (ww *conversionVisitor) visitTopicNode(tn *sourcewalk.TopicNode) {
 
 func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
 
-	message := blankMessage(node.Name)
+	message := newMessageContext(node.Name, ww.parentContext)
+
+	if !node.SourceAnonymous {
+		err := ww.parentContext.addLocalType(node.Name, objectTypeRef(node))
+		if err != nil {
+			ww.addError(node.Source, err)
+		}
+	}
+
+	if node.HasNestedSchemas() {
+		subContext := ww.inMessage(message)
+		if err := node.RangeNestedSchemas(walkerSchemaVisitor(subContext)); err != nil {
+			ww.addError(node.Source, err)
+		}
+	}
 
 	if node.Entity != nil {
 		ww.file.ensureImport(j5ExtImport)
@@ -235,13 +251,6 @@ func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
 		ww.addError(node.Source, err)
 	}
 
-	if node.HasNestedSchemas() {
-		subContext := ww.inMessage(message)
-		if err := node.RangeNestedSchemas(walkerSchemaVisitor(subContext)); err != nil {
-			ww.addError(node.Source, err)
-		}
-	}
-
 	ww.parentContext.addMessage(message)
 }
 
@@ -251,11 +260,19 @@ func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 		ww.addErrorf(node.Source, "missing object name")
 	}
 
-	message := blankMessage(schema.Name)
+	message := newMessageContext(schema.Name, ww.parentContext)
+
 	message.descriptor.OneofDecl = []*descriptorpb.OneofDescriptorProto{{
 		Name: gl.Ptr("type"),
 	}}
 	message.comment([]int32{}, schema.Description)
+
+	if node.HasNestedSchemas() {
+		subContext := ww.inMessage(message)
+		if err := node.RangeNestedSchemas(walkerSchemaVisitor(subContext)); err != nil {
+			ww.addError(node.Source, err)
+		}
+	}
 
 	oneofType := &ext_j5pb.OneofMessageOptions{}
 
@@ -296,20 +313,13 @@ func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 		ww.addError(node.Source, err)
 	}
 
-	if node.HasNestedSchemas() {
-		subContext := ww.inMessage(message)
-		if err := node.RangeNestedSchemas(walkerSchemaVisitor(subContext)); err != nil {
-			ww.addError(node.Source, err)
-		}
-	}
-
 	ww.parentContext.addMessage(message)
 }
 
 func (ww *conversionVisitor) resolvePolymorphIncludes(includes []*sourcewalk.RefNode) ([]string, error) {
 	members := make([]string, 0)
 	for _, include := range includes {
-		typeRef, err := ww.root.resolveType(include.Ref)
+		typeRef, err := ww.parentContext.resolveType(include.Ref)
 		if err != nil {
 			return nil, err
 		}
@@ -331,7 +341,7 @@ func (ww *conversionVisitor) resolvePolymorphIncludes(includes []*sourcewalk.Ref
 }
 
 func (ww *conversionVisitor) visitPolymorphNode(node *sourcewalk.PolymorphNode) {
-	message := blankMessage(node.Name)
+	message := newMessageContext(node.Name, ww.parentContext)
 
 	message.comment([]int32{}, node.Description)
 

@@ -80,11 +80,6 @@ func (ww *conversionVisitor) visitServiceMethodNode(service *serviceBuilder, nod
 	methodBuilder.comment([]int32{}, method.Description)
 	ww.file.ensureImport(googleApiAnnotationsImport)
 
-	if method.Request == nil {
-		ww.addErrorf(node.Source, "missing input")
-		return
-	}
-
 	methodBuilder.desc.InputType = gl.Ptr(node.InputType)
 	methodBuilder.desc.OutputType = gl.Ptr(node.OutputType)
 
@@ -93,29 +88,33 @@ func (ww *conversionVisitor) visitServiceMethodNode(service *serviceBuilder, nod
 	}
 
 	annotation := &annotations.HttpRule{}
-	reqPathParts := strings.Split(node.ResolvedPath, "/")
-	for idx, part := range reqPathParts {
-		if strings.HasPrefix(part, ":") {
-			var field *schema_j5pb.ObjectProperty
-			found := make([]string, 0)
-			for _, search := range method.Request.Properties {
-				found = append(found, search.Name)
-				if search.Name == part[1:] {
-					field = search
-					break
+	reqPath := node.ResolvedPath
+
+	if method.Request != nil {
+		reqPathParts := strings.Split(node.ResolvedPath, "/")
+		for idx, part := range reqPathParts {
+			if strings.HasPrefix(part, ":") {
+				var field *schema_j5pb.ObjectProperty
+				found := make([]string, 0)
+				for _, search := range method.Request.Properties {
+					found = append(found, search.Name)
+					if search.Name == part[1:] {
+						field = search
+						break
+					}
 				}
-			}
-			if field == nil {
-				ww.addErrorf(node.Source, "field %s from request path not found in %s/%s, have %s", part[1:], *service.desc.Name, method.Name, strings.Join(found, ", "))
-			}
+				if field == nil {
+					ww.addErrorf(node.Source, "field %s from request path not found in %s/%s, have %s", part[1:], *service.desc.Name, method.Name, strings.Join(found, ", "))
+				}
 
-			fieldName := strcase.ToSnake(part[1:])
-			reqPathParts[idx] = "{" + fieldName + "}"
+				fieldName := strcase.ToSnake(part[1:])
+				reqPathParts[idx] = "{" + fieldName + "}"
 
+			}
 		}
-	}
 
-	reqPath := strings.Join(reqPathParts, "/")
+		reqPath = strings.Join(reqPathParts, "/")
+	}
 
 	switch method.HttpMethod {
 	case client_j5pb.HTTPMethod_GET:

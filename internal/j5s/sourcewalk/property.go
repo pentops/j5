@@ -5,6 +5,7 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -193,13 +194,17 @@ func replaceNestedObject(source SourceNode, parent parentNode, defaultName strin
 		}, nil
 
 	case *schema_j5pb.ObjectField_Object:
-		if st.Object.Name == "" {
-			st.Object.Name = defaultName
+		obj := st.Object
+		if obj.Name == "" {
+			obj = proto.Clone(st.Object).(*schema_j5pb.Object)
+			obj.Name = defaultName
 		}
-		node, err := newObjectSchemaNode(source.child("object"), parent, st.Object)
+		node, err := newObjectSchemaNode(source.child("object"), parent, obj)
 		if err != nil {
 			return nil, err
 		}
+		node.SourceAnonymous = true
+
 		if err := visitor.VisitObject(node); err != nil {
 			return nil, err
 		}
@@ -230,13 +235,17 @@ func replaceNestedOneof(source SourceNode, parent parentNode, defaultName string
 			Source: source.child("ref"),
 		}, nil
 	case *schema_j5pb.OneofField_Oneof:
+		oneof := st.Oneof
 		if st.Oneof.Name == "" {
-			st.Oneof.Name = defaultName
+			oneof = proto.Clone(st.Oneof).(*schema_j5pb.Oneof)
+			oneof.Name = defaultName
 		}
-		node, err := newOneofSchemaNode(source.child("oneof"), parent, st.Oneof)
+		node, err := newOneofSchemaNode(source.child("oneof"), parent, oneof)
 		if err != nil {
 			return nil, err
 		}
+		node.SourceAnonymous = true
+
 		if err := visitor.VisitOneof(node); err != nil {
 			return nil, err
 		}
@@ -261,13 +270,16 @@ func replaceNestedEnum(source SourceNode, parent parentNode, defaultName string,
 			Source: source.child("ref"),
 		}, nil
 	case *schema_j5pb.EnumField_Enum:
+		enum := st.Enum
 		if st.Enum.Name == "" {
-			st.Enum.Name = defaultName
+			enum = proto.Clone(st.Enum).(*schema_j5pb.Enum)
+			enum.Name = defaultName
 		}
-		node, err := newEnumNode(source.child("enum"), parent, st.Enum)
+		node, err := newEnumNode(source.child("enum"), parent, enum)
 		if err != nil {
 			return nil, err
 		}
+		node.SourceAnonymous = true
 		if err := visitor.VisitEnum(node); err != nil {
 			return nil, err
 		}

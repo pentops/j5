@@ -257,9 +257,10 @@ type parentNode interface {
 }
 
 type rootType struct {
-	Source   SourceNode
-	name     string
-	nestPath []string
+	Source          SourceNode
+	SourceAnonymous bool // the element's name is implicit, and actually be referenced.
+	name            string
+	nestPath        []string
 }
 
 func newRoot(source SourceNode, parent parentNode, name string) rootType {

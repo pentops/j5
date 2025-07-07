@@ -101,9 +101,6 @@ func (er *EnumRef) mapValues(vals []string) ([]int32, error) {
 	return out, nil
 }
 
-type TypeResolver interface {
-	ResolveType(pkg string, name string) (*TypeRef, error)
-}
 type ErrCollector interface {
 	WarnPos(pos *errpos.Position, err error)
 }
