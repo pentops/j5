@@ -13,9 +13,9 @@ import (
 
 	sq "github.com/elgris/sqrl"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/log.go/log"
 	"github.com/pentops/j5/internal/gen/j5/registry/v1/registry_pb"
 	"github.com/pentops/j5/internal/registry/gomodproxy"
+	"github.com/pentops/log.go/log"
 	"github.com/pentops/sqrlx.go/sqrlx"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
