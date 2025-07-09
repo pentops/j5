@@ -137,28 +137,11 @@ func inputName(input *config_j5pb.Input) string {
 	return "<unknown>"
 }
 
-// getIncludes returns the images corresponding to the inputs. The returned
-// slice will have the same indexes as the input.
-func (bundle *bundleSource) getIncludes(ctx context.Context, resolver InputSource) ([]*source_j5pb.SourceImage, error) {
+func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver InputSource) (*source_j5pb.SourceImage, error) {
 	j5Config, err := bundle.J5Config()
 	if err != nil {
 		return nil, err
 	}
-	dependencies := make([]*source_j5pb.SourceImage, len(j5Config.Includes))
-	for idx, spec := range j5Config.Includes {
-		img, err := resolver.GetSourceImage(ctx, spec.Input)
-		if err != nil {
-			return nil, err
-		}
-		img.SourceName = inputName(spec.Input)
-
-		dependencies[idx] = img
-	}
-
-	return dependencies, nil
-}
-
-func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver InputSource) (*source_j5pb.SourceImage, error) {
 
 	deps, err := bundle.getDependencyFiles(ctx, resolver)
 	if err != nil {
@@ -200,15 +183,34 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 		}
 	}
 
-	includeImages, err := bundle.getIncludes(ctx, resolver)
-	if err != nil {
-		return nil, err
-	}
+	for _, spec := range j5Config.Includes {
+		switch st := spec.Input.Type.(type) {
+		case *config_j5pb.Input_Local:
+			// include the local image in the source, since it will always have
+			// the same commit hash
+			localInclude, err := resolver.GetSourceImage(ctx, spec.Input)
+			if err != nil {
+				return nil, err
+			}
+			localInclude.SourceName = inputName(spec.Input)
 
-	for _, included := range includeImages {
-		err = img.include(included)
-		if err != nil {
-			return nil, err
+			err = img.include(localInclude)
+			if err != nil {
+				return nil, err
+			}
+
+		case *config_j5pb.Input_Registry_:
+			// reference the include spec in the output image so it can be
+			// included on-the-fly at read time, taking the latest version
+			img.img.Includes = append(img.img.Includes, &source_j5pb.Include{
+				Name:      st.Registry.Name,
+				Owner:     st.Registry.Owner,
+				Version:   st.Registry.Version,
+				Reference: st.Registry.Reference,
+			})
+
+		default:
+			return nil, fmt.Errorf("unsupported include type %T", st)
 		}
 	}
 

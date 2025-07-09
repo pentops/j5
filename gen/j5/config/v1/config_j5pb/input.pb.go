@@ -106,9 +106,12 @@ type Input_Registry struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Owner     string  `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
-	Name      string  `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	Version   *string `protobuf:"bytes,3,opt,name=version,proto3,oneof" json:"version,omitempty"`
+	Owner string `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
+	Name  string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// specific version (e.g. git hash) to lock to.
+	Version *string `protobuf:"bytes,3,opt,name=version,proto3,oneof" json:"version,omitempty"`
+	// branch name of the input when a version is not set.
+	// default is 'main'.
 	Reference *string `protobuf:"bytes,4,opt,name=reference,proto3,oneof" json:"reference,omitempty"`
 }
 

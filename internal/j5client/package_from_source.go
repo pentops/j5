@@ -12,6 +12,7 @@ import (
 )
 
 func APIFromSource(api *source_j5pb.API) (*client_j5pb.API, error) {
+
 	schemaSet, err := j5schema.PackageSetFromSourceAPI(api.Packages)
 	if err != nil {
 		return nil, fmt.Errorf("package set from source api: %w", err)

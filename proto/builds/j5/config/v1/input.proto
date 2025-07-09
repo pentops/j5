@@ -11,7 +11,12 @@ message Input {
   message Registry {
     string owner = 1;
     string name = 2;
-    optional string version = 3;
-    optional string reference = 4;
+
+    // specific version (e.g. git hash) to lock to.
+    optional string version = 3; 
+
+    // branch name of the input when a version is not set.
+    // default is 'main'.
+    optional string reference = 4; 
   }
 }

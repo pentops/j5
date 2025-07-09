@@ -46,6 +46,10 @@ func (cr chainResolver) FindDescriptorByName(name protoreflect.FullName) (protor
 
 func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 
+	if len(image.Includes) > 0 {
+		return nil, fmt.Errorf("source image: includes must be resolved prior to building an API")
+	}
+
 	bb := packageSet{
 		wantPackages: map[string]bool{},
 	}

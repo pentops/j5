@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pentops/j5/buildlib"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/gen/j5/registry/v1/registry_spb"
+	"github.com/pentops/j5/internal/registry/buildwrap"
 	"google.golang.org/genproto/googleapis/api/httpbody"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -65,12 +65,12 @@ func (s *RegistryService) DownloadSwagger(ctx context.Context, req *registry_spb
 		return nil, fmt.Errorf("image not found")
 	}
 
-	descriptorAPI, err := buildlib.DescriptorFromSource(img)
+	descriptorAPI, err := buildwrap.DescriptorFromSource(img)
 	if err != nil {
 		return nil, err
 	}
 
-	asJson, err := buildlib.SwaggerFromDescriptor(descriptorAPI)
+	asJson, err := buildwrap.SwaggerFromDescriptor(descriptorAPI)
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +91,7 @@ func (s *RegistryService) DownloadClientAPI(ctx context.Context, req *registry_s
 		return nil, fmt.Errorf("image not found")
 	}
 
-	descriptorAPI, err := buildlib.DescriptorFromSource(img)
+	descriptorAPI, err := buildwrap.DescriptorFromSource(img)
 	if err != nil {
 		return nil, err
 	}

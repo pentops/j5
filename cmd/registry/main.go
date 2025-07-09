@@ -6,7 +6,6 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/pentops/j5/buildlib"
 	"github.com/pentops/j5/internal/registry/anyfs"
 	"github.com/pentops/j5/internal/registry/buildwrap"
 	"github.com/pentops/j5/internal/registry/github"
@@ -169,7 +168,7 @@ func runCombinedServer(ctx context.Context, cfg struct {
 	}
 
 	regWrap := buildwrap.NewRegistryClient(pkgStore)
-	j5Builder, err := buildlib.NewBuilder(regWrap)
+	j5Builder, err := buildwrap.NewBuilder(regWrap)
 	if err != nil {
 		return err
 	}

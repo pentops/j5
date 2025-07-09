@@ -42,7 +42,7 @@ func (cfg BuildConfig) GetSource(ctx context.Context) (*source_j5pb.SourceImage,
 		return img, err
 	}
 
-	resolver, err := source.NewEnvResolver()
+	resolver, err := cfg.resolver()
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,12 @@ func (cfg BuildConfig) GetSource(ctx context.Context) (*source_j5pb.SourceImage,
 		return nil, fmt.Errorf("getting remote bundle %s/%s: %w", owner, name, err)
 	}
 
-	return src, nil
+	resolved, err := source.ResolveIncludes(ctx, resolver, src, nil)
+	if err != nil {
+		return nil, fmt.Errorf("resolving includes for remote bundle %s/%s: %w", owner, name, err)
+	}
+
+	return resolved, nil
 
 }
 

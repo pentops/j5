@@ -1,4 +1,4 @@
-package buildlib
+package buildwrap
 
 import (
 	"encoding/json"

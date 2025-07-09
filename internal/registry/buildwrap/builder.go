@@ -1,6 +1,4 @@
-// package buildlib provides an interface to the code generation for external
-// programs, e.g. pentops/registry
-package buildlib
+package buildwrap
 
 import (
 	"context"

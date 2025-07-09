@@ -25,6 +25,17 @@ func newImageBuilder(deps *imageFiles) *imageBuilder {
 	}
 }
 
+func newImageBuilderFromImage(img *source_j5pb.SourceImage) *imageBuilder {
+	return &imageBuilder{
+		img:               img,
+		includedFilenames: make(map[string]struct{}),
+		deps: &imageFiles{
+			primary:      make(map[string]*descriptorpb.FileDescriptorProto),
+			dependencies: make(map[string]*descriptorpb.FileDescriptorProto),
+		},
+	}
+}
+
 func (ib *imageBuilder) addPackage(pkg *source_j5pb.PackageInfo) {
 	ib.img.Packages = append(ib.img.Packages, pkg)
 }

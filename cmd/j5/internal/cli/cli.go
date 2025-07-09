@@ -96,6 +96,18 @@ type SourceConfig struct {
 	Bundle string `flag:"bundle" default:"" description:"When the bundle j5.yaml is in a subdirectory"`
 
 	_resolved *source.RepoRoot
+	_resolver *source.Resolver
+}
+
+func (cfg SourceConfig) resolver() (*source.Resolver, error) {
+	if cfg._resolver == nil {
+		resolver, err := source.NewEnvResolver()
+		if err != nil {
+			return nil, fmt.Errorf("creating resolver: %w", err)
+		}
+		cfg._resolver = resolver
+	}
+	return cfg._resolver, nil
 }
 
 func (cfg SourceConfig) WriteFile(filename string, data []byte) error {
@@ -107,7 +119,7 @@ func (cfg *SourceConfig) GetSource(ctx context.Context) (*source.RepoRoot, error
 		return cfg._resolved, nil
 	}
 
-	resolver, err := source.NewEnvResolver()
+	resolver, err := cfg.resolver()
 	if err != nil {
 		return nil, err
 	}
@@ -150,12 +162,27 @@ func (cfg SourceConfig) FileWriterAt(ctx context.Context, prefix string) (*fileW
 }
 
 func (cfg SourceConfig) GetBundleImage(ctx context.Context) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {
-	source, err := cfg.GetSource(ctx)
+	imageSource, err := cfg.GetSource(ctx)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return source.BundleImageSource(ctx, cfg.Bundle)
+	unresolvedImage, bundleConfig, err := imageSource.BundleImageSource(ctx, cfg.Bundle)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	resolver, err := cfg.resolver()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	img, err := source.ResolveIncludes(ctx, resolver, unresolvedImage, nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("resolving includes for bundle %s: %w", cfg.Bundle, err)
+	}
+
+	return img, bundleConfig, nil
 }
 
 type lineWriter struct {

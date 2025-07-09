@@ -12,12 +12,34 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/gen/j5/registry/v1/registry_pb"
+	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/sqrlx.go/sqrlx"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 )
+
+func (s *PackageStore) GetRemoteDependency(ctx context.Context, input *config_j5pb.Input, locks *config_j5pb.LockFile) (*source_j5pb.SourceImage, error) {
+	regInput := input.GetRegistry()
+	if regInput == nil {
+		return nil, status.Errorf(codes.InvalidArgument, "input is not a registry input: %v", input)
+	}
+	var version string
+	if regInput.Version != nil {
+		version = *regInput.Version
+	} else if regInput.Reference != nil {
+		version = *regInput.Reference
+	} else {
+		version = "latest"
+	}
+
+	return s.GetJ5Image(ctx, regInput.Owner, regInput.Name, version)
+}
+
+func (s *PackageStore) LatestLocks(ctx context.Context, deps []*config_j5pb.Input) (*config_j5pb.LockFile, error) {
+	return nil, status.Errorf(codes.Unimplemented, "LatestLocks not implemented")
+}
 
 func (s *PackageStore) GetJ5Image(ctx context.Context, orgName, imageName, version string) (*source_j5pb.SourceImage, error) {
 
@@ -57,7 +79,12 @@ func (s *PackageStore) GetJ5Image(ctx context.Context, orgName, imageName, versi
 	// package version is the 'canonical' version (commit hash)
 	img.Version = &pkg.Version
 
-	return img, nil
+	resolved, err := source.ResolveIncludes(ctx, s, img, nil)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to resolve includes: %v", err)
+	}
+
+	return resolved, nil
 }
 
 func (s *PackageStore) UploadJ5Image(ctx context.Context, commitInfo *source_j5pb.CommitInfo, img *source_j5pb.SourceImage, registry *config_j5pb.RegistryConfig) error {

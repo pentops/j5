@@ -17,6 +17,9 @@ message SourceImage {
   repeated string source_filenames = 6;
   string source_name = 8;
   optional string version = 7;
+
+
+  repeated Include includes = 4;
 }
 
 message ProseFile {
@@ -37,4 +40,16 @@ message PackageInfo {
   string label = 1;
   string name = 2;
   string prose = 3;
+}
+
+message Include {
+  string owner = 1 [(buf.validate.field).required = true];
+  string name = 2 [(buf.validate.field).required = true];
+
+  // specific version (e.g. git hash) to lock to.
+  optional string version = 3; 
+
+  // branch name of the input when a version is not set.
+  // default is 'main'.
+  optional string reference = 4; 
 }

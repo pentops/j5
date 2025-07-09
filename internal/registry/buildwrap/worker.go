@@ -7,7 +7,6 @@ import (
 	"io"
 	"io/fs"
 
-	"github.com/pentops/j5/buildlib"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -40,7 +39,7 @@ type BuildWorker struct {
 }
 
 type J5Builder interface {
-	RunPublishBuild(ctx context.Context, pc buildlib.PluginContext, input *source_j5pb.SourceImage, build *config_j5pb.PublishConfig) error
+	RunPublishBuild(ctx context.Context, pc PluginContext, input *source_j5pb.SourceImage, build *config_j5pb.PublishConfig) error
 	MutateImageWithMods(img *source_j5pb.SourceImage, mods []*config_j5pb.ProtoMod) error
 	SourceImage(ctx context.Context, fs fs.FS, bundleName string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error)
 }
@@ -133,7 +132,7 @@ func (bw *BuildWorker) runPublish(ctx context.Context, req *registry_tpb.Publish
 	}
 	defer dest.Close()
 
-	pc := buildlib.PluginContext{
+	pc := PluginContext{
 		Variables: map[string]string{}, // TODO: Commit / Source Info
 		ErrOut:    logBuffer,
 		Dest:      dest,
