@@ -288,7 +288,7 @@ func (mm *grpcMethod) mapRequest(r *http.Request) (protoreflect.Message, error) 
 		query.Set(key, provided)
 	}
 	if err := mm.AppCon.QueryToProto(query, inputMessage); err != nil {
-		return nil, err
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	return inputMessage, nil
