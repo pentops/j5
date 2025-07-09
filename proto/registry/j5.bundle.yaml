@@ -1,0 +1,18 @@
+---
+options:
+  subPackages:
+    - name: "service"
+    - name: "topic"
+
+packages:
+  - name: j5.registry.v1
+
+registry:
+  owner: pentops
+  name: registry
+
+dependencies:
+  - registry:
+      owner: pentops
+      name: messaging
+

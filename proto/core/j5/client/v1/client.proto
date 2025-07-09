@@ -34,6 +34,14 @@ message Package {
   repeated Service services = 5;
   repeated StateEntity state_entities = 6;
   map<string, j5.schema.v1.RootSchema> schemas = 8;
+
+  PackageSource source = 7;
+}
+
+message PackageSource {
+  string owner = 1 [(buf.validate.field).required = true];
+  string repo = 2 [(buf.validate.field).required = true];
+  string version = 3 [(buf.validate.field).required = true];
 }
 
 message Service {
