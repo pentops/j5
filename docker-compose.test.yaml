@@ -20,4 +20,4 @@ services:
     environment:
       TEST_DB: "postgres://test:test@database/test?sslmode=disable"
     working_dir: "/src"
-    command: "go test ./...
+    command: "go test ./..."
