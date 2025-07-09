@@ -13,6 +13,9 @@ bundles:
   - name: bcltest
     dir: proto/bcltest
 
+  - name: registry
+    dir: proto/registry
+
 generate:
   - name: base
     inputs:
@@ -61,7 +64,21 @@ generate:
     plugins:
       - base: go
       - base: go-sugar
+      - base: go-grpc 
+
+  - name: registry
+    inputs:
+      - local: registry
+    output: .
+    opts:
+      paths: import
+      module: github.com/pentops/j5
+    plugins:
+      - base: go
+      - base: go-sugar
       - base: go-grpc
+      - base: go-psm
+      - base: go-o5-messaging
 
 managedPaths:
  - gen
@@ -82,4 +99,14 @@ plugins:
     type: PLUGIN_PROTO
     docker:
       image: ghcr.io/pentops/protoc-gen-go-sugar:b1e769eeea97192209ab5a4e8fc560bf72ce5ba7
+
+  - name: go-psm
+    base: go
+    docker:
+      image: ghcr.io/pentops/protoc-gen-go-protostate:ea6dfe7edca959f8943ec0b1cd3e9c04e801fb7e
+
+  - name: go-o5-messaging
+    base: go
+    docker:
+      image: ghcr.io/pentops/protoc-gen-go-o5-messaging:7e07c29129f03edc9ef01ba4739328625ef24746
 

@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package j5.registry.v1.topic;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/empty.proto";
+import "j5/messaging/v1/annotations.proto";
+import "j5/messaging/v1/reqres.proto";
+import "j5/source/v1/image.proto";
+
+option go_package = "github.com/pentops/j5/gen/j5/registry/v1/registry_tpb";
+
+service BuilderRequestTopic {
+  option (j5.messaging.v1.config).request.name = "registry-build";
+  rpc Publish(PublishMessage) returns (google.protobuf.Empty) {}
+  rpc BuildAPI(BuildAPIMessage) returns (google.protobuf.Empty) {}
+}
+
+message PublishMessage {
+  j5.messaging.v1.RequestMetadata request = 1;
+  j5.source.v1.CommitInfo commit = 2 [(buf.validate.field).required = true];
+  string bundle = 3;
+  string name = 4 [(buf.validate.field).required = true];
+}
+
+message BuildAPIMessage {
+  j5.messaging.v1.RequestMetadata request = 1;
+  j5.source.v1.CommitInfo commit = 2 [(buf.validate.field).required = true];
+  string bundle = 3;
+}
+
+service BuildReplyTopic {
+  option (j5.messaging.v1.config).reply.name = "registry-status";
+  rpc J5BuildStatus(J5BuildStatusMessage) returns (google.protobuf.Empty) {}
+}
+
+message J5BuildStatusMessage {
+  j5.messaging.v1.RequestMetadata request = 1 [(buf.validate.field).required = true];
+  BuildStatus status = 2 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).enum = {
+      not_in: 0
+      defined_only: true
+    }
+  ];
+  BuildOutput output = 3;
+}
+
+message BuildOutput {
+  string title = 1;
+  string summary = 2;
+  optional string text = 3;
+}
+
+enum BuildStatus {
+  BUILD_STATUS_UNSPECIFIED = 0;
+  BUILD_STATUS_IN_PROGRESS = 1;
+  BUILD_STATUS_SUCCESS = 2;
+  BUILD_STATUS_FAILURE = 3;
+}

@@ -1,0 +1,87 @@
+---
+name: "registry"
+
+deploymentConfig:
+  quickMode: true
+
+blobstores:
+  - name: images
+
+secrets:
+  - name: github
+
+databases:
+  - name: main
+    postgres:
+      runOutbox: true
+      serverGroup: default
+      dbExtensions:
+        - "uuid-ossp"
+
+      migrateContainer:
+        image:
+          name: registry
+          registry: ghcr.io/pentops
+        command: [migrate]
+        envVars:
+          - name: "POSTGRES_URL"
+            database:
+              databaseName: main
+
+runtimes:
+  - name: main
+    routes:
+
+      - prefix: "/gopkg/"
+        protocol: ROUTE_PROTOCOL_HTTP
+        bypass_ingress: true
+        port: 8081
+
+      - prefix: "/registry/v1/"
+        protocol: ROUTE_PROTOCOL_HTTP
+        port: 8080
+
+    subscriptions:
+      - name: "/j5.registry.v1.topic.BuilderRequestTopic"
+        port: 8080
+      - name: "/j5.registry.v1.topic.BuilderReplyTopic"
+        port: 8080
+
+    containers:
+      - name: main
+        demand: DEMAND_LIGHT
+        image:
+            name: registry
+            registry: ghcr.io/pentops
+        mountDockerSocket: true
+        command: [serve]
+        envVars:
+          - name: LOG_LEVEL
+            value: "debug"
+
+          - name: POSTGRES_URL
+            database:
+              databaseName: main
+
+          - name: GRPC_PORT
+            value: "8080"
+
+          - name: HTTP_PORT
+            value: "8081"
+
+          - name: REGISTRY_STORAGE
+            blobstore:
+              name: images
+              s3_direct: true
+          - name: GH_PRIVATE_KEY
+            secret:
+              secretName: github
+              jsonKey: privateKey
+          - name: GH_APP_ID
+            secret:
+              secretName: github
+              jsonKey: appId
+          - name: GH_INSTALLATION_ID
+            secret:
+              secretName: github
+              jsonKey: installationId

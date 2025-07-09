@@ -14,27 +14,11 @@ message SourceImage {
   repeated google.protobuf.FileDescriptorProto file = 1;
   repeated PackageInfo packages = 2;
   repeated ProseFile prose = 3;
-  FakeOptions options = 4;
   repeated string source_filenames = 6;
   string source_name = 8;
   optional string version = 7;
 }
 
-// DEPRECATED: This isn't required.
-message FakeOptions {
-  repeated SubPackageType sub_packages = 1;
-  optional GoPackageOptions go = 2;
-
-  message SubPackageType {
-    string name = 1;
-  }
-
-  message GoPackageOptions {
-    string prefix = 1;
-    repeated string trim_prefixes = 2;
-    optional string suffix = 3;
-  }
-}
 message ProseFile {
   string path = 1;
   bytes content = 2;

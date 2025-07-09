@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package j5.registry.v1;
+
+import "buf/validate/validate.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/pentops/j5/internal/gen/j5/registry/v1/registry_pb";
+
+message J5Package {
+  string owner = 1 [(buf.validate.field).required = true];
+
+  string name = 2 [(buf.validate.field).required = true];
+
+  string version = 3 [(buf.validate.field).required = true];
+
+  string storage_key = 4 [(buf.validate.field).required = true];
+
+  repeated string aliases = 5;
+}
+
+message GoModule {
+  string package_name = 1 [(buf.validate.field).required = true];
+
+  // Canonical Version
+  string version = 3 [(buf.validate.field).required = true];
+
+  google.protobuf.Timestamp created_at = 4 [(buf.validate.field).required = true];
+
+  string zip_storage_key = 5 [(buf.validate.field).required = true];
+  string mod_storage_key = 6 [(buf.validate.field).required = true];
+
+  repeated string aliases = 7;
+}
