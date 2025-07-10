@@ -99,6 +99,37 @@ func (c *Codec) decodeQuery(queryString url.Values, msg protoreflect.Message) er
 			continue
 		}
 
+		if array, ok := field.AsArrayOfContainer(); ok {
+			if len(values) == 1 && strings.HasPrefix(values[0], "[") {
+				// json array
+				val := values[0]
+				items := make([]json.RawMessage, 0)
+				err = json.Unmarshal([]byte(val), &items)
+				if err != nil {
+					return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid value %q for array field %q", val, key))
+				}
+				for _, value := range items {
+					elem, _ := array.NewContainerElement()
+
+					err = c.decodeRoot([]byte(value), elem)
+					if err != nil {
+						return err
+					}
+				}
+				continue
+			}
+
+			for _, value := range values {
+				elem, _ := array.NewContainerElement()
+
+				err = c.decodeRoot([]byte(value), elem)
+				if err != nil {
+					return err
+				}
+			}
+			continue
+		}
+
 		if container, ok := field.AsContainer(); ok {
 			if len(values) > 1 {
 				return status.Error(codes.InvalidArgument, fmt.Sprintf("multiple values provided for non-repeated field %q", key))

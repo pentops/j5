@@ -294,6 +294,11 @@ func TestUnmarshal(t *testing.T) {
 					"barId": "bar2"
 				}]
 			}`,
+			queries: []url.Values{{
+				"rBars": []string{`[{"barId": "bar1"}, {"barId": "bar2"}]`},
+			}, {
+				"rBars": []string{`{"barId": "bar1"}`, `{"barId": "bar2"}`},
+			}},
 			wantProto: &schema_testpb.FullSchema{
 				RBars: []*schema_testpb.Bar{{
 					BarId: "bar1",
