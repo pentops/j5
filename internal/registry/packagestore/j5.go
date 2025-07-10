@@ -31,7 +31,7 @@ func (s *PackageStore) GetRemoteDependency(ctx context.Context, input *config_j5
 	} else if regInput.Reference != nil {
 		version = *regInput.Reference
 	} else {
-		version = "latest"
+		version = "main"
 	}
 
 	return s.GetJ5Image(ctx, regInput.Owner, regInput.Name, version)
