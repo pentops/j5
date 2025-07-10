@@ -352,9 +352,13 @@ func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, err
 func buildMethod(service *source_j5pb.Service, method protoreflect.MethodDescriptor) (*source_j5pb.Method, error) {
 
 	input := method.Input()
+	rawInput := false
 	expectedInputName := method.Name() + "Request"
 	if input.ParentFile().Package() != method.ParentFile().Package() || input.Name() != expectedInputName {
-		return nil, fmt.Errorf("j5 service input message must be %q, got %q", expectedInputName, input.Name())
+		if input.FullName() != "google.api.HttpBody" {
+			return nil, fmt.Errorf("j5 service input message must be %q, got %q", expectedInputName, input.Name())
+		}
+		rawInput = true
 	}
 	output := method.Output()
 	expectedOutputName := method.Name() + "Response"
@@ -402,13 +406,18 @@ func buildMethod(service *source_j5pb.Service, method protoreflect.MethodDescrip
 	}
 
 	pathParts := strings.Split(builtMethod.HttpPath, "/")
+
 	for idx, part := range pathParts {
 		if part == "" {
 			continue
 		}
 		if part[0] == '{' && part[len(part)-1] == '}' {
+			if rawInput {
+				return nil, fmt.Errorf("path part %q cannot be used with HttpBody input", part)
+			}
 			fieldName := part[1 : len(part)-1]
-			inputField := method.Input().Fields().ByName(protoreflect.Name(fieldName))
+
+			inputField := input.Fields().ByName(protoreflect.Name(fieldName))
 			if inputField == nil {
 				return nil, fmt.Errorf("path field %q not found in input", fieldName)
 			}

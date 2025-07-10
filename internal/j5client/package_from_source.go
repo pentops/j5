@@ -231,15 +231,6 @@ func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *source_j5pb.Ser
 
 func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src *source_j5pb.Method) (*Method, error) {
 
-	requestSchema, err := sb.schemas.SchemaByName(pkg.FullName(), src.RequestSchema)
-	if err != nil {
-		return nil, patherr.Wrap(err, "request")
-	}
-	requestObject, ok := requestSchema.(*j5schema.ObjectSchema)
-	if !ok {
-		return nil, fmt.Errorf("request schema is not an object")
-	}
-
 	method := &Method{
 		Service:        service,
 		GRPCMethodName: src.Name,
@@ -255,6 +246,23 @@ func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src
 		method.Auth = service.defaultAuth
 	}
 
+	if src.RequestSchema == "HttpBody" {
+		method.RawRequest = true
+	} else {
+		requestSchema, err := sb.schemas.SchemaByName(pkg.FullName(), src.RequestSchema)
+		if err != nil {
+			return nil, patherr.Wrap(err, "request")
+		}
+		requestObject, ok := requestSchema.(*j5schema.ObjectSchema)
+		if !ok {
+			return nil, fmt.Errorf("request schema is not an object")
+		}
+
+		if err := method.fillRequest(requestObject); err != nil {
+			return nil, fmt.Errorf("fill request: %w", err)
+		}
+	}
+
 	if src.ResponseSchema == "HttpBody" {
 		method.RawResponse = true
 	} else {
@@ -267,10 +275,6 @@ func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src
 			return nil, fmt.Errorf("response schema is not an object")
 		}
 		method.ResponseBody = responseObject
-	}
-
-	if err := method.fillRequest(requestObject); err != nil {
-		return nil, fmt.Errorf("fill request: %w", err)
 	}
 
 	return method, nil
@@ -324,7 +328,7 @@ func (mm *Method) fillRequest(requestObject *j5schema.ObjectSchema) error {
 
 	responseSchema := mm.ResponseBody
 
-	if isQueryRequest {
+	if isQueryRequest && responseSchema != nil {
 		listRequest, err := buildListRequest(responseSchema)
 		if err != nil {
 			return fmt.Errorf("build list request: %w", err)

@@ -188,6 +188,7 @@ type Method struct {
 	Request      *Request
 	ResponseBody *j5schema.ObjectSchema
 	RawResponse  bool
+	RawRequest   bool
 	Auth         *auth_j5pb.MethodAuthType
 	MethodType   *client_j5pb.MethodType
 
@@ -201,9 +202,11 @@ func (mm *Method) ToJ5Proto() (*client_j5pb.Method, error) {
 		Name:         mm.GRPCMethodName,
 		HttpMethod:   mm.HTTPMethod,
 		HttpPath:     mm.HTTPPath,
-		Request:      mm.Request.ToJ5Proto(),
 		Auth:         mm.Auth,
 		MethodType:   mm.MethodType,
+	}
+	if mm.Request != nil {
+		out.Request = mm.Request.ToJ5Proto()
 	}
 	if mm.ResponseBody != nil {
 		out.ResponseBody = mm.ResponseBody.ToJ5ClientObject()
@@ -421,21 +424,23 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 		return walkRootObject(schema)
 	}
 	walkMethod := func(method *Method) error {
-		if method.Request.Body != nil {
-			if err := walkRootObject(method.Request.Body); err != nil {
-				return fmt.Errorf("request schema %q: %w", method.Request.Body.FullName(), err)
+		if method.Request != nil {
+			if method.Request.Body != nil {
+				if err := walkRootObject(method.Request.Body); err != nil {
+					return fmt.Errorf("request schema %q: %w", method.Request.Body.FullName(), err)
+				}
 			}
-		}
 
-		for _, prop := range method.Request.PathParameters {
-			if err := walkRefs(prop.Schema); err != nil {
-				return fmt.Errorf("path parameter %q: %w", prop.JSONName, err)
+			for _, prop := range method.Request.PathParameters {
+				if err := walkRefs(prop.Schema); err != nil {
+					return fmt.Errorf("path parameter %q: %w", prop.JSONName, err)
+				}
 			}
-		}
 
-		for _, prop := range method.Request.QueryParameters {
-			if err := walkRefs(prop.Schema); err != nil {
-				return fmt.Errorf("path parameter %q: %w", prop.JSONName, err)
+			for _, prop := range method.Request.QueryParameters {
+				if err := walkRefs(prop.Schema); err != nil {
+					return fmt.Errorf("path parameter %q: %w", prop.JSONName, err)
+				}
 			}
 		}
 
