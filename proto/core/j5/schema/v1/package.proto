@@ -1,13 +1,12 @@
 syntax = "proto3";
 
-package j5.source.v1;
+package j5.schema.v1;
 
 import "buf/validate/validate.proto";
 import "j5/auth/v1/method.proto";
-import "j5/client/v1/client.proto";
 import "j5/schema/v1/schema.proto";
 
-option go_package = "github.com/pentops/j5/gen/j5/source/v1/source_j5pb";
+option go_package = "github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb";
 
 message API {
   repeated Package packages = 1;
@@ -70,7 +69,7 @@ message Method {
   string name = 2 [(buf.validate.field).string.pattern = "^[a-z][a-zA-Z0-9]*$"];
   string full_grpc_name = 3;
 
-  j5.client.v1.HTTPMethod http_method = 4 [(buf.validate.field).enum = {
+  HTTPMethod http_method = 4 [(buf.validate.field).enum = {
     not_in: 0
     defined_only: true
   }];
@@ -80,7 +79,35 @@ message Method {
   string response_schema = 7 [(buf.validate.field).required = true];
   j5.auth.v1.MethodAuthType auth = 8;
 
-  j5.client.v1.MethodType method_type = 9;
+  MethodType method_type = 9;
+}
+
+enum HTTPMethod {
+  HTTP_METHOD_UNSPECIFIED = 0;
+  HTTP_METHOD_GET = 1;
+  HTTP_METHOD_POST = 2;
+  HTTP_METHOD_PUT = 3;
+  HTTP_METHOD_DELETE = 4;
+  HTTP_METHOD_PATCH = 5;
+}
+
+enum StateQueryPart {
+  STATE_QUERY_PART_UNSPECIFIED = 0;
+  STATE_QUERY_PART_GET = 1;
+  STATE_QUERY_PART_LIST = 2;
+  STATE_QUERY_PART_LIST_EVENTS = 3;
+}
+
+
+message MethodType {
+  oneof type {
+    StateQuery state_query = 1;
+  }
+
+  message StateQuery {
+    string entity_name = 1;
+    StateQueryPart query_part = 2;
+  }
 }
 
 message Topic {
@@ -95,3 +122,5 @@ message TopicMessage {
   string full_grpc_name = 2;
   string schema = 3;
 }
+
+

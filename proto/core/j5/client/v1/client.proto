@@ -6,6 +6,8 @@ import "buf/validate/validate.proto";
 import "google/protobuf/timestamp.proto";
 import "j5/auth/v1/method.proto";
 import "j5/schema/v1/schema.proto";
+import "j5/schema/v1/package.proto";
+import "j5/ext/v1/annotations.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/client/v1/client_j5pb";
 
@@ -52,19 +54,10 @@ message Service {
 }
 
 message Method {
-  string name = 2 [(buf.validate.field).string.pattern = "^[a-z][a-zA-Z0-9]*$"];
-  string full_grpc_name = 3;
+  j5.schema.v1.Method method = 1 [(j5.ext.v1.field).object.flatten = true];
 
-  HTTPMethod http_method = 4 [(buf.validate.field).enum = {
-    not_in: 0
-    defined_only: true
-  }];
-
-  string http_path = 5 [(buf.validate.field).string.pattern = "^(\\/:?[a-z0-9_]+)+$"];
   Request request = 6 [(buf.validate.field).required = true];
   j5.schema.v1.Object response_body = 7 [(buf.validate.field).required = true];
-
-  j5.auth.v1.MethodAuthType auth = 8;
 
   message Request {
     j5.schema.v1.Object body = 1;
@@ -73,27 +66,8 @@ message Method {
 
     ListRequest list = 4;
   }
-
-  MethodType method_type = 9;
 }
 
-message MethodType {
-  oneof type {
-    StateQuery state_query = 1;
-  }
-
-  message StateQuery {
-    string entity_name = 1;
-    StateQueryPart query_part = 2;
-  }
-}
-
-enum StateQueryPart {
-  STATE_QUERY_PART_UNSPECIFIED = 0;
-  STATE_QUERY_PART_GET = 1;
-  STATE_QUERY_PART_LIST = 2;
-  STATE_QUERY_PART_LIST_EVENTS = 3;
-}
 
 message ListRequest {
   repeated SearchField searchable_fields = 1;
@@ -119,15 +93,6 @@ message ListRequest {
   message SearchField {
     string name = 1;
   }
-}
-
-enum HTTPMethod {
-  HTTP_METHOD_UNSPECIFIED = 0;
-  HTTP_METHOD_GET = 1;
-  HTTP_METHOD_POST = 2;
-  HTTP_METHOD_PUT = 3;
-  HTTP_METHOD_DELETE = 4;
-  HTTP_METHOD_PATCH = 5;
 }
 
 message StateEntity {

@@ -181,7 +181,7 @@ func (rr *Request) ToJ5Proto() *client_j5pb.Method_Request {
 type Method struct {
 	GRPCMethodName string
 	HTTPPath       string
-	HTTPMethod     client_j5pb.HTTPMethod
+	HTTPMethod     schema_j5pb.HTTPMethod
 
 	HasBody bool
 
@@ -190,7 +190,7 @@ type Method struct {
 	RawResponse  bool
 	RawRequest   bool
 	Auth         *auth_j5pb.MethodAuthType
-	MethodType   *client_j5pb.MethodType
+	MethodType   *schema_j5pb.MethodType
 
 	Service *Service
 }
@@ -198,12 +198,14 @@ type Method struct {
 func (mm *Method) ToJ5Proto() (*client_j5pb.Method, error) {
 
 	out := &client_j5pb.Method{
-		FullGrpcName: fmt.Sprintf("/%s.%s/%s", mm.Service.Package.Name, mm.Service.Name, mm.GRPCMethodName),
-		Name:         mm.GRPCMethodName,
-		HttpMethod:   mm.HTTPMethod,
-		HttpPath:     mm.HTTPPath,
-		Auth:         mm.Auth,
-		MethodType:   mm.MethodType,
+		Method: &schema_j5pb.Method{
+			FullGrpcName: fmt.Sprintf("/%s.%s/%s", mm.Service.Package.Name, mm.Service.Name, mm.GRPCMethodName),
+			Name:         mm.GRPCMethodName,
+			HttpMethod:   mm.HTTPMethod,
+			HttpPath:     mm.HTTPPath,
+			Auth:         mm.Auth,
+			MethodType:   mm.MethodType,
+		},
 	}
 	if mm.Request != nil {
 		out.Request = mm.Request.ToJ5Proto()

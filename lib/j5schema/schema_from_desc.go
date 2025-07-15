@@ -4,12 +4,11 @@ import (
 	"fmt"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/lib/patherr"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-func PackageSetFromSourceAPI(packages []*source_j5pb.Package) (*SchemaSet, error) {
+func PackageSetFromSourceAPI(packages []*schema_j5pb.Package) (*SchemaSet, error) {
 	pkgSet := newSchemaSet()
 
 	for _, apiPackage := range packages {

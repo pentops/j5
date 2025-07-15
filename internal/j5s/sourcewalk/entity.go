@@ -9,7 +9,6 @@ import (
 	"github.com/iancoleman/strcase"
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
-	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
@@ -629,7 +628,7 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 	getMethod := &sourcedef_j5pb.APIMethod{
 		Name:       fmt.Sprintf("%sGet", strcase.ToCamel(name)),
 		HttpPath:   strings.Join(httpPath, "/"),
-		HttpMethod: client_j5pb.HTTPMethod_GET,
+		HttpMethod: schema_j5pb.HTTPMethod_GET,
 		Request: &sourcedef_j5pb.AnonymousObject{
 			Properties: getKeys,
 		},
@@ -652,7 +651,7 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 	listMethod := &sourcedef_j5pb.APIMethod{
 		Name:       fmt.Sprintf("%sList", strcase.ToCamel(name)),
 		HttpPath:   strings.Join(listHttpPath, "/"),
-		HttpMethod: client_j5pb.HTTPMethod_GET,
+		HttpMethod: schema_j5pb.HTTPMethod_GET,
 		Paged:      true,
 		Query:      true,
 		Request: &sourcedef_j5pb.AnonymousObject{
@@ -681,7 +680,7 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 	eventsMethod := &sourcedef_j5pb.APIMethod{
 		Name:       fmt.Sprintf("%sEvents", strcase.ToCamel(name)),
 		HttpPath:   strings.Join(append(httpPath, "events"), "/"),
-		HttpMethod: client_j5pb.HTTPMethod_GET,
+		HttpMethod: schema_j5pb.HTTPMethod_GET,
 		Paged:      true,
 		Query:      true,
 		Request: &sourcedef_j5pb.AnonymousObject{

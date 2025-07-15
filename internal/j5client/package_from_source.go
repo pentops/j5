@@ -6,12 +6,11 @@ import (
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
-	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/lib/j5schema"
 	"github.com/pentops/j5/lib/patherr"
 )
 
-func APIFromSource(api *source_j5pb.API) (*client_j5pb.API, error) {
+func APIFromSource(api *schema_j5pb.API) (*client_j5pb.API, error) {
 
 	schemaSet, err := j5schema.PackageSetFromSourceAPI(api.Packages)
 	if err != nil {
@@ -34,7 +33,7 @@ type sourceBuilder struct {
 	schemas *j5schema.SchemaSet
 }
 
-func (sb *sourceBuilder) apiBaseFromSource(api *source_j5pb.API) (*API, error) {
+func (sb *sourceBuilder) apiBaseFromSource(api *schema_j5pb.API) (*API, error) {
 	apiPkg := &API{
 		Packages: []*Package{},
 		Metadata: &client_j5pb.Metadata{},
@@ -70,7 +69,7 @@ func (sb *sourceBuilder) apiBaseFromSource(api *source_j5pb.API) (*API, error) {
 
 				if serviceSrc.Type != nil {
 					switch st := serviceSrc.Type.Type.(type) {
-					case *source_j5pb.ServiceType_StateEntityCommand_:
+					case *schema_j5pb.ServiceType_StateEntityCommand_:
 						entity, err := getEntity(sub, st.StateEntityCommand.Entity)
 						if err != nil {
 							return nil, fmt.Errorf("state entity command: %w", err)
@@ -78,7 +77,7 @@ func (sb *sourceBuilder) apiBaseFromSource(api *source_j5pb.API) (*API, error) {
 
 						entity.Commands = append(entity.Commands, service)
 						continue
-					case *source_j5pb.ServiceType_StateEntityQuery_:
+					case *schema_j5pb.ServiceType_StateEntityQuery_:
 						entity, err := getEntity(sub, st.StateEntityQuery.Entity)
 						if err != nil {
 							return nil, fmt.Errorf("state entity command: %w", err)
@@ -209,7 +208,7 @@ func schemaDescForEntity(schema *j5schema.ObjectSchema) string {
 	return schema.FullName()
 }
 
-func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *source_j5pb.Service) (*Service, error) {
+func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *schema_j5pb.Service) (*Service, error) {
 
 	service := &Service{
 		Package:     pkg.Package,
@@ -229,14 +228,14 @@ func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *source_j5pb.Ser
 	return service, nil
 }
 
-func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src *source_j5pb.Method) (*Method, error) {
+func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src *schema_j5pb.Method) (*Method, error) {
 
 	method := &Method{
 		Service:        service,
 		GRPCMethodName: src.Name,
 		HTTPPath:       src.HttpPath,
 		HTTPMethod:     src.HttpMethod,
-		HasBody:        src.HttpMethod != client_j5pb.HTTPMethod_GET,
+		HasBody:        src.HttpMethod != schema_j5pb.HTTPMethod_GET,
 		MethodType:     src.MethodType,
 	}
 

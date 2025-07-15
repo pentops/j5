@@ -5,7 +5,6 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -44,7 +43,7 @@ func (cr chainResolver) FindDescriptorByName(name protoreflect.FullName) (protor
 	return nil, err
 }
 
-func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
+func APIFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 
 	if len(image.Includes) > 0 {
 		return nil, fmt.Errorf("source image: includes must be resolved prior to building an API")
@@ -56,7 +55,7 @@ func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 
 	for _, pkg := range image.Packages {
 		bb.wantPackages[pkg.Name] = true
-		bb.packages = append(bb.packages, &source_j5pb.Package{
+		bb.packages = append(bb.packages, &schema_j5pb.Package{
 			Name:    pkg.Name,
 			Label:   pkg.Label,
 			Schemas: map[string]*schema_j5pb.RootSchema{},
@@ -107,8 +106,8 @@ func APIFromImage(image *source_j5pb.SourceImage) (*source_j5pb.API, error) {
 	return bb.toAPI(), nil
 }
 
-func (b packageSet) toAPI() *source_j5pb.API {
-	return &source_j5pb.API{
+func (b packageSet) toAPI() *schema_j5pb.API {
+	return &schema_j5pb.API{
 		Packages: b.packages,
 	}
 }
@@ -183,7 +182,7 @@ func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 }
 
 type packageSet struct {
-	packages     []*source_j5pb.Package
+	packages     []*schema_j5pb.Package
 	wantPackages map[string]bool
 }
 
@@ -206,8 +205,8 @@ func (bb *packageSet) getSchemaSet(name string) (map[string]*schema_j5pb.RootSch
 	return subPkg.Schemas, nil
 }
 
-func (bb *packageSet) getPackage(name string) *source_j5pb.Package {
-	var pkg *source_j5pb.Package
+func (bb *packageSet) getPackage(name string) *schema_j5pb.Package {
+	var pkg *schema_j5pb.Package
 	for _, search := range bb.packages {
 		if search.Name == name {
 			pkg = search
@@ -216,7 +215,7 @@ func (bb *packageSet) getPackage(name string) *source_j5pb.Package {
 	}
 
 	if pkg == nil {
-		pkg = &source_j5pb.Package{
+		pkg = &schema_j5pb.Package{
 			Name:     name,
 			Schemas:  make(map[string]*schema_j5pb.RootSchema),
 			Indirect: true,
@@ -227,7 +226,7 @@ func (bb *packageSet) getPackage(name string) *source_j5pb.Package {
 	return pkg
 }
 
-func (bb *packageSet) getSubPackage(packageID *packageID) (*source_j5pb.SubPackage, error) {
+func (bb *packageSet) getSubPackage(packageID *packageID) (*schema_j5pb.SubPackage, error) {
 
 	if packageID.subPackage == nil {
 		return nil, fmt.Errorf("missing sub-package name")
@@ -241,7 +240,7 @@ func (bb *packageSet) getSubPackage(packageID *packageID) (*source_j5pb.SubPacka
 		}
 	}
 
-	pkg := &source_j5pb.SubPackage{
+	pkg := &schema_j5pb.SubPackage{
 		Name:    *packageID.subPackage,
 		Schemas: make(map[string]*schema_j5pb.RootSchema),
 	}
@@ -296,12 +295,12 @@ func splitPackageParts(packageName string) (*packageID, error) {
 	}
 }
 
-func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, error) {
+func buildService(src protoreflect.ServiceDescriptor) (*schema_j5pb.Service, error) {
 
 	methods := src.Methods()
-	service := &source_j5pb.Service{
+	service := &schema_j5pb.Service{
 		Name:    string(src.Name()),
-		Methods: make([]*source_j5pb.Method, 0, methods.Len()),
+		Methods: make([]*schema_j5pb.Method, 0, methods.Len()),
 	}
 
 	serviceExt := protosrc.GetExtension[*ext_j5pb.ServiceOptions](src.Options(), ext_j5pb.E_Service)
@@ -310,18 +309,18 @@ func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, err
 		if serviceExt.Type != nil {
 			switch set := serviceExt.Type.(type) {
 			case *ext_j5pb.ServiceOptions_StateQuery_:
-				service.Type = &source_j5pb.ServiceType{
-					Type: &source_j5pb.ServiceType_StateEntityQuery_{
-						StateEntityQuery: &source_j5pb.ServiceType_StateEntityQuery{
+				service.Type = &schema_j5pb.ServiceType{
+					Type: &schema_j5pb.ServiceType_StateEntityQuery_{
+						StateEntityQuery: &schema_j5pb.ServiceType_StateEntityQuery{
 							Entity: set.StateQuery.Entity,
 						},
 					},
 				}
 
 			case *ext_j5pb.ServiceOptions_StateCommand_:
-				service.Type = &source_j5pb.ServiceType{
-					Type: &source_j5pb.ServiceType_StateEntityCommand_{
-						StateEntityCommand: &source_j5pb.ServiceType_StateEntityCommand{
+				service.Type = &schema_j5pb.ServiceType{
+					Type: &schema_j5pb.ServiceType_StateEntityCommand_{
+						StateEntityCommand: &schema_j5pb.ServiceType_StateEntityCommand{
 							Entity: set.StateCommand.Entity,
 						},
 					},
@@ -349,7 +348,7 @@ func buildService(src protoreflect.ServiceDescriptor) (*source_j5pb.Service, err
 	return service, nil
 }
 
-func buildMethod(service *source_j5pb.Service, method protoreflect.MethodDescriptor) (*source_j5pb.Method, error) {
+func buildMethod(service *schema_j5pb.Service, method protoreflect.MethodDescriptor) (*schema_j5pb.Method, error) {
 
 	input := method.Input()
 	rawInput := false
@@ -373,7 +372,7 @@ func buildMethod(service *source_j5pb.Service, method protoreflect.MethodDescrip
 		return nil, fmt.Errorf("missing http rule")
 	}
 
-	builtMethod := &source_j5pb.Method{
+	builtMethod := &schema_j5pb.Method{
 		Name:           string(method.Name()),
 		FullGrpcName:   fmt.Sprintf("/%s/%s", method.Parent().FullName(), method.Name()),
 		RequestSchema:  string(method.Input().Name()),
@@ -382,23 +381,23 @@ func buildMethod(service *source_j5pb.Service, method protoreflect.MethodDescrip
 
 	switch pt := httpOpt.Pattern.(type) {
 	case *annotations.HttpRule_Get:
-		builtMethod.HttpMethod = client_j5pb.HTTPMethod_HTTP_METHOD_GET
+		builtMethod.HttpMethod = schema_j5pb.HTTPMethod_HTTP_METHOD_GET
 		builtMethod.HttpPath = pt.Get
 
 	case *annotations.HttpRule_Post:
-		builtMethod.HttpMethod = client_j5pb.HTTPMethod_HTTP_METHOD_POST
+		builtMethod.HttpMethod = schema_j5pb.HTTPMethod_HTTP_METHOD_POST
 		builtMethod.HttpPath = pt.Post
 
 	case *annotations.HttpRule_Put:
-		builtMethod.HttpMethod = client_j5pb.HTTPMethod_HTTP_METHOD_PUT
+		builtMethod.HttpMethod = schema_j5pb.HTTPMethod_HTTP_METHOD_PUT
 		builtMethod.HttpPath = pt.Put
 
 	case *annotations.HttpRule_Delete:
-		builtMethod.HttpMethod = client_j5pb.HTTPMethod_HTTP_METHOD_DELETE
+		builtMethod.HttpMethod = schema_j5pb.HTTPMethod_HTTP_METHOD_DELETE
 		builtMethod.HttpPath = pt.Delete
 
 	case *annotations.HttpRule_Patch:
-		builtMethod.HttpMethod = client_j5pb.HTTPMethod_HTTP_METHOD_PATCH
+		builtMethod.HttpMethod = schema_j5pb.HTTPMethod_HTTP_METHOD_PATCH
 		builtMethod.HttpPath = pt.Patch
 
 	default:
@@ -440,21 +439,21 @@ func buildMethod(service *source_j5pb.Service, method protoreflect.MethodDescrip
 				return nil, fmt.Errorf("service %q is not a state query service, but has state query annotations", service.Name)
 			}
 
-			query := &client_j5pb.MethodType_StateQuery{
+			query := &schema_j5pb.MethodType_StateQuery{
 				EntityName: serviceQuery.Entity,
 			}
 			if ext.StateQuery.Get {
-				query.QueryPart = client_j5pb.StateQueryPart_STATE_QUERY_PART_GET
+				query.QueryPart = schema_j5pb.StateQueryPart_STATE_QUERY_PART_GET
 			} else if ext.StateQuery.List {
-				query.QueryPart = client_j5pb.StateQueryPart_STATE_QUERY_PART_LIST
+				query.QueryPart = schema_j5pb.StateQueryPart_STATE_QUERY_PART_LIST
 			} else if ext.StateQuery.ListEvents {
-				query.QueryPart = client_j5pb.StateQueryPart_STATE_QUERY_PART_LIST_EVENTS
+				query.QueryPart = schema_j5pb.StateQueryPart_STATE_QUERY_PART_LIST_EVENTS
 			} else {
 				return nil, fmt.Errorf("invalid state query part %v", ext.StateQuery)
 			}
 
-			builtMethod.MethodType = &client_j5pb.MethodType{
-				Type: &client_j5pb.MethodType_StateQuery_{
+			builtMethod.MethodType = &schema_j5pb.MethodType{
+				Type: &schema_j5pb.MethodType_StateQuery_{
 					StateQuery: query,
 				},
 			}
@@ -464,11 +463,11 @@ func buildMethod(service *source_j5pb.Service, method protoreflect.MethodDescrip
 	return builtMethod, nil
 }
 
-func buildTopic(src protoreflect.ServiceDescriptor) (*source_j5pb.Topic, error) {
+func buildTopic(src protoreflect.ServiceDescriptor) (*schema_j5pb.Topic, error) {
 	methods := src.Methods()
-	topic := &source_j5pb.Topic{
+	topic := &schema_j5pb.Topic{
 		Name:     string(src.Name()),
-		Messages: make([]*source_j5pb.TopicMessage, 0, methods.Len()),
+		Messages: make([]*schema_j5pb.TopicMessage, 0, methods.Len()),
 	}
 	for ii := range methods.Len() {
 		method := methods.Get(ii)
@@ -481,7 +480,7 @@ func buildTopic(src protoreflect.ServiceDescriptor) (*source_j5pb.Topic, error) 
 	return topic, nil
 }
 
-func buildTopicMethod(method protoreflect.MethodDescriptor) (*source_j5pb.TopicMessage, error) {
+func buildTopicMethod(method protoreflect.MethodDescriptor) (*schema_j5pb.TopicMessage, error) {
 	input := method.Input()
 	expectedName := method.Name() + "Message"
 	if input.ParentFile().Package() != method.ParentFile().Package() || input.Name() != expectedName {
@@ -491,7 +490,7 @@ func buildTopicMethod(method protoreflect.MethodDescriptor) (*source_j5pb.TopicM
 	if output.FullName() != "google.protobuf.Empty" {
 		return nil, fmt.Errorf("j5 topic output message must be google.protobuf.Empty, got %q", output.FullName())
 	}
-	return &source_j5pb.TopicMessage{
+	return &schema_j5pb.TopicMessage{
 		Name:         string(method.Name()),
 		Schema:       string(method.Input().Name()),
 		FullGrpcName: string(method.FullName()),

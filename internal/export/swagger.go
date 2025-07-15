@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 )
 
 type Document struct {
@@ -93,20 +94,28 @@ func (dd *Document) addService(service *client_j5pb.Service) error {
 	for _, method := range service.Methods {
 		err := dd.addMethod(service, method)
 		if err != nil {
-			return fmt.Errorf("method %s: %w", method.FullGrpcName, err)
+			return fmt.Errorf("method %s: %w", method.Method.FullGrpcName, err)
 		}
 	}
 	return nil
+}
+
+var methodShortString = map[schema_j5pb.HTTPMethod]string{
+	schema_j5pb.HTTPMethod_HTTP_METHOD_GET:    "get",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_POST:   "post",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_PUT:    "put",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_DELETE: "delete",
+	schema_j5pb.HTTPMethod_HTTP_METHOD_PATCH:  "patch",
 }
 
 func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.Method) error {
 
 	operation := &Operation{
 		OperationHeader: OperationHeader{
-			Method:          methodShortString[method.HttpMethod],
-			Path:            method.HttpPath,
-			OperationID:     method.FullGrpcName,
-			GrpcMethodName:  method.Name,
+			Method:          methodShortString[method.Method.HttpMethod],
+			Path:            method.Method.HttpPath,
+			OperationID:     method.Method.FullGrpcName,
+			GrpcMethodName:  method.Method.Name,
 			GrpcServiceName: service.Name,
 
 			Parameters: make([]SwaggerParameter, 0, len(method.Request.PathParameters)+len(method.Request.QueryParameters)),
@@ -172,7 +181,7 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 
 	found := false
 	for _, pathItem := range dd.Paths {
-		if pathItem.MapKey() == method.HttpPath {
+		if pathItem.MapKey() == method.Method.HttpPath {
 			pathItem.AddOperation(operation)
 			found = true
 			break

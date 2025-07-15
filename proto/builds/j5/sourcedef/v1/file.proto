@@ -10,6 +10,7 @@ import "j5/client/v1/client.proto";
 import "j5/ext/v1/annotations.proto";
 import "j5/list/v1/annotations.proto";
 import "j5/schema/v1/schema.proto";
+import "j5/schema/v1/package.proto";
 
 message SourceFile {
   string path = 1;
@@ -127,7 +128,7 @@ message APIMethod {
   string http_path = 2;
   string description = 3;
 
-  j5.client.v1.HTTPMethod http_method = 4 [(buf.validate.field).enum = {
+  j5.schema.v1.HTTPMethod http_method = 4 [(buf.validate.field).enum = {
     not_in: 0
     defined_only: true
   }];

@@ -42,17 +42,3 @@ func SwaggerFromDescriptor(descriptorAPI *client_j5pb.API) ([]byte, error) {
 
 	return asJson, nil
 }
-
-func JDefFromDescriptor(descriptorAPI *client_j5pb.API) ([]byte, error) {
-	jDefJSON, err := export.FromProto(descriptorAPI)
-	if err != nil {
-		return nil, err
-	}
-
-	jDefJSONBytes, err := json.Marshal(jDefJSON)
-	if err != nil {
-		return nil, err
-	}
-
-	return jDefJSONBytes, nil
-}

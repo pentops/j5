@@ -23,11 +23,13 @@ func wantAPI() *client_j5pb.API {
 	}
 
 	getFoo := &client_j5pb.Method{
-		Name:         "GetFoo",
-		Auth:         authNone,
-		FullGrpcName: "/test.foo.v1.FooQueryService/GetFoo",
-		HttpMethod:   client_j5pb.HTTPMethod_GET,
-		HttpPath:     "/test/v1/foo/:id",
+		Method: &schema_j5pb.Method{
+			Name:         "GetFoo",
+			Auth:         authNone,
+			FullGrpcName: "/test.foo.v1.FooQueryService/GetFoo",
+			HttpMethod:   schema_j5pb.HTTPMethod_GET,
+			HttpPath:     "/test/v1/foo/:id",
+		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
 				Name:       "id",
@@ -101,12 +103,14 @@ func wantAPI() *client_j5pb.API {
 	}
 
 	listFoos := &client_j5pb.Method{
-		Name:         "ListFoos",
-		Auth:         authJWT,
-		FullGrpcName: "/test.foo.v1.FooQueryService/ListFoos",
-		HttpMethod:   client_j5pb.HTTPMethod_GET,
+		Method: &schema_j5pb.Method{
+			Name:         "ListFoos",
+			Auth:         authJWT,
+			FullGrpcName: "/test.foo.v1.FooQueryService/ListFoos",
+			HttpMethod:   schema_j5pb.HTTPMethod_GET,
 
-		HttpPath: "/test/v1/foos",
+			HttpPath: "/test/v1/foos",
+		},
 		Request: &client_j5pb.Method_Request{
 			QueryParameters: []*schema_j5pb.ObjectProperty{{
 				Name:       "page",
@@ -149,11 +153,13 @@ func wantAPI() *client_j5pb.API {
 	}
 
 	listFooEvents := &client_j5pb.Method{
-		Name:         "ListFooEvents",
-		Auth:         authNone,
-		FullGrpcName: "/test.foo.v1.FooQueryService/ListFooEvents",
-		HttpMethod:   client_j5pb.HTTPMethod_GET,
-		HttpPath:     "/test/v1/foo/:id/events",
+		Method: &schema_j5pb.Method{
+			Name:         "ListFooEvents",
+			Auth:         authNone,
+			FullGrpcName: "/test.foo.v1.FooQueryService/ListFooEvents",
+			HttpMethod:   schema_j5pb.HTTPMethod_GET,
+			HttpPath:     "/test/v1/foo/:id/events",
+		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
 				Name:       "id",
@@ -217,11 +223,13 @@ func wantAPI() *client_j5pb.API {
 	}
 
 	postFoo := &client_j5pb.Method{
-		Name:         "PostFoo",
-		Auth:         authJWT,
-		FullGrpcName: "/test.foo.v1.FooCommandService/PostFoo",
-		HttpMethod:   client_j5pb.HTTPMethod_POST,
-		HttpPath:     "/test/v1/foo",
+		Method: &schema_j5pb.Method{
+			Name:         "PostFoo",
+			Auth:         authJWT,
+			FullGrpcName: "/test.foo.v1.FooCommandService/PostFoo",
+			HttpMethod:   schema_j5pb.HTTPMethod_POST,
+			HttpPath:     "/test/v1/foo",
+		},
 		Request: &client_j5pb.Method_Request{
 			Body: &schema_j5pb.Object{
 				Name: "PostFooRequest",
@@ -254,10 +262,12 @@ func wantAPI() *client_j5pb.API {
 	}
 
 	downloadFoo := &client_j5pb.Method{
-		Name:         "DownloadRaw",
-		FullGrpcName: "/test.foo.v1.FooDownloadService/DownloadRaw",
-		HttpMethod:   client_j5pb.HTTPMethod_GET,
-		HttpPath:     "/test/v1/foo/:id/raw",
+		Method: &schema_j5pb.Method{
+			Name:         "DownloadRaw",
+			FullGrpcName: "/test.foo.v1.FooDownloadService/DownloadRaw",
+			HttpMethod:   schema_j5pb.HTTPMethod_GET,
+			HttpPath:     "/test/v1/foo/:id/raw",
+		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
 				Name:       "id",

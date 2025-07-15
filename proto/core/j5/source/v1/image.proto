@@ -40,6 +40,7 @@ message PackageInfo {
   string label = 1;
   string name = 2;
   string prose = 3;
+
 }
 
 message Include {
@@ -53,3 +54,6 @@ message Include {
   // default is 'main'.
   optional string reference = 4; 
 }
+
+
+

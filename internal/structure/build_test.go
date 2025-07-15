@@ -6,7 +6,6 @@ import (
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pentops/flowtest/prototest"
-	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/stretchr/testify/assert"
@@ -176,21 +175,21 @@ func testImage() *source_j5pb.SourceImage {
 	}
 }
 
-func testAPI() *source_j5pb.API {
+func testAPI() *schema_j5pb.API {
 
-	return &source_j5pb.API{
-		Packages: []*source_j5pb.Package{{
+	return &schema_j5pb.API{
+		Packages: []*schema_j5pb.Package{{
 			Label: "Test",
 			Name:  "test.v1",
-			SubPackages: []*source_j5pb.SubPackage{{
+			SubPackages: []*schema_j5pb.SubPackage{{
 				Name: "service",
 
-				Services: []*source_j5pb.Service{{
+				Services: []*schema_j5pb.Service{{
 					Name: "TestService",
-					Methods: []*source_j5pb.Method{{
+					Methods: []*schema_j5pb.Method{{
 						FullGrpcName:   "/test.v1.service.TestService/Test",
 						Name:           "Test",
-						HttpMethod:     client_j5pb.HTTPMethod_HTTP_METHOD_GET,
+						HttpMethod:     schema_j5pb.HTTPMethod_HTTP_METHOD_GET,
 						HttpPath:       "/test/:pathField",
 						RequestSchema:  "TestRequest",
 						ResponseSchema: "TestResponse",

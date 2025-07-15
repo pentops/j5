@@ -5,7 +5,6 @@ import (
 
 	"github.com/iancoleman/strcase"
 	"github.com/pentops/golib/gl"
-	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
@@ -117,29 +116,29 @@ func (ww *conversionVisitor) visitServiceMethodNode(service *serviceBuilder, nod
 	}
 
 	switch method.HttpMethod {
-	case client_j5pb.HTTPMethod_GET:
+	case schema_j5pb.HTTPMethod_GET:
 		annotation.Pattern = &annotations.HttpRule_Get{
 			Get: reqPath,
 		}
-	case client_j5pb.HTTPMethod_POST:
+	case schema_j5pb.HTTPMethod_POST:
 		annotation.Pattern = &annotations.HttpRule_Post{
 			Post: reqPath,
 		}
 		annotation.Body = "*"
 
-	case client_j5pb.HTTPMethod_DELETE:
+	case schema_j5pb.HTTPMethod_DELETE:
 		annotation.Pattern = &annotations.HttpRule_Delete{
 			Delete: reqPath,
 		}
 		annotation.Body = "*"
 
-	case client_j5pb.HTTPMethod_PATCH:
+	case schema_j5pb.HTTPMethod_PATCH:
 		annotation.Pattern = &annotations.HttpRule_Patch{
 			Patch: reqPath,
 		}
 		annotation.Body = "*"
 
-	case client_j5pb.HTTPMethod_PUT:
+	case schema_j5pb.HTTPMethod_PUT:
 		annotation.Pattern = &annotations.HttpRule_Put{
 			Put: reqPath,
 		}

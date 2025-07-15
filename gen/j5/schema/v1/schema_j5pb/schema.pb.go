@@ -131,7 +131,7 @@ func (x FloatField_Format) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use FloatField_Format.Descriptor instead.
 func (FloatField_Format) EnumDescriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{18, 0}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{21, 0}
 }
 
 type IntegerField_Format int32
@@ -186,7 +186,7 @@ func (x IntegerField_Format) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use IntegerField_Format.Descriptor instead.
 func (IntegerField_Format) EnumDescriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{19, 0}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{22, 0}
 }
 
 type RootSchema struct {
@@ -1715,6 +1715,69 @@ func (x *MapField) GetExt() *MapField_Ext {
 	return nil
 }
 
+type StringFormat struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Regex       string `protobuf:"bytes,1,opt,name=regex,proto3" json:"regex,omitempty"`
+	Name        string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Description string `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`
+}
+
+func (x *StringFormat) Reset() {
+	*x = StringFormat{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[17]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *StringFormat) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StringFormat) ProtoMessage() {}
+
+func (x *StringFormat) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[17]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StringFormat.ProtoReflect.Descriptor instead.
+func (*StringFormat) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *StringFormat) GetRegex() string {
+	if x != nil {
+		return x.Regex
+	}
+	return ""
+}
+
+func (x *StringFormat) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *StringFormat) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
 type StringField struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1729,7 +1792,7 @@ type StringField struct {
 func (x *StringField) Reset() {
 	*x = StringField{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[17]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[18]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -1742,7 +1805,7 @@ func (x *StringField) String() string {
 func (*StringField) ProtoMessage() {}
 
 func (x *StringField) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[17]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[18]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1755,7 +1818,7 @@ func (x *StringField) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StringField.ProtoReflect.Descriptor instead.
 func (*StringField) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{17}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *StringField) GetFormat() string {
@@ -1786,455 +1849,6 @@ func (x *StringField) GetExt() *StringField_Ext {
 	return nil
 }
 
-type FloatField struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Format    FloatField_Format     `protobuf:"varint,1,opt,name=format,proto3,enum=j5.schema.v1.FloatField_Format" json:"format,omitempty"`
-	Rules     *FloatField_Rules     `protobuf:"bytes,2,opt,name=rules,proto3" json:"rules,omitempty"`
-	ListRules *list_j5pb.FloatRules `protobuf:"bytes,3,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
-	Ext       *FloatField_Ext       `protobuf:"bytes,4,opt,name=ext,proto3" json:"ext,omitempty"`
-}
-
-func (x *FloatField) Reset() {
-	*x = FloatField{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[18]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *FloatField) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*FloatField) ProtoMessage() {}
-
-func (x *FloatField) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[18]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use FloatField.ProtoReflect.Descriptor instead.
-func (*FloatField) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{18}
-}
-
-func (x *FloatField) GetFormat() FloatField_Format {
-	if x != nil {
-		return x.Format
-	}
-	return FloatField_FORMAT_UNSPECIFIED
-}
-
-func (x *FloatField) GetRules() *FloatField_Rules {
-	if x != nil {
-		return x.Rules
-	}
-	return nil
-}
-
-func (x *FloatField) GetListRules() *list_j5pb.FloatRules {
-	if x != nil {
-		return x.ListRules
-	}
-	return nil
-}
-
-func (x *FloatField) GetExt() *FloatField_Ext {
-	if x != nil {
-		return x.Ext
-	}
-	return nil
-}
-
-type IntegerField struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Format    IntegerField_Format     `protobuf:"varint,1,opt,name=format,proto3,enum=j5.schema.v1.IntegerField_Format" json:"format,omitempty"`
-	Rules     *IntegerField_Rules     `protobuf:"bytes,2,opt,name=rules,proto3" json:"rules,omitempty"`
-	ListRules *list_j5pb.IntegerRules `protobuf:"bytes,3,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
-	Ext       *IntegerField_Ext       `protobuf:"bytes,4,opt,name=ext,proto3" json:"ext,omitempty"`
-}
-
-func (x *IntegerField) Reset() {
-	*x = IntegerField{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[19]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *IntegerField) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IntegerField) ProtoMessage() {}
-
-func (x *IntegerField) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[19]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IntegerField.ProtoReflect.Descriptor instead.
-func (*IntegerField) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{19}
-}
-
-func (x *IntegerField) GetFormat() IntegerField_Format {
-	if x != nil {
-		return x.Format
-	}
-	return IntegerField_FORMAT_UNSPECIFIED
-}
-
-func (x *IntegerField) GetRules() *IntegerField_Rules {
-	if x != nil {
-		return x.Rules
-	}
-	return nil
-}
-
-func (x *IntegerField) GetListRules() *list_j5pb.IntegerRules {
-	if x != nil {
-		return x.ListRules
-	}
-	return nil
-}
-
-func (x *IntegerField) GetExt() *IntegerField_Ext {
-	if x != nil {
-		return x.Ext
-	}
-	return nil
-}
-
-type BoolField struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Rules     *BoolField_Rules     `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
-	ListRules *list_j5pb.BoolRules `protobuf:"bytes,2,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
-	Ext       *BoolField_Ext       `protobuf:"bytes,3,opt,name=ext,proto3" json:"ext,omitempty"`
-}
-
-func (x *BoolField) Reset() {
-	*x = BoolField{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[20]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *BoolField) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BoolField) ProtoMessage() {}
-
-func (x *BoolField) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[20]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BoolField.ProtoReflect.Descriptor instead.
-func (*BoolField) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{20}
-}
-
-func (x *BoolField) GetRules() *BoolField_Rules {
-	if x != nil {
-		return x.Rules
-	}
-	return nil
-}
-
-func (x *BoolField) GetListRules() *list_j5pb.BoolRules {
-	if x != nil {
-		return x.ListRules
-	}
-	return nil
-}
-
-func (x *BoolField) GetExt() *BoolField_Ext {
-	if x != nil {
-		return x.Ext
-	}
-	return nil
-}
-
-type BytesField struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Rules *BytesField_Rules `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
-	Ext   *BytesField_Ext   `protobuf:"bytes,4,opt,name=ext,proto3" json:"ext,omitempty"`
-}
-
-func (x *BytesField) Reset() {
-	*x = BytesField{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[21]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *BytesField) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BytesField) ProtoMessage() {}
-
-func (x *BytesField) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[21]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BytesField.ProtoReflect.Descriptor instead.
-func (*BytesField) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{21}
-}
-
-func (x *BytesField) GetRules() *BytesField_Rules {
-	if x != nil {
-		return x.Rules
-	}
-	return nil
-}
-
-func (x *BytesField) GetExt() *BytesField_Ext {
-	if x != nil {
-		return x.Ext
-	}
-	return nil
-}
-
-type DecimalField struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Rules     *DecimalField_Rules     `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
-	ListRules *list_j5pb.DecimalRules `protobuf:"bytes,2,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
-	Ext       *DecimalField_Ext       `protobuf:"bytes,3,opt,name=ext,proto3" json:"ext,omitempty"`
-}
-
-func (x *DecimalField) Reset() {
-	*x = DecimalField{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[22]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DecimalField) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DecimalField) ProtoMessage() {}
-
-func (x *DecimalField) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[22]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DecimalField.ProtoReflect.Descriptor instead.
-func (*DecimalField) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{22}
-}
-
-func (x *DecimalField) GetRules() *DecimalField_Rules {
-	if x != nil {
-		return x.Rules
-	}
-	return nil
-}
-
-func (x *DecimalField) GetListRules() *list_j5pb.DecimalRules {
-	if x != nil {
-		return x.ListRules
-	}
-	return nil
-}
-
-func (x *DecimalField) GetExt() *DecimalField_Ext {
-	if x != nil {
-		return x.Ext
-	}
-	return nil
-}
-
-type DateField struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Rules     *DateField_Rules     `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
-	ListRules *list_j5pb.DateRules `protobuf:"bytes,2,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
-	Ext       *DateField_Ext       `protobuf:"bytes,3,opt,name=ext,proto3" json:"ext,omitempty"`
-}
-
-func (x *DateField) Reset() {
-	*x = DateField{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[23]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DateField) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DateField) ProtoMessage() {}
-
-func (x *DateField) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[23]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DateField.ProtoReflect.Descriptor instead.
-func (*DateField) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{23}
-}
-
-func (x *DateField) GetRules() *DateField_Rules {
-	if x != nil {
-		return x.Rules
-	}
-	return nil
-}
-
-func (x *DateField) GetListRules() *list_j5pb.DateRules {
-	if x != nil {
-		return x.ListRules
-	}
-	return nil
-}
-
-func (x *DateField) GetExt() *DateField_Ext {
-	if x != nil {
-		return x.Ext
-	}
-	return nil
-}
-
-type TimestampField struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Rules     *TimestampField_Rules     `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
-	ListRules *list_j5pb.TimestampRules `protobuf:"bytes,2,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
-	Ext       *TimestampField_Ext       `protobuf:"bytes,3,opt,name=ext,proto3" json:"ext,omitempty"`
-}
-
-func (x *TimestampField) Reset() {
-	*x = TimestampField{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[24]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *TimestampField) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TimestampField) ProtoMessage() {}
-
-func (x *TimestampField) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[24]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TimestampField.ProtoReflect.Descriptor instead.
-func (*TimestampField) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{24}
-}
-
-func (x *TimestampField) GetRules() *TimestampField_Rules {
-	if x != nil {
-		return x.Rules
-	}
-	return nil
-}
-
-func (x *TimestampField) GetListRules() *list_j5pb.TimestampRules {
-	if x != nil {
-		return x.ListRules
-	}
-	return nil
-}
-
-func (x *TimestampField) GetExt() *TimestampField_Ext {
-	if x != nil {
-		return x.Ext
-	}
-	return nil
-}
-
 type KeyField struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2250,7 +1864,7 @@ type KeyField struct {
 func (x *KeyField) Reset() {
 	*x = KeyField{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[25]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[19]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2263,7 +1877,7 @@ func (x *KeyField) String() string {
 func (*KeyField) ProtoMessage() {}
 
 func (x *KeyField) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[25]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[19]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2276,7 +1890,7 @@ func (x *KeyField) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyField.ProtoReflect.Descriptor instead.
 func (*KeyField) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{25}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *KeyField) GetRules() *KeyField_Rules {
@@ -2325,13 +1939,14 @@ type KeyFormat struct {
 	//	*KeyFormat_Custom_
 	//	*KeyFormat_Uuid
 	//	*KeyFormat_Id62
+	//	*KeyFormat_Format
 	Type isKeyFormat_Type `protobuf_oneof:"type"`
 }
 
 func (x *KeyFormat) Reset() {
 	*x = KeyFormat{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[26]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[20]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2344,7 +1959,7 @@ func (x *KeyFormat) String() string {
 func (*KeyFormat) ProtoMessage() {}
 
 func (x *KeyFormat) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[26]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[20]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2357,7 +1972,7 @@ func (x *KeyFormat) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyFormat.ProtoReflect.Descriptor instead.
 func (*KeyFormat) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{26}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{20}
 }
 
 func (m *KeyFormat) GetType() isKeyFormat_Type {
@@ -2395,6 +2010,13 @@ func (x *KeyFormat) GetId62() *KeyFormat_ID62 {
 	return nil
 }
 
+func (x *KeyFormat) GetFormat() *StringFormat {
+	if x, ok := x.GetType().(*KeyFormat_Format); ok {
+		return x.Format
+	}
+	return nil
+}
+
 type isKeyFormat_Type interface {
 	isKeyFormat_Type()
 }
@@ -2415,6 +2037,10 @@ type KeyFormat_Id62 struct {
 	Id62 *KeyFormat_ID62 `protobuf:"bytes,4,opt,name=id62,proto3,oneof"`
 }
 
+type KeyFormat_Format struct {
+	Format *StringFormat `protobuf:"bytes,5,opt,name=format,proto3,oneof"`
+}
+
 func (*KeyFormat_Informal_) isKeyFormat_Type() {}
 
 func (*KeyFormat_Custom_) isKeyFormat_Type() {}
@@ -2422,6 +2048,457 @@ func (*KeyFormat_Custom_) isKeyFormat_Type() {}
 func (*KeyFormat_Uuid) isKeyFormat_Type() {}
 
 func (*KeyFormat_Id62) isKeyFormat_Type() {}
+
+func (*KeyFormat_Format) isKeyFormat_Type() {}
+
+type FloatField struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Format    FloatField_Format     `protobuf:"varint,1,opt,name=format,proto3,enum=j5.schema.v1.FloatField_Format" json:"format,omitempty"`
+	Rules     *FloatField_Rules     `protobuf:"bytes,2,opt,name=rules,proto3" json:"rules,omitempty"`
+	ListRules *list_j5pb.FloatRules `protobuf:"bytes,3,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
+	Ext       *FloatField_Ext       `protobuf:"bytes,4,opt,name=ext,proto3" json:"ext,omitempty"`
+}
+
+func (x *FloatField) Reset() {
+	*x = FloatField{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[21]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FloatField) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FloatField) ProtoMessage() {}
+
+func (x *FloatField) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[21]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FloatField.ProtoReflect.Descriptor instead.
+func (*FloatField) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *FloatField) GetFormat() FloatField_Format {
+	if x != nil {
+		return x.Format
+	}
+	return FloatField_FORMAT_UNSPECIFIED
+}
+
+func (x *FloatField) GetRules() *FloatField_Rules {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *FloatField) GetListRules() *list_j5pb.FloatRules {
+	if x != nil {
+		return x.ListRules
+	}
+	return nil
+}
+
+func (x *FloatField) GetExt() *FloatField_Ext {
+	if x != nil {
+		return x.Ext
+	}
+	return nil
+}
+
+type IntegerField struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Format    IntegerField_Format     `protobuf:"varint,1,opt,name=format,proto3,enum=j5.schema.v1.IntegerField_Format" json:"format,omitempty"`
+	Rules     *IntegerField_Rules     `protobuf:"bytes,2,opt,name=rules,proto3" json:"rules,omitempty"`
+	ListRules *list_j5pb.IntegerRules `protobuf:"bytes,3,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
+	Ext       *IntegerField_Ext       `protobuf:"bytes,4,opt,name=ext,proto3" json:"ext,omitempty"`
+}
+
+func (x *IntegerField) Reset() {
+	*x = IntegerField{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[22]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *IntegerField) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IntegerField) ProtoMessage() {}
+
+func (x *IntegerField) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[22]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IntegerField.ProtoReflect.Descriptor instead.
+func (*IntegerField) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *IntegerField) GetFormat() IntegerField_Format {
+	if x != nil {
+		return x.Format
+	}
+	return IntegerField_FORMAT_UNSPECIFIED
+}
+
+func (x *IntegerField) GetRules() *IntegerField_Rules {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *IntegerField) GetListRules() *list_j5pb.IntegerRules {
+	if x != nil {
+		return x.ListRules
+	}
+	return nil
+}
+
+func (x *IntegerField) GetExt() *IntegerField_Ext {
+	if x != nil {
+		return x.Ext
+	}
+	return nil
+}
+
+type BoolField struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Rules     *BoolField_Rules     `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
+	ListRules *list_j5pb.BoolRules `protobuf:"bytes,2,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
+	Ext       *BoolField_Ext       `protobuf:"bytes,3,opt,name=ext,proto3" json:"ext,omitempty"`
+}
+
+func (x *BoolField) Reset() {
+	*x = BoolField{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[23]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BoolField) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoolField) ProtoMessage() {}
+
+func (x *BoolField) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[23]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoolField.ProtoReflect.Descriptor instead.
+func (*BoolField) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *BoolField) GetRules() *BoolField_Rules {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *BoolField) GetListRules() *list_j5pb.BoolRules {
+	if x != nil {
+		return x.ListRules
+	}
+	return nil
+}
+
+func (x *BoolField) GetExt() *BoolField_Ext {
+	if x != nil {
+		return x.Ext
+	}
+	return nil
+}
+
+type BytesField struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Rules *BytesField_Rules `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
+	Ext   *BytesField_Ext   `protobuf:"bytes,4,opt,name=ext,proto3" json:"ext,omitempty"`
+}
+
+func (x *BytesField) Reset() {
+	*x = BytesField{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[24]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BytesField) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BytesField) ProtoMessage() {}
+
+func (x *BytesField) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[24]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BytesField.ProtoReflect.Descriptor instead.
+func (*BytesField) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *BytesField) GetRules() *BytesField_Rules {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *BytesField) GetExt() *BytesField_Ext {
+	if x != nil {
+		return x.Ext
+	}
+	return nil
+}
+
+type DecimalField struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Rules     *DecimalField_Rules     `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
+	ListRules *list_j5pb.DecimalRules `protobuf:"bytes,2,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
+	Ext       *DecimalField_Ext       `protobuf:"bytes,3,opt,name=ext,proto3" json:"ext,omitempty"`
+}
+
+func (x *DecimalField) Reset() {
+	*x = DecimalField{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[25]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DecimalField) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DecimalField) ProtoMessage() {}
+
+func (x *DecimalField) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[25]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DecimalField.ProtoReflect.Descriptor instead.
+func (*DecimalField) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *DecimalField) GetRules() *DecimalField_Rules {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *DecimalField) GetListRules() *list_j5pb.DecimalRules {
+	if x != nil {
+		return x.ListRules
+	}
+	return nil
+}
+
+func (x *DecimalField) GetExt() *DecimalField_Ext {
+	if x != nil {
+		return x.Ext
+	}
+	return nil
+}
+
+type DateField struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Rules     *DateField_Rules     `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
+	ListRules *list_j5pb.DateRules `protobuf:"bytes,2,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
+	Ext       *DateField_Ext       `protobuf:"bytes,3,opt,name=ext,proto3" json:"ext,omitempty"`
+}
+
+func (x *DateField) Reset() {
+	*x = DateField{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[26]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DateField) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DateField) ProtoMessage() {}
+
+func (x *DateField) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[26]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DateField.ProtoReflect.Descriptor instead.
+func (*DateField) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *DateField) GetRules() *DateField_Rules {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *DateField) GetListRules() *list_j5pb.DateRules {
+	if x != nil {
+		return x.ListRules
+	}
+	return nil
+}
+
+func (x *DateField) GetExt() *DateField_Ext {
+	if x != nil {
+		return x.Ext
+	}
+	return nil
+}
+
+type TimestampField struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Rules     *TimestampField_Rules     `protobuf:"bytes,1,opt,name=rules,proto3" json:"rules,omitempty"`
+	ListRules *list_j5pb.TimestampRules `protobuf:"bytes,2,opt,name=list_rules,json=listRules,proto3" json:"list_rules,omitempty"`
+	Ext       *TimestampField_Ext       `protobuf:"bytes,3,opt,name=ext,proto3" json:"ext,omitempty"`
+}
+
+func (x *TimestampField) Reset() {
+	*x = TimestampField{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[27]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TimestampField) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimestampField) ProtoMessage() {}
+
+func (x *TimestampField) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[27]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimestampField.ProtoReflect.Descriptor instead.
+func (*TimestampField) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *TimestampField) GetRules() *TimestampField_Rules {
+	if x != nil {
+		return x.Rules
+	}
+	return nil
+}
+
+func (x *TimestampField) GetListRules() *list_j5pb.TimestampRules {
+	if x != nil {
+		return x.ListRules
+	}
+	return nil
+}
+
+func (x *TimestampField) GetExt() *TimestampField_Ext {
+	if x != nil {
+		return x.Ext
+	}
+	return nil
+}
 
 type ObjectProperty struct {
 	state         protoimpl.MessageState
@@ -2446,7 +2523,7 @@ type ObjectProperty struct {
 func (x *ObjectProperty) Reset() {
 	*x = ObjectProperty{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[27]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[28]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2459,7 +2536,7 @@ func (x *ObjectProperty) String() string {
 func (*ObjectProperty) ProtoMessage() {}
 
 func (x *ObjectProperty) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[27]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[28]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2472,7 +2549,7 @@ func (x *ObjectProperty) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObjectProperty.ProtoReflect.Descriptor instead.
 func (*ObjectProperty) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{27}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *ObjectProperty) GetSchema() *Field {
@@ -2549,7 +2626,7 @@ type EntityKey struct {
 func (x *EntityKey) Reset() {
 	*x = EntityKey{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[28]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[29]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2562,7 +2639,7 @@ func (x *EntityKey) String() string {
 func (*EntityKey) ProtoMessage() {}
 
 func (x *EntityKey) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[28]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[29]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2575,7 +2652,7 @@ func (x *EntityKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EntityKey.ProtoReflect.Descriptor instead.
 func (*EntityKey) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{28}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *EntityKey) GetPrimary() bool {
@@ -2611,7 +2688,7 @@ type ObjectField_Rules struct {
 func (x *ObjectField_Rules) Reset() {
 	*x = ObjectField_Rules{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[29]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[30]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2624,7 +2701,7 @@ func (x *ObjectField_Rules) String() string {
 func (*ObjectField_Rules) ProtoMessage() {}
 
 func (x *ObjectField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[29]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[30]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2663,7 +2740,7 @@ type ObjectField_Ext struct {
 func (x *ObjectField_Ext) Reset() {
 	*x = ObjectField_Ext{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[30]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[31]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2676,7 +2753,7 @@ func (x *ObjectField_Ext) String() string {
 func (*ObjectField_Ext) ProtoMessage() {}
 
 func (x *ObjectField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[30]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[31]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2711,7 +2788,7 @@ type ObjectField_EntityJoin struct {
 func (x *ObjectField_EntityJoin) Reset() {
 	*x = ObjectField_EntityJoin{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[31]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[32]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2724,7 +2801,7 @@ func (x *ObjectField_EntityJoin) String() string {
 func (*ObjectField_EntityJoin) ProtoMessage() {}
 
 func (x *ObjectField_EntityJoin) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[31]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[32]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2763,7 +2840,7 @@ type PolymorphField_Rules struct {
 func (x *PolymorphField_Rules) Reset() {
 	*x = PolymorphField_Rules{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[32]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[33]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2776,7 +2853,7 @@ func (x *PolymorphField_Rules) String() string {
 func (*PolymorphField_Rules) ProtoMessage() {}
 
 func (x *PolymorphField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[32]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[33]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2801,7 +2878,7 @@ type PolymorphField_Ext struct {
 func (x *PolymorphField_Ext) Reset() {
 	*x = PolymorphField_Ext{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[33]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[34]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2814,7 +2891,7 @@ func (x *PolymorphField_Ext) String() string {
 func (*PolymorphField_Ext) ProtoMessage() {}
 
 func (x *PolymorphField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[33]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[34]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2839,7 +2916,7 @@ type OneofField_Rules struct {
 func (x *OneofField_Rules) Reset() {
 	*x = OneofField_Rules{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[34]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[35]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2852,7 +2929,7 @@ func (x *OneofField_Rules) String() string {
 func (*OneofField_Rules) ProtoMessage() {}
 
 func (x *OneofField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[34]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[35]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2877,7 +2954,7 @@ type OneofField_Ext struct {
 func (x *OneofField_Ext) Reset() {
 	*x = OneofField_Ext{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[35]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[36]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2890,7 +2967,7 @@ func (x *OneofField_Ext) String() string {
 func (*OneofField_Ext) ProtoMessage() {}
 
 func (x *OneofField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[35]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[36]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2918,7 +2995,7 @@ type EnumField_Rules struct {
 func (x *EnumField_Rules) Reset() {
 	*x = EnumField_Rules{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[36]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[37]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2931,7 +3008,7 @@ func (x *EnumField_Rules) String() string {
 func (*EnumField_Rules) ProtoMessage() {}
 
 func (x *EnumField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[36]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[37]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2970,7 +3047,7 @@ type EnumField_Ext struct {
 func (x *EnumField_Ext) Reset() {
 	*x = EnumField_Ext{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[37]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[38]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2983,7 +3060,7 @@ func (x *EnumField_Ext) String() string {
 func (*EnumField_Ext) ProtoMessage() {}
 
 func (x *EnumField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[37]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[38]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3013,7 +3090,7 @@ type Enum_Option struct {
 func (x *Enum_Option) Reset() {
 	*x = Enum_Option{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[38]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[39]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3026,7 +3103,7 @@ func (x *Enum_Option) String() string {
 func (*Enum_Option) ProtoMessage() {}
 
 func (x *Enum_Option) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[38]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[39]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3083,7 +3160,7 @@ type Enum_OptionInfoField struct {
 func (x *Enum_OptionInfoField) Reset() {
 	*x = Enum_OptionInfoField{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[39]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[40]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3096,7 +3173,7 @@ func (x *Enum_OptionInfoField) String() string {
 func (*Enum_OptionInfoField) ProtoMessage() {}
 
 func (x *Enum_OptionInfoField) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[39]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[40]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3146,7 +3223,7 @@ type ArrayField_Ext struct {
 func (x *ArrayField_Ext) Reset() {
 	*x = ArrayField_Ext{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[41]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[42]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3159,7 +3236,7 @@ func (x *ArrayField_Ext) String() string {
 func (*ArrayField_Ext) ProtoMessage() {}
 
 func (x *ArrayField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[41]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[42]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3195,7 +3272,7 @@ type ArrayField_Rules struct {
 func (x *ArrayField_Rules) Reset() {
 	*x = ArrayField_Rules{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[42]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[43]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3208,7 +3285,7 @@ func (x *ArrayField_Rules) String() string {
 func (*ArrayField_Rules) ProtoMessage() {}
 
 func (x *ArrayField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[42]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[43]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3257,7 +3334,7 @@ type MapField_Rules struct {
 func (x *MapField_Rules) Reset() {
 	*x = MapField_Rules{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[43]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[44]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3270,7 +3347,7 @@ func (x *MapField_Rules) String() string {
 func (*MapField_Rules) ProtoMessage() {}
 
 func (x *MapField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[43]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[44]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3313,7 +3390,7 @@ type MapField_Ext struct {
 func (x *MapField_Ext) Reset() {
 	*x = MapField_Ext{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[44]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[45]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3326,7 +3403,7 @@ func (x *MapField_Ext) String() string {
 func (*MapField_Ext) ProtoMessage() {}
 
 func (x *MapField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[44]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[45]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3354,15 +3431,16 @@ type StringField_Rules struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Pattern   *string `protobuf:"bytes,1,opt,name=pattern,proto3,oneof" json:"pattern,omitempty"`
-	MinLength *uint64 `protobuf:"varint,2,opt,name=min_length,json=minLength,proto3,oneof" json:"min_length,omitempty"`
-	MaxLength *uint64 `protobuf:"varint,3,opt,name=max_length,json=maxLength,proto3,oneof" json:"max_length,omitempty"`
+	Pattern   *string       `protobuf:"bytes,1,opt,name=pattern,proto3,oneof" json:"pattern,omitempty"`
+	MinLength *uint64       `protobuf:"varint,2,opt,name=min_length,json=minLength,proto3,oneof" json:"min_length,omitempty"`
+	MaxLength *uint64       `protobuf:"varint,3,opt,name=max_length,json=maxLength,proto3,oneof" json:"max_length,omitempty"`
+	Format    *StringFormat `protobuf:"bytes,4,opt,name=format,proto3,oneof" json:"format,omitempty"`
 }
 
 func (x *StringField_Rules) Reset() {
 	*x = StringField_Rules{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[45]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[46]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3375,7 +3453,7 @@ func (x *StringField_Rules) String() string {
 func (*StringField_Rules) ProtoMessage() {}
 
 func (x *StringField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[45]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[46]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3388,7 +3466,7 @@ func (x *StringField_Rules) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StringField_Rules.ProtoReflect.Descriptor instead.
 func (*StringField_Rules) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{17, 0}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{18, 0}
 }
 
 func (x *StringField_Rules) GetPattern() string {
@@ -3412,6 +3490,13 @@ func (x *StringField_Rules) GetMaxLength() uint64 {
 	return 0
 }
 
+func (x *StringField_Rules) GetFormat() *StringFormat {
+	if x != nil {
+		return x.Format
+	}
+	return nil
+}
+
 type StringField_Ext struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -3421,7 +3506,7 @@ type StringField_Ext struct {
 func (x *StringField_Ext) Reset() {
 	*x = StringField_Ext{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[46]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[47]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -3434,7 +3519,7 @@ func (x *StringField_Ext) String() string {
 func (*StringField_Ext) ProtoMessage() {}
 
 func (x *StringField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[46]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[47]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3447,746 +3532,7 @@ func (x *StringField_Ext) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StringField_Ext.ProtoReflect.Descriptor instead.
 func (*StringField_Ext) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{17, 1}
-}
-
-type FloatField_Rules struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	ExclusiveMaximum *bool    `protobuf:"varint,1,opt,name=exclusive_maximum,json=exclusiveMaximum,proto3,oneof" json:"exclusive_maximum,omitempty"`
-	ExclusiveMinimum *bool    `protobuf:"varint,2,opt,name=exclusive_minimum,json=exclusiveMinimum,proto3,oneof" json:"exclusive_minimum,omitempty"`
-	Minimum          *float64 `protobuf:"fixed64,3,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
-	Maximum          *float64 `protobuf:"fixed64,4,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
-	MultipleOf       *float64 `protobuf:"fixed64,5,opt,name=multiple_of,json=multipleOf,proto3,oneof" json:"multiple_of,omitempty"`
-}
-
-func (x *FloatField_Rules) Reset() {
-	*x = FloatField_Rules{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[47]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *FloatField_Rules) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*FloatField_Rules) ProtoMessage() {}
-
-func (x *FloatField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[47]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use FloatField_Rules.ProtoReflect.Descriptor instead.
-func (*FloatField_Rules) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{18, 0}
-}
-
-func (x *FloatField_Rules) GetExclusiveMaximum() bool {
-	if x != nil && x.ExclusiveMaximum != nil {
-		return *x.ExclusiveMaximum
-	}
-	return false
-}
-
-func (x *FloatField_Rules) GetExclusiveMinimum() bool {
-	if x != nil && x.ExclusiveMinimum != nil {
-		return *x.ExclusiveMinimum
-	}
-	return false
-}
-
-func (x *FloatField_Rules) GetMinimum() float64 {
-	if x != nil && x.Minimum != nil {
-		return *x.Minimum
-	}
-	return 0
-}
-
-func (x *FloatField_Rules) GetMaximum() float64 {
-	if x != nil && x.Maximum != nil {
-		return *x.Maximum
-	}
-	return 0
-}
-
-func (x *FloatField_Rules) GetMultipleOf() float64 {
-	if x != nil && x.MultipleOf != nil {
-		return *x.MultipleOf
-	}
-	return 0
-}
-
-type FloatField_Ext struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *FloatField_Ext) Reset() {
-	*x = FloatField_Ext{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[48]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *FloatField_Ext) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*FloatField_Ext) ProtoMessage() {}
-
-func (x *FloatField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[48]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use FloatField_Ext.ProtoReflect.Descriptor instead.
-func (*FloatField_Ext) Descriptor() ([]byte, []int) {
 	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{18, 1}
-}
-
-type IntegerField_Rules struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	ExclusiveMaximum *bool  `protobuf:"varint,1,opt,name=exclusive_maximum,json=exclusiveMaximum,proto3,oneof" json:"exclusive_maximum,omitempty"`
-	ExclusiveMinimum *bool  `protobuf:"varint,2,opt,name=exclusive_minimum,json=exclusiveMinimum,proto3,oneof" json:"exclusive_minimum,omitempty"`
-	Minimum          *int64 `protobuf:"varint,3,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
-	Maximum          *int64 `protobuf:"varint,4,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
-	MultipleOf       *int64 `protobuf:"varint,5,opt,name=multiple_of,json=multipleOf,proto3,oneof" json:"multiple_of,omitempty"`
-}
-
-func (x *IntegerField_Rules) Reset() {
-	*x = IntegerField_Rules{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[49]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *IntegerField_Rules) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IntegerField_Rules) ProtoMessage() {}
-
-func (x *IntegerField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[49]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IntegerField_Rules.ProtoReflect.Descriptor instead.
-func (*IntegerField_Rules) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{19, 0}
-}
-
-func (x *IntegerField_Rules) GetExclusiveMaximum() bool {
-	if x != nil && x.ExclusiveMaximum != nil {
-		return *x.ExclusiveMaximum
-	}
-	return false
-}
-
-func (x *IntegerField_Rules) GetExclusiveMinimum() bool {
-	if x != nil && x.ExclusiveMinimum != nil {
-		return *x.ExclusiveMinimum
-	}
-	return false
-}
-
-func (x *IntegerField_Rules) GetMinimum() int64 {
-	if x != nil && x.Minimum != nil {
-		return *x.Minimum
-	}
-	return 0
-}
-
-func (x *IntegerField_Rules) GetMaximum() int64 {
-	if x != nil && x.Maximum != nil {
-		return *x.Maximum
-	}
-	return 0
-}
-
-func (x *IntegerField_Rules) GetMultipleOf() int64 {
-	if x != nil && x.MultipleOf != nil {
-		return *x.MultipleOf
-	}
-	return 0
-}
-
-type IntegerField_Ext struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *IntegerField_Ext) Reset() {
-	*x = IntegerField_Ext{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[50]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *IntegerField_Ext) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IntegerField_Ext) ProtoMessage() {}
-
-func (x *IntegerField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[50]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use IntegerField_Ext.ProtoReflect.Descriptor instead.
-func (*IntegerField_Ext) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{19, 1}
-}
-
-type BoolField_Rules struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Const *bool `protobuf:"varint,1,opt,name=const,proto3,oneof" json:"const,omitempty"`
-}
-
-func (x *BoolField_Rules) Reset() {
-	*x = BoolField_Rules{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[51]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *BoolField_Rules) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BoolField_Rules) ProtoMessage() {}
-
-func (x *BoolField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[51]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BoolField_Rules.ProtoReflect.Descriptor instead.
-func (*BoolField_Rules) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{20, 0}
-}
-
-func (x *BoolField_Rules) GetConst() bool {
-	if x != nil && x.Const != nil {
-		return *x.Const
-	}
-	return false
-}
-
-type BoolField_Ext struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *BoolField_Ext) Reset() {
-	*x = BoolField_Ext{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[52]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *BoolField_Ext) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BoolField_Ext) ProtoMessage() {}
-
-func (x *BoolField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[52]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BoolField_Ext.ProtoReflect.Descriptor instead.
-func (*BoolField_Ext) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{20, 1}
-}
-
-type BytesField_Rules struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	MinLength *uint64 `protobuf:"varint,1,opt,name=min_length,json=minLength,proto3,oneof" json:"min_length,omitempty"`
-	MaxLength *uint64 `protobuf:"varint,2,opt,name=max_length,json=maxLength,proto3,oneof" json:"max_length,omitempty"`
-}
-
-func (x *BytesField_Rules) Reset() {
-	*x = BytesField_Rules{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[53]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *BytesField_Rules) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BytesField_Rules) ProtoMessage() {}
-
-func (x *BytesField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[53]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BytesField_Rules.ProtoReflect.Descriptor instead.
-func (*BytesField_Rules) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{21, 0}
-}
-
-func (x *BytesField_Rules) GetMinLength() uint64 {
-	if x != nil && x.MinLength != nil {
-		return *x.MinLength
-	}
-	return 0
-}
-
-func (x *BytesField_Rules) GetMaxLength() uint64 {
-	if x != nil && x.MaxLength != nil {
-		return *x.MaxLength
-	}
-	return 0
-}
-
-type BytesField_Ext struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *BytesField_Ext) Reset() {
-	*x = BytesField_Ext{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[54]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *BytesField_Ext) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BytesField_Ext) ProtoMessage() {}
-
-func (x *BytesField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[54]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use BytesField_Ext.ProtoReflect.Descriptor instead.
-func (*BytesField_Ext) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{21, 1}
-}
-
-type DecimalField_Rules struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Minimum          *string `protobuf:"bytes,1,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
-	Maximum          *string `protobuf:"bytes,2,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
-	ExclusiveMinimum *bool   `protobuf:"varint,3,opt,name=exclusive_minimum,json=exclusiveMinimum,proto3,oneof" json:"exclusive_minimum,omitempty"`
-	ExclusiveMaximum *bool   `protobuf:"varint,4,opt,name=exclusive_maximum,json=exclusiveMaximum,proto3,oneof" json:"exclusive_maximum,omitempty"`
-}
-
-func (x *DecimalField_Rules) Reset() {
-	*x = DecimalField_Rules{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[55]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DecimalField_Rules) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DecimalField_Rules) ProtoMessage() {}
-
-func (x *DecimalField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[55]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DecimalField_Rules.ProtoReflect.Descriptor instead.
-func (*DecimalField_Rules) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{22, 0}
-}
-
-func (x *DecimalField_Rules) GetMinimum() string {
-	if x != nil && x.Minimum != nil {
-		return *x.Minimum
-	}
-	return ""
-}
-
-func (x *DecimalField_Rules) GetMaximum() string {
-	if x != nil && x.Maximum != nil {
-		return *x.Maximum
-	}
-	return ""
-}
-
-func (x *DecimalField_Rules) GetExclusiveMinimum() bool {
-	if x != nil && x.ExclusiveMinimum != nil {
-		return *x.ExclusiveMinimum
-	}
-	return false
-}
-
-func (x *DecimalField_Rules) GetExclusiveMaximum() bool {
-	if x != nil && x.ExclusiveMaximum != nil {
-		return *x.ExclusiveMaximum
-	}
-	return false
-}
-
-type DecimalField_Ext struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *DecimalField_Ext) Reset() {
-	*x = DecimalField_Ext{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[56]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DecimalField_Ext) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DecimalField_Ext) ProtoMessage() {}
-
-func (x *DecimalField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[56]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DecimalField_Ext.ProtoReflect.Descriptor instead.
-func (*DecimalField_Ext) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{22, 1}
-}
-
-type DateField_Rules struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Minimum          *string `protobuf:"bytes,1,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
-	Maximum          *string `protobuf:"bytes,2,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
-	ExclusiveMinimum *bool   `protobuf:"varint,3,opt,name=exclusive_minimum,json=exclusiveMinimum,proto3,oneof" json:"exclusive_minimum,omitempty"`
-	ExclusiveMaximum *bool   `protobuf:"varint,4,opt,name=exclusive_maximum,json=exclusiveMaximum,proto3,oneof" json:"exclusive_maximum,omitempty"`
-}
-
-func (x *DateField_Rules) Reset() {
-	*x = DateField_Rules{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[57]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DateField_Rules) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DateField_Rules) ProtoMessage() {}
-
-func (x *DateField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[57]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DateField_Rules.ProtoReflect.Descriptor instead.
-func (*DateField_Rules) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{23, 0}
-}
-
-func (x *DateField_Rules) GetMinimum() string {
-	if x != nil && x.Minimum != nil {
-		return *x.Minimum
-	}
-	return ""
-}
-
-func (x *DateField_Rules) GetMaximum() string {
-	if x != nil && x.Maximum != nil {
-		return *x.Maximum
-	}
-	return ""
-}
-
-func (x *DateField_Rules) GetExclusiveMinimum() bool {
-	if x != nil && x.ExclusiveMinimum != nil {
-		return *x.ExclusiveMinimum
-	}
-	return false
-}
-
-func (x *DateField_Rules) GetExclusiveMaximum() bool {
-	if x != nil && x.ExclusiveMaximum != nil {
-		return *x.ExclusiveMaximum
-	}
-	return false
-}
-
-type DateField_Ext struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *DateField_Ext) Reset() {
-	*x = DateField_Ext{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[58]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *DateField_Ext) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*DateField_Ext) ProtoMessage() {}
-
-func (x *DateField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[58]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use DateField_Ext.ProtoReflect.Descriptor instead.
-func (*DateField_Ext) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{23, 1}
-}
-
-type TimestampField_Rules struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-
-	Minimum          *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
-	Maximum          *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
-	ExclusiveMinimum *bool                  `protobuf:"varint,3,opt,name=exclusive_minimum,json=exclusiveMinimum,proto3,oneof" json:"exclusive_minimum,omitempty"`
-	ExclusiveMaximum *bool                  `protobuf:"varint,4,opt,name=exclusive_maximum,json=exclusiveMaximum,proto3,oneof" json:"exclusive_maximum,omitempty"`
-}
-
-func (x *TimestampField_Rules) Reset() {
-	*x = TimestampField_Rules{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[59]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *TimestampField_Rules) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TimestampField_Rules) ProtoMessage() {}
-
-func (x *TimestampField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[59]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TimestampField_Rules.ProtoReflect.Descriptor instead.
-func (*TimestampField_Rules) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{24, 0}
-}
-
-func (x *TimestampField_Rules) GetMinimum() *timestamppb.Timestamp {
-	if x != nil {
-		return x.Minimum
-	}
-	return nil
-}
-
-func (x *TimestampField_Rules) GetMaximum() *timestamppb.Timestamp {
-	if x != nil {
-		return x.Maximum
-	}
-	return nil
-}
-
-func (x *TimestampField_Rules) GetExclusiveMinimum() bool {
-	if x != nil && x.ExclusiveMinimum != nil {
-		return *x.ExclusiveMinimum
-	}
-	return false
-}
-
-func (x *TimestampField_Rules) GetExclusiveMaximum() bool {
-	if x != nil && x.ExclusiveMaximum != nil {
-		return *x.ExclusiveMaximum
-	}
-	return false
-}
-
-type TimestampField_Ext struct {
-	state         protoimpl.MessageState
-	sizeCache     protoimpl.SizeCache
-	unknownFields protoimpl.UnknownFields
-}
-
-func (x *TimestampField_Ext) Reset() {
-	*x = TimestampField_Ext{}
-	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[60]
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		ms.StoreMessageInfo(mi)
-	}
-}
-
-func (x *TimestampField_Ext) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TimestampField_Ext) ProtoMessage() {}
-
-func (x *TimestampField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[60]
-	if protoimpl.UnsafeEnabled && x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use TimestampField_Ext.ProtoReflect.Descriptor instead.
-func (*TimestampField_Ext) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{24, 1}
 }
 
 type KeyField_Rules struct {
@@ -4198,7 +3544,7 @@ type KeyField_Rules struct {
 func (x *KeyField_Rules) Reset() {
 	*x = KeyField_Rules{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[61]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[48]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4211,7 +3557,7 @@ func (x *KeyField_Rules) String() string {
 func (*KeyField_Rules) ProtoMessage() {}
 
 func (x *KeyField_Rules) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[61]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[48]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4224,7 +3570,7 @@ func (x *KeyField_Rules) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyField_Rules.ProtoReflect.Descriptor instead.
 func (*KeyField_Rules) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{25, 0}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{19, 0}
 }
 
 type KeyField_Ext struct {
@@ -4239,7 +3585,7 @@ type KeyField_Ext struct {
 func (x *KeyField_Ext) Reset() {
 	*x = KeyField_Ext{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[62]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[49]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4252,7 +3598,7 @@ func (x *KeyField_Ext) String() string {
 func (*KeyField_Ext) ProtoMessage() {}
 
 func (x *KeyField_Ext) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[62]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[49]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4265,7 +3611,7 @@ func (x *KeyField_Ext) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyField_Ext.ProtoReflect.Descriptor instead.
 func (*KeyField_Ext) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{25, 1}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{19, 1}
 }
 
 func (x *KeyField_Ext) GetForeign() *EntityRef {
@@ -4290,7 +3636,7 @@ type KeyField_DeprecatedEntityKey struct {
 func (x *KeyField_DeprecatedEntityKey) Reset() {
 	*x = KeyField_DeprecatedEntityKey{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[63]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[50]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4303,7 +3649,7 @@ func (x *KeyField_DeprecatedEntityKey) String() string {
 func (*KeyField_DeprecatedEntityKey) ProtoMessage() {}
 
 func (x *KeyField_DeprecatedEntityKey) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[63]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[50]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4316,7 +3662,7 @@ func (x *KeyField_DeprecatedEntityKey) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyField_DeprecatedEntityKey.ProtoReflect.Descriptor instead.
 func (*KeyField_DeprecatedEntityKey) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{25, 2}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{19, 2}
 }
 
 func (m *KeyField_DeprecatedEntityKey) GetType() isKeyField_DeprecatedEntityKey_Type {
@@ -4367,7 +3713,7 @@ type KeyFormat_Informal struct {
 func (x *KeyFormat_Informal) Reset() {
 	*x = KeyFormat_Informal{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[64]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[51]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4380,7 +3726,7 @@ func (x *KeyFormat_Informal) String() string {
 func (*KeyFormat_Informal) ProtoMessage() {}
 
 func (x *KeyFormat_Informal) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[64]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[51]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4393,7 +3739,7 @@ func (x *KeyFormat_Informal) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyFormat_Informal.ProtoReflect.Descriptor instead.
 func (*KeyFormat_Informal) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{26, 0}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{20, 0}
 }
 
 type KeyFormat_Custom struct {
@@ -4401,13 +3747,14 @@ type KeyFormat_Custom struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	Pattern string `protobuf:"bytes,1,opt,name=pattern,proto3" json:"pattern,omitempty"`
+	Pattern     string `protobuf:"bytes,1,opt,name=pattern,proto3" json:"pattern,omitempty"`
+	Description string `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
 }
 
 func (x *KeyFormat_Custom) Reset() {
 	*x = KeyFormat_Custom{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[65]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[52]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4420,7 +3767,7 @@ func (x *KeyFormat_Custom) String() string {
 func (*KeyFormat_Custom) ProtoMessage() {}
 
 func (x *KeyFormat_Custom) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[65]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[52]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4433,12 +3780,19 @@ func (x *KeyFormat_Custom) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyFormat_Custom.ProtoReflect.Descriptor instead.
 func (*KeyFormat_Custom) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{26, 1}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{20, 1}
 }
 
 func (x *KeyFormat_Custom) GetPattern() string {
 	if x != nil {
 		return x.Pattern
+	}
+	return ""
+}
+
+func (x *KeyFormat_Custom) GetDescription() string {
+	if x != nil {
+		return x.Description
 	}
 	return ""
 }
@@ -4452,7 +3806,7 @@ type KeyFormat_UUID struct {
 func (x *KeyFormat_UUID) Reset() {
 	*x = KeyFormat_UUID{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[66]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[53]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4465,7 +3819,7 @@ func (x *KeyFormat_UUID) String() string {
 func (*KeyFormat_UUID) ProtoMessage() {}
 
 func (x *KeyFormat_UUID) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[66]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[53]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4478,7 +3832,7 @@ func (x *KeyFormat_UUID) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyFormat_UUID.ProtoReflect.Descriptor instead.
 func (*KeyFormat_UUID) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{26, 2}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{20, 2}
 }
 
 type KeyFormat_ID62 struct {
@@ -4490,7 +3844,7 @@ type KeyFormat_ID62 struct {
 func (x *KeyFormat_ID62) Reset() {
 	*x = KeyFormat_ID62{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_j5_schema_v1_schema_proto_msgTypes[67]
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[54]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -4503,7 +3857,7 @@ func (x *KeyFormat_ID62) String() string {
 func (*KeyFormat_ID62) ProtoMessage() {}
 
 func (x *KeyFormat_ID62) ProtoReflect() protoreflect.Message {
-	mi := &file_j5_schema_v1_schema_proto_msgTypes[67]
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[54]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -4516,7 +3870,746 @@ func (x *KeyFormat_ID62) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KeyFormat_ID62.ProtoReflect.Descriptor instead.
 func (*KeyFormat_ID62) Descriptor() ([]byte, []int) {
-	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{26, 3}
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{20, 3}
+}
+
+type FloatField_Rules struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ExclusiveMaximum *bool    `protobuf:"varint,1,opt,name=exclusive_maximum,json=exclusiveMaximum,proto3,oneof" json:"exclusive_maximum,omitempty"`
+	ExclusiveMinimum *bool    `protobuf:"varint,2,opt,name=exclusive_minimum,json=exclusiveMinimum,proto3,oneof" json:"exclusive_minimum,omitempty"`
+	Minimum          *float64 `protobuf:"fixed64,3,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
+	Maximum          *float64 `protobuf:"fixed64,4,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
+	MultipleOf       *float64 `protobuf:"fixed64,5,opt,name=multiple_of,json=multipleOf,proto3,oneof" json:"multiple_of,omitempty"`
+}
+
+func (x *FloatField_Rules) Reset() {
+	*x = FloatField_Rules{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[55]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FloatField_Rules) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FloatField_Rules) ProtoMessage() {}
+
+func (x *FloatField_Rules) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[55]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FloatField_Rules.ProtoReflect.Descriptor instead.
+func (*FloatField_Rules) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{21, 0}
+}
+
+func (x *FloatField_Rules) GetExclusiveMaximum() bool {
+	if x != nil && x.ExclusiveMaximum != nil {
+		return *x.ExclusiveMaximum
+	}
+	return false
+}
+
+func (x *FloatField_Rules) GetExclusiveMinimum() bool {
+	if x != nil && x.ExclusiveMinimum != nil {
+		return *x.ExclusiveMinimum
+	}
+	return false
+}
+
+func (x *FloatField_Rules) GetMinimum() float64 {
+	if x != nil && x.Minimum != nil {
+		return *x.Minimum
+	}
+	return 0
+}
+
+func (x *FloatField_Rules) GetMaximum() float64 {
+	if x != nil && x.Maximum != nil {
+		return *x.Maximum
+	}
+	return 0
+}
+
+func (x *FloatField_Rules) GetMultipleOf() float64 {
+	if x != nil && x.MultipleOf != nil {
+		return *x.MultipleOf
+	}
+	return 0
+}
+
+type FloatField_Ext struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *FloatField_Ext) Reset() {
+	*x = FloatField_Ext{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[56]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *FloatField_Ext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*FloatField_Ext) ProtoMessage() {}
+
+func (x *FloatField_Ext) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[56]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use FloatField_Ext.ProtoReflect.Descriptor instead.
+func (*FloatField_Ext) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{21, 1}
+}
+
+type IntegerField_Rules struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	ExclusiveMaximum *bool  `protobuf:"varint,1,opt,name=exclusive_maximum,json=exclusiveMaximum,proto3,oneof" json:"exclusive_maximum,omitempty"`
+	ExclusiveMinimum *bool  `protobuf:"varint,2,opt,name=exclusive_minimum,json=exclusiveMinimum,proto3,oneof" json:"exclusive_minimum,omitempty"`
+	Minimum          *int64 `protobuf:"varint,3,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
+	Maximum          *int64 `protobuf:"varint,4,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
+	MultipleOf       *int64 `protobuf:"varint,5,opt,name=multiple_of,json=multipleOf,proto3,oneof" json:"multiple_of,omitempty"`
+}
+
+func (x *IntegerField_Rules) Reset() {
+	*x = IntegerField_Rules{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[57]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *IntegerField_Rules) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IntegerField_Rules) ProtoMessage() {}
+
+func (x *IntegerField_Rules) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[57]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IntegerField_Rules.ProtoReflect.Descriptor instead.
+func (*IntegerField_Rules) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{22, 0}
+}
+
+func (x *IntegerField_Rules) GetExclusiveMaximum() bool {
+	if x != nil && x.ExclusiveMaximum != nil {
+		return *x.ExclusiveMaximum
+	}
+	return false
+}
+
+func (x *IntegerField_Rules) GetExclusiveMinimum() bool {
+	if x != nil && x.ExclusiveMinimum != nil {
+		return *x.ExclusiveMinimum
+	}
+	return false
+}
+
+func (x *IntegerField_Rules) GetMinimum() int64 {
+	if x != nil && x.Minimum != nil {
+		return *x.Minimum
+	}
+	return 0
+}
+
+func (x *IntegerField_Rules) GetMaximum() int64 {
+	if x != nil && x.Maximum != nil {
+		return *x.Maximum
+	}
+	return 0
+}
+
+func (x *IntegerField_Rules) GetMultipleOf() int64 {
+	if x != nil && x.MultipleOf != nil {
+		return *x.MultipleOf
+	}
+	return 0
+}
+
+type IntegerField_Ext struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *IntegerField_Ext) Reset() {
+	*x = IntegerField_Ext{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[58]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *IntegerField_Ext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IntegerField_Ext) ProtoMessage() {}
+
+func (x *IntegerField_Ext) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[58]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IntegerField_Ext.ProtoReflect.Descriptor instead.
+func (*IntegerField_Ext) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{22, 1}
+}
+
+type BoolField_Rules struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Const *bool `protobuf:"varint,1,opt,name=const,proto3,oneof" json:"const,omitempty"`
+}
+
+func (x *BoolField_Rules) Reset() {
+	*x = BoolField_Rules{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[59]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BoolField_Rules) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoolField_Rules) ProtoMessage() {}
+
+func (x *BoolField_Rules) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[59]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoolField_Rules.ProtoReflect.Descriptor instead.
+func (*BoolField_Rules) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{23, 0}
+}
+
+func (x *BoolField_Rules) GetConst() bool {
+	if x != nil && x.Const != nil {
+		return *x.Const
+	}
+	return false
+}
+
+type BoolField_Ext struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *BoolField_Ext) Reset() {
+	*x = BoolField_Ext{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[60]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BoolField_Ext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BoolField_Ext) ProtoMessage() {}
+
+func (x *BoolField_Ext) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[60]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BoolField_Ext.ProtoReflect.Descriptor instead.
+func (*BoolField_Ext) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{23, 1}
+}
+
+type BytesField_Rules struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	MinLength *uint64 `protobuf:"varint,1,opt,name=min_length,json=minLength,proto3,oneof" json:"min_length,omitempty"`
+	MaxLength *uint64 `protobuf:"varint,2,opt,name=max_length,json=maxLength,proto3,oneof" json:"max_length,omitempty"`
+}
+
+func (x *BytesField_Rules) Reset() {
+	*x = BytesField_Rules{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[61]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BytesField_Rules) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BytesField_Rules) ProtoMessage() {}
+
+func (x *BytesField_Rules) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[61]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BytesField_Rules.ProtoReflect.Descriptor instead.
+func (*BytesField_Rules) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{24, 0}
+}
+
+func (x *BytesField_Rules) GetMinLength() uint64 {
+	if x != nil && x.MinLength != nil {
+		return *x.MinLength
+	}
+	return 0
+}
+
+func (x *BytesField_Rules) GetMaxLength() uint64 {
+	if x != nil && x.MaxLength != nil {
+		return *x.MaxLength
+	}
+	return 0
+}
+
+type BytesField_Ext struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *BytesField_Ext) Reset() {
+	*x = BytesField_Ext{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[62]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *BytesField_Ext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BytesField_Ext) ProtoMessage() {}
+
+func (x *BytesField_Ext) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[62]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BytesField_Ext.ProtoReflect.Descriptor instead.
+func (*BytesField_Ext) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{24, 1}
+}
+
+type DecimalField_Rules struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Minimum          *string `protobuf:"bytes,1,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
+	Maximum          *string `protobuf:"bytes,2,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
+	ExclusiveMinimum *bool   `protobuf:"varint,3,opt,name=exclusive_minimum,json=exclusiveMinimum,proto3,oneof" json:"exclusive_minimum,omitempty"`
+	ExclusiveMaximum *bool   `protobuf:"varint,4,opt,name=exclusive_maximum,json=exclusiveMaximum,proto3,oneof" json:"exclusive_maximum,omitempty"`
+}
+
+func (x *DecimalField_Rules) Reset() {
+	*x = DecimalField_Rules{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[63]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DecimalField_Rules) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DecimalField_Rules) ProtoMessage() {}
+
+func (x *DecimalField_Rules) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[63]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DecimalField_Rules.ProtoReflect.Descriptor instead.
+func (*DecimalField_Rules) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{25, 0}
+}
+
+func (x *DecimalField_Rules) GetMinimum() string {
+	if x != nil && x.Minimum != nil {
+		return *x.Minimum
+	}
+	return ""
+}
+
+func (x *DecimalField_Rules) GetMaximum() string {
+	if x != nil && x.Maximum != nil {
+		return *x.Maximum
+	}
+	return ""
+}
+
+func (x *DecimalField_Rules) GetExclusiveMinimum() bool {
+	if x != nil && x.ExclusiveMinimum != nil {
+		return *x.ExclusiveMinimum
+	}
+	return false
+}
+
+func (x *DecimalField_Rules) GetExclusiveMaximum() bool {
+	if x != nil && x.ExclusiveMaximum != nil {
+		return *x.ExclusiveMaximum
+	}
+	return false
+}
+
+type DecimalField_Ext struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *DecimalField_Ext) Reset() {
+	*x = DecimalField_Ext{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[64]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DecimalField_Ext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DecimalField_Ext) ProtoMessage() {}
+
+func (x *DecimalField_Ext) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[64]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DecimalField_Ext.ProtoReflect.Descriptor instead.
+func (*DecimalField_Ext) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{25, 1}
+}
+
+type DateField_Rules struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Minimum          *string `protobuf:"bytes,1,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
+	Maximum          *string `protobuf:"bytes,2,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
+	ExclusiveMinimum *bool   `protobuf:"varint,3,opt,name=exclusive_minimum,json=exclusiveMinimum,proto3,oneof" json:"exclusive_minimum,omitempty"`
+	ExclusiveMaximum *bool   `protobuf:"varint,4,opt,name=exclusive_maximum,json=exclusiveMaximum,proto3,oneof" json:"exclusive_maximum,omitempty"`
+}
+
+func (x *DateField_Rules) Reset() {
+	*x = DateField_Rules{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[65]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DateField_Rules) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DateField_Rules) ProtoMessage() {}
+
+func (x *DateField_Rules) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[65]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DateField_Rules.ProtoReflect.Descriptor instead.
+func (*DateField_Rules) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{26, 0}
+}
+
+func (x *DateField_Rules) GetMinimum() string {
+	if x != nil && x.Minimum != nil {
+		return *x.Minimum
+	}
+	return ""
+}
+
+func (x *DateField_Rules) GetMaximum() string {
+	if x != nil && x.Maximum != nil {
+		return *x.Maximum
+	}
+	return ""
+}
+
+func (x *DateField_Rules) GetExclusiveMinimum() bool {
+	if x != nil && x.ExclusiveMinimum != nil {
+		return *x.ExclusiveMinimum
+	}
+	return false
+}
+
+func (x *DateField_Rules) GetExclusiveMaximum() bool {
+	if x != nil && x.ExclusiveMaximum != nil {
+		return *x.ExclusiveMaximum
+	}
+	return false
+}
+
+type DateField_Ext struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *DateField_Ext) Reset() {
+	*x = DateField_Ext{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[66]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DateField_Ext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DateField_Ext) ProtoMessage() {}
+
+func (x *DateField_Ext) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[66]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DateField_Ext.ProtoReflect.Descriptor instead.
+func (*DateField_Ext) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{26, 1}
+}
+
+type TimestampField_Rules struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Minimum          *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=minimum,proto3,oneof" json:"minimum,omitempty"`
+	Maximum          *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=maximum,proto3,oneof" json:"maximum,omitempty"`
+	ExclusiveMinimum *bool                  `protobuf:"varint,3,opt,name=exclusive_minimum,json=exclusiveMinimum,proto3,oneof" json:"exclusive_minimum,omitempty"`
+	ExclusiveMaximum *bool                  `protobuf:"varint,4,opt,name=exclusive_maximum,json=exclusiveMaximum,proto3,oneof" json:"exclusive_maximum,omitempty"`
+}
+
+func (x *TimestampField_Rules) Reset() {
+	*x = TimestampField_Rules{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[67]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TimestampField_Rules) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimestampField_Rules) ProtoMessage() {}
+
+func (x *TimestampField_Rules) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[67]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimestampField_Rules.ProtoReflect.Descriptor instead.
+func (*TimestampField_Rules) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{27, 0}
+}
+
+func (x *TimestampField_Rules) GetMinimum() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Minimum
+	}
+	return nil
+}
+
+func (x *TimestampField_Rules) GetMaximum() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Maximum
+	}
+	return nil
+}
+
+func (x *TimestampField_Rules) GetExclusiveMinimum() bool {
+	if x != nil && x.ExclusiveMinimum != nil {
+		return *x.ExclusiveMinimum
+	}
+	return false
+}
+
+func (x *TimestampField_Rules) GetExclusiveMaximum() bool {
+	if x != nil && x.ExclusiveMaximum != nil {
+		return *x.ExclusiveMaximum
+	}
+	return false
+}
+
+type TimestampField_Ext struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+}
+
+func (x *TimestampField_Ext) Reset() {
+	*x = TimestampField_Ext{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_j5_schema_v1_schema_proto_msgTypes[68]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *TimestampField_Ext) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*TimestampField_Ext) ProtoMessage() {}
+
+func (x *TimestampField_Ext) ProtoReflect() protoreflect.Message {
+	mi := &file_j5_schema_v1_schema_proto_msgTypes[68]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use TimestampField_Ext.ProtoReflect.Descriptor instead.
+func (*TimestampField_Ext) Descriptor() ([]byte, []int) {
+	return file_j5_schema_v1_schema_proto_rawDescGZIP(), []int{27, 1}
 }
 
 var File_j5_schema_v1_schema_proto protoreflect.FileDescriptor
@@ -4856,224 +4949,41 @@ var file_j5_schema_v1_schema_proto_rawDesc = []byte{
 	0x28, 0x09, 0x48, 0x00, 0x52, 0x0a, 0x73, 0x69, 0x6e, 0x67, 0x6c, 0x65, 0x46, 0x6f, 0x72, 0x6d,
 	0x88, 0x01, 0x01, 0x42, 0x0e, 0x0a, 0x0c, 0x5f, 0x73, 0x69, 0x6e, 0x67, 0x6c, 0x65, 0x5f, 0x66,
 	0x6f, 0x72, 0x6d, 0x3a, 0x15, 0x82, 0xbe, 0x8f, 0x02, 0x10, 0x2a, 0x0e, 0x0a, 0x0a, 0x69, 0x74,
-	0x65, 0x6d, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x10, 0x01, 0x22, 0xf9, 0x02, 0x0a, 0x0b, 0x53,
-	0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x1b, 0x0a, 0x06, 0x66, 0x6f,
-	0x72, 0x6d, 0x61, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x06, 0x66, 0x6f,
-	0x72, 0x6d, 0x61, 0x74, 0x88, 0x01, 0x01, 0x12, 0x35, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65,
-	0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x65, 0x6c,
-	0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x38,
-	0x0a, 0x0a, 0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x04, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x19, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e,
-	0x4f, 0x70, 0x65, 0x6e, 0x54, 0x65, 0x78, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x09, 0x6c,
-	0x69, 0x73, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x2f, 0x0a, 0x03, 0x65, 0x78, 0x74, 0x18,
-	0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d,
-	0x61, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x65, 0x6c, 0x64,
-	0x2e, 0x45, 0x78, 0x74, 0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0x98, 0x01, 0x0a, 0x05, 0x52, 0x75,
-	0x6c, 0x65, 0x73, 0x12, 0x1d, 0x0a, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x88,
-	0x01, 0x01, 0x12, 0x22, 0x0a, 0x0a, 0x6d, 0x69, 0x6e, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x48, 0x01, 0x52, 0x09, 0x6d, 0x69, 0x6e, 0x4c, 0x65, 0x6e,
-	0x67, 0x74, 0x68, 0x88, 0x01, 0x01, 0x12, 0x22, 0x0a, 0x0a, 0x6d, 0x61, 0x78, 0x5f, 0x6c, 0x65,
-	0x6e, 0x67, 0x74, 0x68, 0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x48, 0x02, 0x52, 0x09, 0x6d, 0x61,
-	0x78, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x88, 0x01, 0x01, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x70,
-	0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x42, 0x0d, 0x0a, 0x0b, 0x5f, 0x6d, 0x69, 0x6e, 0x5f, 0x6c,
-	0x65, 0x6e, 0x67, 0x74, 0x68, 0x42, 0x0d, 0x0a, 0x0b, 0x5f, 0x6d, 0x61, 0x78, 0x5f, 0x6c, 0x65,
-	0x6e, 0x67, 0x74, 0x68, 0x1a, 0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x42, 0x09, 0x0a, 0x07, 0x5f,
-	0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x22, 0xea, 0x04, 0x0a, 0x0a, 0x46, 0x6c, 0x6f, 0x61, 0x74,
-	0x46, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x37, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18,
-	0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x1f, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d,
-	0x61, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x6c, 0x6f, 0x61, 0x74, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e,
-	0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x52, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x34,
-	0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e,
-	0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x6c, 0x6f,
-	0x61, 0x74, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x05, 0x72,
-	0x75, 0x6c, 0x65, 0x73, 0x12, 0x35, 0x0a, 0x0a, 0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c,
-	0x65, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x16, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69,
-	0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x6c, 0x6f, 0x61, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73,
-	0x52, 0x09, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x2e, 0x0a, 0x03, 0x65,
-	0x78, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63,
-	0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x6c, 0x6f, 0x61, 0x74, 0x46, 0x69, 0x65,
-	0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74, 0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0xa3, 0x02, 0x0a, 0x05,
-	0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69,
-	0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08,
-	0x48, 0x00, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x61, 0x78,
-	0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75,
-	0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x08, 0x48, 0x01, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d,
-	0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x1d, 0x0a, 0x07, 0x6d, 0x69, 0x6e,
-	0x69, 0x6d, 0x75, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x01, 0x48, 0x02, 0x52, 0x07, 0x6d, 0x69,
-	0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x1d, 0x0a, 0x07, 0x6d, 0x61, 0x78, 0x69,
-	0x6d, 0x75, 0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x01, 0x48, 0x03, 0x52, 0x07, 0x6d, 0x61, 0x78,
-	0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x24, 0x0a, 0x0b, 0x6d, 0x75, 0x6c, 0x74, 0x69,
-	0x70, 0x6c, 0x65, 0x5f, 0x6f, 0x66, 0x18, 0x05, 0x20, 0x01, 0x28, 0x01, 0x48, 0x04, 0x52, 0x0a,
-	0x6d, 0x75, 0x6c, 0x74, 0x69, 0x70, 0x6c, 0x65, 0x4f, 0x66, 0x88, 0x01, 0x01, 0x42, 0x14, 0x0a,
-	0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69,
-	0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76,
-	0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x69,
-	0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75,
-	0x6d, 0x42, 0x0e, 0x0a, 0x0c, 0x5f, 0x6d, 0x75, 0x6c, 0x74, 0x69, 0x70, 0x6c, 0x65, 0x5f, 0x6f,
-	0x66, 0x1a, 0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x22, 0x48, 0x0a, 0x06, 0x46, 0x6f, 0x72, 0x6d,
-	0x61, 0x74, 0x12, 0x16, 0x0a, 0x12, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x55, 0x4e, 0x53,
-	0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x12, 0x0a, 0x0e, 0x46, 0x4f,
-	0x52, 0x4d, 0x41, 0x54, 0x5f, 0x46, 0x4c, 0x4f, 0x41, 0x54, 0x33, 0x32, 0x10, 0x01, 0x12, 0x12,
-	0x0a, 0x0e, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x46, 0x4c, 0x4f, 0x41, 0x54, 0x36, 0x34,
-	0x10, 0x02, 0x3a, 0x0f, 0x82, 0xbe, 0x8f, 0x02, 0x0a, 0x2a, 0x08, 0x0a, 0x06, 0x66, 0x6f, 0x72,
-	0x6d, 0x61, 0x74, 0x22, 0xa3, 0x05, 0x0a, 0x0c, 0x49, 0x6e, 0x74, 0x65, 0x67, 0x65, 0x72, 0x46,
-	0x69, 0x65, 0x6c, 0x64, 0x12, 0x46, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x0e, 0x32, 0x21, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61,
-	0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x74, 0x65, 0x67, 0x65, 0x72, 0x46, 0x69, 0x65, 0x6c, 0x64,
-	0x2e, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x42, 0x0b, 0xba, 0x48, 0x08, 0xc8, 0x01, 0x01, 0x82,
-	0x01, 0x02, 0x20, 0x00, 0x52, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x36, 0x0a, 0x05,
-	0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x6a, 0x35,
-	0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x74, 0x65, 0x67,
-	0x65, 0x72, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x05, 0x72,
-	0x75, 0x6c, 0x65, 0x73, 0x12, 0x37, 0x0a, 0x0a, 0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c,
-	0x65, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69,
-	0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x74, 0x65, 0x67, 0x65, 0x72, 0x52, 0x75, 0x6c,
-	0x65, 0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x30, 0x0a,
-	0x03, 0x65, 0x78, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e,
-	0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x74, 0x65, 0x67, 0x65,
-	0x72, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74, 0x52, 0x03, 0x65, 0x78, 0x74, 0x1a,
-	0xa3, 0x02, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63,
-	0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x08, 0x48, 0x00, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76,
-	0x65, 0x4d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11, 0x65,
-	0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x48, 0x01, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73,
-	0x69, 0x76, 0x65, 0x4d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x1d, 0x0a,
-	0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x48, 0x02,
-	0x52, 0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x1d, 0x0a, 0x07,
-	0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x03, 0x48, 0x03, 0x52,
-	0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x24, 0x0a, 0x0b, 0x6d,
-	0x75, 0x6c, 0x74, 0x69, 0x70, 0x6c, 0x65, 0x5f, 0x6f, 0x66, 0x18, 0x05, 0x20, 0x01, 0x28, 0x03,
-	0x48, 0x04, 0x52, 0x0a, 0x6d, 0x75, 0x6c, 0x74, 0x69, 0x70, 0x6c, 0x65, 0x4f, 0x66, 0x88, 0x01,
-	0x01, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f,
-	0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c,
-	0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a,
-	0x08, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x61,
-	0x78, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0e, 0x0a, 0x0c, 0x5f, 0x6d, 0x75, 0x6c, 0x74, 0x69, 0x70,
-	0x6c, 0x65, 0x5f, 0x6f, 0x66, 0x1a, 0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x22, 0x6a, 0x0a, 0x06,
-	0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x16, 0x0a, 0x12, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54,
-	0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x10,
-	0x0a, 0x0c, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x49, 0x4e, 0x54, 0x33, 0x32, 0x10, 0x01,
-	0x12, 0x10, 0x0a, 0x0c, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x49, 0x4e, 0x54, 0x36, 0x34,
-	0x10, 0x02, 0x12, 0x11, 0x0a, 0x0d, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x55, 0x49, 0x4e,
-	0x54, 0x33, 0x32, 0x10, 0x03, 0x12, 0x11, 0x0a, 0x0d, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f,
-	0x55, 0x49, 0x4e, 0x54, 0x36, 0x34, 0x10, 0x04, 0x3a, 0x0f, 0x82, 0xbe, 0x8f, 0x02, 0x0a, 0x2a,
-	0x08, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x22, 0xda, 0x01, 0x0a, 0x09, 0x42, 0x6f,
-	0x6f, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x33, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65,
-	0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e,
-	0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x34, 0x0a, 0x0a,
-	0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x15, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x6f,
-	0x6f, 0x6c, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x75, 0x6c,
-	0x65, 0x73, 0x12, 0x2d, 0x0a, 0x03, 0x65, 0x78, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32,
-	0x1b, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x42,
-	0x6f, 0x6f, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74, 0x52, 0x03, 0x65, 0x78,
-	0x74, 0x1a, 0x2c, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x19, 0x0a, 0x05, 0x63, 0x6f,
-	0x6e, 0x73, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x48, 0x00, 0x52, 0x05, 0x63, 0x6f, 0x6e,
-	0x73, 0x74, 0x88, 0x01, 0x01, 0x42, 0x08, 0x0a, 0x06, 0x5f, 0x63, 0x6f, 0x6e, 0x73, 0x74, 0x1a,
-	0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x22, 0xe8, 0x01, 0x0a, 0x0a, 0x42, 0x79, 0x74, 0x65, 0x73,
-	0x46, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x34, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x01,
-	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61,
-	0x2e, 0x76, 0x31, 0x2e, 0x42, 0x79, 0x74, 0x65, 0x73, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52,
-	0x75, 0x6c, 0x65, 0x73, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x2e, 0x0a, 0x03, 0x65,
-	0x78, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63,
-	0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x79, 0x74, 0x65, 0x73, 0x46, 0x69, 0x65,
-	0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74, 0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0x6d, 0x0a, 0x05, 0x52,
-	0x75, 0x6c, 0x65, 0x73, 0x12, 0x22, 0x0a, 0x0a, 0x6d, 0x69, 0x6e, 0x5f, 0x6c, 0x65, 0x6e, 0x67,
-	0x74, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x04, 0x48, 0x00, 0x52, 0x09, 0x6d, 0x69, 0x6e, 0x4c,
-	0x65, 0x6e, 0x67, 0x74, 0x68, 0x88, 0x01, 0x01, 0x12, 0x22, 0x0a, 0x0a, 0x6d, 0x61, 0x78, 0x5f,
-	0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x48, 0x01, 0x52, 0x09,
-	0x6d, 0x61, 0x78, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x88, 0x01, 0x01, 0x42, 0x0d, 0x0a, 0x0b,
-	0x5f, 0x6d, 0x69, 0x6e, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x42, 0x0d, 0x0a, 0x0b, 0x5f,
-	0x6d, 0x61, 0x78, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x1a, 0x05, 0x0a, 0x03, 0x45, 0x78,
-	0x74, 0x22, 0xa8, 0x03, 0x0a, 0x0c, 0x44, 0x65, 0x63, 0x69, 0x6d, 0x61, 0x6c, 0x46, 0x69, 0x65,
-	0x6c, 0x64, 0x12, 0x36, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0b, 0x32, 0x20, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31,
-	0x2e, 0x44, 0x65, 0x63, 0x69, 0x6d, 0x61, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75,
-	0x6c, 0x65, 0x73, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x37, 0x0a, 0x0a, 0x6c, 0x69,
-	0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18,
-	0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x63, 0x69,
-	0x6d, 0x61, 0x6c, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x75,
-	0x6c, 0x65, 0x73, 0x12, 0x30, 0x0a, 0x03, 0x65, 0x78, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e,
-	0x44, 0x65, 0x63, 0x69, 0x6d, 0x61, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74,
-	0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0xed, 0x01, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12,
-	0x1d, 0x0a, 0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x48, 0x00, 0x52, 0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x1d,
-	0x0a, 0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48,
-	0x01, 0x52, 0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a,
-	0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d,
-	0x75, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x48, 0x02, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c,
-	0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12,
-	0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78,
-	0x69, 0x6d, 0x75, 0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x48, 0x03, 0x52, 0x10, 0x65, 0x78,
-	0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01,
-	0x01, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a,
-	0x08, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78,
-	0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42,
-	0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61,
-	0x78, 0x69, 0x6d, 0x75, 0x6d, 0x1a, 0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x22, 0x9c, 0x03, 0x0a,
-	0x09, 0x44, 0x61, 0x74, 0x65, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x33, 0x0a, 0x05, 0x72, 0x75,
-	0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x6a, 0x35, 0x2e, 0x73,
-	0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x65, 0x46, 0x69, 0x65,
-	0x6c, 0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12,
-	0x34, 0x0a, 0x0a, 0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20,
-	0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31,
-	0x2e, 0x44, 0x61, 0x74, 0x65, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74,
-	0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x2d, 0x0a, 0x03, 0x65, 0x78, 0x74, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76,
-	0x31, 0x2e, 0x44, 0x61, 0x74, 0x65, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74, 0x52,
-	0x03, 0x65, 0x78, 0x74, 0x1a, 0xed, 0x01, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x1d,
-	0x0a, 0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48,
-	0x00, 0x52, 0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x1d, 0x0a,
-	0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x01,
-	0x52, 0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11,
-	0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75,
-	0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x48, 0x02, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75,
-	0x73, 0x69, 0x76, 0x65, 0x4d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30,
-	0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69,
-	0x6d, 0x75, 0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x48, 0x03, 0x52, 0x10, 0x65, 0x78, 0x63,
-	0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01,
-	0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a, 0x08,
-	0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63,
-	0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x14,
-	0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78,
-	0x69, 0x6d, 0x75, 0x6d, 0x1a, 0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x22, 0xe8, 0x03, 0x0a, 0x0e,
-	0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x38,
-	0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e,
-	0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d,
-	0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65,
-	0x73, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x39, 0x0a, 0x0a, 0x6c, 0x69, 0x73, 0x74,
-	0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x6a,
-	0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74,
-	0x61, 0x6d, 0x70, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x75,
-	0x6c, 0x65, 0x73, 0x12, 0x32, 0x0a, 0x03, 0x65, 0x78, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b,
-	0x32, 0x20, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e,
-	0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45,
-	0x78, 0x74, 0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0xa5, 0x02, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65,
-	0x73, 0x12, 0x39, 0x0a, 0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01,
-	0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74,
-	0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x48, 0x00,
-	0x52, 0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x39, 0x0a, 0x07,
-	0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e,
-	0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e,
-	0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x48, 0x01, 0x52, 0x07, 0x6d, 0x61, 0x78,
-	0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75,
-	0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x03, 0x20, 0x01,
-	0x28, 0x08, 0x48, 0x02, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d,
-	0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63,
-	0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x04,
-	0x20, 0x01, 0x28, 0x08, 0x48, 0x03, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76,
-	0x65, 0x4d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x42, 0x0a, 0x0a, 0x08, 0x5f,
-	0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x61, 0x78, 0x69,
-	0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76,
-	0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78,
-	0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x1a,
-	0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x22, 0x83, 0x04, 0x0a, 0x08, 0x4b, 0x65, 0x79, 0x46, 0x69,
+	0x65, 0x6d, 0x53, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x10, 0x01, 0x22, 0x5a, 0x0a, 0x0c, 0x53, 0x74,
+	0x72, 0x69, 0x6e, 0x67, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x14, 0x0a, 0x05, 0x72, 0x65,
+	0x67, 0x65, 0x78, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x72, 0x65, 0x67, 0x65, 0x78,
+	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
+	0x6e, 0x61, 0x6d, 0x65, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74,
+	0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72,
+	0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x22, 0xbd, 0x03, 0x0a, 0x0b, 0x53, 0x74, 0x72, 0x69, 0x6e,
+	0x67, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x1b, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74,
+	0x88, 0x01, 0x01, 0x12, 0x35, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76,
+	0x31, 0x2e, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75,
+	0x6c, 0x65, 0x73, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x38, 0x0a, 0x0a, 0x6c, 0x69,
+	0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x19,
+	0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x4f, 0x70, 0x65, 0x6e,
+	0x54, 0x65, 0x78, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74, 0x52,
+	0x75, 0x6c, 0x65, 0x73, 0x12, 0x2f, 0x0a, 0x03, 0x65, 0x78, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x1d, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31,
+	0x2e, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74,
+	0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0xdc, 0x01, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12,
+	0x1d, 0x0a, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
+	0x48, 0x00, 0x52, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x88, 0x01, 0x01, 0x12, 0x22,
+	0x0a, 0x0a, 0x6d, 0x69, 0x6e, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x18, 0x02, 0x20, 0x01,
+	0x28, 0x04, 0x48, 0x01, 0x52, 0x09, 0x6d, 0x69, 0x6e, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x88,
+	0x01, 0x01, 0x12, 0x22, 0x0a, 0x0a, 0x6d, 0x61, 0x78, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x18, 0x03, 0x20, 0x01, 0x28, 0x04, 0x48, 0x02, 0x52, 0x09, 0x6d, 0x61, 0x78, 0x4c, 0x65, 0x6e,
+	0x67, 0x74, 0x68, 0x88, 0x01, 0x01, 0x12, 0x37, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65,
+	0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x74, 0x72, 0x69, 0x6e, 0x67, 0x46, 0x6f, 0x72, 0x6d,
+	0x61, 0x74, 0x48, 0x03, 0x52, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x88, 0x01, 0x01, 0x42,
+	0x0a, 0x0a, 0x08, 0x5f, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x42, 0x0d, 0x0a, 0x0b, 0x5f,
+	0x6d, 0x69, 0x6e, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x42, 0x0d, 0x0a, 0x0b, 0x5f, 0x6d,
+	0x61, 0x78, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x42, 0x09, 0x0a, 0x07, 0x5f, 0x66, 0x6f,
+	0x72, 0x6d, 0x61, 0x74, 0x1a, 0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x42, 0x09, 0x0a, 0x07, 0x5f,
+	0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x22, 0x83, 0x04, 0x0a, 0x08, 0x4b, 0x65, 0x79, 0x46, 0x69,
 	0x65, 0x6c, 0x64, 0x12, 0x32, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01,
 	0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76,
 	0x31, 0x2e, 0x4b, 0x65, 0x79, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73,
@@ -5105,7 +5015,7 @@ var file_j5_schema_v1_schema_proto_rawDesc = []byte{
 	0x72, 0x65, 0x69, 0x67, 0x6e, 0x4b, 0x65, 0x79, 0x42, 0x06, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65,
 	0x3a, 0x2a, 0x82, 0xbe, 0x8f, 0x02, 0x25, 0x2a, 0x0a, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61,
 	0x74, 0x10, 0x01, 0x52, 0x17, 0x0a, 0x07, 0x66, 0x6f, 0x72, 0x65, 0x69, 0x67, 0x6e, 0x12, 0x03,
-	0x65, 0x78, 0x74, 0x12, 0x07, 0x66, 0x6f, 0x72, 0x65, 0x69, 0x67, 0x6e, 0x22, 0xc9, 0x02, 0x0a,
+	0x65, 0x78, 0x74, 0x12, 0x07, 0x66, 0x6f, 0x72, 0x65, 0x69, 0x67, 0x6e, 0x22, 0xa1, 0x03, 0x0a,
 	0x09, 0x4b, 0x65, 0x79, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x3e, 0x0a, 0x08, 0x69, 0x6e,
 	0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x6a,
 	0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x4b, 0x65, 0x79, 0x46,
@@ -5120,60 +5030,258 @@ var file_j5_schema_v1_schema_proto_rawDesc = []byte{
 	0x48, 0x00, 0x52, 0x04, 0x75, 0x75, 0x69, 0x64, 0x12, 0x32, 0x0a, 0x04, 0x69, 0x64, 0x36, 0x32,
 	0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65,
 	0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x4b, 0x65, 0x79, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x2e,
-	0x49, 0x44, 0x36, 0x32, 0x48, 0x00, 0x52, 0x04, 0x69, 0x64, 0x36, 0x32, 0x1a, 0x0a, 0x0a, 0x08,
-	0x49, 0x6e, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6c, 0x1a, 0x2a, 0x0a, 0x06, 0x43, 0x75, 0x73, 0x74,
-	0x6f, 0x6d, 0x12, 0x20, 0x0a, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x18, 0x01, 0x20,
-	0x01, 0x28, 0x09, 0x42, 0x06, 0xba, 0x48, 0x03, 0xc8, 0x01, 0x01, 0x52, 0x07, 0x70, 0x61, 0x74,
-	0x74, 0x65, 0x72, 0x6e, 0x1a, 0x06, 0x0a, 0x04, 0x55, 0x55, 0x49, 0x44, 0x1a, 0x06, 0x0a, 0x04,
-	0x49, 0x44, 0x36, 0x32, 0x3a, 0x0a, 0x82, 0xbe, 0x8f, 0x02, 0x05, 0x22, 0x03, 0x0a, 0x01, 0x2e,
-	0x42, 0x06, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x22, 0x81, 0x03, 0x0a, 0x0e, 0x4f, 0x62, 0x6a,
-	0x65, 0x63, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x65, 0x72, 0x74, 0x79, 0x12, 0x2b, 0x0a, 0x06, 0x73,
-	0x63, 0x68, 0x65, 0x6d, 0x61, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x6a, 0x35,
-	0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x69, 0x65, 0x6c, 0x64,
-	0x52, 0x06, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x12, 0x2e, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65,
-	0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1a, 0xba, 0x48, 0x17, 0x72, 0x15, 0x32, 0x13, 0x5e,
-	0x5b, 0x61, 0x2d, 0x7a, 0x5d, 0x5b, 0x61, 0x2d, 0x7a, 0x41, 0x2d, 0x5a, 0x30, 0x2d, 0x39, 0x5d,
-	0x2a, 0x24, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1a, 0x0a, 0x08, 0x72, 0x65, 0x71, 0x75,
-	0x69, 0x72, 0x65, 0x64, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x72, 0x65, 0x71, 0x75,
-	0x69, 0x72, 0x65, 0x64, 0x12, 0x2f, 0x0a, 0x13, 0x65, 0x78, 0x70, 0x6c, 0x69, 0x63, 0x69, 0x74,
-	0x6c, 0x79, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x18, 0x05, 0x20, 0x01, 0x28,
-	0x08, 0x52, 0x12, 0x65, 0x78, 0x70, 0x6c, 0x69, 0x63, 0x69, 0x74, 0x6c, 0x79, 0x4f, 0x70, 0x74,
-	0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70,
-	0x74, 0x69, 0x6f, 0x6e, 0x18, 0x08, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63,
-	0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x35, 0x0a, 0x09, 0x65, 0x6e, 0x74, 0x69, 0x74,
-	0x79, 0x4b, 0x65, 0x79, 0x18, 0x09, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x6a, 0x35, 0x2e,
-	0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79,
-	0x4b, 0x65, 0x79, 0x52, 0x09, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x4b, 0x65, 0x79, 0x12, 0x1f,
-	0x0a, 0x0b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x5f, 0x66, 0x69, 0x65, 0x6c, 0x64, 0x18, 0x0b, 0x20,
-	0x03, 0x28, 0x05, 0x52, 0x0a, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x3a,
-	0x4b, 0x82, 0xbe, 0x8f, 0x02, 0x46, 0x1a, 0x06, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x1c,
-	0x0a, 0x06, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x22, 0x08, 0x72, 0x65, 0x71, 0x75, 0x69, 0x72,
-	0x65, 0x64, 0x2a, 0x08, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x52, 0x1e, 0x0a, 0x08,
-	0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x12, 0x12, 0x65, 0x78, 0x70, 0x6c, 0x69, 0x63,
-	0x69, 0x74, 0x6c, 0x79, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x22, 0x6a, 0x0a, 0x09,
-	0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x4b, 0x65, 0x79, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x72, 0x69,
-	0x6d, 0x61, 0x72, 0x79, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x07, 0x70, 0x72, 0x69, 0x6d,
-	0x61, 0x72, 0x79, 0x12, 0x1b, 0x0a, 0x09, 0x73, 0x68, 0x61, 0x72, 0x64, 0x5f, 0x6b, 0x65, 0x79,
-	0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08, 0x73, 0x68, 0x61, 0x72, 0x64, 0x4b, 0x65, 0x79,
-	0x12, 0x1b, 0x0a, 0x06, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09,
-	0x48, 0x00, 0x52, 0x06, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x88, 0x01, 0x01, 0x42, 0x09, 0x0a,
-	0x07, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74, 0x2a, 0xb8, 0x01, 0x0a, 0x0a, 0x45, 0x6e, 0x74,
-	0x69, 0x74, 0x79, 0x50, 0x61, 0x72, 0x74, 0x12, 0x1b, 0x0a, 0x17, 0x45, 0x4e, 0x54, 0x49, 0x54,
-	0x59, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49,
-	0x45, 0x44, 0x10, 0x00, 0x12, 0x14, 0x0a, 0x10, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x5f, 0x50,
-	0x41, 0x52, 0x54, 0x5f, 0x4b, 0x45, 0x59, 0x53, 0x10, 0x01, 0x12, 0x15, 0x0a, 0x11, 0x45, 0x4e,
-	0x54, 0x49, 0x54, 0x59, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x45, 0x10,
-	0x02, 0x12, 0x15, 0x0a, 0x11, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x5f, 0x50, 0x41, 0x52, 0x54,
-	0x5f, 0x45, 0x56, 0x45, 0x4e, 0x54, 0x10, 0x03, 0x12, 0x14, 0x0a, 0x10, 0x45, 0x4e, 0x54, 0x49,
-	0x54, 0x59, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x44, 0x41, 0x54, 0x41, 0x10, 0x04, 0x12, 0x1a,
-	0x0a, 0x16, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x52, 0x45,
-	0x46, 0x45, 0x52, 0x45, 0x4e, 0x43, 0x45, 0x53, 0x10, 0x05, 0x12, 0x17, 0x0a, 0x13, 0x45, 0x4e,
-	0x54, 0x49, 0x54, 0x59, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x44, 0x45, 0x52, 0x49, 0x56, 0x45,
-	0x44, 0x10, 0x06, 0x42, 0x34, 0x5a, 0x32, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f,
-	0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x74, 0x6f, 0x70, 0x73, 0x2f, 0x6a, 0x35, 0x2f, 0x67, 0x65, 0x6e,
-	0x2f, 0x6a, 0x35, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x63,
-	0x68, 0x65, 0x6d, 0x61, 0x5f, 0x6a, 0x35, 0x70, 0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x49, 0x44, 0x36, 0x32, 0x48, 0x00, 0x52, 0x04, 0x69, 0x64, 0x36, 0x32, 0x12, 0x34, 0x0a, 0x06,
+	0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x6a,
+	0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x53, 0x74, 0x72, 0x69,
+	0x6e, 0x67, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x48, 0x00, 0x52, 0x06, 0x66, 0x6f, 0x72, 0x6d,
+	0x61, 0x74, 0x1a, 0x0a, 0x0a, 0x08, 0x49, 0x6e, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x6c, 0x1a, 0x4c,
+	0x0a, 0x06, 0x43, 0x75, 0x73, 0x74, 0x6f, 0x6d, 0x12, 0x20, 0x0a, 0x07, 0x70, 0x61, 0x74, 0x74,
+	0x65, 0x72, 0x6e, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x42, 0x06, 0xba, 0x48, 0x03, 0xc8, 0x01,
+	0x01, 0x52, 0x07, 0x70, 0x61, 0x74, 0x74, 0x65, 0x72, 0x6e, 0x12, 0x20, 0x0a, 0x0b, 0x64, 0x65,
+	0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x1a, 0x06, 0x0a, 0x04,
+	0x55, 0x55, 0x49, 0x44, 0x1a, 0x06, 0x0a, 0x04, 0x49, 0x44, 0x36, 0x32, 0x3a, 0x0a, 0x82, 0xbe,
+	0x8f, 0x02, 0x05, 0x22, 0x03, 0x0a, 0x01, 0x2e, 0x42, 0x06, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65,
+	0x22, 0xea, 0x04, 0x0a, 0x0a, 0x46, 0x6c, 0x6f, 0x61, 0x74, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x12,
+	0x37, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32,
+	0x1f, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x46,
+	0x6c, 0x6f, 0x61, 0x74, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74,
+	0x52, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x34, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65,
+	0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x46, 0x6c, 0x6f, 0x61, 0x74, 0x46, 0x69, 0x65, 0x6c,
+	0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x35,
+	0x0a, 0x0a, 0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x16, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e,
+	0x46, 0x6c, 0x6f, 0x61, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74,
+	0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x2e, 0x0a, 0x03, 0x65, 0x78, 0x74, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76,
+	0x31, 0x2e, 0x46, 0x6c, 0x6f, 0x61, 0x74, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74,
+	0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0xa3, 0x02, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12,
+	0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78,
+	0x69, 0x6d, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x48, 0x00, 0x52, 0x10, 0x65, 0x78,
+	0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01,
+	0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d,
+	0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x48, 0x01, 0x52, 0x10,
+	0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d,
+	0x88, 0x01, 0x01, 0x12, 0x1d, 0x0a, 0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x01, 0x48, 0x02, 0x52, 0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88,
+	0x01, 0x01, 0x12, 0x1d, 0x0a, 0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x01, 0x48, 0x03, 0x52, 0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01,
+	0x01, 0x12, 0x24, 0x0a, 0x0b, 0x6d, 0x75, 0x6c, 0x74, 0x69, 0x70, 0x6c, 0x65, 0x5f, 0x6f, 0x66,
+	0x18, 0x05, 0x20, 0x01, 0x28, 0x01, 0x48, 0x04, 0x52, 0x0a, 0x6d, 0x75, 0x6c, 0x74, 0x69, 0x70,
+	0x6c, 0x65, 0x4f, 0x66, 0x88, 0x01, 0x01, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c,
+	0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a,
+	0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69,
+	0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42,
+	0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0e, 0x0a, 0x0c, 0x5f,
+	0x6d, 0x75, 0x6c, 0x74, 0x69, 0x70, 0x6c, 0x65, 0x5f, 0x6f, 0x66, 0x1a, 0x05, 0x0a, 0x03, 0x45,
+	0x78, 0x74, 0x22, 0x48, 0x0a, 0x06, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x16, 0x0a, 0x12,
+	0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49,
+	0x45, 0x44, 0x10, 0x00, 0x12, 0x12, 0x0a, 0x0e, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x46,
+	0x4c, 0x4f, 0x41, 0x54, 0x33, 0x32, 0x10, 0x01, 0x12, 0x12, 0x0a, 0x0e, 0x46, 0x4f, 0x52, 0x4d,
+	0x41, 0x54, 0x5f, 0x46, 0x4c, 0x4f, 0x41, 0x54, 0x36, 0x34, 0x10, 0x02, 0x3a, 0x0f, 0x82, 0xbe,
+	0x8f, 0x02, 0x0a, 0x2a, 0x08, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x22, 0xa3, 0x05,
+	0x0a, 0x0c, 0x49, 0x6e, 0x74, 0x65, 0x67, 0x65, 0x72, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x46,
+	0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0e, 0x32, 0x21,
+	0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e,
+	0x74, 0x65, 0x67, 0x65, 0x72, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x46, 0x6f, 0x72, 0x6d, 0x61,
+	0x74, 0x42, 0x0b, 0xba, 0x48, 0x08, 0xc8, 0x01, 0x01, 0x82, 0x01, 0x02, 0x20, 0x00, 0x52, 0x06,
+	0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x36, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18,
+	0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d,
+	0x61, 0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x74, 0x65, 0x67, 0x65, 0x72, 0x46, 0x69, 0x65, 0x6c,
+	0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x37,
+	0x0a, 0x0a, 0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x18, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e,
+	0x49, 0x6e, 0x74, 0x65, 0x67, 0x65, 0x72, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x09, 0x6c, 0x69,
+	0x73, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x30, 0x0a, 0x03, 0x65, 0x78, 0x74, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61,
+	0x2e, 0x76, 0x31, 0x2e, 0x49, 0x6e, 0x74, 0x65, 0x67, 0x65, 0x72, 0x46, 0x69, 0x65, 0x6c, 0x64,
+	0x2e, 0x45, 0x78, 0x74, 0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0xa3, 0x02, 0x0a, 0x05, 0x52, 0x75,
+	0x6c, 0x65, 0x73, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65,
+	0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x48, 0x00,
+	0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x61, 0x78, 0x69, 0x6d,
+	0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69,
+	0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08,
+	0x48, 0x01, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x69, 0x6e,
+	0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x1d, 0x0a, 0x07, 0x6d, 0x69, 0x6e, 0x69, 0x6d,
+	0x75, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x03, 0x48, 0x02, 0x52, 0x07, 0x6d, 0x69, 0x6e, 0x69,
+	0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x1d, 0x0a, 0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75,
+	0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x03, 0x48, 0x03, 0x52, 0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d,
+	0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x24, 0x0a, 0x0b, 0x6d, 0x75, 0x6c, 0x74, 0x69, 0x70, 0x6c,
+	0x65, 0x5f, 0x6f, 0x66, 0x18, 0x05, 0x20, 0x01, 0x28, 0x03, 0x48, 0x04, 0x52, 0x0a, 0x6d, 0x75,
+	0x6c, 0x74, 0x69, 0x70, 0x6c, 0x65, 0x4f, 0x66, 0x88, 0x01, 0x01, 0x42, 0x14, 0x0a, 0x12, 0x5f,
+	0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75,
+	0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f,
+	0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x69, 0x6e, 0x69,
+	0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x42,
+	0x0e, 0x0a, 0x0c, 0x5f, 0x6d, 0x75, 0x6c, 0x74, 0x69, 0x70, 0x6c, 0x65, 0x5f, 0x6f, 0x66, 0x1a,
+	0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x22, 0x6a, 0x0a, 0x06, 0x46, 0x6f, 0x72, 0x6d, 0x61, 0x74,
+	0x12, 0x16, 0x0a, 0x12, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x55, 0x4e, 0x53, 0x50, 0x45,
+	0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x10, 0x0a, 0x0c, 0x46, 0x4f, 0x52, 0x4d,
+	0x41, 0x54, 0x5f, 0x49, 0x4e, 0x54, 0x33, 0x32, 0x10, 0x01, 0x12, 0x10, 0x0a, 0x0c, 0x46, 0x4f,
+	0x52, 0x4d, 0x41, 0x54, 0x5f, 0x49, 0x4e, 0x54, 0x36, 0x34, 0x10, 0x02, 0x12, 0x11, 0x0a, 0x0d,
+	0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x55, 0x49, 0x4e, 0x54, 0x33, 0x32, 0x10, 0x03, 0x12,
+	0x11, 0x0a, 0x0d, 0x46, 0x4f, 0x52, 0x4d, 0x41, 0x54, 0x5f, 0x55, 0x49, 0x4e, 0x54, 0x36, 0x34,
+	0x10, 0x04, 0x3a, 0x0f, 0x82, 0xbe, 0x8f, 0x02, 0x0a, 0x2a, 0x08, 0x0a, 0x06, 0x66, 0x6f, 0x72,
+	0x6d, 0x61, 0x74, 0x22, 0xda, 0x01, 0x0a, 0x09, 0x42, 0x6f, 0x6f, 0x6c, 0x46, 0x69, 0x65, 0x6c,
+	0x64, 0x12, 0x33, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b,
+	0x32, 0x1d, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e,
+	0x42, 0x6f, 0x6f, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52,
+	0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x34, 0x0a, 0x0a, 0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72,
+	0x75, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e, 0x6a, 0x35, 0x2e,
+	0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x52, 0x75, 0x6c, 0x65,
+	0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x2d, 0x0a, 0x03,
+	0x65, 0x78, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6a, 0x35, 0x2e, 0x73,
+	0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x46, 0x69, 0x65,
+	0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74, 0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0x2c, 0x0a, 0x05, 0x52,
+	0x75, 0x6c, 0x65, 0x73, 0x12, 0x19, 0x0a, 0x05, 0x63, 0x6f, 0x6e, 0x73, 0x74, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x08, 0x48, 0x00, 0x52, 0x05, 0x63, 0x6f, 0x6e, 0x73, 0x74, 0x88, 0x01, 0x01, 0x42,
+	0x08, 0x0a, 0x06, 0x5f, 0x63, 0x6f, 0x6e, 0x73, 0x74, 0x1a, 0x05, 0x0a, 0x03, 0x45, 0x78, 0x74,
+	0x22, 0xe8, 0x01, 0x0a, 0x0a, 0x42, 0x79, 0x74, 0x65, 0x73, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x12,
+	0x34, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e,
+	0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x42, 0x79,
+	0x74, 0x65, 0x73, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x05,
+	0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x2e, 0x0a, 0x03, 0x65, 0x78, 0x74, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x1c, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76,
+	0x31, 0x2e, 0x42, 0x79, 0x74, 0x65, 0x73, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74,
+	0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0x6d, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x22,
+	0x0a, 0x0a, 0x6d, 0x69, 0x6e, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x04, 0x48, 0x00, 0x52, 0x09, 0x6d, 0x69, 0x6e, 0x4c, 0x65, 0x6e, 0x67, 0x74, 0x68, 0x88,
+	0x01, 0x01, 0x12, 0x22, 0x0a, 0x0a, 0x6d, 0x61, 0x78, 0x5f, 0x6c, 0x65, 0x6e, 0x67, 0x74, 0x68,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x04, 0x48, 0x01, 0x52, 0x09, 0x6d, 0x61, 0x78, 0x4c, 0x65, 0x6e,
+	0x67, 0x74, 0x68, 0x88, 0x01, 0x01, 0x42, 0x0d, 0x0a, 0x0b, 0x5f, 0x6d, 0x69, 0x6e, 0x5f, 0x6c,
+	0x65, 0x6e, 0x67, 0x74, 0x68, 0x42, 0x0d, 0x0a, 0x0b, 0x5f, 0x6d, 0x61, 0x78, 0x5f, 0x6c, 0x65,
+	0x6e, 0x67, 0x74, 0x68, 0x1a, 0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x22, 0xa8, 0x03, 0x0a, 0x0c,
+	0x44, 0x65, 0x63, 0x69, 0x6d, 0x61, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x36, 0x0a, 0x05,
+	0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x6a, 0x35,
+	0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x63, 0x69, 0x6d,
+	0x61, 0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x05, 0x72,
+	0x75, 0x6c, 0x65, 0x73, 0x12, 0x37, 0x0a, 0x0a, 0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c,
+	0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x18, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69,
+	0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x63, 0x69, 0x6d, 0x61, 0x6c, 0x52, 0x75, 0x6c,
+	0x65, 0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x30, 0x0a,
+	0x03, 0x65, 0x78, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1e, 0x2e, 0x6a, 0x35, 0x2e,
+	0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x65, 0x63, 0x69, 0x6d, 0x61,
+	0x6c, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74, 0x52, 0x03, 0x65, 0x78, 0x74, 0x1a,
+	0xed, 0x01, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x1d, 0x0a, 0x07, 0x6d, 0x69, 0x6e,
+	0x69, 0x6d, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x07, 0x6d, 0x69,
+	0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x1d, 0x0a, 0x07, 0x6d, 0x61, 0x78, 0x69,
+	0x6d, 0x75, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x01, 0x52, 0x07, 0x6d, 0x61, 0x78,
+	0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75,
+	0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x08, 0x48, 0x02, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d,
+	0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63,
+	0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x08, 0x48, 0x03, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76,
+	0x65, 0x4d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x42, 0x0a, 0x0a, 0x08, 0x5f,
+	0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x61, 0x78, 0x69,
+	0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76,
+	0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78,
+	0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x1a,
+	0x05, 0x0a, 0x03, 0x45, 0x78, 0x74, 0x22, 0x9c, 0x03, 0x0a, 0x09, 0x44, 0x61, 0x74, 0x65, 0x46,
+	0x69, 0x65, 0x6c, 0x64, 0x12, 0x33, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x1d, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e,
+	0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x65, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75, 0x6c,
+	0x65, 0x73, 0x52, 0x05, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x34, 0x0a, 0x0a, 0x6c, 0x69, 0x73,
+	0x74, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x15, 0x2e,
+	0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x65, 0x52,
+	0x75, 0x6c, 0x65, 0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12,
+	0x2d, 0x0a, 0x03, 0x65, 0x78, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1b, 0x2e, 0x6a,
+	0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x44, 0x61, 0x74, 0x65,
+	0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74, 0x52, 0x03, 0x65, 0x78, 0x74, 0x1a, 0xed,
+	0x01, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x1d, 0x0a, 0x07, 0x6d, 0x69, 0x6e, 0x69,
+	0x6d, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x07, 0x6d, 0x69, 0x6e,
+	0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x1d, 0x0a, 0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d,
+	0x75, 0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x48, 0x01, 0x52, 0x07, 0x6d, 0x61, 0x78, 0x69,
+	0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73,
+	0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28,
+	0x08, 0x48, 0x02, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x69,
+	0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c,
+	0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x04, 0x20,
+	0x01, 0x28, 0x08, 0x48, 0x03, 0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65,
+	0x4d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d,
+	0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d,
+	0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65,
+	0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63,
+	0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x1a, 0x05,
+	0x0a, 0x03, 0x45, 0x78, 0x74, 0x22, 0xe8, 0x03, 0x0a, 0x0e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74,
+	0x61, 0x6d, 0x70, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x12, 0x38, 0x0a, 0x05, 0x72, 0x75, 0x6c, 0x65,
+	0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68,
+	0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70,
+	0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x52, 0x05, 0x72, 0x75, 0x6c,
+	0x65, 0x73, 0x12, 0x39, 0x0a, 0x0a, 0x6c, 0x69, 0x73, 0x74, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x6a, 0x35, 0x2e, 0x6c, 0x69, 0x73, 0x74,
+	0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x75, 0x6c,
+	0x65, 0x73, 0x52, 0x09, 0x6c, 0x69, 0x73, 0x74, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x32, 0x0a,
+	0x03, 0x65, 0x78, 0x74, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x20, 0x2e, 0x6a, 0x35, 0x2e,
+	0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76, 0x31, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74,
+	0x61, 0x6d, 0x70, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x2e, 0x45, 0x78, 0x74, 0x52, 0x03, 0x65, 0x78,
+	0x74, 0x1a, 0xa5, 0x02, 0x0a, 0x05, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x39, 0x0a, 0x07, 0x6d,
+	0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
+	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54,
+	0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x48, 0x00, 0x52, 0x07, 0x6d, 0x69, 0x6e, 0x69,
+	0x6d, 0x75, 0x6d, 0x88, 0x01, 0x01, 0x12, 0x39, 0x0a, 0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75,
+	0x6d, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65,
+	0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69, 0x6d, 0x65, 0x73, 0x74,
+	0x61, 0x6d, 0x70, 0x48, 0x01, 0x52, 0x07, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x88, 0x01,
+	0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d,
+	0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x03, 0x20, 0x01, 0x28, 0x08, 0x48, 0x02, 0x52, 0x10,
+	0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x69, 0x6e, 0x69, 0x6d, 0x75, 0x6d,
+	0x88, 0x01, 0x01, 0x12, 0x30, 0x0a, 0x11, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65,
+	0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x18, 0x04, 0x20, 0x01, 0x28, 0x08, 0x48, 0x03,
+	0x52, 0x10, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x4d, 0x61, 0x78, 0x69, 0x6d,
+	0x75, 0x6d, 0x88, 0x01, 0x01, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x69, 0x6e, 0x69, 0x6d, 0x75,
+	0x6d, 0x42, 0x0a, 0x0a, 0x08, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a,
+	0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76, 0x65, 0x5f, 0x6d, 0x69, 0x6e, 0x69,
+	0x6d, 0x75, 0x6d, 0x42, 0x14, 0x0a, 0x12, 0x5f, 0x65, 0x78, 0x63, 0x6c, 0x75, 0x73, 0x69, 0x76,
+	0x65, 0x5f, 0x6d, 0x61, 0x78, 0x69, 0x6d, 0x75, 0x6d, 0x1a, 0x05, 0x0a, 0x03, 0x45, 0x78, 0x74,
+	0x22, 0x81, 0x03, 0x0a, 0x0e, 0x4f, 0x62, 0x6a, 0x65, 0x63, 0x74, 0x50, 0x72, 0x6f, 0x70, 0x65,
+	0x72, 0x74, 0x79, 0x12, 0x2b, 0x0a, 0x06, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x0b, 0x32, 0x13, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e,
+	0x76, 0x31, 0x2e, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x52, 0x06, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61,
+	0x12, 0x2e, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x42, 0x1a,
+	0xba, 0x48, 0x17, 0x72, 0x15, 0x32, 0x13, 0x5e, 0x5b, 0x61, 0x2d, 0x7a, 0x5d, 0x5b, 0x61, 0x2d,
+	0x7a, 0x41, 0x2d, 0x5a, 0x30, 0x2d, 0x39, 0x5d, 0x2a, 0x24, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x12, 0x1a, 0x0a, 0x08, 0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x18, 0x04, 0x20, 0x01,
+	0x28, 0x08, 0x52, 0x08, 0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x12, 0x2f, 0x0a, 0x13,
+	0x65, 0x78, 0x70, 0x6c, 0x69, 0x63, 0x69, 0x74, 0x6c, 0x79, 0x5f, 0x6f, 0x70, 0x74, 0x69, 0x6f,
+	0x6e, 0x61, 0x6c, 0x18, 0x05, 0x20, 0x01, 0x28, 0x08, 0x52, 0x12, 0x65, 0x78, 0x70, 0x6c, 0x69,
+	0x63, 0x69, 0x74, 0x6c, 0x79, 0x4f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c, 0x12, 0x20, 0x0a,
+	0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x18, 0x08, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x0b, 0x64, 0x65, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12,
+	0x35, 0x0a, 0x09, 0x65, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x4b, 0x65, 0x79, 0x18, 0x09, 0x20, 0x01,
+	0x28, 0x0b, 0x32, 0x17, 0x2e, 0x6a, 0x35, 0x2e, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x2e, 0x76,
+	0x31, 0x2e, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x4b, 0x65, 0x79, 0x52, 0x09, 0x65, 0x6e, 0x74,
+	0x69, 0x74, 0x79, 0x4b, 0x65, 0x79, 0x12, 0x1f, 0x0a, 0x0b, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x5f,
+	0x66, 0x69, 0x65, 0x6c, 0x64, 0x18, 0x0b, 0x20, 0x03, 0x28, 0x05, 0x52, 0x0a, 0x70, 0x72, 0x6f,
+	0x74, 0x6f, 0x46, 0x69, 0x65, 0x6c, 0x64, 0x3a, 0x4b, 0x82, 0xbe, 0x8f, 0x02, 0x46, 0x1a, 0x06,
+	0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x22, 0x1c, 0x0a, 0x06, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61,
+	0x22, 0x08, 0x72, 0x65, 0x71, 0x75, 0x69, 0x72, 0x65, 0x64, 0x2a, 0x08, 0x6f, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x61, 0x6c, 0x52, 0x1e, 0x0a, 0x08, 0x6f, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x61, 0x6c,
+	0x12, 0x12, 0x65, 0x78, 0x70, 0x6c, 0x69, 0x63, 0x69, 0x74, 0x6c, 0x79, 0x4f, 0x70, 0x74, 0x69,
+	0x6f, 0x6e, 0x61, 0x6c, 0x22, 0x6a, 0x0a, 0x09, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x4b, 0x65,
+	0x79, 0x12, 0x18, 0x0a, 0x07, 0x70, 0x72, 0x69, 0x6d, 0x61, 0x72, 0x79, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x08, 0x52, 0x07, 0x70, 0x72, 0x69, 0x6d, 0x61, 0x72, 0x79, 0x12, 0x1b, 0x0a, 0x09, 0x73,
+	0x68, 0x61, 0x72, 0x64, 0x5f, 0x6b, 0x65, 0x79, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x08,
+	0x73, 0x68, 0x61, 0x72, 0x64, 0x4b, 0x65, 0x79, 0x12, 0x1b, 0x0a, 0x06, 0x74, 0x65, 0x6e, 0x61,
+	0x6e, 0x74, 0x18, 0x05, 0x20, 0x01, 0x28, 0x09, 0x48, 0x00, 0x52, 0x06, 0x74, 0x65, 0x6e, 0x61,
+	0x6e, 0x74, 0x88, 0x01, 0x01, 0x42, 0x09, 0x0a, 0x07, 0x5f, 0x74, 0x65, 0x6e, 0x61, 0x6e, 0x74,
+	0x2a, 0xb8, 0x01, 0x0a, 0x0a, 0x45, 0x6e, 0x74, 0x69, 0x74, 0x79, 0x50, 0x61, 0x72, 0x74, 0x12,
+	0x1b, 0x0a, 0x17, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x55,
+	0x4e, 0x53, 0x50, 0x45, 0x43, 0x49, 0x46, 0x49, 0x45, 0x44, 0x10, 0x00, 0x12, 0x14, 0x0a, 0x10,
+	0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x4b, 0x45, 0x59, 0x53,
+	0x10, 0x01, 0x12, 0x15, 0x0a, 0x11, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x5f, 0x50, 0x41, 0x52,
+	0x54, 0x5f, 0x53, 0x54, 0x41, 0x54, 0x45, 0x10, 0x02, 0x12, 0x15, 0x0a, 0x11, 0x45, 0x4e, 0x54,
+	0x49, 0x54, 0x59, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x45, 0x56, 0x45, 0x4e, 0x54, 0x10, 0x03,
+	0x12, 0x14, 0x0a, 0x10, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f,
+	0x44, 0x41, 0x54, 0x41, 0x10, 0x04, 0x12, 0x1a, 0x0a, 0x16, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59,
+	0x5f, 0x50, 0x41, 0x52, 0x54, 0x5f, 0x52, 0x45, 0x46, 0x45, 0x52, 0x45, 0x4e, 0x43, 0x45, 0x53,
+	0x10, 0x05, 0x12, 0x17, 0x0a, 0x13, 0x45, 0x4e, 0x54, 0x49, 0x54, 0x59, 0x5f, 0x50, 0x41, 0x52,
+	0x54, 0x5f, 0x44, 0x45, 0x52, 0x49, 0x56, 0x45, 0x44, 0x10, 0x06, 0x42, 0x34, 0x5a, 0x32, 0x67,
+	0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x70, 0x65, 0x6e, 0x74, 0x6f, 0x70,
+	0x73, 0x2f, 0x6a, 0x35, 0x2f, 0x67, 0x65, 0x6e, 0x2f, 0x6a, 0x35, 0x2f, 0x73, 0x63, 0x68, 0x65,
+	0x6d, 0x61, 0x2f, 0x76, 0x31, 0x2f, 0x73, 0x63, 0x68, 0x65, 0x6d, 0x61, 0x5f, 0x6a, 0x35, 0x70,
+	0x62, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -5189,7 +5297,7 @@ func file_j5_schema_v1_schema_proto_rawDescGZIP() []byte {
 }
 
 var file_j5_schema_v1_schema_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_j5_schema_v1_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 68)
+var file_j5_schema_v1_schema_proto_msgTypes = make([]protoimpl.MessageInfo, 69)
 var file_j5_schema_v1_schema_proto_goTypes = []any{
 	(EntityPart)(0),                      // 0: j5.schema.v1.EntityPart
 	(FloatField_Format)(0),               // 1: j5.schema.v1.FloatField.Format
@@ -5211,176 +5319,179 @@ var file_j5_schema_v1_schema_proto_goTypes = []any{
 	(*Enum)(nil),                         // 17: j5.schema.v1.Enum
 	(*ArrayField)(nil),                   // 18: j5.schema.v1.ArrayField
 	(*MapField)(nil),                     // 19: j5.schema.v1.MapField
-	(*StringField)(nil),                  // 20: j5.schema.v1.StringField
-	(*FloatField)(nil),                   // 21: j5.schema.v1.FloatField
-	(*IntegerField)(nil),                 // 22: j5.schema.v1.IntegerField
-	(*BoolField)(nil),                    // 23: j5.schema.v1.BoolField
-	(*BytesField)(nil),                   // 24: j5.schema.v1.BytesField
-	(*DecimalField)(nil),                 // 25: j5.schema.v1.DecimalField
-	(*DateField)(nil),                    // 26: j5.schema.v1.DateField
-	(*TimestampField)(nil),               // 27: j5.schema.v1.TimestampField
-	(*KeyField)(nil),                     // 28: j5.schema.v1.KeyField
-	(*KeyFormat)(nil),                    // 29: j5.schema.v1.KeyFormat
-	(*ObjectProperty)(nil),               // 30: j5.schema.v1.ObjectProperty
-	(*EntityKey)(nil),                    // 31: j5.schema.v1.EntityKey
-	(*ObjectField_Rules)(nil),            // 32: j5.schema.v1.ObjectField.Rules
-	(*ObjectField_Ext)(nil),              // 33: j5.schema.v1.ObjectField.Ext
-	(*ObjectField_EntityJoin)(nil),       // 34: j5.schema.v1.ObjectField.EntityJoin
-	(*PolymorphField_Rules)(nil),         // 35: j5.schema.v1.PolymorphField.Rules
-	(*PolymorphField_Ext)(nil),           // 36: j5.schema.v1.PolymorphField.Ext
-	(*OneofField_Rules)(nil),             // 37: j5.schema.v1.OneofField.Rules
-	(*OneofField_Ext)(nil),               // 38: j5.schema.v1.OneofField.Ext
-	(*EnumField_Rules)(nil),              // 39: j5.schema.v1.EnumField.Rules
-	(*EnumField_Ext)(nil),                // 40: j5.schema.v1.EnumField.Ext
-	(*Enum_Option)(nil),                  // 41: j5.schema.v1.Enum.Option
-	(*Enum_OptionInfoField)(nil),         // 42: j5.schema.v1.Enum.OptionInfoField
-	nil,                                  // 43: j5.schema.v1.Enum.Option.InfoEntry
-	(*ArrayField_Ext)(nil),               // 44: j5.schema.v1.ArrayField.Ext
-	(*ArrayField_Rules)(nil),             // 45: j5.schema.v1.ArrayField.Rules
-	(*MapField_Rules)(nil),               // 46: j5.schema.v1.MapField.Rules
-	(*MapField_Ext)(nil),                 // 47: j5.schema.v1.MapField.Ext
-	(*StringField_Rules)(nil),            // 48: j5.schema.v1.StringField.Rules
-	(*StringField_Ext)(nil),              // 49: j5.schema.v1.StringField.Ext
-	(*FloatField_Rules)(nil),             // 50: j5.schema.v1.FloatField.Rules
-	(*FloatField_Ext)(nil),               // 51: j5.schema.v1.FloatField.Ext
-	(*IntegerField_Rules)(nil),           // 52: j5.schema.v1.IntegerField.Rules
-	(*IntegerField_Ext)(nil),             // 53: j5.schema.v1.IntegerField.Ext
-	(*BoolField_Rules)(nil),              // 54: j5.schema.v1.BoolField.Rules
-	(*BoolField_Ext)(nil),                // 55: j5.schema.v1.BoolField.Ext
-	(*BytesField_Rules)(nil),             // 56: j5.schema.v1.BytesField.Rules
-	(*BytesField_Ext)(nil),               // 57: j5.schema.v1.BytesField.Ext
-	(*DecimalField_Rules)(nil),           // 58: j5.schema.v1.DecimalField.Rules
-	(*DecimalField_Ext)(nil),             // 59: j5.schema.v1.DecimalField.Ext
-	(*DateField_Rules)(nil),              // 60: j5.schema.v1.DateField.Rules
-	(*DateField_Ext)(nil),                // 61: j5.schema.v1.DateField.Ext
-	(*TimestampField_Rules)(nil),         // 62: j5.schema.v1.TimestampField.Rules
-	(*TimestampField_Ext)(nil),           // 63: j5.schema.v1.TimestampField.Ext
-	(*KeyField_Rules)(nil),               // 64: j5.schema.v1.KeyField.Rules
-	(*KeyField_Ext)(nil),                 // 65: j5.schema.v1.KeyField.Ext
-	(*KeyField_DeprecatedEntityKey)(nil), // 66: j5.schema.v1.KeyField.DeprecatedEntityKey
-	(*KeyFormat_Informal)(nil),           // 67: j5.schema.v1.KeyFormat.Informal
-	(*KeyFormat_Custom)(nil),             // 68: j5.schema.v1.KeyFormat.Custom
-	(*KeyFormat_UUID)(nil),               // 69: j5.schema.v1.KeyFormat.UUID
-	(*KeyFormat_ID62)(nil),               // 70: j5.schema.v1.KeyFormat.ID62
-	(*list_j5pb.AnyRules)(nil),           // 71: j5.list.v1.AnyRules
-	(*bcl_j5pb.Block)(nil),               // 72: j5.bcl.v1.Block
-	(*list_j5pb.OneofRules)(nil),         // 73: j5.list.v1.OneofRules
-	(*list_j5pb.EnumRules)(nil),          // 74: j5.list.v1.EnumRules
-	(*list_j5pb.OpenTextRules)(nil),      // 75: j5.list.v1.OpenTextRules
-	(*list_j5pb.FloatRules)(nil),         // 76: j5.list.v1.FloatRules
-	(*list_j5pb.IntegerRules)(nil),       // 77: j5.list.v1.IntegerRules
-	(*list_j5pb.BoolRules)(nil),          // 78: j5.list.v1.BoolRules
-	(*list_j5pb.DecimalRules)(nil),       // 79: j5.list.v1.DecimalRules
-	(*list_j5pb.DateRules)(nil),          // 80: j5.list.v1.DateRules
-	(*list_j5pb.TimestampRules)(nil),     // 81: j5.list.v1.TimestampRules
-	(*list_j5pb.KeyRules)(nil),           // 82: j5.list.v1.KeyRules
-	(*timestamppb.Timestamp)(nil),        // 83: google.protobuf.Timestamp
+	(*StringFormat)(nil),                 // 20: j5.schema.v1.StringFormat
+	(*StringField)(nil),                  // 21: j5.schema.v1.StringField
+	(*KeyField)(nil),                     // 22: j5.schema.v1.KeyField
+	(*KeyFormat)(nil),                    // 23: j5.schema.v1.KeyFormat
+	(*FloatField)(nil),                   // 24: j5.schema.v1.FloatField
+	(*IntegerField)(nil),                 // 25: j5.schema.v1.IntegerField
+	(*BoolField)(nil),                    // 26: j5.schema.v1.BoolField
+	(*BytesField)(nil),                   // 27: j5.schema.v1.BytesField
+	(*DecimalField)(nil),                 // 28: j5.schema.v1.DecimalField
+	(*DateField)(nil),                    // 29: j5.schema.v1.DateField
+	(*TimestampField)(nil),               // 30: j5.schema.v1.TimestampField
+	(*ObjectProperty)(nil),               // 31: j5.schema.v1.ObjectProperty
+	(*EntityKey)(nil),                    // 32: j5.schema.v1.EntityKey
+	(*ObjectField_Rules)(nil),            // 33: j5.schema.v1.ObjectField.Rules
+	(*ObjectField_Ext)(nil),              // 34: j5.schema.v1.ObjectField.Ext
+	(*ObjectField_EntityJoin)(nil),       // 35: j5.schema.v1.ObjectField.EntityJoin
+	(*PolymorphField_Rules)(nil),         // 36: j5.schema.v1.PolymorphField.Rules
+	(*PolymorphField_Ext)(nil),           // 37: j5.schema.v1.PolymorphField.Ext
+	(*OneofField_Rules)(nil),             // 38: j5.schema.v1.OneofField.Rules
+	(*OneofField_Ext)(nil),               // 39: j5.schema.v1.OneofField.Ext
+	(*EnumField_Rules)(nil),              // 40: j5.schema.v1.EnumField.Rules
+	(*EnumField_Ext)(nil),                // 41: j5.schema.v1.EnumField.Ext
+	(*Enum_Option)(nil),                  // 42: j5.schema.v1.Enum.Option
+	(*Enum_OptionInfoField)(nil),         // 43: j5.schema.v1.Enum.OptionInfoField
+	nil,                                  // 44: j5.schema.v1.Enum.Option.InfoEntry
+	(*ArrayField_Ext)(nil),               // 45: j5.schema.v1.ArrayField.Ext
+	(*ArrayField_Rules)(nil),             // 46: j5.schema.v1.ArrayField.Rules
+	(*MapField_Rules)(nil),               // 47: j5.schema.v1.MapField.Rules
+	(*MapField_Ext)(nil),                 // 48: j5.schema.v1.MapField.Ext
+	(*StringField_Rules)(nil),            // 49: j5.schema.v1.StringField.Rules
+	(*StringField_Ext)(nil),              // 50: j5.schema.v1.StringField.Ext
+	(*KeyField_Rules)(nil),               // 51: j5.schema.v1.KeyField.Rules
+	(*KeyField_Ext)(nil),                 // 52: j5.schema.v1.KeyField.Ext
+	(*KeyField_DeprecatedEntityKey)(nil), // 53: j5.schema.v1.KeyField.DeprecatedEntityKey
+	(*KeyFormat_Informal)(nil),           // 54: j5.schema.v1.KeyFormat.Informal
+	(*KeyFormat_Custom)(nil),             // 55: j5.schema.v1.KeyFormat.Custom
+	(*KeyFormat_UUID)(nil),               // 56: j5.schema.v1.KeyFormat.UUID
+	(*KeyFormat_ID62)(nil),               // 57: j5.schema.v1.KeyFormat.ID62
+	(*FloatField_Rules)(nil),             // 58: j5.schema.v1.FloatField.Rules
+	(*FloatField_Ext)(nil),               // 59: j5.schema.v1.FloatField.Ext
+	(*IntegerField_Rules)(nil),           // 60: j5.schema.v1.IntegerField.Rules
+	(*IntegerField_Ext)(nil),             // 61: j5.schema.v1.IntegerField.Ext
+	(*BoolField_Rules)(nil),              // 62: j5.schema.v1.BoolField.Rules
+	(*BoolField_Ext)(nil),                // 63: j5.schema.v1.BoolField.Ext
+	(*BytesField_Rules)(nil),             // 64: j5.schema.v1.BytesField.Rules
+	(*BytesField_Ext)(nil),               // 65: j5.schema.v1.BytesField.Ext
+	(*DecimalField_Rules)(nil),           // 66: j5.schema.v1.DecimalField.Rules
+	(*DecimalField_Ext)(nil),             // 67: j5.schema.v1.DecimalField.Ext
+	(*DateField_Rules)(nil),              // 68: j5.schema.v1.DateField.Rules
+	(*DateField_Ext)(nil),                // 69: j5.schema.v1.DateField.Ext
+	(*TimestampField_Rules)(nil),         // 70: j5.schema.v1.TimestampField.Rules
+	(*TimestampField_Ext)(nil),           // 71: j5.schema.v1.TimestampField.Ext
+	(*list_j5pb.AnyRules)(nil),           // 72: j5.list.v1.AnyRules
+	(*bcl_j5pb.Block)(nil),               // 73: j5.bcl.v1.Block
+	(*list_j5pb.OneofRules)(nil),         // 74: j5.list.v1.OneofRules
+	(*list_j5pb.EnumRules)(nil),          // 75: j5.list.v1.EnumRules
+	(*list_j5pb.OpenTextRules)(nil),      // 76: j5.list.v1.OpenTextRules
+	(*list_j5pb.KeyRules)(nil),           // 77: j5.list.v1.KeyRules
+	(*list_j5pb.FloatRules)(nil),         // 78: j5.list.v1.FloatRules
+	(*list_j5pb.IntegerRules)(nil),       // 79: j5.list.v1.IntegerRules
+	(*list_j5pb.BoolRules)(nil),          // 80: j5.list.v1.BoolRules
+	(*list_j5pb.DecimalRules)(nil),       // 81: j5.list.v1.DecimalRules
+	(*list_j5pb.DateRules)(nil),          // 82: j5.list.v1.DateRules
+	(*list_j5pb.TimestampRules)(nil),     // 83: j5.list.v1.TimestampRules
+	(*timestamppb.Timestamp)(nil),        // 84: google.protobuf.Timestamp
 }
 var file_j5_schema_v1_schema_proto_depIdxs = []int32{
-	15, // 0: j5.schema.v1.RootSchema.oneof:type_name -> j5.schema.v1.Oneof
-	10, // 1: j5.schema.v1.RootSchema.object:type_name -> j5.schema.v1.Object
-	17, // 2: j5.schema.v1.RootSchema.enum:type_name -> j5.schema.v1.Enum
-	13, // 3: j5.schema.v1.RootSchema.polymorph:type_name -> j5.schema.v1.Polymorph
-	7,  // 4: j5.schema.v1.Field.any:type_name -> j5.schema.v1.AnyField
-	14, // 5: j5.schema.v1.Field.oneof:type_name -> j5.schema.v1.OneofField
-	8,  // 6: j5.schema.v1.Field.object:type_name -> j5.schema.v1.ObjectField
-	12, // 7: j5.schema.v1.Field.polymorph:type_name -> j5.schema.v1.PolymorphField
-	16, // 8: j5.schema.v1.Field.enum:type_name -> j5.schema.v1.EnumField
-	18, // 9: j5.schema.v1.Field.array:type_name -> j5.schema.v1.ArrayField
-	19, // 10: j5.schema.v1.Field.map:type_name -> j5.schema.v1.MapField
-	20, // 11: j5.schema.v1.Field.string:type_name -> j5.schema.v1.StringField
-	22, // 12: j5.schema.v1.Field.integer:type_name -> j5.schema.v1.IntegerField
-	21, // 13: j5.schema.v1.Field.float:type_name -> j5.schema.v1.FloatField
-	23, // 14: j5.schema.v1.Field.bool:type_name -> j5.schema.v1.BoolField
-	24, // 15: j5.schema.v1.Field.bytes:type_name -> j5.schema.v1.BytesField
-	25, // 16: j5.schema.v1.Field.decimal:type_name -> j5.schema.v1.DecimalField
-	26, // 17: j5.schema.v1.Field.date:type_name -> j5.schema.v1.DateField
-	27, // 18: j5.schema.v1.Field.timestamp:type_name -> j5.schema.v1.TimestampField
-	28, // 19: j5.schema.v1.Field.key:type_name -> j5.schema.v1.KeyField
-	71, // 20: j5.schema.v1.AnyField.list_rules:type_name -> j5.list.v1.AnyRules
-	5,  // 21: j5.schema.v1.ObjectField.ref:type_name -> j5.schema.v1.Ref
-	10, // 22: j5.schema.v1.ObjectField.object:type_name -> j5.schema.v1.Object
-	32, // 23: j5.schema.v1.ObjectField.rules:type_name -> j5.schema.v1.ObjectField.Rules
-	33, // 24: j5.schema.v1.ObjectField.ext:type_name -> j5.schema.v1.ObjectField.Ext
-	34, // 25: j5.schema.v1.ObjectField.entity:type_name -> j5.schema.v1.ObjectField.EntityJoin
-	30, // 26: j5.schema.v1.InlineObject.properties:type_name -> j5.schema.v1.ObjectProperty
-	11, // 27: j5.schema.v1.Object.entity:type_name -> j5.schema.v1.EntityObject
-	30, // 28: j5.schema.v1.Object.properties:type_name -> j5.schema.v1.ObjectProperty
-	72, // 29: j5.schema.v1.Object.bcl:type_name -> j5.bcl.v1.Block
-	0,  // 30: j5.schema.v1.EntityObject.part:type_name -> j5.schema.v1.EntityPart
-	5,  // 31: j5.schema.v1.PolymorphField.ref:type_name -> j5.schema.v1.Ref
-	13, // 32: j5.schema.v1.PolymorphField.polymorph:type_name -> j5.schema.v1.Polymorph
-	35, // 33: j5.schema.v1.PolymorphField.rules:type_name -> j5.schema.v1.PolymorphField.Rules
-	36, // 34: j5.schema.v1.PolymorphField.ext:type_name -> j5.schema.v1.PolymorphField.Ext
-	5,  // 35: j5.schema.v1.OneofField.ref:type_name -> j5.schema.v1.Ref
-	15, // 36: j5.schema.v1.OneofField.oneof:type_name -> j5.schema.v1.Oneof
-	37, // 37: j5.schema.v1.OneofField.rules:type_name -> j5.schema.v1.OneofField.Rules
-	73, // 38: j5.schema.v1.OneofField.list_rules:type_name -> j5.list.v1.OneofRules
-	38, // 39: j5.schema.v1.OneofField.ext:type_name -> j5.schema.v1.OneofField.Ext
-	72, // 40: j5.schema.v1.Oneof.bcl:type_name -> j5.bcl.v1.Block
-	30, // 41: j5.schema.v1.Oneof.properties:type_name -> j5.schema.v1.ObjectProperty
-	5,  // 42: j5.schema.v1.EnumField.ref:type_name -> j5.schema.v1.Ref
-	17, // 43: j5.schema.v1.EnumField.enum:type_name -> j5.schema.v1.Enum
-	39, // 44: j5.schema.v1.EnumField.rules:type_name -> j5.schema.v1.EnumField.Rules
-	74, // 45: j5.schema.v1.EnumField.list_rules:type_name -> j5.list.v1.EnumRules
-	40, // 46: j5.schema.v1.EnumField.ext:type_name -> j5.schema.v1.EnumField.Ext
-	41, // 47: j5.schema.v1.Enum.options:type_name -> j5.schema.v1.Enum.Option
-	42, // 48: j5.schema.v1.Enum.info:type_name -> j5.schema.v1.Enum.OptionInfoField
-	45, // 49: j5.schema.v1.ArrayField.rules:type_name -> j5.schema.v1.ArrayField.Rules
-	4,  // 50: j5.schema.v1.ArrayField.items:type_name -> j5.schema.v1.Field
-	44, // 51: j5.schema.v1.ArrayField.ext:type_name -> j5.schema.v1.ArrayField.Ext
-	4,  // 52: j5.schema.v1.MapField.item_schema:type_name -> j5.schema.v1.Field
-	4,  // 53: j5.schema.v1.MapField.key_schema:type_name -> j5.schema.v1.Field
-	46, // 54: j5.schema.v1.MapField.rules:type_name -> j5.schema.v1.MapField.Rules
-	47, // 55: j5.schema.v1.MapField.ext:type_name -> j5.schema.v1.MapField.Ext
-	48, // 56: j5.schema.v1.StringField.rules:type_name -> j5.schema.v1.StringField.Rules
-	75, // 57: j5.schema.v1.StringField.list_rules:type_name -> j5.list.v1.OpenTextRules
-	49, // 58: j5.schema.v1.StringField.ext:type_name -> j5.schema.v1.StringField.Ext
-	1,  // 59: j5.schema.v1.FloatField.format:type_name -> j5.schema.v1.FloatField.Format
-	50, // 60: j5.schema.v1.FloatField.rules:type_name -> j5.schema.v1.FloatField.Rules
-	76, // 61: j5.schema.v1.FloatField.list_rules:type_name -> j5.list.v1.FloatRules
-	51, // 62: j5.schema.v1.FloatField.ext:type_name -> j5.schema.v1.FloatField.Ext
-	2,  // 63: j5.schema.v1.IntegerField.format:type_name -> j5.schema.v1.IntegerField.Format
-	52, // 64: j5.schema.v1.IntegerField.rules:type_name -> j5.schema.v1.IntegerField.Rules
-	77, // 65: j5.schema.v1.IntegerField.list_rules:type_name -> j5.list.v1.IntegerRules
-	53, // 66: j5.schema.v1.IntegerField.ext:type_name -> j5.schema.v1.IntegerField.Ext
-	54, // 67: j5.schema.v1.BoolField.rules:type_name -> j5.schema.v1.BoolField.Rules
-	78, // 68: j5.schema.v1.BoolField.list_rules:type_name -> j5.list.v1.BoolRules
-	55, // 69: j5.schema.v1.BoolField.ext:type_name -> j5.schema.v1.BoolField.Ext
-	56, // 70: j5.schema.v1.BytesField.rules:type_name -> j5.schema.v1.BytesField.Rules
-	57, // 71: j5.schema.v1.BytesField.ext:type_name -> j5.schema.v1.BytesField.Ext
-	58, // 72: j5.schema.v1.DecimalField.rules:type_name -> j5.schema.v1.DecimalField.Rules
-	79, // 73: j5.schema.v1.DecimalField.list_rules:type_name -> j5.list.v1.DecimalRules
-	59, // 74: j5.schema.v1.DecimalField.ext:type_name -> j5.schema.v1.DecimalField.Ext
-	60, // 75: j5.schema.v1.DateField.rules:type_name -> j5.schema.v1.DateField.Rules
-	80, // 76: j5.schema.v1.DateField.list_rules:type_name -> j5.list.v1.DateRules
-	61, // 77: j5.schema.v1.DateField.ext:type_name -> j5.schema.v1.DateField.Ext
-	62, // 78: j5.schema.v1.TimestampField.rules:type_name -> j5.schema.v1.TimestampField.Rules
-	81, // 79: j5.schema.v1.TimestampField.list_rules:type_name -> j5.list.v1.TimestampRules
-	63, // 80: j5.schema.v1.TimestampField.ext:type_name -> j5.schema.v1.TimestampField.Ext
-	64, // 81: j5.schema.v1.KeyField.rules:type_name -> j5.schema.v1.KeyField.Rules
-	29, // 82: j5.schema.v1.KeyField.format:type_name -> j5.schema.v1.KeyFormat
-	82, // 83: j5.schema.v1.KeyField.list_rules:type_name -> j5.list.v1.KeyRules
-	65, // 84: j5.schema.v1.KeyField.ext:type_name -> j5.schema.v1.KeyField.Ext
-	66, // 85: j5.schema.v1.KeyField.entity:type_name -> j5.schema.v1.KeyField.DeprecatedEntityKey
-	67, // 86: j5.schema.v1.KeyFormat.informal:type_name -> j5.schema.v1.KeyFormat.Informal
-	68, // 87: j5.schema.v1.KeyFormat.custom:type_name -> j5.schema.v1.KeyFormat.Custom
-	69, // 88: j5.schema.v1.KeyFormat.uuid:type_name -> j5.schema.v1.KeyFormat.UUID
-	70, // 89: j5.schema.v1.KeyFormat.id62:type_name -> j5.schema.v1.KeyFormat.ID62
-	4,  // 90: j5.schema.v1.ObjectProperty.schema:type_name -> j5.schema.v1.Field
-	31, // 91: j5.schema.v1.ObjectProperty.entityKey:type_name -> j5.schema.v1.EntityKey
-	6,  // 92: j5.schema.v1.ObjectField.EntityJoin.entity:type_name -> j5.schema.v1.EntityRef
-	0,  // 93: j5.schema.v1.ObjectField.EntityJoin.entity_part:type_name -> j5.schema.v1.EntityPart
-	43, // 94: j5.schema.v1.Enum.Option.info:type_name -> j5.schema.v1.Enum.Option.InfoEntry
-	83, // 95: j5.schema.v1.TimestampField.Rules.minimum:type_name -> google.protobuf.Timestamp
-	83, // 96: j5.schema.v1.TimestampField.Rules.maximum:type_name -> google.protobuf.Timestamp
-	6,  // 97: j5.schema.v1.KeyField.Ext.foreign:type_name -> j5.schema.v1.EntityRef
-	6,  // 98: j5.schema.v1.KeyField.DeprecatedEntityKey.foreign_key:type_name -> j5.schema.v1.EntityRef
-	99, // [99:99] is the sub-list for method output_type
-	99, // [99:99] is the sub-list for method input_type
-	99, // [99:99] is the sub-list for extension type_name
-	99, // [99:99] is the sub-list for extension extendee
-	0,  // [0:99] is the sub-list for field type_name
+	15,  // 0: j5.schema.v1.RootSchema.oneof:type_name -> j5.schema.v1.Oneof
+	10,  // 1: j5.schema.v1.RootSchema.object:type_name -> j5.schema.v1.Object
+	17,  // 2: j5.schema.v1.RootSchema.enum:type_name -> j5.schema.v1.Enum
+	13,  // 3: j5.schema.v1.RootSchema.polymorph:type_name -> j5.schema.v1.Polymorph
+	7,   // 4: j5.schema.v1.Field.any:type_name -> j5.schema.v1.AnyField
+	14,  // 5: j5.schema.v1.Field.oneof:type_name -> j5.schema.v1.OneofField
+	8,   // 6: j5.schema.v1.Field.object:type_name -> j5.schema.v1.ObjectField
+	12,  // 7: j5.schema.v1.Field.polymorph:type_name -> j5.schema.v1.PolymorphField
+	16,  // 8: j5.schema.v1.Field.enum:type_name -> j5.schema.v1.EnumField
+	18,  // 9: j5.schema.v1.Field.array:type_name -> j5.schema.v1.ArrayField
+	19,  // 10: j5.schema.v1.Field.map:type_name -> j5.schema.v1.MapField
+	21,  // 11: j5.schema.v1.Field.string:type_name -> j5.schema.v1.StringField
+	25,  // 12: j5.schema.v1.Field.integer:type_name -> j5.schema.v1.IntegerField
+	24,  // 13: j5.schema.v1.Field.float:type_name -> j5.schema.v1.FloatField
+	26,  // 14: j5.schema.v1.Field.bool:type_name -> j5.schema.v1.BoolField
+	27,  // 15: j5.schema.v1.Field.bytes:type_name -> j5.schema.v1.BytesField
+	28,  // 16: j5.schema.v1.Field.decimal:type_name -> j5.schema.v1.DecimalField
+	29,  // 17: j5.schema.v1.Field.date:type_name -> j5.schema.v1.DateField
+	30,  // 18: j5.schema.v1.Field.timestamp:type_name -> j5.schema.v1.TimestampField
+	22,  // 19: j5.schema.v1.Field.key:type_name -> j5.schema.v1.KeyField
+	72,  // 20: j5.schema.v1.AnyField.list_rules:type_name -> j5.list.v1.AnyRules
+	5,   // 21: j5.schema.v1.ObjectField.ref:type_name -> j5.schema.v1.Ref
+	10,  // 22: j5.schema.v1.ObjectField.object:type_name -> j5.schema.v1.Object
+	33,  // 23: j5.schema.v1.ObjectField.rules:type_name -> j5.schema.v1.ObjectField.Rules
+	34,  // 24: j5.schema.v1.ObjectField.ext:type_name -> j5.schema.v1.ObjectField.Ext
+	35,  // 25: j5.schema.v1.ObjectField.entity:type_name -> j5.schema.v1.ObjectField.EntityJoin
+	31,  // 26: j5.schema.v1.InlineObject.properties:type_name -> j5.schema.v1.ObjectProperty
+	11,  // 27: j5.schema.v1.Object.entity:type_name -> j5.schema.v1.EntityObject
+	31,  // 28: j5.schema.v1.Object.properties:type_name -> j5.schema.v1.ObjectProperty
+	73,  // 29: j5.schema.v1.Object.bcl:type_name -> j5.bcl.v1.Block
+	0,   // 30: j5.schema.v1.EntityObject.part:type_name -> j5.schema.v1.EntityPart
+	5,   // 31: j5.schema.v1.PolymorphField.ref:type_name -> j5.schema.v1.Ref
+	13,  // 32: j5.schema.v1.PolymorphField.polymorph:type_name -> j5.schema.v1.Polymorph
+	36,  // 33: j5.schema.v1.PolymorphField.rules:type_name -> j5.schema.v1.PolymorphField.Rules
+	37,  // 34: j5.schema.v1.PolymorphField.ext:type_name -> j5.schema.v1.PolymorphField.Ext
+	5,   // 35: j5.schema.v1.OneofField.ref:type_name -> j5.schema.v1.Ref
+	15,  // 36: j5.schema.v1.OneofField.oneof:type_name -> j5.schema.v1.Oneof
+	38,  // 37: j5.schema.v1.OneofField.rules:type_name -> j5.schema.v1.OneofField.Rules
+	74,  // 38: j5.schema.v1.OneofField.list_rules:type_name -> j5.list.v1.OneofRules
+	39,  // 39: j5.schema.v1.OneofField.ext:type_name -> j5.schema.v1.OneofField.Ext
+	73,  // 40: j5.schema.v1.Oneof.bcl:type_name -> j5.bcl.v1.Block
+	31,  // 41: j5.schema.v1.Oneof.properties:type_name -> j5.schema.v1.ObjectProperty
+	5,   // 42: j5.schema.v1.EnumField.ref:type_name -> j5.schema.v1.Ref
+	17,  // 43: j5.schema.v1.EnumField.enum:type_name -> j5.schema.v1.Enum
+	40,  // 44: j5.schema.v1.EnumField.rules:type_name -> j5.schema.v1.EnumField.Rules
+	75,  // 45: j5.schema.v1.EnumField.list_rules:type_name -> j5.list.v1.EnumRules
+	41,  // 46: j5.schema.v1.EnumField.ext:type_name -> j5.schema.v1.EnumField.Ext
+	42,  // 47: j5.schema.v1.Enum.options:type_name -> j5.schema.v1.Enum.Option
+	43,  // 48: j5.schema.v1.Enum.info:type_name -> j5.schema.v1.Enum.OptionInfoField
+	46,  // 49: j5.schema.v1.ArrayField.rules:type_name -> j5.schema.v1.ArrayField.Rules
+	4,   // 50: j5.schema.v1.ArrayField.items:type_name -> j5.schema.v1.Field
+	45,  // 51: j5.schema.v1.ArrayField.ext:type_name -> j5.schema.v1.ArrayField.Ext
+	4,   // 52: j5.schema.v1.MapField.item_schema:type_name -> j5.schema.v1.Field
+	4,   // 53: j5.schema.v1.MapField.key_schema:type_name -> j5.schema.v1.Field
+	47,  // 54: j5.schema.v1.MapField.rules:type_name -> j5.schema.v1.MapField.Rules
+	48,  // 55: j5.schema.v1.MapField.ext:type_name -> j5.schema.v1.MapField.Ext
+	49,  // 56: j5.schema.v1.StringField.rules:type_name -> j5.schema.v1.StringField.Rules
+	76,  // 57: j5.schema.v1.StringField.list_rules:type_name -> j5.list.v1.OpenTextRules
+	50,  // 58: j5.schema.v1.StringField.ext:type_name -> j5.schema.v1.StringField.Ext
+	51,  // 59: j5.schema.v1.KeyField.rules:type_name -> j5.schema.v1.KeyField.Rules
+	23,  // 60: j5.schema.v1.KeyField.format:type_name -> j5.schema.v1.KeyFormat
+	77,  // 61: j5.schema.v1.KeyField.list_rules:type_name -> j5.list.v1.KeyRules
+	52,  // 62: j5.schema.v1.KeyField.ext:type_name -> j5.schema.v1.KeyField.Ext
+	53,  // 63: j5.schema.v1.KeyField.entity:type_name -> j5.schema.v1.KeyField.DeprecatedEntityKey
+	54,  // 64: j5.schema.v1.KeyFormat.informal:type_name -> j5.schema.v1.KeyFormat.Informal
+	55,  // 65: j5.schema.v1.KeyFormat.custom:type_name -> j5.schema.v1.KeyFormat.Custom
+	56,  // 66: j5.schema.v1.KeyFormat.uuid:type_name -> j5.schema.v1.KeyFormat.UUID
+	57,  // 67: j5.schema.v1.KeyFormat.id62:type_name -> j5.schema.v1.KeyFormat.ID62
+	20,  // 68: j5.schema.v1.KeyFormat.format:type_name -> j5.schema.v1.StringFormat
+	1,   // 69: j5.schema.v1.FloatField.format:type_name -> j5.schema.v1.FloatField.Format
+	58,  // 70: j5.schema.v1.FloatField.rules:type_name -> j5.schema.v1.FloatField.Rules
+	78,  // 71: j5.schema.v1.FloatField.list_rules:type_name -> j5.list.v1.FloatRules
+	59,  // 72: j5.schema.v1.FloatField.ext:type_name -> j5.schema.v1.FloatField.Ext
+	2,   // 73: j5.schema.v1.IntegerField.format:type_name -> j5.schema.v1.IntegerField.Format
+	60,  // 74: j5.schema.v1.IntegerField.rules:type_name -> j5.schema.v1.IntegerField.Rules
+	79,  // 75: j5.schema.v1.IntegerField.list_rules:type_name -> j5.list.v1.IntegerRules
+	61,  // 76: j5.schema.v1.IntegerField.ext:type_name -> j5.schema.v1.IntegerField.Ext
+	62,  // 77: j5.schema.v1.BoolField.rules:type_name -> j5.schema.v1.BoolField.Rules
+	80,  // 78: j5.schema.v1.BoolField.list_rules:type_name -> j5.list.v1.BoolRules
+	63,  // 79: j5.schema.v1.BoolField.ext:type_name -> j5.schema.v1.BoolField.Ext
+	64,  // 80: j5.schema.v1.BytesField.rules:type_name -> j5.schema.v1.BytesField.Rules
+	65,  // 81: j5.schema.v1.BytesField.ext:type_name -> j5.schema.v1.BytesField.Ext
+	66,  // 82: j5.schema.v1.DecimalField.rules:type_name -> j5.schema.v1.DecimalField.Rules
+	81,  // 83: j5.schema.v1.DecimalField.list_rules:type_name -> j5.list.v1.DecimalRules
+	67,  // 84: j5.schema.v1.DecimalField.ext:type_name -> j5.schema.v1.DecimalField.Ext
+	68,  // 85: j5.schema.v1.DateField.rules:type_name -> j5.schema.v1.DateField.Rules
+	82,  // 86: j5.schema.v1.DateField.list_rules:type_name -> j5.list.v1.DateRules
+	69,  // 87: j5.schema.v1.DateField.ext:type_name -> j5.schema.v1.DateField.Ext
+	70,  // 88: j5.schema.v1.TimestampField.rules:type_name -> j5.schema.v1.TimestampField.Rules
+	83,  // 89: j5.schema.v1.TimestampField.list_rules:type_name -> j5.list.v1.TimestampRules
+	71,  // 90: j5.schema.v1.TimestampField.ext:type_name -> j5.schema.v1.TimestampField.Ext
+	4,   // 91: j5.schema.v1.ObjectProperty.schema:type_name -> j5.schema.v1.Field
+	32,  // 92: j5.schema.v1.ObjectProperty.entityKey:type_name -> j5.schema.v1.EntityKey
+	6,   // 93: j5.schema.v1.ObjectField.EntityJoin.entity:type_name -> j5.schema.v1.EntityRef
+	0,   // 94: j5.schema.v1.ObjectField.EntityJoin.entity_part:type_name -> j5.schema.v1.EntityPart
+	44,  // 95: j5.schema.v1.Enum.Option.info:type_name -> j5.schema.v1.Enum.Option.InfoEntry
+	20,  // 96: j5.schema.v1.StringField.Rules.format:type_name -> j5.schema.v1.StringFormat
+	6,   // 97: j5.schema.v1.KeyField.Ext.foreign:type_name -> j5.schema.v1.EntityRef
+	6,   // 98: j5.schema.v1.KeyField.DeprecatedEntityKey.foreign_key:type_name -> j5.schema.v1.EntityRef
+	84,  // 99: j5.schema.v1.TimestampField.Rules.minimum:type_name -> google.protobuf.Timestamp
+	84,  // 100: j5.schema.v1.TimestampField.Rules.maximum:type_name -> google.protobuf.Timestamp
+	101, // [101:101] is the sub-list for method output_type
+	101, // [101:101] is the sub-list for method input_type
+	101, // [101:101] is the sub-list for extension type_name
+	101, // [101:101] is the sub-list for extension extendee
+	0,   // [0:101] is the sub-list for field type_name
 }
 
 func init() { file_j5_schema_v1_schema_proto_init() }
@@ -5594,7 +5705,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[17].Exporter = func(v any, i int) any {
-			switch v := v.(*StringField); i {
+			switch v := v.(*StringFormat); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5606,7 +5717,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[18].Exporter = func(v any, i int) any {
-			switch v := v.(*FloatField); i {
+			switch v := v.(*StringField); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5618,78 +5729,6 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[19].Exporter = func(v any, i int) any {
-			switch v := v.(*IntegerField); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[20].Exporter = func(v any, i int) any {
-			switch v := v.(*BoolField); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[21].Exporter = func(v any, i int) any {
-			switch v := v.(*BytesField); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[22].Exporter = func(v any, i int) any {
-			switch v := v.(*DecimalField); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[23].Exporter = func(v any, i int) any {
-			switch v := v.(*DateField); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[24].Exporter = func(v any, i int) any {
-			switch v := v.(*TimestampField); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[25].Exporter = func(v any, i int) any {
 			switch v := v.(*KeyField); i {
 			case 0:
 				return &v.state
@@ -5701,7 +5740,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[26].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[20].Exporter = func(v any, i int) any {
 			switch v := v.(*KeyFormat); i {
 			case 0:
 				return &v.state
@@ -5713,8 +5752,80 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
+		file_j5_schema_v1_schema_proto_msgTypes[21].Exporter = func(v any, i int) any {
+			switch v := v.(*FloatField); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[22].Exporter = func(v any, i int) any {
+			switch v := v.(*IntegerField); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[23].Exporter = func(v any, i int) any {
+			switch v := v.(*BoolField); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[24].Exporter = func(v any, i int) any {
+			switch v := v.(*BytesField); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[25].Exporter = func(v any, i int) any {
+			switch v := v.(*DecimalField); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[26].Exporter = func(v any, i int) any {
+			switch v := v.(*DateField); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
 		file_j5_schema_v1_schema_proto_msgTypes[27].Exporter = func(v any, i int) any {
-			switch v := v.(*ObjectProperty); i {
+			switch v := v.(*TimestampField); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5726,7 +5837,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[28].Exporter = func(v any, i int) any {
-			switch v := v.(*EntityKey); i {
+			switch v := v.(*ObjectProperty); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5738,7 +5849,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[29].Exporter = func(v any, i int) any {
-			switch v := v.(*ObjectField_Rules); i {
+			switch v := v.(*EntityKey); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5750,7 +5861,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[30].Exporter = func(v any, i int) any {
-			switch v := v.(*ObjectField_Ext); i {
+			switch v := v.(*ObjectField_Rules); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5762,7 +5873,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[31].Exporter = func(v any, i int) any {
-			switch v := v.(*ObjectField_EntityJoin); i {
+			switch v := v.(*ObjectField_Ext); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5774,7 +5885,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[32].Exporter = func(v any, i int) any {
-			switch v := v.(*PolymorphField_Rules); i {
+			switch v := v.(*ObjectField_EntityJoin); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5786,7 +5897,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[33].Exporter = func(v any, i int) any {
-			switch v := v.(*PolymorphField_Ext); i {
+			switch v := v.(*PolymorphField_Rules); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5798,7 +5909,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[34].Exporter = func(v any, i int) any {
-			switch v := v.(*OneofField_Rules); i {
+			switch v := v.(*PolymorphField_Ext); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5810,7 +5921,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[35].Exporter = func(v any, i int) any {
-			switch v := v.(*OneofField_Ext); i {
+			switch v := v.(*OneofField_Rules); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5822,7 +5933,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[36].Exporter = func(v any, i int) any {
-			switch v := v.(*EnumField_Rules); i {
+			switch v := v.(*OneofField_Ext); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5834,7 +5945,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[37].Exporter = func(v any, i int) any {
-			switch v := v.(*EnumField_Ext); i {
+			switch v := v.(*EnumField_Rules); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5846,7 +5957,7 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[38].Exporter = func(v any, i int) any {
-			switch v := v.(*Enum_Option); i {
+			switch v := v.(*EnumField_Ext); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -5858,6 +5969,18 @@ func file_j5_schema_v1_schema_proto_init() {
 			}
 		}
 		file_j5_schema_v1_schema_proto_msgTypes[39].Exporter = func(v any, i int) any {
+			switch v := v.(*Enum_Option); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[40].Exporter = func(v any, i int) any {
 			switch v := v.(*Enum_OptionInfoField); i {
 			case 0:
 				return &v.state
@@ -5869,7 +5992,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[41].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[42].Exporter = func(v any, i int) any {
 			switch v := v.(*ArrayField_Ext); i {
 			case 0:
 				return &v.state
@@ -5881,7 +6004,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[42].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[43].Exporter = func(v any, i int) any {
 			switch v := v.(*ArrayField_Rules); i {
 			case 0:
 				return &v.state
@@ -5893,7 +6016,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[43].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[44].Exporter = func(v any, i int) any {
 			switch v := v.(*MapField_Rules); i {
 			case 0:
 				return &v.state
@@ -5905,7 +6028,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[44].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[45].Exporter = func(v any, i int) any {
 			switch v := v.(*MapField_Ext); i {
 			case 0:
 				return &v.state
@@ -5917,7 +6040,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[45].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[46].Exporter = func(v any, i int) any {
 			switch v := v.(*StringField_Rules); i {
 			case 0:
 				return &v.state
@@ -5929,7 +6052,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[46].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[47].Exporter = func(v any, i int) any {
 			switch v := v.(*StringField_Ext); i {
 			case 0:
 				return &v.state
@@ -5941,175 +6064,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[47].Exporter = func(v any, i int) any {
-			switch v := v.(*FloatField_Rules); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
 		file_j5_schema_v1_schema_proto_msgTypes[48].Exporter = func(v any, i int) any {
-			switch v := v.(*FloatField_Ext); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[49].Exporter = func(v any, i int) any {
-			switch v := v.(*IntegerField_Rules); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[50].Exporter = func(v any, i int) any {
-			switch v := v.(*IntegerField_Ext); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[51].Exporter = func(v any, i int) any {
-			switch v := v.(*BoolField_Rules); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[52].Exporter = func(v any, i int) any {
-			switch v := v.(*BoolField_Ext); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[53].Exporter = func(v any, i int) any {
-			switch v := v.(*BytesField_Rules); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[54].Exporter = func(v any, i int) any {
-			switch v := v.(*BytesField_Ext); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[55].Exporter = func(v any, i int) any {
-			switch v := v.(*DecimalField_Rules); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[56].Exporter = func(v any, i int) any {
-			switch v := v.(*DecimalField_Ext); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[57].Exporter = func(v any, i int) any {
-			switch v := v.(*DateField_Rules); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[58].Exporter = func(v any, i int) any {
-			switch v := v.(*DateField_Ext); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[59].Exporter = func(v any, i int) any {
-			switch v := v.(*TimestampField_Rules); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[60].Exporter = func(v any, i int) any {
-			switch v := v.(*TimestampField_Ext); i {
-			case 0:
-				return &v.state
-			case 1:
-				return &v.sizeCache
-			case 2:
-				return &v.unknownFields
-			default:
-				return nil
-			}
-		}
-		file_j5_schema_v1_schema_proto_msgTypes[61].Exporter = func(v any, i int) any {
 			switch v := v.(*KeyField_Rules); i {
 			case 0:
 				return &v.state
@@ -6121,7 +6076,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[62].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[49].Exporter = func(v any, i int) any {
 			switch v := v.(*KeyField_Ext); i {
 			case 0:
 				return &v.state
@@ -6133,7 +6088,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[63].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[50].Exporter = func(v any, i int) any {
 			switch v := v.(*KeyField_DeprecatedEntityKey); i {
 			case 0:
 				return &v.state
@@ -6145,7 +6100,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[64].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[51].Exporter = func(v any, i int) any {
 			switch v := v.(*KeyFormat_Informal); i {
 			case 0:
 				return &v.state
@@ -6157,7 +6112,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[65].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[52].Exporter = func(v any, i int) any {
 			switch v := v.(*KeyFormat_Custom); i {
 			case 0:
 				return &v.state
@@ -6169,7 +6124,7 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[66].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[53].Exporter = func(v any, i int) any {
 			switch v := v.(*KeyFormat_UUID); i {
 			case 0:
 				return &v.state
@@ -6181,8 +6136,176 @@ func file_j5_schema_v1_schema_proto_init() {
 				return nil
 			}
 		}
-		file_j5_schema_v1_schema_proto_msgTypes[67].Exporter = func(v any, i int) any {
+		file_j5_schema_v1_schema_proto_msgTypes[54].Exporter = func(v any, i int) any {
 			switch v := v.(*KeyFormat_ID62); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[55].Exporter = func(v any, i int) any {
+			switch v := v.(*FloatField_Rules); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[56].Exporter = func(v any, i int) any {
+			switch v := v.(*FloatField_Ext); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[57].Exporter = func(v any, i int) any {
+			switch v := v.(*IntegerField_Rules); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[58].Exporter = func(v any, i int) any {
+			switch v := v.(*IntegerField_Ext); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[59].Exporter = func(v any, i int) any {
+			switch v := v.(*BoolField_Rules); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[60].Exporter = func(v any, i int) any {
+			switch v := v.(*BoolField_Ext); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[61].Exporter = func(v any, i int) any {
+			switch v := v.(*BytesField_Rules); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[62].Exporter = func(v any, i int) any {
+			switch v := v.(*BytesField_Ext); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[63].Exporter = func(v any, i int) any {
+			switch v := v.(*DecimalField_Rules); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[64].Exporter = func(v any, i int) any {
+			switch v := v.(*DecimalField_Ext); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[65].Exporter = func(v any, i int) any {
+			switch v := v.(*DateField_Rules); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[66].Exporter = func(v any, i int) any {
+			switch v := v.(*DateField_Ext); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[67].Exporter = func(v any, i int) any {
+			switch v := v.(*TimestampField_Rules); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_j5_schema_v1_schema_proto_msgTypes[68].Exporter = func(v any, i int) any {
+			switch v := v.(*TimestampField_Ext); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -6234,38 +6357,39 @@ func file_j5_schema_v1_schema_proto_init() {
 		(*EnumField_Ref)(nil),
 		(*EnumField_Enum)(nil),
 	}
-	file_j5_schema_v1_schema_proto_msgTypes[17].OneofWrappers = []any{}
-	file_j5_schema_v1_schema_proto_msgTypes[26].OneofWrappers = []any{
+	file_j5_schema_v1_schema_proto_msgTypes[18].OneofWrappers = []any{}
+	file_j5_schema_v1_schema_proto_msgTypes[20].OneofWrappers = []any{
 		(*KeyFormat_Informal_)(nil),
 		(*KeyFormat_Custom_)(nil),
 		(*KeyFormat_Uuid)(nil),
 		(*KeyFormat_Id62)(nil),
+		(*KeyFormat_Format)(nil),
 	}
-	file_j5_schema_v1_schema_proto_msgTypes[28].OneofWrappers = []any{}
 	file_j5_schema_v1_schema_proto_msgTypes[29].OneofWrappers = []any{}
-	file_j5_schema_v1_schema_proto_msgTypes[41].OneofWrappers = []any{}
+	file_j5_schema_v1_schema_proto_msgTypes[30].OneofWrappers = []any{}
 	file_j5_schema_v1_schema_proto_msgTypes[42].OneofWrappers = []any{}
 	file_j5_schema_v1_schema_proto_msgTypes[43].OneofWrappers = []any{}
 	file_j5_schema_v1_schema_proto_msgTypes[44].OneofWrappers = []any{}
 	file_j5_schema_v1_schema_proto_msgTypes[45].OneofWrappers = []any{}
-	file_j5_schema_v1_schema_proto_msgTypes[47].OneofWrappers = []any{}
-	file_j5_schema_v1_schema_proto_msgTypes[49].OneofWrappers = []any{}
-	file_j5_schema_v1_schema_proto_msgTypes[51].OneofWrappers = []any{}
-	file_j5_schema_v1_schema_proto_msgTypes[53].OneofWrappers = []any{}
-	file_j5_schema_v1_schema_proto_msgTypes[55].OneofWrappers = []any{}
-	file_j5_schema_v1_schema_proto_msgTypes[57].OneofWrappers = []any{}
-	file_j5_schema_v1_schema_proto_msgTypes[59].OneofWrappers = []any{}
-	file_j5_schema_v1_schema_proto_msgTypes[63].OneofWrappers = []any{
+	file_j5_schema_v1_schema_proto_msgTypes[46].OneofWrappers = []any{}
+	file_j5_schema_v1_schema_proto_msgTypes[50].OneofWrappers = []any{
 		(*KeyField_DeprecatedEntityKey_PrimaryKey)(nil),
 		(*KeyField_DeprecatedEntityKey_ForeignKey)(nil),
 	}
+	file_j5_schema_v1_schema_proto_msgTypes[55].OneofWrappers = []any{}
+	file_j5_schema_v1_schema_proto_msgTypes[57].OneofWrappers = []any{}
+	file_j5_schema_v1_schema_proto_msgTypes[59].OneofWrappers = []any{}
+	file_j5_schema_v1_schema_proto_msgTypes[61].OneofWrappers = []any{}
+	file_j5_schema_v1_schema_proto_msgTypes[63].OneofWrappers = []any{}
+	file_j5_schema_v1_schema_proto_msgTypes[65].OneofWrappers = []any{}
+	file_j5_schema_v1_schema_proto_msgTypes[67].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_j5_schema_v1_schema_proto_rawDesc,
 			NumEnums:      3,
-			NumMessages:   68,
+			NumMessages:   69,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
