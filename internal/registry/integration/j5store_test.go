@@ -30,7 +30,7 @@ func TestJ5Store(t *testing.T) {
 			Name:    proto.String("test/v1/test.proto"),
 			Package: proto.String("test.v1"),
 		}},
-		Packages: []*source_j5pb.PackageInfo{{
+		Packages: []*source_j5pb.Package{{
 			Name:  "test.v1",
 			Label: "Test Package",
 		}},

@@ -10,6 +10,26 @@ import "j5/bcl/v1/spec.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb";
 
+option (j5.ext.v1.package).string_formats = {
+    name: "kebab-case",
+    regex: "^[a-z0-9]+(-[a-z0-9]+)*$",
+    description: "Lowercase words separated by hyphens, e.g. 'my-string'."
+};
+
+extend google.protobuf.FileOptions {
+  PackageOptions package = 555101;
+}
+
+message PackageOptions {
+  repeated StringFormat string_formats = 1;
+}
+
+message StringFormat {
+  string name = 1;
+  string regex = 2;
+  string description = 3;
+}
+
 extend google.protobuf.MessageOptions {
   PSMOptions psm = 555101;
 }

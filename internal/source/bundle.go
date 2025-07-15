@@ -163,7 +163,7 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 
 	pkgNames := make([]string, 0, len(bundle.config.Packages))
 	for _, pkg := range bundle.config.Packages {
-		img.addPackage(&source_j5pb.PackageInfo{
+		img.addPackage(&source_j5pb.Package{
 			Name:  pkg.Name,
 			Prose: pkg.Prose,
 			Label: pkg.Label,

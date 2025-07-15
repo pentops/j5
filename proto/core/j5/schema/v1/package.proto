@@ -29,6 +29,8 @@ message Package {
 
   repeated SubPackage sub_packages = 4;
   map<string, j5.schema.v1.RootSchema> schemas = 8;
+
+  repeated StringFormat string_formats = 5;
 }
 
 message SubPackage {

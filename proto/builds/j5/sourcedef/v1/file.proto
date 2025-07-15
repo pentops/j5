@@ -30,6 +30,7 @@ message SourceFile {
   option (j5.bcl.v1.block).alias = {name: "entity", path: ["elements", "entity"]};
   option (j5.bcl.v1.block).alias = {name: "service", path: ["elements", "service"]};
   option (j5.bcl.v1.block).alias = {name: "topic", path: ["elements", "topic"]};
+  option (j5.bcl.v1.block).alias = {name: "stringFormat", path: ["elements", "stringFormat"]};
 }
 
 message Package {
@@ -53,6 +54,7 @@ message RootElement {
     j5.schema.v1.Enum enum = 3;
     Topic topic = 5;
     Service service = 6;
+    j5.schema.v1.StringFormat string_format = 8;
   }
 }
 

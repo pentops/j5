@@ -188,9 +188,25 @@ func (fb *fileBuilder) printFile(ff protoreflect.FileDescriptor) ([]byte, error)
 			fb.p("option ", field.Name(), " = ", refl.Get(field).Interface(), ";")
 		case protoreflect.StringKind:
 			fb.p("option ", field.Name(), " = \"", refl.Get(field).Interface(), "\";")
+		default:
+			return nil, fmt.Errorf("unsupported option type %s for field %s", field.Kind(), field.Name())
 		}
 	}
 	fb.addGap()
+
+	fileExtOpts, err := fb.out.extensions.OptionsFor(ff)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get options for file %s: %w", ff.Path(), err)
+	}
+
+	for _, opt := range fileExtOpts {
+		if strings.HasPrefix(string(opt.RootType.FullName()), "google.protobuf.") {
+			// skip google.protobuf options
+			continue
+		}
+		fb.printOption(opt)
+		fb.addGap()
+	}
 
 	extBlocks := make([]extBlock, 0)
 

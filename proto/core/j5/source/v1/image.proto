@@ -12,7 +12,7 @@ option go_package = "github.com/pentops/j5/gen/j5/source/v1/source_j5pb";
 // with the J5 config, and some non-proto files
 message SourceImage {
   repeated google.protobuf.FileDescriptorProto file = 1;
-  repeated PackageInfo packages = 2;
+  repeated Package packages = 2;
   repeated ProseFile prose = 3;
   repeated string source_filenames = 6;
   string source_name = 8;
@@ -36,11 +36,10 @@ message CommitInfo {
   repeated string aliases = 5;
 }
 
-message PackageInfo {
+message Package {
   string label = 1;
   string name = 2;
   string prose = 3;
-
 }
 
 message Include {
@@ -54,6 +53,5 @@ message Include {
   // default is 'main'.
   optional string reference = 4; 
 }
-
 
 

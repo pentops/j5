@@ -16,6 +16,7 @@ type DefaultVisitor struct {
 	ServiceFile     func(*ServiceFileNode) error
 	Service         func(*ServiceNode) error
 	ServiceFileExit func(*ServiceFileNode) error
+	TypeStub        func(*TypeStubNode) error
 }
 
 func (df *DefaultVisitor) VisitProperty(node *PropertyNode) error {
@@ -142,6 +143,13 @@ func (df *DefaultVisitor) VisitServiceFile(node *ServiceFileNode) error {
 func (df *DefaultVisitor) VisitService(node *ServiceNode) error {
 	if df.Service != nil {
 		return df.Service(node)
+	}
+	return nil
+}
+
+func (df *DefaultVisitor) VisitTypeStub(node *TypeStubNode) error {
+	if df.TypeStub != nil {
+		return df.TypeStub(node)
 	}
 	return nil
 }

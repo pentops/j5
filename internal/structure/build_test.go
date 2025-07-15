@@ -78,7 +78,7 @@ const (
 
 func testImage() *source_j5pb.SourceImage {
 	return &source_j5pb.SourceImage{
-		Packages: []*source_j5pb.PackageInfo{{
+		Packages: []*source_j5pb.Package{{
 			Label: "Test",
 			Name:  "test.v1",
 		}},

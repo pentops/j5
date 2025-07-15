@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/j5/internal/j5s/protobuild/errset"
 	"google.golang.org/protobuf/proto"
@@ -44,6 +45,7 @@ func SummaryFromDescriptor(res *descriptorpb.FileDescriptorProto, errs *errset.E
 			typeRef.Object = &j5convert.ObjectRef{}
 		}
 	}
+
 	for idx, en := range res.EnumType {
 		built, err := buildEnumRef(res, int32(idx), en, errs)
 		if err != nil {
@@ -54,6 +56,23 @@ func SummaryFromDescriptor(res *descriptorpb.FileDescriptorProto, errs *errset.E
 			Package: res.GetPackage(),
 			File:    filename,
 			Enum:    built,
+		}
+	}
+
+	packageExt := proto.GetExtension(res.Options, ext_j5pb.E_Package).(*ext_j5pb.PackageOptions)
+	if packageExt != nil {
+		for _, stringFormat := range packageExt.StringFormats {
+			exports[stringFormat.Name] = &j5convert.TypeRef{
+				Name:    stringFormat.Name,
+				Package: res.GetPackage(),
+				File:    filename,
+
+				StringFormat: &schema_j5pb.StringFormat{
+					Regex:       stringFormat.Regex,
+					Name:        stringFormat.Name,
+					Description: stringFormat.Description,
+				},
+			}
 		}
 	}
 

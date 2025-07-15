@@ -35,10 +35,11 @@ type TypeRef struct {
 	Position *errpos.Position
 
 	// Oneof
-	Enum      *EnumRef
-	Object    *ObjectRef
-	Oneof     *OneofRef
-	Polymorph *PolymorphRef
+	Enum         *EnumRef
+	Object       *ObjectRef
+	Oneof        *OneofRef
+	Polymorph    *PolymorphRef
+	StringFormat *schema_j5pb.StringFormat
 }
 
 func (typeRef TypeRef) protoTypeName() *string {
@@ -202,11 +203,26 @@ func (cc *summaryWalker) collectFileRefs(sourceFile *sourcedef_j5pb.SourceFile) 
 
 	visitor := &sourcewalk.DefaultVisitor{
 		Property: func(node *sourcewalk.PropertyNode) error {
-			if node.Field.Ref != nil {
-				cc.addRef(node.Field.Ref)
-			} else if node.Field.Items != nil && node.Field.Items.Ref != nil {
-				cc.addRef(node.Field.Items.Ref)
+			schema := node.Field
+			if schema.Items != nil {
+				// array and map: Take the inner schema
+				schema = *schema.Items
 			}
+			if schema.Ref != nil {
+				cc.addRef(schema.Ref)
+			}
+
+			switch st := schema.Schema.(type) {
+			case *schema_j5pb.Field_String_:
+				if st.String_.Format != nil {
+					ref := stringToRef(*st.String_.Format)
+					cc.addRef(&sourcewalk.RefNode{
+						Source: node.Source,
+						Ref:    ref,
+					})
+				}
+			}
+
 			return nil
 		},
 		Object: func(node *sourcewalk.ObjectNode) error {
@@ -241,6 +257,18 @@ func (cc *summaryWalker) collectFileRefs(sourceFile *sourcedef_j5pb.SourceFile) 
 		},
 		Topic: func(node *sourcewalk.TopicNode) error {
 			cc.includeSubFile("topic")
+			return nil
+		},
+		TypeStub: func(node *sourcewalk.TypeStubNode) error {
+			if node.StringFormat != nil {
+				cc.addExport(&TypeRef{
+					Name:         node.StringFormat.Name,
+					Position:     gl.Ptr(node.Source.GetPos()),
+					StringFormat: node.StringFormat,
+				})
+			} else {
+				return fmt.Errorf("unknown type stub %s", node.Source.PathString())
+			}
 			return nil
 		},
 	}

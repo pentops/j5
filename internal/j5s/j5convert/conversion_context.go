@@ -9,8 +9,10 @@ import (
 	"slices"
 
 	"github.com/pentops/golib/gl"
+	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -117,26 +119,42 @@ func newRootContext(files *fileSet) *rootContext {
 	}
 }
 
+func (rr *rootContext) rootFileExtension() *ext_j5pb.PackageOptions {
+	return rr.mainFile.packageExt()
+
+}
+
 type fileContext struct {
-	fdp *descriptorpb.FileDescriptorProto
+	fdp         *descriptorpb.FileDescriptorProto
+	_packageExt *ext_j5pb.PackageOptions
 	refResolver
 	commentSet
 }
 
 func newFileContext(name string, parentResolver refResolver) *fileContext {
 	pkgName := PackageFromFilename(name)
-	return &fileContext{
-		refResolver: parentResolver,
-		fdp: &descriptorpb.FileDescriptorProto{
-			Syntax:  gl.Ptr("proto3"),
-			Package: gl.Ptr(pkgName),
-			Name:    gl.Ptr(name),
-			Options: &descriptorpb.FileOptions{},
-			SourceCodeInfo: &descriptorpb.SourceCodeInfo{
-				Location: []*descriptorpb.SourceCodeInfo_Location{},
-			},
+	fdp := &descriptorpb.FileDescriptorProto{
+		Syntax:  gl.Ptr("proto3"),
+		Package: gl.Ptr(pkgName),
+		Name:    gl.Ptr(name),
+		Options: &descriptorpb.FileOptions{},
+		SourceCodeInfo: &descriptorpb.SourceCodeInfo{
+			Location: []*descriptorpb.SourceCodeInfo_Location{},
 		},
 	}
+	return &fileContext{
+		refResolver: parentResolver,
+		fdp:         fdp,
+	}
+}
+
+func (fb *fileContext) packageExt() *ext_j5pb.PackageOptions {
+	if fb._packageExt == nil {
+		packageExt := &ext_j5pb.PackageOptions{}
+		fb._packageExt = packageExt
+		proto.SetExtension(fb.fdp.Options, ext_j5pb.E_Package, packageExt)
+	}
+	return fb._packageExt
 }
 
 type rootNode interface {

@@ -114,6 +114,8 @@ func (fb *Builder) OptionsFor(parent protoreflect.Descriptor) ([]*OptionDefiniti
 			optionFieldNumberInParent = 3
 		case protoreflect.OneofDescriptor:
 			optionFieldNumberInParent = 2
+		case protoreflect.FileDescriptor:
+			optionFieldNumberInParent = 8
 		default:
 			return nil, fmt.Errorf("unsupported parent type %T", parent)
 		}

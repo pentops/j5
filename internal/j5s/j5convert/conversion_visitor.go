@@ -118,6 +118,9 @@ func walkerSchemaVisitor(ww *conversionVisitor) sourcewalk.SchemaCallbacks {
 			ww.visitPolymorphNode(pn)
 			return nil
 		},
+		TypeStub: func(ts *sourcewalk.TypeStubNode) error {
+			return ww.visitTypeStubNode(ts)
+		},
 	}
 }
 
@@ -431,4 +434,19 @@ func (ww *conversionVisitor) visitEnumNode(node *sourcewalk.EnumNode) {
 	}
 
 	ww.parentContext.addEnum(desc, comments)
+}
+
+func (ww *conversionVisitor) visitTypeStubNode(node *sourcewalk.TypeStubNode) error {
+	rootExt := ww.root.rootFileExtension()
+
+	if node.StringFormat != nil {
+		rootExt.StringFormats = append(rootExt.StringFormats, &ext_j5pb.StringFormat{
+			Name:        node.StringFormat.Name,
+			Description: node.StringFormat.Description,
+			Regex:       node.StringFormat.Regex,
+		})
+	} else {
+		return fmt.Errorf("unknown stub type")
+	}
+	return nil
 }

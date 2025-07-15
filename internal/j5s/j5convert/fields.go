@@ -3,6 +3,7 @@ package j5convert
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"unicode"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
@@ -736,17 +737,41 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 
 		ww.setJ5Ext(node.Source, desc.Options, "string", st.String_.Ext)
 
+		var rules *validate.StringRules
 		if st.String_.Rules != nil {
-			rules := &validate.FieldRules{
+			rules = &validate.StringRules{
+				MinLen:  st.String_.Rules.MinLength,
+				MaxLen:  st.String_.Rules.MaxLength,
+				Pattern: st.String_.Rules.Pattern,
+			}
+		}
+		if st.String_.Format != nil {
+			if rules == nil {
+				rules = &validate.StringRules{}
+			}
+			ref := stringToRef(*st.String_.Format)
+
+			typeRef, err := ww.resolveType(&sourcewalk.RefNode{
+				Source: node.Source,
+				Ref:    ref,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("string format %s: %w", *st.String_.Format, err)
+			}
+
+			if typeRef.StringFormat == nil {
+				return nil, fmt.Errorf("%s refers to a %s, not a string format", *st.String_.Format, typeRef.debugName())
+			}
+
+			rules.Pattern = gl.Ptr(typeRef.StringFormat.Regex)
+		}
+		if rules != nil {
+			fieldRules := &validate.FieldRules{
 				Type: &validate.FieldRules_String_{
-					String_: &validate.StringRules{
-						MinLen:  st.String_.Rules.MinLength,
-						MaxLen:  st.String_.Rules.MaxLength,
-						Pattern: st.String_.Rules.Pattern,
-					},
+					String_: rules,
 				},
 			}
-			proto.SetExtension(desc.Options, validate.E_Field, rules)
+			proto.SetExtension(desc.Options, validate.E_Field, fieldRules)
 		}
 
 		if st.String_.ListRules != nil {
@@ -761,6 +786,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				},
 			})
 		}
+
 		return desc, nil
 
 	case *schema_j5pb.Field_Timestamp:
@@ -874,4 +900,18 @@ func RangeField(pt protoreflect.Message, f func(protoreflect.FieldDescriptor, pr
 		return err == nil
 	})
 	return err
+}
+
+func stringToRef(st string) *schema_j5pb.Ref {
+
+	ref := &schema_j5pb.Ref{}
+	parts := strings.Split(st, ".")
+	if len(parts) == 1 {
+		ref.Schema = parts[0]
+	} else {
+		head, tail := parts[0:len(parts)-1], parts[len(parts)-1]
+		ref.Package = strings.Join(head, ".")
+		ref.Schema = tail
+	}
+	return ref
 }

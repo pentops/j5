@@ -24,6 +24,7 @@ type SchemaCallbacks struct {
 	Oneof     func(*OneofNode) error
 	Enum      func(*EnumNode) error
 	Polymorph func(*PolymorphNode) error
+	TypeStub  func(*TypeStubNode) error
 }
 
 func (fc SchemaCallbacks) VisitObject(on *ObjectNode) error {
@@ -40,6 +41,10 @@ func (fc SchemaCallbacks) VisitEnum(en *EnumNode) error {
 
 func (fc SchemaCallbacks) VisitPolymorph(pn *PolymorphNode) error {
 	return fc.Polymorph(pn)
+}
+
+func (fc SchemaCallbacks) VisitTypeStub(tsn *TypeStubNode) error {
+	return fc.TypeStub(tsn)
 }
 
 type EnumNode struct {

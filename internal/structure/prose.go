@@ -13,7 +13,7 @@ func ResolveProse(source *source_j5pb.SourceImage, api *client_j5pb.API) error {
 
 	resolver := imageResolver(source.Prose)
 
-	configsByName := map[string]*source_j5pb.PackageInfo{}
+	configsByName := map[string]*source_j5pb.Package{}
 	for _, cfg := range source.Packages {
 		configsByName[cfg.Name] = cfg
 	}

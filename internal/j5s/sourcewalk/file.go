@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 )
 
@@ -11,6 +12,7 @@ type FileVisitor interface {
 	SchemaVisitor
 	VisitTopicFile(*TopicFileNode) error
 	VisitServiceFile(*ServiceFileNode) error
+	VisitTypeStub(*TypeStubNode) error
 }
 
 type FileCallbacks struct {
@@ -114,9 +116,25 @@ func (fn *FileNode) RangeRootElements(visitor FileVisitor) error {
 				return err
 			}
 
+		case *sourcedef_j5pb.RootElement_StringFormat:
+			stringFormatNode := &TypeStubNode{
+				Source:       source.child("string_format"),
+				StringFormat: element.StringFormat,
+			}
+			if err := visitor.VisitTypeStub(stringFormatNode); err != nil {
+				return wrapErr(source, err)
+			}
+
 		default:
-			return walkerErrorf("unknown root element in FileNode %T", element)
+			return walkerErrorf("(sourcewalk) unknown root element in FileNode %T", element)
 		}
 	}
 	return nil
+}
+
+type TypeStubNode struct {
+	Source SourceNode
+
+	// oneof
+	StringFormat *schema_j5pb.StringFormat
 }

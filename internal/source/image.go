@@ -37,7 +37,7 @@ func newImageBuilderFromImage(img *source_j5pb.SourceImage) *imageBuilder {
 	}
 }
 
-func (ib *imageBuilder) addPackage(pkg *source_j5pb.PackageInfo) {
+func (ib *imageBuilder) addPackage(pkg *source_j5pb.Package) {
 	ib.img.Packages = append(ib.img.Packages, pkg)
 }
 
