@@ -15,8 +15,10 @@ import (
 	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/j5/lib/id62"
 	"github.com/pentops/j5/lib/patherr"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func SchemaSetFromFiles(descFiles *protoregistry.Files, include func(protoreflect.FileDescriptor) bool) (*SchemaSet, error) {
@@ -178,13 +180,6 @@ func inferMessageType(src protoreflect.MessageDescriptor) messageType {
 		return objectMessage
 	}
 
-	ext := protosrc.GetExtension[*ext_j5pb.OneofOptions](oneof.Options(), ext_j5pb.E_Oneof)
-	if ext != nil {
-		// even if it is marked to expose, still don't automatically make it a
-		// oneof.
-		return objectMessage
-	}
-
 	for ii := range src.Fields().Len() {
 		field := src.Fields().Get(ii)
 		if field.ContainingOneof() != oneof {
@@ -279,6 +274,11 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts
 		objectSchema.BCL = bclOpts
 	}
 
+	listRequestAnnotation, ok := proto.GetExtension(srcMsg.Options().(*descriptorpb.MessageOptions), list_j5pb.E_ListRequest).(*list_j5pb.ListRequestMessage)
+	if ok && listRequestAnnotation != nil {
+		objectSchema.ListRequest = listRequestAnnotation
+	}
+
 	return objectSchema, nil
 }
 
@@ -344,50 +344,51 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 
 	properties := make([]*ObjectProperty, 0, src.Fields().Len())
 
-	exposeOneofs := make(map[string]*OneofSchema)
-	pendingOneofProps := make(map[string]*ObjectProperty)
+	//exposeOneofs := make(map[string]*OneofSchema)
+	//pendingOneofProps := make(map[string]*ObjectProperty)
 
-	for idx := range src.Oneofs().Len() {
-		oneof := src.Oneofs().Get(idx)
-		if oneof.IsSynthetic() {
-			continue
-		}
+	/*
+		for idx := range src.Oneofs().Len() {
+			oneof := src.Oneofs().Get(idx)
+			if oneof.IsSynthetic() {
+				continue
+			}
 
-		ext := protosrc.GetExtension[*ext_j5pb.OneofOptions](oneof.Options(), ext_j5pb.E_Oneof)
-		if ext == nil {
-			continue
-		} else if !ext.Expose {
-			// By default, do not expose oneofs
-			continue
-		}
+			ext := protosrc.GetExtension[*ext_j5pb.OneofOptions](oneof.Options(), ext_j5pb.E_Oneof)
+			if ext == nil {
+				continue
+			} else if !ext.Expose {
+				// By default, do not expose oneofs
+				continue
+			}
 
-		oneofName := string(oneof.Name())
-		oneofObject := &OneofSchema{
-			rootSchema: ss.schemaRootFromProto(oneof),
-			//oneofDescriptor: oneof,
-		}
-		refPlaceholder, didExist := newRefPlaceholder(ss.PackageSet, oneof)
-		if didExist {
-			return nil, fmt.Errorf("placeholder already exists for oneof wrapper %q", oneofName)
-		}
-		refPlaceholder.To = oneofObject
-		if err := refPlaceholder.check(); err != nil {
-			return nil, err
-		}
+			oneofName := string(oneof.Name())
+			oneofObject := &OneofSchema{
+				rootSchema: ss.schemaRootFromProto(oneof),
+				//oneofDescriptor: oneof,
+			}
+			refPlaceholder, didExist := newRefPlaceholder(ss.PackageSet, oneof)
+			if didExist {
+				return nil, fmt.Errorf("placeholder already exists for oneof wrapper %q", oneofName)
+			}
+			refPlaceholder.To = oneofObject
+			if err := refPlaceholder.check(); err != nil {
+				return nil, err
+			}
 
-		prop := &ObjectProperty{
-			Parent:      parent,
-			JSONName:    jsonFieldName(oneof.Name()),
-			Description: commentDescription(src),
-			Schema: &OneofField{
-				Ref: refPlaceholder,
-				// TODO: Oneof Rules
-			},
-		}
-		pendingOneofProps[oneofName] = prop
-		exposeOneofs[oneofName] = oneofObject
+			prop := &ObjectProperty{
+				Parent:      parent,
+				JSONName:    jsonFieldName(oneof.Name()),
+				Description: commentDescription(src),
+				Schema: &OneofField{
+					Ref: refPlaceholder,
+					// TODO: Oneof Rules
+				},
+			}
+			pendingOneofProps[oneofName] = prop
+			exposeOneofs[oneofName] = oneofObject
 
-	}
+		}*/
 
 	for ii := range src.Fields().Len() {
 		field := src.Fields().Get(ii)
@@ -435,8 +436,8 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			arrayField.ItemSchema = fieldSchema
 
 			prop := &ObjectProperty{
-				Parent:      parent,
-				ProtoField:  []protoreflect.FieldNumber{field.Number()},
+				Parent: parent,
+				//ProtoField:  []protoreflect.FieldNumber{field.Number()},
 				JSONName:    string(field.JSONName()),
 				Description: commentDescription(field),
 				Schema:      arrayField,
@@ -490,7 +491,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			mapField.ItemSchema = valueSchema
 
 			prop := &ObjectProperty{
-				ProtoField:  []protoreflect.FieldNumber{field.Number()},
+				//ProtoField:  []protoreflect.FieldNumber{field.Number()},
 				JSONName:    string(field.JSONName()),
 				Description: commentDescription(field),
 				Schema:      mapField,
@@ -512,28 +513,32 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			continue
 		}
 
-		name := string(inOneof.Name())
+		/*
+			name := string(inOneof.Name())
 
-		oneof, ok := exposeOneofs[name]
-		if !ok {
-			properties = append(properties, prop)
-			continue
-		}
+			oneof, ok := exposeOneofs[name]
+			if !ok {
+		*/
+		properties = append(properties, prop)
+		/*
+				continue
+			}
 
-		oneof.Properties = append(oneof.Properties, prop)
+			oneof.Properties = append(oneof.Properties, prop)
 
-		// defers adding the oneof to the property array until the first
-		// field is encountered, i.e. preserves ordering
-		pending, ok := pendingOneofProps[name]
-		if ok {
-			properties = append(properties, pending)
-			delete(pendingOneofProps, name)
-		}
+			// defers adding the oneof to the property array until the first
+			// field is encountered, i.e. preserves ordering
+			pending, ok := pendingOneofProps[name]
+			if ok {
+				properties = append(properties, pending)
+				delete(pendingOneofProps, name)
+			}*/
 	}
 
-	for _, pending := range pendingOneofProps {
-		return nil, fmt.Errorf("oneof %s has not been added", pending.JSONName)
-	}
+	/*
+		for _, pending := range pendingOneofProps {
+			return nil, fmt.Errorf("oneof %s has not been added", pending.JSONName)
+		}*/
 
 	return properties, nil
 
@@ -613,8 +618,8 @@ func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensi
 
 func (pkg *Package) buildSchemaProperty(context fieldContext, src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
 	prop := &ObjectProperty{
-		JSONName:    string(src.JSONName()),
-		ProtoField:  []protoreflect.FieldNumber{src.Number()},
+		JSONName: string(src.JSONName()),
+		//	ProtoField:  []protoreflect.FieldNumber{src.Number()},
 		Description: commentDescription(src),
 	}
 
@@ -1183,15 +1188,6 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflect.FieldDescriptor, ext protoFieldExtensions) (FieldSchema, error) {
 	flatten := false
 	if ext.j5 != nil {
-		if msgOptions := ext.j5.GetMessage(); msgOptions != nil {
-			if src.Kind() != protoreflect.MessageKind {
-				return nil, fmt.Errorf("field %s is not a message but has a message annotation", src.Name())
-			}
-
-			if msgOptions.Flatten {
-				flatten = true
-			}
-		}
 		if objOptions := ext.j5.GetObject(); objOptions != nil {
 			if src.Kind() != protoreflect.MessageKind {
 				return nil, fmt.Errorf("field %s is not a message but has a object annotation", src.Name())

@@ -7,17 +7,27 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+// Struct is implemented by all types which can be reflected, e.g. in generated
+// proto code
+type Struct interface {
+	J5Reflect() Root
+}
+
+type SchemaCache interface {
+	Schema(msg protoreflect.MessageDescriptor) (j5schema.RootSchema, error)
+}
+
 type Root interface {
 	PropertySet
 }
 
 type Reflector struct {
-	schemaSet *j5schema.SchemaCache
+	schemaSet SchemaCache
 }
 
 func New() *Reflector {
 	return &Reflector{
-		schemaSet: j5schema.NewSchemaCache(),
+		schemaSet: j5schema.Global,
 	}
 }
 
@@ -25,6 +35,16 @@ func NewWithCache(cache *j5schema.SchemaCache) *Reflector {
 	return &Reflector{
 		schemaSet: cache,
 	}
+}
+
+var Global = New()
+
+func MustReflect(msg protoreflect.Message) Root {
+	root, err := Global.NewRoot(msg)
+	if err != nil {
+		panic(fmt.Sprintf("j5reflect: %v", err))
+	}
+	return root
 }
 
 func (r *Reflector) NewRoot(msg protoreflect.Message) (Root, error) {

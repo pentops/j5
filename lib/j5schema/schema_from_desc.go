@@ -417,10 +417,12 @@ func (pkg *Package) polymorphSchemaFromDesc(sch *schema_j5pb.Polymorph) (*Polymo
 }
 
 func (pkg *Package) objectPropertyFromDesc(parent RootSchema, prop *schema_j5pb.ObjectProperty) (*ObjectProperty, error) {
-	protoField := make([]protoreflect.FieldNumber, len(prop.ProtoField))
-	for i, field := range prop.ProtoField {
-		protoField[i] = protoreflect.FieldNumber(field)
-	}
+	/*
+		protoField := make([]protoreflect.FieldNumber, len(prop.ProtoField))
+		for i, field := range prop.ProtoField {
+			protoField[i] = protoreflect.FieldNumber(field)
+		}
+	*/
 	context := fieldContext{
 		parent:       parent,
 		nameInParent: prop.Name,
@@ -431,10 +433,10 @@ func (pkg *Package) objectPropertyFromDesc(parent RootSchema, prop *schema_j5pb.
 	}
 
 	return &ObjectProperty{
-		Parent:             parent,
-		Entity:             prop.EntityKey,
-		Schema:             propSchema,
-		ProtoField:         protoField,
+		Parent: parent,
+		Entity: prop.EntityKey,
+		Schema: propSchema,
+		//ProtoField:         protoField,
 		JSONName:           prop.Name,
 		Required:           prop.Required,
 		ExplicitlyOptional: prop.ExplicitlyOptional,

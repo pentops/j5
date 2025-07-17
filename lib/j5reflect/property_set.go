@@ -63,11 +63,15 @@ type PropertySet interface {
 	// the property set. The property may not be set to a value.
 	GetProperty(name string) (Property, error)
 
-	GetValue(name string) (Field, bool, error)
+	GetField(name ...string) (Field, bool, error)
 	NewValue(name string) (Field, error)
 	GetOrCreateValue(name string) (Field, error)
 
 	ListPropertyNames() []string
+
+	// ProtoMessage returns the underlying protoreflect message. From there you are
+	// on your own, the schema may not match.
+	ProtoReflect() protoreflect.Message
 
 	implementsPropertySet()
 }
@@ -190,7 +194,9 @@ func (factory propSetFactory) newMessage(msg protoreflect.Message) *propSet {
 
 type hasProps interface {
 	FullName() string
-	ClientProperties() []*j5schema.ObjectProperty
+	ClientProperties() j5schema.PropertySet
+
+	AllProperties() j5schema.PropertySet
 }
 
 //var _ PropertySet = &propSet{}
@@ -209,6 +215,38 @@ func (ps *propSet) ProtoReflect() protoreflect.Message {
 	return ps.value
 }
 
+type clientProperty struct {
+	fullPath []string // the proto-json path to the client property, to walk flattened messages
+	*j5schema.ObjectProperty
+}
+
+func clientProperties(sourceSet j5schema.PropertySet) []clientProperty {
+	properties := make([]clientProperty, 0, len(sourceSet))
+	for _, prop := range sourceSet {
+		switch propType := prop.Schema.(type) {
+		case *j5schema.ObjectField:
+			if propType.Flatten {
+				children := clientProperties(propType.ObjectSchema().AllProperties())
+				for _, child := range children {
+					childPath := []string{prop.JSONName}
+					childPath = append(childPath, child.fullPath...)
+					properties = append(properties, clientProperty{
+						ObjectProperty: child.ObjectProperty,
+						fullPath:       childPath,
+					})
+				}
+				continue
+			}
+		}
+		properties = append(properties, clientProperty{
+			ObjectProperty: prop,
+			fullPath:       []string{prop.JSONName},
+		})
+	}
+	return properties
+
+}
+
 func newPropSet(schema hasProps, rootDesc protoreflect.MessageDescriptor) (propSetFactory, error) {
 
 	if rootDesc == nil {
@@ -219,23 +257,25 @@ func newPropSet(schema hasProps, rootDesc protoreflect.MessageDescriptor) (propS
 		return propSetFactory{}, fmt.Errorf("propSet root is a map entry (virtual message)")
 	}
 
-	props := schema.ClientProperties()
+	props := clientProperties(schema.AllProperties())
 
 	builtProps := make([]*propertyStub, 0, len(props))
 	for _, propSchema := range props {
 		prop := &propertyStub{
-			schema:    propSchema,
+			schema:    propSchema.ObjectProperty,
 			protoPath: make([]protoreflect.FieldDescriptor, 0),
 		}
 
+		rootDesc.Fields().ByJSONName(propSchema.JSONName)
+
 		walk := rootDesc
-		for idx, fieldNumber := range propSchema.ProtoField {
-			fieldDesc := walk.Fields().ByNumber(fieldNumber)
+		for idx, elem := range propSchema.fullPath {
+			fieldDesc := walk.Fields().ByJSONName(elem)
 			if fieldDesc == nil {
-				return propSetFactory{}, fmt.Errorf("newPropSet: field %d not found in %s (%v)", fieldNumber, walk.FullName(), propSchema.ProtoField)
+				return propSetFactory{}, fmt.Errorf("newPropSet: field %s not found in %s", elem, walk.FullName())
 			}
 			prop.protoPath = append(prop.protoPath, fieldDesc)
-			if idx < len(propSchema.ProtoField)-1 {
+			if idx < len(propSchema.fullPath)-1 {
 				if fieldDesc.Kind() != protoreflect.MessageKind {
 					return propSetFactory{}, fmt.Errorf("field %s is not a message but has nested types", fieldDesc.FullName())
 				}
@@ -296,7 +336,28 @@ func (fs *propSet) GetOrCreateValue(name string) (Field, error) {
 	return fs.buildOrCreate(prop)
 }
 
-func (fs *propSet) GetValue(name string) (Field, bool, error) {
+func (fs *propSet) GetField(nameParts ...string) (Field, bool, error) {
+
+	next, ok, err := fs.getValue(nameParts[0])
+	if err != nil {
+		return nil, false, err
+	}
+	if !ok {
+		return nil, false, nil
+	}
+
+	if len(nameParts) == 1 {
+		return next, true, nil
+	}
+
+	container, ok := next.AsContainer()
+	if !ok {
+		return nil, false, fmt.Errorf("property %s is not a container", nameParts[0])
+	}
+	return container.GetField(nameParts[1:]...)
+}
+
+func (fs *propSet) getValue(name string) (Field, bool, error) {
 	prop, ok := fs.asMap[name]
 	if !ok {
 		return nil, false, fmt.Errorf("%q has no property %q", fs.schema.FullName(), name)
@@ -343,7 +404,7 @@ func (fs *propSet) RangePropertySchemas(callback RangePropertySchemasCallback) e
 
 func (fs *propSet) RangeValues(callback RangeValuesCallback) error {
 	for _, prop := range fs.asSlice {
-		val, has, err := fs.GetValue(prop.schema.JSONName)
+		val, has, err := fs.GetField(prop.schema.JSONName)
 		if err != nil {
 			return err
 		}
@@ -368,7 +429,7 @@ func (fs *propSet) GetOne() (Field, bool, error) {
 	var found bool
 
 	for _, search := range fs.asSlice {
-		field, has, err := fs.GetValue(search.schema.JSONName)
+		field, has, err := fs.GetField(search.schema.JSONName)
 		if err != nil {
 			return nil, false, err
 		}

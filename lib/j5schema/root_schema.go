@@ -5,9 +5,9 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
+	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 type RootSchema interface {
@@ -170,6 +170,7 @@ type ObjectSchema struct {
 	PolymorphMember []string
 	Properties      PropertySet
 	BCL             *bcl_j5pb.Block
+	ListRequest     *list_j5pb.ListRequestMessage
 }
 
 func (s *ObjectSchema) Clone() *ObjectSchema {
@@ -203,7 +204,11 @@ func (s *ObjectSchema) ToJ5Object() *schema_j5pb.Object {
 	}
 }
 
-func (s *ObjectSchema) ClientProperties() []*ObjectProperty {
+func (s *ObjectSchema) AllProperties() PropertySet {
+	return s.Properties
+}
+
+func (s *ObjectSchema) ClientProperties() PropertySet { //[]*ObjectProperty {
 	properties := make([]*ObjectProperty, 0, len(s.Properties))
 	for _, prop := range s.Properties {
 		switch propType := prop.Schema.(type) {
@@ -211,7 +216,7 @@ func (s *ObjectSchema) ClientProperties() []*ObjectProperty {
 			if propType.Flatten {
 				children := propType.ObjectSchema().ClientProperties()
 				for _, child := range children {
-					child := child.nestedClone(prop.ProtoField)
+					child := child.nestedClone() //prop.ProtoField)
 					properties = append(properties, child)
 				}
 
@@ -307,7 +312,11 @@ func (s *OneofSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
 	return s.ToJ5Root()
 }
 
-func (s *OneofSchema) ClientProperties() []*ObjectProperty {
+func (s *OneofSchema) ClientProperties() PropertySet {
+	return s.Properties
+}
+
+func (s *OneofSchema) AllProperties() PropertySet {
 	return s.Properties
 }
 
@@ -322,6 +331,26 @@ func (ps PropertySet) ByJSONName(name string) *ObjectProperty {
 		}
 	}
 	return nil
+}
+
+func (ps PropertySet) ByClientJSONName(name string) (*ObjectProperty, []string) {
+	for _, prop := range ps {
+		if prop.JSONName == name {
+			return prop, []string{name}
+		}
+		switch propType := prop.Schema.(type) {
+		case *ObjectField:
+			if propType.Flatten {
+				childProp, pathToChild := propType.ObjectSchema().Properties.ByClientJSONName(name)
+				if childProp != nil {
+					return childProp, append([]string{prop.JSONName}, pathToChild...)
+				}
+			}
+
+		}
+	}
+	return nil, nil
+
 }
 
 func (ps PropertySet) PropertyField(name string) FieldSchema {
@@ -355,7 +384,8 @@ type ObjectProperty struct {
 	Schema FieldSchema
 	Entity *schema_j5pb.EntityKey
 
-	ProtoField []protoreflect.FieldNumber
+	//ProtoField []protoreflect.FieldNumber
+	//ProtoName  []protoreflect.Name
 
 	JSONName string
 
@@ -388,10 +418,6 @@ func (prop *ObjectProperty) FullName() string {
 }
 
 func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
-	fieldPath := make([]int32, len(prop.ProtoField))
-	for idx, field := range prop.ProtoField {
-		fieldPath[idx] = int32(field)
-	}
 
 	propSchema := prop.Schema.ToJ5Field()
 
@@ -424,18 +450,18 @@ func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 		Required:           prop.Required,
 		ExplicitlyOptional: prop.ExplicitlyOptional,
 		Description:        prop.Description,
-		ProtoField:         fieldPath,
+		//	ProtoField:         int32(prop.ProtoField),
 	}
 
 }
 
-func (prop *ObjectProperty) nestedClone(inParent []protoreflect.FieldNumber) *ObjectProperty {
-	protoField := append(inParent, prop.ProtoField...)
+func (prop *ObjectProperty) nestedClone() *ObjectProperty {
+	//protoField := append(inParent, prop.ProtoField...)
 	return &ObjectProperty{
-		Parent:             prop.Parent,
-		Schema:             prop.Schema,
-		Entity:             prop.Entity,
-		ProtoField:         protoField,
+		Parent: prop.Parent,
+		Schema: prop.Schema,
+		Entity: prop.Entity,
+		//ProtoField:         protoField,
 		JSONName:           prop.JSONName,
 		Required:           prop.Required,
 		ReadOnly:           prop.ReadOnly,

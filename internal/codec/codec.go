@@ -42,9 +42,8 @@ func WithProtoToAny() CodecOption {
 }
 
 func NewCodec(opts ...CodecOption) *Codec {
-	refl := j5reflect.New()
 	cc := &Codec{
-		refl:     refl,
+		refl:     j5reflect.Global,
 		resolver: protoregistry.GlobalTypes,
 	}
 
@@ -59,12 +58,20 @@ func (c *Codec) JSONToProto(jsonData []byte, msg protoreflect.Message) error {
 	return c.decode(jsonData, msg)
 }
 
+func (c *Codec) JSONToReflect(jsonData []byte, obj j5reflect.Root) error {
+	return c.decodeRoot(jsonData, obj)
+}
+
 func (c *Codec) QueryToProto(queryString url.Values, msg protoreflect.Message) error {
 	return c.decodeQuery(queryString, msg)
 }
 
 func (c *Codec) ProtoToJSON(msg protoreflect.Message) ([]byte, error) {
 	return c.encode(msg)
+}
+
+func (c *Codec) ReflectToJSON(obj j5reflect.Root) ([]byte, error) {
+	return c.encodeRoot(obj)
 }
 
 func (c *Codec) EncodeAny(msg protoreflect.Message) (*any_j5t.Any, error) {

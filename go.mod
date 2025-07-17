@@ -17,7 +17,7 @@ require (
 	github.com/iancoleman/strcase v0.3.0
 	github.com/lib/pq v1.10.9
 	github.com/pentops/envconf.go v0.0.0-20241008010024-9864aef6219d
-	github.com/pentops/flowtest v0.0.0-20250611222350-b5c7162d9db1
+	github.com/pentops/flowtest v0.0.0-20250716231535-9c97a48adf21
 	github.com/pentops/grpc.go v0.0.0-20250604193928-b45524df9c41
 	github.com/pentops/pgtest.go v0.0.0-20241223222214-7638cc50e15b
 	github.com/pentops/realms v0.0.0-20250619030211-be302569b3fc

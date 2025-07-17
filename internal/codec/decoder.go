@@ -230,7 +230,7 @@ func (dec *decoder) decodeObjectInner(object j5reflect.PropertySet) error {
 	err := dec.jsonObjectBody(func(keyTokenStr string) error {
 		prop, err := object.GetProperty(keyTokenStr)
 		if err != nil {
-			return newFieldError(keyTokenStr, "no such field")
+			return err //errors.New("no such field")
 		}
 		if err := dec.decodeValue(prop); err != nil {
 			return err

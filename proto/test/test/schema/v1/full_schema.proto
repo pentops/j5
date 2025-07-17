@@ -50,11 +50,8 @@ message FullSchema {
   
   map<string, Bar> map_string_bar = 51;
 
-  FlattenedMessage flattened = 52 [(j5.ext.v1.field).message.flatten = true];
+  FlattenedMessage flattened = 52 [(j5.ext.v1.field).object.flatten = true];
 
-  NestedExposed nested_exposed_oneof = 53;
-
-  repeated NestedExposed nested_exposed_oneofs = 54;
 
   ImplicitOneof s_implicit_oneof = 55;
   repeated ImplicitOneof r_implicit_oneofs = 56;
@@ -76,11 +73,6 @@ message FullSchema {
     Enum a_oneof_enum = 103;
   }
 
-  oneof exposed_oneof {
-    option (j5.ext.v1.oneof).expose = true;
-
-    string exposed_string = 200;
-  }
   
   WrappedOneof wrapped_oneof = 300;
 
@@ -104,15 +96,6 @@ message ImplicitOneof {
   oneof type {
     Bar io_bar = 1;
     Baz io_baz = 2;
-  }
-}
-
-message NestedExposed {
-  oneof type {
-    option (j5.ext.v1.oneof).expose = true;
-    string de1 = 101;
-    string de2 = 102;
-    NestedExposed de3 = 103;
   }
 }
 

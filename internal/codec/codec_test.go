@@ -344,19 +344,6 @@ func TestUnmarshal(t *testing.T) {
 				},
 			},
 		}, {
-			name: "exposed oneof",
-			json: `{
-				"exposedOneof": {
-					"!type": "exposedString",
-					"exposedString": "stringVal"
-				}
-			}`,
-			wantProto: &schema_testpb.FullSchema{
-				ExposedOneof: &schema_testpb.FullSchema_ExposedString{
-					ExposedString: "stringVal",
-				},
-			},
-		}, {
 			name: "oneof wrapper",
 			json: `{
 				"wrappedOneof": {
@@ -370,110 +357,6 @@ func TestUnmarshal(t *testing.T) {
 						WOneofString: "Wrapped oneofStringVal",
 					},
 				},
-			},
-		}, {
-			name: "exposed oneof in nested message",
-			json: `{
-				"nestedExposedOneof": {
-					"type": {
-						"!type": "de1",
-						"de1": "de1Val"
-					}
-				}
-			  }`,
-			wantProto: &schema_testpb.FullSchema{
-				NestedExposedOneof: &schema_testpb.NestedExposed{
-					Type: &schema_testpb.NestedExposed_De1{
-						De1: "de1Val",
-					},
-				},
-			},
-		}, {
-			name: "lightly recursive nested oneof",
-			json: `{
-				"nestedExposedOneof": {
-					"type": {
-						"!type": "de3",
-						"de3": {
-							"type": {
-								"!type": "de1",
-								"de1": "de1Val"
-							}
-						}
-					}
-				}
-			}`,
-			wantProto: &schema_testpb.FullSchema{
-				NestedExposedOneof: &schema_testpb.NestedExposed{
-					Type: &schema_testpb.NestedExposed_De3{
-						De3: &schema_testpb.NestedExposed{
-							Type: &schema_testpb.NestedExposed_De1{
-								De1: "de1Val",
-							},
-						},
-					},
-				},
-			},
-		}, {
-			name: "recursive nested oneof",
-			json: `{
-				"nestedExposedOneof": {
-					"type": {
-						"!type": "de3",
-						"de3": {
-							"type": {
-								"!type": "de3",
-								"de3": {
-									"type": {
-										"!type": "de1",
-										"de1": "de1Val"
-									}
-								}
-							}
-						}
-					}
-				}
-			}`,
-			wantProto: &schema_testpb.FullSchema{
-				NestedExposedOneof: &schema_testpb.NestedExposed{
-					Type: &schema_testpb.NestedExposed_De3{
-						De3: &schema_testpb.NestedExposed{
-							Type: &schema_testpb.NestedExposed_De3{
-								De3: &schema_testpb.NestedExposed{
-									Type: &schema_testpb.NestedExposed_De1{
-										De1: "de1Val",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}, {
-			name: "repeated exposed oneof in nested message",
-			json: `{
-				"nestedExposedOneofs": [{
-					"type": {
-						"!type": "de1",
-						"de1": "de1Val"
-					}
-				}, {
-					"type": {
-						"!type": "de2",
-						"de2": "de2Val"
-					}
-				}]
-			  }`,
-			wantProto: &schema_testpb.FullSchema{
-				NestedExposedOneofs: []*schema_testpb.NestedExposed{{
-					Type: &schema_testpb.NestedExposed_De1{
-						De1: "de1Val",
-					},
-				}, {
-					Type: &schema_testpb.NestedExposed_De2{
-						De2: "de2Val",
-					},
-				}},
 			},
 		}, {
 			name: "decimal",
@@ -552,7 +435,7 @@ func TestUnmarshal(t *testing.T) {
 
 				msg := tc.wantProto.ProtoReflect().New().Interface()
 				if err := codec.JSONToProto([]byte(input), msg.ProtoReflect()); err != nil {
-					t.Fatalf("JSONToProto: %s", err)
+					t.Fatalf("Input JSONToProto: %s", err)
 				}
 
 				t.Logf("GOT proto: %s \n%v\n", msg.ProtoReflect().Descriptor().FullName(), prototext.Format(msg))
@@ -619,6 +502,7 @@ func TestScalars(t *testing.T) {
 	}
 
 	runTest := func(t testing.TB, tc testCase) {
+		t.Helper()
 
 		codec := NewCodec()
 

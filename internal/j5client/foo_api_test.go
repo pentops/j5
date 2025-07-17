@@ -32,9 +32,8 @@ func wantAPI() *client_j5pb.API {
 		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
-				Name:       "id",
-				ProtoField: []int32{1},
-				Required:   true,
+				Name:     "id",
+				Required: true,
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_String_{
 						String_: &schema_j5pb.StringField{},
@@ -42,8 +41,7 @@ func wantAPI() *client_j5pb.API {
 				},
 			}},
 			QueryParameters: []*schema_j5pb.ObjectProperty{{
-				Name:       "number",
-				ProtoField: []int32{2},
+				Name: "number",
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Integer{
 						Integer: &schema_j5pb.IntegerField{
@@ -52,8 +50,7 @@ func wantAPI() *client_j5pb.API {
 					},
 				},
 			}, {
-				Name:       "numbers",
-				ProtoField: []int32{3},
+				Name: "numbers",
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Array{
 						Array: &schema_j5pb.ArrayField{
@@ -68,8 +65,7 @@ func wantAPI() *client_j5pb.API {
 					},
 				},
 			}, {
-				Name:       "ab",
-				ProtoField: []int32{4},
+				Name: "ab",
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Object{
 						Object: &schema_j5pb.ObjectField{
@@ -83,8 +79,7 @@ func wantAPI() *client_j5pb.API {
 					},
 				},
 			}, {
-				Name:       "multipleWord",
-				ProtoField: []int32{5},
+				Name: "multipleWord",
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_String_{
 						String_: &schema_j5pb.StringField{},
@@ -95,9 +90,8 @@ func wantAPI() *client_j5pb.API {
 		ResponseBody: &schema_j5pb.Object{
 			Name: "GetFooResponse",
 			Properties: []*schema_j5pb.ObjectProperty{{
-				Name:       "foo",
-				ProtoField: []int32{1},
-				Schema:     objectRef("test.foo.v1", "FooState"),
+				Name:   "foo",
+				Schema: objectRef("test.foo.v1", "FooState"),
 			}},
 		},
 	}
@@ -113,13 +107,11 @@ func wantAPI() *client_j5pb.API {
 		},
 		Request: &client_j5pb.Method_Request{
 			QueryParameters: []*schema_j5pb.ObjectProperty{{
-				Name:       "page",
-				ProtoField: []int32{100},
-				Schema:     objectRef("j5.list.v1", "PageRequest"),
+				Name:   "page",
+				Schema: objectRef("j5.list.v1", "PageRequest"),
 			}, {
-				Name:       "query",
-				ProtoField: []int32{101},
-				Schema:     objectRef("j5.list.v1", "QueryRequest"),
+				Name:   "query",
+				Schema: objectRef("j5.list.v1", "QueryRequest"),
 			}},
 			List: &client_j5pb.ListRequest{
 				SearchableFields: []*client_j5pb.ListRequest_SearchField{{
@@ -145,9 +137,8 @@ func wantAPI() *client_j5pb.API {
 		ResponseBody: &schema_j5pb.Object{
 			Name: "ListFoosResponse",
 			Properties: []*schema_j5pb.ObjectProperty{{
-				Name:       "foos",
-				ProtoField: []int32{1},
-				Schema:     array(objectRef("test.foo.v1", "FooState")),
+				Name:   "foos",
+				Schema: array(objectRef("test.foo.v1", "FooState")),
 			}},
 		},
 	}
@@ -162,9 +153,8 @@ func wantAPI() *client_j5pb.API {
 		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
-				Name:       "id",
-				ProtoField: []int32{1},
-				Required:   true,
+				Name:     "id",
+				Required: true,
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Key{
 						Key: &schema_j5pb.KeyField{
@@ -178,12 +168,10 @@ func wantAPI() *client_j5pb.API {
 				},
 			}},
 			QueryParameters: []*schema_j5pb.ObjectProperty{{
-				Name:       "page",
-				ProtoField: []int32{100},
-				Schema:     objectRef("j5.list.v1", "PageRequest"),
+				Name:   "page",
+				Schema: objectRef("j5.list.v1", "PageRequest"),
 			}, {
-				Name:       "query",
-				ProtoField: []int32{101},
+				Name: "query",
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Object{
 						Object: &schema_j5pb.ObjectField{
@@ -206,9 +194,8 @@ func wantAPI() *client_j5pb.API {
 		ResponseBody: &schema_j5pb.Object{
 			Name: "ListFooEventsResponse",
 			Properties: []*schema_j5pb.ObjectProperty{{
-				Name:       "events",
-				ProtoField: []int32{1},
-				Schema:     array(objectRef("test.foo.v1", "FooEvent")),
+				Name:   "events",
+				Schema: array(objectRef("test.foo.v1", "FooEvent")),
 			}},
 		},
 	}
@@ -234,8 +221,7 @@ func wantAPI() *client_j5pb.API {
 			Body: &schema_j5pb.Object{
 				Name: "PostFooRequest",
 				Properties: []*schema_j5pb.ObjectProperty{{
-					Name:       "id",
-					ProtoField: []int32{1},
+					Name: "id",
 					Schema: &schema_j5pb.Field{
 						Type: &schema_j5pb.Field_String_{
 							String_: &schema_j5pb.StringField{},
@@ -247,9 +233,8 @@ func wantAPI() *client_j5pb.API {
 		ResponseBody: &schema_j5pb.Object{
 			Name: "PostFooResponse",
 			Properties: []*schema_j5pb.ObjectProperty{{
-				Name:       "foo",
-				ProtoField: []int32{1},
-				Schema:     objectRef("test.foo.v1", "FooState"),
+				Name:   "foo",
+				Schema: objectRef("test.foo.v1", "FooState"),
 			}},
 		},
 	}
@@ -270,9 +255,8 @@ func wantAPI() *client_j5pb.API {
 		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
-				Name:       "id",
-				ProtoField: []int32{1},
-				Required:   true,
+				Name:     "id",
+				Required: true,
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_String_{
 						String_: &schema_j5pb.StringField{},

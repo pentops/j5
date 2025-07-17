@@ -209,7 +209,6 @@ func testAPI() *schema_j5pb.API {
 											String_: &schema_j5pb.StringField{},
 										},
 									},
-									ProtoField: []int32{1},
 								}, {
 									Name:     "queryField",
 									Required: false,
@@ -218,7 +217,6 @@ func testAPI() *schema_j5pb.API {
 											String_: &schema_j5pb.StringField{},
 										},
 									},
-									ProtoField: []int32{2},
 								}},
 							},
 						},
@@ -237,7 +235,6 @@ func testAPI() *schema_j5pb.API {
 											String_: &schema_j5pb.StringField{},
 										},
 									},
-									ProtoField: []int32{1},
 								}, {
 									Name:        "msg",
 									Description: "",
@@ -254,7 +251,6 @@ func testAPI() *schema_j5pb.API {
 											},
 										},
 									},
-									ProtoField: []int32{2},
 								}},
 							},
 						},
@@ -275,7 +271,6 @@ func testAPI() *schema_j5pb.API {
 										String_: &schema_j5pb.StringField{},
 									},
 								},
-								ProtoField: []int32{1},
 							}, {
 								Name: "enum",
 								Schema: &schema_j5pb.Field{
@@ -290,7 +285,6 @@ func testAPI() *schema_j5pb.API {
 										},
 									},
 								},
-								ProtoField: []int32{3},
 							}},
 						},
 					},

@@ -546,7 +546,7 @@ message ObjectProperty {
   // Defines the path from the root proto message to the field. All but the last
   // node will be message fields holding a message kind, and the last node is
   // the field containing the property type.
-  repeated int32 proto_field = 11;
+  //repeated int32 proto_field = 11;
   
   
   option (j5.bcl.v1.block).type_select = {
