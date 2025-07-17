@@ -14,6 +14,8 @@ RUN rm -rf /tmp/*
 
 FROM scratch
 
+LABEL org.opencontainers.image.source=https://github.com/pentops/j5
+
 COPY --from=builder /registry /registry
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
