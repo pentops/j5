@@ -5,6 +5,7 @@ import (
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/lib/id62"
 )
 
 // BuildSwagger converts the J5 Document to a Swagger Document
@@ -82,6 +83,12 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 
 	case *schema_j5pb.Field_Array:
 		out.Type, err = convertArrayItem(t.Array)
+		if err != nil {
+			return nil, err
+		}
+
+	case *schema_j5pb.Field_Key:
+		out.Type, err = convertKeyItem(t.Key)
 		if err != nil {
 			return nil, err
 		}
@@ -249,6 +256,30 @@ func convertArrayItem(item *schema_j5pb.ArrayField) (*ArrayItem, error) {
 		out.MaxItems = Maybe(item.Rules.MaxItems)
 		out.UniqueItems = Maybe(item.Rules.UniqueItems)
 	}
+
+	return out, nil
+}
+
+func convertKeyItem(item *schema_j5pb.KeyField) (*StringItem, error) {
+	out := &StringItem{}
+
+	switch item.Format.Type.(type) {
+	case *schema_j5pb.KeyFormat_Uuid:
+		out.Format = Some("uuid")
+		out.Pattern = Some(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+	case *schema_j5pb.KeyFormat_Id62:
+		out.Format = Some("id62")
+		out.Pattern = Some(id62.PatternString)
+	case *schema_j5pb.KeyFormat_Informal_:
+		// Informal keys don't have a specific format or pattern
+	case *schema_j5pb.KeyFormat_Custom_:
+		out.Format = Some("custom")
+		out.Pattern = Some(item.Format.GetCustom().Pattern)
+	default:
+		return nil, fmt.Errorf("unknown key format %T", item.Format.Type)
+	}
+
+	out.Example = Maybe(stringExample(&out.Format.Value))
 
 	return out, nil
 }
