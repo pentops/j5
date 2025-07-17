@@ -291,6 +291,82 @@ func TestConvertSchema(t *testing.T) {
 			},
 		},
 		{
+			name: "key (uuid)",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Key{
+					Key: &schema_j5pb.KeyField{
+						Format: &schema_j5pb.KeyFormat{
+							Type: &schema_j5pb.KeyFormat_Uuid{
+								Uuid: &schema_j5pb.KeyFormat_UUID{},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":    "string",
+				"format":  "uuid",
+				"pattern": `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`,
+			},
+		},
+		{
+			name: "key (id62)",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Key{
+					Key: &schema_j5pb.KeyField{
+						Format: &schema_j5pb.KeyFormat{
+							Type: &schema_j5pb.KeyFormat_Id62{
+								Id62: &schema_j5pb.KeyFormat_ID62{},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":    "string",
+				"format":  "id62",
+				"pattern": `^[0-9A-Za-z]{22}$`,
+			},
+		},
+		{
+			name: "key (informal)",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Key{
+					Key: &schema_j5pb.KeyField{
+						Format: &schema_j5pb.KeyFormat{
+							Type: &schema_j5pb.KeyFormat_Informal_{
+								Informal: &schema_j5pb.KeyFormat_Informal{},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"type": "string",
+			},
+		},
+		{
+			name: "key (custom)",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Key{
+					Key: &schema_j5pb.KeyField{
+						Format: &schema_j5pb.KeyFormat{
+							Type: &schema_j5pb.KeyFormat_Custom_{
+								Custom: &schema_j5pb.KeyFormat_Custom{
+									Pattern: `^[A-Z0-9]{10}$`,
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":    "string",
+				"format":  "custom",
+				"pattern": `^[A-Z0-9]{10}$`,
+			},
+		},
+		{
 			name: "map",
 			input: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Map{
