@@ -2,12 +2,12 @@ package j5schema
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 
-	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
@@ -133,10 +133,6 @@ func splitDescriptorName(descriptor protoreflect.Descriptor) (string, string) {
 		}
 		current = current.Parent()
 	}
-}
-
-func jsonFieldName(s protoreflect.Name) string {
-	return strcase.ToLowerCamel(string(s))
 }
 
 func IsOneofWrapper(msg protoreflect.MessageDescriptor) bool {
@@ -276,10 +272,38 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts
 
 	listRequestAnnotation, ok := proto.GetExtension(srcMsg.Options().(*descriptorpb.MessageOptions), list_j5pb.E_ListRequest).(*list_j5pb.ListRequestMessage)
 	if ok && listRequestAnnotation != nil {
-		objectSchema.ListRequest = listRequestAnnotation
+		converted, err := convertListRequest(srcMsg, listRequestAnnotation)
+		if err != nil {
+			return nil, fmt.Errorf("convert list request for %s: %w", srcMsg.FullName(), err)
+		}
+		objectSchema.ListRequest = converted
 	}
 
 	return objectSchema, nil
+}
+
+var reProtoName = regexp.MustCompile(`^[a-z_][a-z0-9_]*$`)
+
+func protoToJSONPath(msg protoreflect.MessageDescriptor, field string) ([]string, error) {
+	parts := strings.Split(field, ".")
+	jsonPath := make([]string, 0, len(parts))
+	for idx, pathPart := range parts {
+		if !reProtoName.MatchString(pathPart) {
+			return nil, fmt.Errorf("invalid proto field name %q in path %q", pathPart, field)
+		}
+		matchingField := msg.Fields().ByName(protoreflect.Name(pathPart))
+		if matchingField == nil {
+			return nil, fmt.Errorf("unknown proto field %q in path %q from %q", pathPart, field, msg.FullName())
+		}
+		jsonPath = append(jsonPath, string(matchingField.JSONName()))
+		if idx < len(parts)-1 {
+			msg = matchingField.Message()
+			if msg == nil {
+				return nil, fmt.Errorf("field %q in path %q is not a message", pathPart, field)
+			}
+		}
+	}
+	return jsonPath, nil
 }
 
 func (ss *Package) buildPolymorphSchema(srcMsg protoreflect.MessageDescriptor, opts *ext_j5pb.PolymorphMessageOptions) (*PolymorphSchema, error) {
@@ -586,16 +610,6 @@ type protoFieldExtensions struct {
 
 func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensions {
 	validateConstraint := protosrc.GetExtension[*validate.FieldRules](src.Options(), validate.E_Field)
-	if validateConstraint != nil && validateConstraint.Ignore != nil && *validateConstraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
-		// constraint.IgnoreEmpty doesn't really apply
-
-		// if the constraint is repeated, unwrap it
-		repeatedConstraint, ok := validateConstraint.Type.(*validate.FieldRules_Repeated)
-		if ok {
-			validateConstraint = repeatedConstraint.Repeated.Items
-		}
-	}
-
 	if validateConstraint == nil {
 		validateConstraint = &validate.FieldRules{}
 	}
@@ -1483,11 +1497,8 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 				}
 			default:
 				return nil, fmt.Errorf("unknown key type %T", keyFieldOpt.Type)
-
 			}
-
 		}
-
 	}
 
 	if stringItem.Format != nil {
