@@ -50,6 +50,8 @@ func ConvertRootSchema(schema *schema_j5pb.RootSchema) (*Schema, error) {
 		return convertOneofItem(t.Oneof)
 	case *schema_j5pb.RootSchema_Enum:
 		return convertEnumItem(t.Enum), nil
+	case *schema_j5pb.RootSchema_Polymorph:
+		return convertPolymorphItem(t.Polymorph), nil
 	default:
 		return nil, fmt.Errorf("expected root schema, got %T", schema.Type)
 
@@ -93,13 +95,25 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 			return nil, err
 		}
 
+	case *schema_j5pb.Field_Timestamp:
+		out.Type = convertTimestampItem(t.Timestamp)
+
+	case *schema_j5pb.Field_Bytes:
+		out.Type = convertBytesItem(t.Bytes)
+
+	case *schema_j5pb.Field_Date:
+		out.Type = convertDateItem(t.Date)
+
+	case *schema_j5pb.Field_Decimal:
+		out.Type = convertDecimalItem(t.Decimal)
+
 	case *schema_j5pb.Field_Enum:
 		switch t := t.Enum.Schema.(type) {
 		case *schema_j5pb.EnumField_Enum:
 			out.Type = convertEnumItem(t.Enum).Type
 
 		case *schema_j5pb.EnumField_Ref:
-			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
+			refStr := fmt.Sprintf("#/components/schemas/%s.%s", t.Ref.Package, t.Ref.Schema)
 			out.Ref = &refStr
 
 		default:
@@ -117,7 +131,7 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 			out.Type = item.Type
 
 		case *schema_j5pb.ObjectField_Ref:
-			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
+			refStr := fmt.Sprintf("#/components/schemas/%s.%s", t.Ref.Package, t.Ref.Schema)
 			out.Ref = &refStr
 
 		default:
@@ -134,7 +148,20 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 
 			out.Type = item.Type
 		case *schema_j5pb.OneofField_Ref:
-			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
+			refStr := fmt.Sprintf("#/components/schemas/%s.%s", t.Ref.Package, t.Ref.Schema)
+			out.Ref = &refStr
+
+		default:
+			return nil, fmt.Errorf("unknown schema type for swagger %T", t)
+		}
+
+	case *schema_j5pb.Field_Polymorph:
+		switch t := t.Polymorph.Schema.(type) {
+		case *schema_j5pb.PolymorphField_Polymorph:
+			item := convertPolymorphItem(t.Polymorph)
+			out.OneOf = item.OneOf
+		case *schema_j5pb.PolymorphField_Ref:
+			refStr := fmt.Sprintf("#/components/schemas/%s.%s", t.Ref.Package, t.Ref.Schema)
 			out.Ref = &refStr
 
 		default:
@@ -284,6 +311,37 @@ func convertKeyItem(item *schema_j5pb.KeyField) (*StringItem, error) {
 	return out, nil
 }
 
+func convertTimestampItem(_ *schema_j5pb.TimestampField) *StringItem {
+	return &StringItem{
+		Format:  Some("date-time"),
+		Example: Maybe(stringExample(Ptr("date-time"))),
+	}
+}
+
+func convertBytesItem(item *schema_j5pb.BytesField) *StringItem {
+	return &StringItem{
+		Format:    Some("bytes"),
+		MinLength: Maybe(item.Rules.MinLength),
+		MaxLength: Maybe(item.Rules.MaxLength),
+	}
+}
+
+func convertDateItem(_ *schema_j5pb.DateField) *StringItem {
+	return &StringItem{
+		Format:  Some("date"),
+		Pattern: Some(`^\d{4}-\d{2}-\d{2}$`),
+		Example: Maybe(stringExample(Ptr("date"))),
+	}
+}
+
+func convertDecimalItem(_ *schema_j5pb.DecimalField) *StringItem {
+	return &StringItem{
+		Format:  Some("decimal"),
+		Pattern: Some(`^\d*\.?\d+$`),
+		Example: Maybe(stringExample(Ptr("number"))),
+	}
+}
+
 func convertObjectItem(item *schema_j5pb.Object) (*Schema, error) {
 	out := &ObjectItem{
 		Properties:  map[string]*ObjectProperty{},
@@ -337,6 +395,18 @@ func convertOneofItem(item *schema_j5pb.Oneof) (*Schema, error) {
 			Type: out,
 		},
 	}, nil
+}
+
+func convertPolymorphItem(item *schema_j5pb.Polymorph) *Schema {
+	out := &Schema{}
+
+	for _, member := range item.Members {
+		out.OneOf = append(out.OneOf, &Schema{
+			Ref: Ptr(fmt.Sprintf("#/components/schemas/%s", member)),
+		})
+	}
+
+	return out
 }
 
 func convertMapItem(item *schema_j5pb.MapField) (*MapSchemaItem, error) {

@@ -265,6 +265,25 @@ func TestConvertSchema(t *testing.T) {
 			},
 		},
 		{
+			name: "polymorph",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Polymorph{
+					Polymorph: &schema_j5pb.PolymorphField{
+						Schema: &schema_j5pb.PolymorphField_Polymorph{
+							Polymorph: &schema_j5pb.Polymorph{
+								Name:    "poly",
+								Members: []string{"foo", "bar"},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"oneOf.0.$ref": "#/components/schemas/foo",
+				"oneOf.1.$ref": "#/components/schemas/bar",
+			},
+		},
+		{
 			name: "array",
 			input: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Array{
@@ -364,6 +383,68 @@ func TestConvertSchema(t *testing.T) {
 				"type":    "string",
 				"format":  "custom",
 				"pattern": `^[A-Z0-9]{10}$`,
+			},
+		},
+		{
+			name: "timestamp",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Timestamp{
+					Timestamp: &schema_j5pb.TimestampField{
+						Rules: &schema_j5pb.TimestampField_Rules{},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":   "string",
+				"format": "date-time",
+			},
+		},
+		{
+			name: "date",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Date{
+					Date: &schema_j5pb.DateField{
+						Rules: &schema_j5pb.DateField_Rules{},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":    "string",
+				"format":  "date",
+				"pattern": `^\d{4}-\d{2}-\d{2}$`,
+			},
+		},
+		{
+			name: "bytes",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Bytes{
+					Bytes: &schema_j5pb.BytesField{
+						Rules: &schema_j5pb.BytesField_Rules{
+							MinLength: Ptr(uint64(1)),
+							MaxLength: Ptr(uint64(100)),
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":      "string",
+				"format":    "bytes",
+				"minLength": 1,
+				"maxLength": 100,
+			},
+		},
+		{
+			name: "decimal",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Decimal{
+					Decimal: &schema_j5pb.DecimalField{
+						Rules: &schema_j5pb.DecimalField_Rules{},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":   "string",
+				"format": "decimal",
 			},
 		},
 		{
@@ -468,7 +549,7 @@ func TestSchemaJSONMarshal(t *testing.T) {
 					},
 					"ref": {
 						Schema: &Schema{
-							Ref: Ptr("#/definitions/foo"),
+							Ref: Ptr("#/components/schemas/foo"),
 						},
 					},
 					"oneof": {
@@ -508,5 +589,5 @@ func TestSchemaJSONMarshal(t *testing.T) {
 	out.AssertEqual(t, "properties.namedObject.x-name", "namedObject")
 	out.AssertEqual(t, "properties.namedObject.description", "desc")
 
-	out.AssertEqual(t, "properties.ref.$ref", "#/definitions/foo")
+	out.AssertEqual(t, "properties.ref.$ref", "#/components/schemas/foo")
 }

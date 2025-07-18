@@ -46,6 +46,8 @@ func stringExample(format *string) *string {
 		return Ptr("https://example.com")
 	case "date":
 		return Ptr("2021-01-01")
+	case "date-time":
+		return Ptr("2021-01-01T12:34:56Z")
 	case "number":
 		return Ptr("12.34")
 	default:
