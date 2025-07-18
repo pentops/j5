@@ -1489,7 +1489,12 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 				return nil, fmt.Errorf("unknown key type %T", keyFieldOpt.Type)
 
 			}
-
+		} else {
+			keyField.Format = &schema_j5pb.KeyFormat{
+				Type: &schema_j5pb.KeyFormat_Informal_{
+					Informal: &schema_j5pb.KeyFormat_Informal{},
+				},
+			}
 		}
 
 	}
