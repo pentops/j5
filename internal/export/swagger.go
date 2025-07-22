@@ -181,7 +181,7 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 		})
 	}
 
-	if method.Request.Body != nil {
+	if method.Request.Body != nil && len(method.Request.Body.Properties) != 0 {
 		requestSchema, err := convertObjectItem(method.Request.Body)
 		if err != nil {
 			return err
