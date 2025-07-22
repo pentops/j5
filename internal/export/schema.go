@@ -176,10 +176,14 @@ type ObjectProperty struct {
 
 func (op *ObjectProperty) MarshalJSON() ([]byte, error) {
 
-	base := map[string]any{
-		"readOnly":  op.ReadOnly,
-		"writeOnly": op.WriteOnly,
+	base := map[string]any{}
+
+	if op.Ref == nil {
+		// Sibling values are ignored and cause a warning with $ref is used
+		base["readOnly"] = op.ReadOnly
+		base["writeOnly"] = op.WriteOnly
 	}
+
 	if op.Description != "" {
 		base["description"] = op.Description
 	}
