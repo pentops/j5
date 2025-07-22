@@ -196,19 +196,23 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 		}
 	}
 
-	responseSchema, err := convertObjectItem(method.ResponseBody)
-	if err != nil {
-		return fmt.Errorf("response body: %w", err)
-	}
 	operation.Responses = &ResponseSet{{
 		Code:        200,
 		Description: "OK",
-		Content: OperationContent{
+	}}
+
+	// The response body is nil if the method returns httpBody
+	if method.ResponseBody != nil {
+		responseSchema, err := convertObjectItem(method.ResponseBody)
+		if err != nil {
+			return fmt.Errorf("response body: %w", err)
+		}
+		(*operation.Responses)[0].Content = OperationContent{
 			JSON: &OperationSchema{
 				Schema: responseSchema,
 			},
-		},
-	}}
+		}
+	}
 
 	found := false
 	for _, pathItem := range dd.Paths {
