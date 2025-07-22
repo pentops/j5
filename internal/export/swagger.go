@@ -219,11 +219,6 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 		}
 	}
 
-	operation.Path, err = formatPathParameters(operation.Path, method.Request.PathParameters)
-	if err != nil {
-		return err
-	}
-
 	if !found {
 		pathItem := &PathItem{operation}
 		dd.Paths = append(dd.Paths, pathItem)
