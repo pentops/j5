@@ -19,7 +19,7 @@ func BuildSwagger(b *client_j5pb.API) (*Document, error) {
 
 	for _, pkg := range b.Packages {
 		for _, service := range pkg.Services {
-			err := doc.addService(service)
+			err := doc.addService(service, pkg.Label)
 			if err != nil {
 				return nil, fmt.Errorf("package %s service %s: %w", pkg.Name, service.Name, err)
 			}

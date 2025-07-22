@@ -33,6 +33,7 @@ type OperationHeader struct {
 	Path   string `json:"-"`
 
 	OperationID  string             `json:"operationId,omitempty"`
+	Tags         []string           `json:"tags,omitempty"`
 	Summary      string             `json:"summary,omitempty"`
 	Description  string             `json:"description,omitempty"`
 	DisplayOrder int                `json:"x-display-order"`
@@ -90,9 +91,9 @@ type SwaggerParameter struct {
 	Schema      *Schema `json:"schema"`
 }
 
-func (dd *Document) addService(service *client_j5pb.Service) error {
+func (dd *Document) addService(service *client_j5pb.Service, packageName string) error {
 	for _, method := range service.Methods {
-		err := dd.addMethod(service, method)
+		err := dd.addMethod(service, method, packageName)
 		if err != nil {
 			return fmt.Errorf("method %s: %w", method.Method.FullGrpcName, err)
 		}
@@ -135,7 +136,7 @@ func formatPathParameters(path string, pathParameters []*schema_j5pb.ObjectPrope
 	return strings.Join(pathParts, "/"), nil
 }
 
-func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.Method) error {
+func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.Method, packageName string) error {
 	operationPath, err := formatPathParameters(method.Method.HttpPath, method.Request.PathParameters)
 	if err != nil {
 		return err
@@ -145,6 +146,7 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 		OperationHeader: OperationHeader{
 			Method:          methodShortString[method.Method.HttpMethod],
 			Path:            operationPath,
+			Tags:            []string{packageName},
 			OperationID:     method.Method.FullGrpcName,
 			GrpcMethodName:  method.Method.Name,
 			GrpcServiceName: service.Name,
