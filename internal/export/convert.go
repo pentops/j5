@@ -24,6 +24,22 @@ func BuildSwagger(b *client_j5pb.API) (*Document, error) {
 				return nil, fmt.Errorf("package %s service %s: %w", pkg.Name, service.Name, err)
 			}
 		}
+
+		for _, entity := range pkg.StateEntities {
+			if entity.QueryService != nil {
+				err := doc.addService(entity.QueryService, pkg.Label)
+				if err != nil {
+					return nil, fmt.Errorf("package %s service %s: %w", pkg.Name, entity.QueryService.Name, err)
+				}
+			}
+
+			for _, service := range entity.CommandServices {
+				err := doc.addService(service, pkg.Label)
+				if err != nil {
+					return nil, fmt.Errorf("package %s service %s: %w", pkg.Name, service.Name, err)
+				}
+			}
+		}
 	}
 
 	schemas := make(map[string]*Schema)
