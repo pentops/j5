@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
@@ -136,6 +137,20 @@ func formatPathParameters(path string, pathParameters []*schema_j5pb.ObjectPrope
 	return strings.Join(pathParts, "/"), nil
 }
 
+// friendlyMethodName delimits a CamelCase method name with spaces to make it more readable
+func friendlyMethodName(name string) string {
+	var result strings.Builder
+	result.Grow(len(name))
+
+	for i, r := range name {
+		if unicode.IsUpper(r) && i > 0 {
+			result.WriteRune(' ')
+		}
+		result.WriteRune(r)
+	}
+	return result.String()
+}
+
 func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.Method, packageName string) error {
 	operationPath, err := formatPathParameters(method.Method.HttpPath, method.Request.PathParameters)
 	if err != nil {
@@ -150,6 +165,7 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 			OperationID:     method.Method.FullGrpcName,
 			GrpcMethodName:  method.Method.Name,
 			GrpcServiceName: service.Name,
+			Summary:         friendlyMethodName(method.Method.Name),
 
 			Parameters: make([]SwaggerParameter, 0, len(method.Request.PathParameters)+len(method.Request.QueryParameters)),
 		},
