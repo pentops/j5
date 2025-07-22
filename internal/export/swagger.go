@@ -136,11 +136,15 @@ func formatPathParameters(path string, pathParameters []*schema_j5pb.ObjectPrope
 }
 
 func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.Method) error {
+	operationPath, err := formatPathParameters(method.Method.HttpPath, method.Request.PathParameters)
+	if err != nil {
+		return err
+	}
 
 	operation := &Operation{
 		OperationHeader: OperationHeader{
 			Method:          methodShortString[method.Method.HttpMethod],
-			Path:            method.Method.HttpPath,
+			Path:            operationPath,
 			OperationID:     method.Method.FullGrpcName,
 			GrpcMethodName:  method.Method.Name,
 			GrpcServiceName: service.Name,
@@ -208,7 +212,7 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 
 	found := false
 	for _, pathItem := range dd.Paths {
-		if pathItem.MapKey() == method.Method.HttpPath {
+		if pathItem.MapKey() == operationPath {
 			pathItem.AddOperation(operation)
 			found = true
 			break
