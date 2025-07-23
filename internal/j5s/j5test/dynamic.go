@@ -83,7 +83,7 @@ func (tf *testFiles) tAddJ5SFile(filename string, body ...string) {
 	tf.tIncludePackage(pkg)
 }
 
-func ObjectReflect(t *testing.T, file string) protoreflect.MessageDescriptor {
+func ObjectReflect(t testing.TB, file string) protoreflect.MessageDescriptor {
 
 	pkgName := "pkg" + strings.ToLower(strings.ReplaceAll(uuid.New().String(), "-", ""))
 
@@ -120,7 +120,7 @@ func ObjectReflect(t *testing.T, file string) protoreflect.MessageDescriptor {
 	return desc
 }
 
-func DynamicObject(t *testing.T, file string) j5reflect.Object {
+func DynamicObject(t testing.TB, file string) j5reflect.Object {
 	desc := ObjectReflect(t, file)
 
 	schemaCache := j5schema.NewSchemaCache()

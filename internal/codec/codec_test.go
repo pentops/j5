@@ -22,6 +22,10 @@ import (
 	"github.com/pentops/j5/j5types/any_j5t"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
+	"github.com/pentops/j5/lib/j5reflect"
+	"github.com/pentops/j5/lib/j5schema"
+
+	"github.com/pentops/j5/internal/j5s/j5test"
 )
 
 func mustJ5Any(t testing.TB, msg proto.Message, asJSON []byte) *any_j5t.Any {
@@ -41,9 +45,97 @@ func mustProtoAny(t testing.TB, msg proto.Message) *anypb.Any {
 	return a
 }
 
+type testSchema struct {
+	t      testing.TB
+	schema string
+	codec  *Codec
+}
+
+func NewTestSchema(t testing.TB, schema string) *testSchema {
+	cache := j5schema.NewSchemaCache()
+	reflector := j5reflect.NewWithCache(cache)
+	codec := NewCodec(WithProtoToAny(), WithReflector(reflector))
+	return &testSchema{
+		t:      t,
+		schema: schema,
+		codec:  codec,
+	}
+}
+
+func (dc *testSchema) Object() j5reflect.Object {
+	return j5test.DynamicObject(dc.t, dc.schema)
+}
+
+func (dc *testSchema) ExpectedJSON(j string) *testSchemaWithOutput {
+	dc.t.Helper()
+	tco := &testSchemaWithOutput{
+		testSchema: dc,
+		wantOutput: []byte(j),
+	}
+	// assert that the expected JSON output, when given as Input, results in itself
+	tco.AssertJSON(j)
+	return tco
+}
+
+type testSchemaWithOutput struct {
+	*testSchema
+	wantOutput []byte
+}
+
+func (dc *testSchemaWithOutput) AssertJSON(jsonInput string) *testSchemaWithOutput {
+	dc.t.Helper()
+	parsed := dc.Object()
+	err := dc.codec.JSONToReflect([]byte(jsonInput), parsed)
+	if err != nil {
+		dc.t.Fatalf("JSONToReflect: %s", err)
+	}
+
+	encodedJSON, err := dc.codec.ReflectToJSON(parsed)
+	if err != nil {
+		dc.t.Fatalf("ReflectToJSON: %s", err)
+	}
+	CompareJSON(dc.t, dc.wantOutput, encodedJSON)
+	return dc
+}
+
+func TestDynamic(t *testing.T) {
+
+	t.Run("string", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+			object Foo {
+			  field sString string
+			}
+		`)
+
+		schema.ExpectedJSON(`{"sString": "val"}`)
+		schema.ExpectedJSON("{}").
+			AssertJSON(`{}`).
+			AssertJSON(`{"sString": null}`).
+			AssertJSON(`{"sString": ""}`)
+	})
+
+	t.Run("nullable string", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+			object Foo {
+			  field sString ? string
+			}
+		`)
+
+		schema.ExpectedJSON(`{"sString": "val"}`)
+
+		schema.ExpectedJSON(`{"sString": null}`).
+			AssertJSON(`{"sString": null}`)
+
+		schema.ExpectedJSON(`{"sString": ""}`).
+			AssertJSON(`{"sString": ""}`)
+	})
+}
+
 func TestUnmarshal(t *testing.T) {
 
-	codec := NewCodec(WithProtoToAny())
+	cache := j5schema.NewSchemaCache()
+	reflector := j5reflect.NewWithCache(cache)
+	codec := NewCodec(WithProtoToAny(), WithReflector(reflector))
 
 	testTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 

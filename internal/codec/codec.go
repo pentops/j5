@@ -27,6 +27,13 @@ type Codec struct {
 
 type CodecOption func(*Codec)
 
+// WithReflector sets a custom reflector for decoding any types.
+func WithReflector(refl *j5reflect.Reflector) CodecOption {
+	return func(c *Codec) {
+		c.refl = refl
+	}
+}
+
 // WithResolver sets a custom resolver for decoding any types.
 func WithResolver(resolver MessageTypeResolver) CodecOption {
 	return func(c *Codec) {

@@ -18,6 +18,7 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 	defer enc.closeObject()
 
 	return fieldSet.RangeValues(func(prop j5reflect.Field) error {
+
 		if !first {
 			enc.fieldSep()
 		}
@@ -251,6 +252,10 @@ func (enc *encoder) encodeScalarField(scalar j5reflect.ScalarField) error {
 
 	case time.Time:
 		return enc.addString(vt.In(time.UTC).Format(time.RFC3339Nano))
+
+	case nil:
+		enc.addNull()
+		return nil
 
 	default:
 		return fmt.Errorf("unsupported scalar type %T", vt)

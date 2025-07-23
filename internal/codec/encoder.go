@@ -127,7 +127,6 @@ func (enc *encoder) addFloat(val float64, bitSize int) {
 	enc.add([]byte(str))
 }
 
-/*
 func (enc *encoder) addNull() {
 	enc.add([]byte("null"))
-}*/
+}

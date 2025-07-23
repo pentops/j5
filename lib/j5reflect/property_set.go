@@ -479,10 +479,14 @@ func (fs *propSet) RangeValues(callback RangeValuesCallback) error {
 		if !has {
 			continue
 		}
-		err = callback(val)
-		if err != nil {
-			return err
+		if !val.IsSet() {
+			if prop.schema.ExplicitlyOptional {
+				return callback(val)
+			}
+
+			return nil
 		}
+		return callback(val)
 	}
 	return nil
 }

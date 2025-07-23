@@ -352,7 +352,16 @@ func (dec *decoder) decodeScalar(prop j5reflect.Property) error {
 		return err
 	}
 
+	// token is nil when it's literally 'null' in the JSON
 	if token == nil {
+		if prop.Schema().ExplicitlyOptional {
+			// create the null holder
+			_, err := prop.CreateField()
+			if err != nil {
+				return err
+			}
+
+		}
 		return nil
 	}
 
