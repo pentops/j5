@@ -65,7 +65,7 @@ func setupUniverse(ctx context.Context, t flowtest.Asserter, uu *Universe) {
 	uu.Outbox = outboxtest.NewOutboxAsserter(t, conn)
 	uu.Github = mocks.NewGithubMock()
 
-	grpcPair := flowtest.NewGRPCPair(t, service.GRPCMiddleware()...)
+	grpcPair := flowtest.NewGRPCPair(t, service.GRPCMiddleware("test")...)
 
 	tmpfs, err := anyfs.NewTempFS(ctx)
 	if err != nil {
