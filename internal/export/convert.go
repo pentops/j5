@@ -5,6 +5,7 @@ import (
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/lib/id62"
 )
 
 // BuildSwagger converts the J5 Document to a Swagger Document
@@ -49,6 +50,8 @@ func ConvertRootSchema(schema *schema_j5pb.RootSchema) (*Schema, error) {
 		return convertOneofItem(t.Oneof)
 	case *schema_j5pb.RootSchema_Enum:
 		return convertEnumItem(t.Enum), nil
+	case *schema_j5pb.RootSchema_Polymorph:
+		return convertPolymorphItem(t.Polymorph), nil
 	default:
 		return nil, fmt.Errorf("expected root schema, got %T", schema.Type)
 
@@ -86,13 +89,31 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 			return nil, err
 		}
 
+	case *schema_j5pb.Field_Key:
+		out.Type, err = convertKeyItem(t.Key)
+		if err != nil {
+			return nil, err
+		}
+
+	case *schema_j5pb.Field_Timestamp:
+		out.Type = convertTimestampItem(t.Timestamp)
+
+	case *schema_j5pb.Field_Bytes:
+		out.Type = convertBytesItem(t.Bytes)
+
+	case *schema_j5pb.Field_Date:
+		out.Type = convertDateItem(t.Date)
+
+	case *schema_j5pb.Field_Decimal:
+		out.Type = convertDecimalItem(t.Decimal)
+
 	case *schema_j5pb.Field_Enum:
 		switch t := t.Enum.Schema.(type) {
 		case *schema_j5pb.EnumField_Enum:
 			out.Type = convertEnumItem(t.Enum).Type
 
 		case *schema_j5pb.EnumField_Ref:
-			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
+			refStr := fmt.Sprintf("#/components/schemas/%s.%s", t.Ref.Package, t.Ref.Schema)
 			out.Ref = &refStr
 
 		default:
@@ -110,7 +131,7 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 			out.Type = item.Type
 
 		case *schema_j5pb.ObjectField_Ref:
-			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
+			refStr := fmt.Sprintf("#/components/schemas/%s.%s", t.Ref.Package, t.Ref.Schema)
 			out.Ref = &refStr
 
 		default:
@@ -127,7 +148,20 @@ func convertSchema(schema *schema_j5pb.Field) (*Schema, error) {
 
 			out.Type = item.Type
 		case *schema_j5pb.OneofField_Ref:
-			refStr := fmt.Sprintf("#/definitions/%s.%s", t.Ref.Package, t.Ref.Schema)
+			refStr := fmt.Sprintf("#/components/schemas/%s.%s", t.Ref.Package, t.Ref.Schema)
+			out.Ref = &refStr
+
+		default:
+			return nil, fmt.Errorf("unknown schema type for swagger %T", t)
+		}
+
+	case *schema_j5pb.Field_Polymorph:
+		switch t := t.Polymorph.Schema.(type) {
+		case *schema_j5pb.PolymorphField_Polymorph:
+			item := convertPolymorphItem(t.Polymorph)
+			out.OneOf = item.OneOf
+		case *schema_j5pb.PolymorphField_Ref:
+			refStr := fmt.Sprintf("#/components/schemas/%s.%s", t.Ref.Package, t.Ref.Schema)
 			out.Ref = &refStr
 
 		default:
@@ -253,6 +287,61 @@ func convertArrayItem(item *schema_j5pb.ArrayField) (*ArrayItem, error) {
 	return out, nil
 }
 
+func convertKeyItem(item *schema_j5pb.KeyField) (*StringItem, error) {
+	out := &StringItem{}
+
+	switch item.Format.Type.(type) {
+	case *schema_j5pb.KeyFormat_Uuid:
+		out.Format = Some("uuid")
+		out.Pattern = Some(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+	case *schema_j5pb.KeyFormat_Id62:
+		out.Format = Some("id62")
+		out.Pattern = Some(id62.PatternString)
+	case *schema_j5pb.KeyFormat_Informal_:
+		// Informal keys don't have a specific format or pattern
+	case *schema_j5pb.KeyFormat_Custom_:
+		out.Format = Some("custom")
+		out.Pattern = Some(item.Format.GetCustom().Pattern)
+	default:
+		return nil, fmt.Errorf("unknown key format %T", item.Format.Type)
+	}
+
+	out.Example = Maybe(stringExample(&out.Format.Value))
+
+	return out, nil
+}
+
+func convertTimestampItem(_ *schema_j5pb.TimestampField) *StringItem {
+	return &StringItem{
+		Format:  Some("date-time"),
+		Example: Maybe(stringExample(Ptr("date-time"))),
+	}
+}
+
+func convertBytesItem(item *schema_j5pb.BytesField) *StringItem {
+	return &StringItem{
+		Format:    Some("bytes"),
+		MinLength: Maybe(item.Rules.MinLength),
+		MaxLength: Maybe(item.Rules.MaxLength),
+	}
+}
+
+func convertDateItem(_ *schema_j5pb.DateField) *StringItem {
+	return &StringItem{
+		Format:  Some("date"),
+		Pattern: Some(`^\d{4}-\d{2}-\d{2}$`),
+		Example: Maybe(stringExample(Ptr("date"))),
+	}
+}
+
+func convertDecimalItem(_ *schema_j5pb.DecimalField) *StringItem {
+	return &StringItem{
+		Format:  Some("decimal"),
+		Pattern: Some(`^\d*\.?\d+$`),
+		Example: Maybe(stringExample(Ptr("number"))),
+	}
+}
+
 func convertObjectItem(item *schema_j5pb.Object) (*Schema, error) {
 	out := &ObjectItem{
 		Properties:  map[string]*ObjectProperty{},
@@ -306,6 +395,18 @@ func convertOneofItem(item *schema_j5pb.Oneof) (*Schema, error) {
 			Type: out,
 		},
 	}, nil
+}
+
+func convertPolymorphItem(item *schema_j5pb.Polymorph) *Schema {
+	out := &Schema{}
+
+	for _, member := range item.Members {
+		out.OneOf = append(out.OneOf, &Schema{
+			Ref: Ptr(fmt.Sprintf("#/components/schemas/%s", member)),
+		})
+	}
+
+	return out
 }
 
 func convertMapItem(item *schema_j5pb.MapField) (*MapSchemaItem, error) {

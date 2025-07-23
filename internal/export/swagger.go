@@ -108,6 +108,33 @@ var methodShortString = map[schema_j5pb.HTTPMethod]string{
 	schema_j5pb.HTTPMethod_HTTP_METHOD_PATCH:  "patch",
 }
 
+// formatPathParameters replaces path parameters in the format ":param" with "{param}"
+func formatPathParameters(path string, pathParameters []*schema_j5pb.ObjectProperty) (string, error) {
+	if len(pathParameters) == 0 {
+		return path, nil
+	}
+
+	pathParts := strings.Split(path, "/")
+	for _, param := range pathParameters {
+		found := false
+		for i, part := range pathParts {
+			// Check if the part matches the parameter name
+			if part == ":"+param.Name {
+				// Replace the path parameter with a placeholder
+				pathParts[i] = "{" + param.Name + "}"
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return "", fmt.Errorf("path parameter %s not found in path %s", param.Name, path)
+		}
+	}
+
+	return strings.Join(pathParts, "/"), nil
+}
+
 func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.Method) error {
 
 	operation := &Operation{
@@ -186,6 +213,11 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 			found = true
 			break
 		}
+	}
+
+	operation.Path, err = formatPathParameters(operation.Path, method.Request.PathParameters)
+	if err != nil {
+		return err
 	}
 
 	if !found {

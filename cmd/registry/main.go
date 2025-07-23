@@ -91,7 +91,7 @@ func runReadonlyServer(ctx context.Context, cfg struct {
 
 	runGroup.Add("grpcServer", func(ctx context.Context) error {
 		grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
-			service.GRPCMiddleware()...,
+			service.GRPCMiddleware(Version)...,
 		))
 
 		registryDownloadService.RegisterGRPC(grpcServer)
@@ -198,7 +198,7 @@ func runCombinedServer(ctx context.Context, cfg struct {
 
 	runGroup.Add("grpcServer", func(ctx context.Context) error {
 		grpcServer := grpc.NewServer(grpc.ChainUnaryInterceptor(
-			service.GRPCMiddleware()...,
+			service.GRPCMiddleware(Version)...,
 		))
 
 		buildWorker.RegisterGRPC(grpcServer)

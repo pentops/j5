@@ -265,6 +265,25 @@ func TestConvertSchema(t *testing.T) {
 			},
 		},
 		{
+			name: "polymorph",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Polymorph{
+					Polymorph: &schema_j5pb.PolymorphField{
+						Schema: &schema_j5pb.PolymorphField_Polymorph{
+							Polymorph: &schema_j5pb.Polymorph{
+								Name:    "poly",
+								Members: []string{"foo", "bar"},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"oneOf.0.$ref": "#/components/schemas/foo",
+				"oneOf.1.$ref": "#/components/schemas/bar",
+			},
+		},
+		{
 			name: "array",
 			input: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Array{
@@ -288,6 +307,144 @@ func TestConvertSchema(t *testing.T) {
 				"minItems":    1,
 				"maxItems":    2,
 				"uniqueItems": true,
+			},
+		},
+		{
+			name: "key (uuid)",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Key{
+					Key: &schema_j5pb.KeyField{
+						Format: &schema_j5pb.KeyFormat{
+							Type: &schema_j5pb.KeyFormat_Uuid{
+								Uuid: &schema_j5pb.KeyFormat_UUID{},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":    "string",
+				"format":  "uuid",
+				"pattern": `^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`,
+			},
+		},
+		{
+			name: "key (id62)",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Key{
+					Key: &schema_j5pb.KeyField{
+						Format: &schema_j5pb.KeyFormat{
+							Type: &schema_j5pb.KeyFormat_Id62{
+								Id62: &schema_j5pb.KeyFormat_ID62{},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":    "string",
+				"format":  "id62",
+				"pattern": `^[0-9A-Za-z]{22}$`,
+			},
+		},
+		{
+			name: "key (informal)",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Key{
+					Key: &schema_j5pb.KeyField{
+						Format: &schema_j5pb.KeyFormat{
+							Type: &schema_j5pb.KeyFormat_Informal_{
+								Informal: &schema_j5pb.KeyFormat_Informal{},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"type": "string",
+			},
+		},
+		{
+			name: "key (custom)",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Key{
+					Key: &schema_j5pb.KeyField{
+						Format: &schema_j5pb.KeyFormat{
+							Type: &schema_j5pb.KeyFormat_Custom_{
+								Custom: &schema_j5pb.KeyFormat_Custom{
+									Pattern: `^[A-Z0-9]{10}$`,
+								},
+							},
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":    "string",
+				"format":  "custom",
+				"pattern": `^[A-Z0-9]{10}$`,
+			},
+		},
+		{
+			name: "timestamp",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Timestamp{
+					Timestamp: &schema_j5pb.TimestampField{
+						Rules: &schema_j5pb.TimestampField_Rules{},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":   "string",
+				"format": "date-time",
+			},
+		},
+		{
+			name: "date",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Date{
+					Date: &schema_j5pb.DateField{
+						Rules: &schema_j5pb.DateField_Rules{},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":    "string",
+				"format":  "date",
+				"pattern": `^\d{4}-\d{2}-\d{2}$`,
+			},
+		},
+		{
+			name: "bytes",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Bytes{
+					Bytes: &schema_j5pb.BytesField{
+						Rules: &schema_j5pb.BytesField_Rules{
+							MinLength: Ptr(uint64(1)),
+							MaxLength: Ptr(uint64(100)),
+						},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":      "string",
+				"format":    "bytes",
+				"minLength": 1,
+				"maxLength": 100,
+			},
+		},
+		{
+			name: "decimal",
+			input: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Decimal{
+					Decimal: &schema_j5pb.DecimalField{
+						Rules: &schema_j5pb.DecimalField_Rules{},
+					},
+				},
+			},
+			want: map[string]any{
+				"type":   "string",
+				"format": "decimal",
 			},
 		},
 		{
@@ -392,7 +549,7 @@ func TestSchemaJSONMarshal(t *testing.T) {
 					},
 					"ref": {
 						Schema: &Schema{
-							Ref: Ptr("#/definitions/foo"),
+							Ref: Ptr("#/components/schemas/foo"),
 						},
 					},
 					"oneof": {
@@ -432,5 +589,5 @@ func TestSchemaJSONMarshal(t *testing.T) {
 	out.AssertEqual(t, "properties.namedObject.x-name", "namedObject")
 	out.AssertEqual(t, "properties.namedObject.description", "desc")
 
-	out.AssertEqual(t, "properties.ref.$ref", "#/definitions/foo")
+	out.AssertEqual(t, "properties.ref.$ref", "#/components/schemas/foo")
 }
