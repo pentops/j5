@@ -61,3 +61,11 @@ func (sc *SchemaCache) ObjectSchema(src protoreflect.MessageDescriptor) (*Object
 	}
 	return nil, fmt.Errorf("expected object schema for %s/%s, got %T", src.Parent().FullName(), src.Name(), schema)
 }
+
+func MustObjectSchema(src protoreflect.MessageDescriptor) *ObjectSchema {
+	schema, err := Global.ObjectSchema(src)
+	if err != nil {
+		panic(fmt.Sprintf("j5schema: %v", err))
+	}
+	return schema
+}

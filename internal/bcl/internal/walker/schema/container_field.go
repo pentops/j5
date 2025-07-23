@@ -30,7 +30,7 @@ type j5PropSet interface {
 	RangePropertySchemas(j5reflect.RangePropertySchemasCallback) error
 	NewValue(name string) (j5reflect.Field, error)
 	GetProperty(name string) (j5reflect.Property, error)
-	GetOrCreateValue(name string) (j5reflect.Field, error)
+	GetOrCreateValue(name ...string) (j5reflect.Field, error)
 	ContainerSchema() j5schema.Container
 	ListPropertyNames() []string
 	HasAvailableProperty(string) bool
@@ -64,8 +64,22 @@ func (mc mapContainer) HasProperty(name string) bool {
 	return true
 }
 
-func (mc mapContainer) GetOrCreateValue(name string) (j5reflect.Field, error) {
-	return mc.GetOrCreateElement(name)
+func (mc mapContainer) GetOrCreateValue(name ...string) (j5reflect.Field, error) {
+	if len(name) == 0 {
+		return nil, fmt.Errorf("empty path")
+	}
+	field, err := mc.GetOrCreateElement(name[0])
+	if err != nil {
+		return nil, fmt.Errorf("get or create map element %q: %w", name[0], err)
+	}
+	if len(name) == 1 {
+		return field, nil
+	}
+	itemAsContainer, ok := field.AsContainer()
+	if !ok {
+		return nil, fmt.Errorf("map item %q is not a container", name[0])
+	}
+	return itemAsContainer.GetOrCreateValue(name[1:]...)
 }
 
 func (mc mapContainer) HasAvailableProperty(name string) bool {

@@ -11,6 +11,11 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
+type MethodSchema struct {
+	Request  *ObjectSchema
+	Response *ObjectSchema
+}
+
 type RootSchema interface {
 	AsRef() *RefSchema
 	FullName() string

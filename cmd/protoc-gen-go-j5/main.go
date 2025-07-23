@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 
+	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -40,6 +41,7 @@ func main() {
 
 const (
 	j5reflectImportPath = protogen.GoImportPath("github.com/pentops/j5/lib/j5reflect")
+	protoImportPath     = protogen.GoImportPath("google.golang.org/protobuf/proto")
 )
 
 func generateFile(gen *protogen.Plugin, file *protogen.File) error {
@@ -50,11 +52,62 @@ func generateFile(gen *protogen.Plugin, file *protogen.File) error {
 	g.P()
 	g.P("package ", file.GoPackageName)
 
-	for _, msg := range file.Messages {
-		g.P("func (msg *", msg.GoIdent, ") J5Reflect() ", j5reflectImportPath.Ident("Root"), " {")
-		g.P("  return ", j5reflectImportPath.Ident("MustReflect"), "(msg)")
-		g.P("}")
+	var doMsg func(msg *protogen.Message) error
+	doMsg = func(msg *protogen.Message) error {
+		schema, err := j5schema.Global.Schema(msg.Desc)
+		if err != nil {
+			return err
+		}
+
+		j5Reflect := false
+		clone := false
+		object := false
+		switch schema.(type) {
+		case *j5schema.ObjectSchema:
+			j5Reflect = true
+			clone = true
+			object = true
+
+		case *j5schema.OneofSchema:
+			j5Reflect = true
+			clone = true
+		default:
+		}
+
+		if j5Reflect {
+			g.P("func (msg *", msg.GoIdent, ") J5Reflect() ", j5reflectImportPath.Ident("Root"), " {")
+			g.P("  return ", j5reflectImportPath.Ident("MustReflect"), "(msg.ProtoReflect())")
+			g.P("}")
+			g.P()
+		}
+
+		if object {
+			g.P("func (msg *", msg.GoIdent, ") J5Object() ", j5reflectImportPath.Ident("Object"), " {")
+			g.P("  return ", j5reflectImportPath.Ident("MustReflect"), "(msg.ProtoReflect()).(", j5reflectImportPath.Ident("Object"), ")")
+			g.P("}")
+			g.P()
+		}
+
+		if clone {
+			g.P("func (msg *", msg.GoIdent, ") Clone() any {")
+			g.P("  return ", protoImportPath.Ident("Clone"), "(msg).(*", msg.GoIdent, ")")
+			g.P("}")
+		}
+
+		for _, child := range msg.Messages {
+			err = doMsg(child)
+			if err != nil {
+				return fmt.Errorf("error generating message %s: %w", child.GoIdent, err)
+			}
+		}
+		return nil
 	}
 
+	for _, msg := range file.Messages {
+		err := doMsg(msg)
+		if err != nil {
+			return fmt.Errorf("error generating message %s: %w", msg.GoIdent, err)
+		}
+	}
 	return nil
 }

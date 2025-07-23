@@ -14,6 +14,7 @@ type ScalarField interface {
 	ToGoValue() (any, error)
 	SetGoValue(value any) error
 	SetASTValue(ASTValue) error
+	IsSet() bool
 }
 
 type ArrayOfScalarField interface {

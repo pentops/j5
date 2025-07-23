@@ -13,6 +13,7 @@ type Object interface {
 	// HasAnyValue returns true if any of the properties have a valid value
 	HasAnyValue() bool
 	ObjectSchema() *j5schema.ObjectSchema
+	Interface() any
 }
 
 type ObjectField interface {
@@ -57,6 +58,10 @@ func (fs *objectImpl) ObjectSchema() *j5schema.ObjectSchema {
 
 func (fs *objectImpl) RootSchema() (j5schema.RootSchema, bool) {
 	return fs.schema, true
+}
+
+func (fs *objectImpl) Interface() any {
+	return fs.value.Interface()
 }
 
 type objectFieldFactory struct {

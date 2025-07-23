@@ -452,6 +452,10 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 				childExt.validate = ext.validate.GetRepeated().GetItems()
 			}
 
+			if ext.list != nil {
+				return nil, fmt.Errorf("list constraints not supported for arrays")
+			}
+
 			fieldSchema, err := ss.buildSchema(childContext, field, childExt)
 			if err != nil {
 				return nil, patherr.Wrap(err, string(field.Name()))
@@ -505,6 +509,10 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 				if mapValidate.Values != nil {
 					childExt.validate = mapValidate.Values
 				}
+			}
+
+			if ext.list != nil {
+				return nil, fmt.Errorf("list constraints not supported for maps")
 			}
 
 			valueSchema, err := ss.buildSchema(childContext, field.MapValue(), childExt)
@@ -702,6 +710,9 @@ func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions)
 		boolItem := &schema_j5pb.BoolField{}
 
 		if boolConstraint != nil {
+			if boolItem.Rules == nil {
+				boolItem.Rules = &schema_j5pb.BoolField_Rules{}
+			}
 			if boolConstraint.Const != nil {
 				boolItem.Rules.Const = boolConstraint.Const
 			}
@@ -1239,10 +1250,20 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 
 	switch inferMessageType(msg) {
 	case oneofMessage:
-		return &OneofField{
+		field := &OneofField{
 			fieldContext: context,
 			Ref:          ref,
-		}, nil
+		}
+		if ext.list != nil {
+			oneofRules, ok := ext.list.Type.(*list_j5pb.FieldConstraint_Oneof)
+			if !ok {
+				return nil, fmt.Errorf("list annotation for oneof is %T", ext.list.Type)
+			}
+
+			field.ListRules = oneofRules.Oneof
+
+		}
+		return field, nil
 
 	case objectMessage:
 		return &ObjectField{

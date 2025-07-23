@@ -2,6 +2,7 @@ package j5reflect
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/lib/j5schema"
@@ -64,8 +65,9 @@ type PropertySet interface {
 	GetProperty(name string) (Property, error)
 
 	GetField(name ...string) (Field, bool, error)
+	GetOrCreateValue(path ...string) (Field, error)
+	SetScalar(value any, path ...string) error
 	NewValue(name string) (Field, error)
-	GetOrCreateValue(name string) (Field, error)
 
 	ListPropertyNames() []string
 
@@ -108,7 +110,10 @@ type property struct {
 var _ Property = &property{}
 
 func (p *property) IsSet() bool {
-	return p.hasValue
+	if !p.hasValue {
+		return false
+	}
+	return p.value.IsSet()
 }
 
 func (p *property) IsArray() bool {
@@ -165,7 +170,10 @@ func (p *property) CreateField() (Field, error) {
 
 func (p *property) Field() (Field, error) {
 	if !p.hasValue {
-		return nil, fmt.Errorf("field %s is not set", p.schema.JSONName)
+		_, _, err := p.propSet.buildValue(p, false)
+		if err != nil {
+			return nil, fmt.Errorf("field %s is not set: %w", p.schema.JSONName, err)
+		}
 	}
 	return p.value, nil
 }
@@ -325,15 +333,71 @@ func (fs *propSet) GetProperty(name string) (Property, error) {
 	return prop, nil
 }
 
-func (fs *propSet) GetOrCreateValue(name string) (Field, error) {
-	prop, ok := fs.asMap[name]
+func (fs *propSet) GetOrCreateValue(nameParts ...string) (Field, error) {
+	if len(nameParts) == 0 {
+		return nil, fmt.Errorf("GetOrCreateValue requires at least one name part")
+	}
+	namePart := nameParts[0]
+	isArray := false
+	if strings.HasSuffix(namePart, "[]") {
+		namePart = strings.TrimSuffix(namePart, "[]")
+		isArray = true
+	}
+	prop, ok := fs.asMap[namePart]
 	if !ok {
-		return nil, fmt.Errorf("%s has no property %s", fs.schema.FullName(), name)
+		return nil, fmt.Errorf("%s has no property %s", fs.schema.FullName(), nameParts[0])
 	}
+	var value Field
 	if prop.value != nil {
-		return prop.value, nil
+		value = prop.value
+	} else {
+		var err error
+		value, err = fs.buildOrCreate(prop)
+		if err != nil {
+			return nil, patherr.Wrap(err, nameParts[0])
+		}
 	}
-	return fs.buildOrCreate(prop)
+	if isArray {
+		if len(nameParts) == 1 {
+			return value, nil
+		} else {
+			array, ok := value.AsArrayOfContainer()
+			if !ok {
+				return nil, fmt.Errorf("property %s is not an array", nameParts[0])
+			}
+			container, _ := array.NewContainerElement() // create a new element in the array
+			return container.GetOrCreateValue(nameParts[1:]...)
+		}
+	}
+
+	if len(nameParts) == 1 {
+		return value, nil
+	}
+
+	container, ok := value.AsContainer()
+	if !ok {
+		return nil, fmt.Errorf("property %s is not a container", nameParts[0])
+	}
+	return container.GetOrCreateValue(nameParts[1:]...)
+}
+
+func (fs *propSet) SetScalar(value any, nameParts ...string) error {
+
+	reflectField, err := fs.GetOrCreateValue(nameParts...)
+	if err != nil {
+		return patherr.Wrap(err, nameParts...)
+	}
+
+	scalar, ok := reflectField.AsScalar()
+	if ok {
+		return scalar.SetGoValue(value)
+	}
+	asScalar, ok := reflectField.AsArrayOfScalar()
+	if !ok {
+		return fmt.Errorf("property %s is not a scalar, or array of scalar", reflectField.FullTypeName())
+	}
+	_, err = asScalar.AppendGoValue(value)
+	return err
 }
 
 func (fs *propSet) GetField(nameParts ...string) (Field, bool, error) {
@@ -360,7 +424,11 @@ func (fs *propSet) GetField(nameParts ...string) (Field, bool, error) {
 func (fs *propSet) getValue(name string) (Field, bool, error) {
 	prop, ok := fs.asMap[name]
 	if !ok {
-		return nil, false, fmt.Errorf("%q has no property %q", fs.schema.FullName(), name)
+		keys := make([]string, 0, len(fs.asMap))
+		for k := range fs.asMap {
+			keys = append(keys, k)
+		}
+		return nil, false, fmt.Errorf("%q has no property %q, has %q", fs.schema.FullName(), name, keys)
 	}
 	if prop.value != nil {
 		return prop.value, true, nil

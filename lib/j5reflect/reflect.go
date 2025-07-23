@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/pentops/j5/lib/j5schema"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
@@ -111,4 +112,13 @@ func buildOneof(schema *j5schema.OneofSchema, msg protoreflect.Message) (*oneofI
 		propSet: linked,
 		schema:  schema,
 	}, nil
+}
+
+func DeepEqual(a, b Root) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	msgA := a.ProtoReflect().Interface()
+	msgB := b.ProtoReflect().Interface()
+	return proto.Equal(msgA, msgB)
 }

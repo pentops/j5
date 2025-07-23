@@ -4,17 +4,21 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ecr"
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/image"
+	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/log.go/log"
@@ -34,16 +38,69 @@ var DefaultRegistryAuths = []*config_j5pb.DockerRegistryAuth{{
 	},
 }}
 
-func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
+type dockerRun struct {
+	lock        sync.Mutex
+	containerID string
+	client      *client.Client
+	started     bool
+}
 
-	ctx = log.WithField(ctx, "image", rc.Command.Docker.Image)
-	t0 := time.Now()
-	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("Pull If Needed")
-	if err := dw.pullIfNeeded(ctx, rc.Command.Docker.Image); err != nil {
-		log.WithError(ctx, err).Error("failed to pull image")
-		return err
+func (dr *dockerRun) close(ctx context.Context) {
+	dr.lock.Lock()
+	defer dr.lock.Unlock()
+	ctx = context.WithoutCancel(ctx)
+
+	if dr.started {
+		if err := dr.client.ContainerStop(ctx, dr.containerID, container.StopOptions{}); err != nil {
+			log.WithError(ctx, err).Warn("failed to stop container")
+			return
+		}
+		log.WithField(ctx, "container-id", dr.containerID).Debug("Container Stopped")
 	}
 
+	if remErr := dr.client.ContainerRemove(ctx, dr.containerID, container.RemoveOptions{}); remErr != nil {
+		log.WithError(ctx, remErr).Warn("failed to remove container")
+	}
+}
+
+func (dr *dockerRun) attach(ctx context.Context) (*types.HijackedResponse, error) {
+	dr.lock.Lock()
+	defer dr.lock.Unlock()
+	hj, err := dr.client.ContainerAttach(ctx, dr.containerID, container.AttachOptions{
+		Stdin:  true,
+		Stdout: true,
+		Stderr: true,
+		Stream: true,
+		Logs:   true,
+	})
+	if err != nil {
+		log.WithError(ctx, err).Error("failed to attach to container")
+		return nil, fmt.Errorf("container attach: %w", err)
+	}
+	return &hj, nil
+}
+
+func (dr *dockerRun) start(ctx context.Context) error {
+	dr.lock.Lock()
+	defer dr.lock.Unlock()
+
+	if dr.started {
+		return nil
+	}
+
+	if err := dr.client.ContainerStart(ctx, dr.containerID, container.StartOptions{}); err != nil {
+		if !errors.Is(err, context.Canceled) {
+			log.WithError(ctx, err).Error("failed to start container")
+		}
+		return fmt.Errorf("container start: %w", err)
+	}
+
+	dr.started = true
+	log.WithField(ctx, "container-id", dr.containerID).Debug("Container Started")
+	return nil
+}
+
+func (dw *Runner) containerCreate(ctx context.Context, rc RunContext) (*dockerRun, error) {
 	resp, err := dw.client.ContainerCreate(ctx, &container.Config{
 		AttachStdin:  true,
 		AttachStdout: true,
@@ -60,24 +117,56 @@ func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
 	}, nil, nil, nil, "")
 	if err != nil {
 		log.WithError(ctx, err).Error("failed to start container")
+		return nil, err
+	}
+
+	log.WithField(ctx, "container-id", resp.ID).Debug("Container Created")
+	return &dockerRun{
+		client:      dw.client,
+		containerID: resp.ID,
+	}, nil
+}
+
+func (dr *dockerRun) wait(ctx context.Context) error {
+	dr.lock.Lock()
+	statusCh, errCh := dr.client.ContainerWait(ctx, dr.containerID, container.WaitConditionNotRunning)
+	dr.lock.Unlock()
+
+	select {
+	case err := <-errCh:
+		if err != nil {
+			log.WithError(ctx, err).Debug("Container Wait Error")
+			return fmt.Errorf("container-wait error: %w", err)
+		}
+		return nil
+	case st := <-statusCh:
+		log.WithField(ctx, "status-code", st.StatusCode).Debug("Container Exit")
+		if st.StatusCode != 0 {
+			return fmt.Errorf("non-zero exit code: %d", st.StatusCode)
+		}
+		return nil
+	}
+}
+
+func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
+
+	ctx = log.WithField(ctx, "image", rc.Command.Docker.Image)
+	t0 := time.Now()
+	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("Pull If Needed")
+	if err := dw.pullIfNeeded(ctx, rc.Command.Docker.Image); err != nil {
+		log.WithError(ctx, err).Error("failed to pull image")
 		return err
 	}
-	defer func() {
-		ctx := context.WithoutCancel(ctx)
-		if remErr := dw.client.ContainerRemove(ctx, resp.ID, container.RemoveOptions{}); remErr != nil {
-			log.WithError(ctx, remErr).Warn("failed to remove container in defer")
-		}
-	}()
 
-	hj, err := dw.client.ContainerAttach(ctx, resp.ID, container.AttachOptions{
-		Stdin:  true,
-		Stdout: true,
-		Stderr: true,
-		Stream: true,
-		Logs:   true,
-	})
+	dr, err := dw.containerCreate(ctx, rc)
 	if err != nil {
-		log.WithError(ctx, err).Debug("container attach error")
+		return fmt.Errorf("container create: %w", err)
+	}
+
+	defer dr.close(ctx)
+
+	hj, err := dr.attach(ctx)
+	if err != nil {
 		return err
 	}
 
@@ -85,9 +174,8 @@ func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
 
 	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("Container Start")
 
-	if err := dw.client.ContainerStart(ctx, resp.ID, container.StartOptions{}); err != nil {
+	if err := dr.start(ctx); err != nil {
 		log.WithError(ctx, err).Debug("Container Start Error")
-		return err
 	}
 
 	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("Container Started")
@@ -111,20 +199,8 @@ func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
 
 	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("Container Wait")
 
-	statusCh, errCh := dw.client.ContainerWait(ctx, resp.ID, container.WaitConditionNotRunning)
-
-	select {
-	case err := <-errCh:
-		if err != nil {
-			log.WithError(ctx, err).Debug("Container Wait Error")
-			return err
-		}
-	case st := <-statusCh:
-		log.WithField(ctx, "status-code", st.StatusCode).Debug("Container Exit")
-		if st.StatusCode != 0 {
-			return fmt.Errorf("non-zero exit code: %d", st.StatusCode)
-		}
-
+	if err := dr.wait(ctx); err != nil {
+		return err
 	}
 
 	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("ContainerDone")
