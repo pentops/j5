@@ -186,7 +186,20 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 	}
 
 	for _, property := range method.Request.QueryParameters {
-		schema, err := convertSchema(property.Schema)
+		field := property.Schema
+
+		// Objects aren't handled well in query parameters by swagger/postman,
+		// so treat them as strings instead
+		_, ok := property.Schema.Type.(*schema_j5pb.Field_Object)
+		if ok {
+			field = &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_String_{
+					String_: &schema_j5pb.StringField{},
+				},
+			}
+		}
+
+		schema, err := convertSchema(field)
 		if err != nil {
 			return fmt.Errorf("query param %s: %w", property.Name, err)
 		}
