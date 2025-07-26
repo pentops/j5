@@ -17,22 +17,34 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 	enc.openObject()
 	defer enc.closeObject()
 
-	return fieldSet.RangeValues(func(prop j5reflect.Field) error {
-
+	doField := func(field j5reflect.Field) error {
 		if !first {
 			enc.fieldSep()
 		}
 		first = false
-		if err := enc.fieldLabel(prop.NameInParent()); err != nil {
+		if err := enc.fieldLabel(field.NameInParent()); err != nil {
 			return err
 		}
 
-		if err := enc.encodeValue(prop); err != nil {
+		if err := enc.encodeValue(field); err != nil {
 			return err
 		}
 
 		return nil
+	}
+
+	if !enc.codec.includeEmpty {
+		return fieldSet.RangeValues(doField)
+	}
+
+	return fieldSet.RangeProperties(func(prop j5reflect.Property) error {
+		field, err := prop.Field()
+		if err != nil {
+			return err
+		}
+		return doField(field)
 	})
+
 }
 
 func (enc *encoder) encodeOneofBody(fieldSet j5reflect.Oneof) error {

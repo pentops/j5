@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/j5types/any_j5t"
+	"github.com/pentops/j5/lib/j5reflect/protoval"
 	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
@@ -42,6 +43,11 @@ var _ AnyField = (*anyField)(nil)
 func (field *anyField) IsSet() bool {
 	// any has message by this point
 	return true
+}
+
+func (field *anyField) SetDefaultValue() error {
+	// Default value for Any is not defined, so we do nothing here.
+	return nil
 }
 
 func (field *anyField) AsAny() (AnyField, bool) {
@@ -84,13 +90,13 @@ func (field *anyField) GetProtoAny() (*anypb.Any, error) {
 }
 
 type pbAnyImpl struct {
-	value        protoreflect.Message
+	value        protoval.MessageValue
 	typeUrlField protoreflect.FieldDescriptor
 	valueField   protoreflect.FieldDescriptor
 }
 
-func newPbAnyImpl(value protoreflect.Message) anyImpl {
-	desc := value.Descriptor()
+func newPbAnyImpl(value protoval.MessageValue) anyImpl {
+	desc := value.MessageDescriptor()
 	typeUrlField := desc.Fields().ByName("type_url")
 	valueField := desc.Fields().ByName("value")
 	return &pbAnyImpl{
@@ -103,32 +109,32 @@ func newPbAnyImpl(value protoreflect.Message) anyImpl {
 const anyPrefix = "type.googleapis.com/"
 
 func (impl *pbAnyImpl) setAny(val *any_j5t.Any) error {
-	impl.value.Set(impl.typeUrlField, protoreflect.ValueOfString(anyPrefix+val.TypeName))
+	impl.value.MessageValue().Set(impl.typeUrlField, protoreflect.ValueOfString(anyPrefix+val.TypeName))
 	if val.Proto == nil {
 		return fmt.Errorf("proto is required for PB Any type %s", val.TypeName)
 	}
-	impl.value.Set(impl.valueField, protoreflect.ValueOfBytes(val.Proto))
+	impl.value.MessageValue().Set(impl.valueField, protoreflect.ValueOfBytes(val.Proto))
 	return nil
 }
 
 func (impl *pbAnyImpl) getAny() (*any_j5t.Any, error) {
-	typeUrl := impl.value.Get(impl.typeUrlField).String()
+	typeUrl := impl.value.MessageValue().Get(impl.typeUrlField).String()
 	typeName := strings.TrimPrefix(typeUrl, anyPrefix)
 	return &any_j5t.Any{
 		TypeName: typeName,
-		Proto:    impl.value.Get(impl.valueField).Bytes(),
+		Proto:    impl.value.MessageValue().Get(impl.valueField).Bytes(),
 	}, nil
 }
 
 type j5AnyImpl struct {
-	value         protoreflect.Message
+	value         protoval.MessageValue
 	typeNameField protoreflect.FieldDescriptor
 	protoField    protoreflect.FieldDescriptor
 	j5JsonField   protoreflect.FieldDescriptor
 }
 
-func newJ5AnyImpl(value protoreflect.Message) anyImpl {
-	desc := value.Descriptor()
+func newJ5AnyImpl(value protoval.MessageValue) anyImpl {
+	desc := value.MessageDescriptor()
 	typeNameField := desc.Fields().ByName("type_name")
 	protoField := desc.Fields().ByName("proto")
 	j5JsonField := desc.Fields().ByName("j5_json")
@@ -141,27 +147,28 @@ func newJ5AnyImpl(value protoreflect.Message) anyImpl {
 }
 
 func (impl *j5AnyImpl) setAny(val *any_j5t.Any) error {
-	impl.value.Set(impl.typeNameField, protoreflect.ValueOfString(val.TypeName))
+	impl.value.MessageValue().Set(impl.typeNameField, protoreflect.ValueOfString(val.TypeName))
 	if val.Proto != nil {
-		impl.value.Set(impl.protoField, protoreflect.ValueOfBytes(val.Proto))
+		impl.value.MessageValue().Set(impl.protoField, protoreflect.ValueOfBytes(val.Proto))
 	}
 	if val.J5Json != nil {
-		impl.value.Set(impl.j5JsonField, protoreflect.ValueOfBytes(val.J5Json))
+		impl.value.MessageValue().Set(impl.j5JsonField, protoreflect.ValueOfBytes(val.J5Json))
 	}
 	return nil
 }
 
 func (impl *j5AnyImpl) getAny() (*any_j5t.Any, error) {
-	typeName := impl.value.Get(impl.typeNameField).String()
+	val := impl.value.MessageValue()
+	typeName := val.Get(impl.typeNameField).String()
 	out := &any_j5t.Any{
 		TypeName: typeName,
 	}
-	if impl.value.Has(impl.protoField) {
-		out.Proto = impl.value.Get(impl.protoField).Bytes()
+	if val.Has(impl.protoField) {
+		out.Proto = val.Get(impl.protoField).Bytes()
 	}
 
-	if impl.value.Has(impl.j5JsonField) {
-		out.J5Json = impl.value.Get(impl.j5JsonField).Bytes()
+	if val.Has(impl.j5JsonField) {
+		out.J5Json = val.Get(impl.j5JsonField).Bytes()
 	}
 	return out, nil
 }
@@ -172,14 +179,19 @@ type anyFieldFactory struct {
 	schema *j5schema.AnyField
 }
 
-func (factory *anyFieldFactory) buildField(context fieldContext, value protoreflect.Message) Field {
-	valueType := value.Descriptor().FullName()
+func (factory *anyFieldFactory) buildField(context fieldContext, value protoval.Value) Field {
+	msgVal, ok := value.AsMessage()
+	if !ok {
+		panic(fmt.Sprintf("expected a message value for Any field, got %s", value))
+	}
+
+	valueType := msgVal.MessageDescriptor().FullName()
 	var impl anyImpl
 	switch valueType {
 	case "google.protobuf.Any":
-		impl = newPbAnyImpl(value)
+		impl = newPbAnyImpl(msgVal)
 	case "j5.types.any.v1.Any":
-		impl = newJ5AnyImpl(value)
+		impl = newJ5AnyImpl(msgVal)
 	default:
 		panic(fmt.Sprintf("unsupported Any type %s", valueType))
 	}

@@ -3,6 +3,7 @@ package j5reflect
 import (
 	"fmt"
 
+	"github.com/pentops/j5/lib/j5reflect/protoval"
 	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -13,6 +14,7 @@ type EnumField interface {
 	Field
 	GetValue() (EnumOption, error)
 	SetFromString(string) error
+	SetDefaultValue() error
 }
 
 type ArrayOfEnumField interface {
@@ -36,7 +38,7 @@ type enumFieldFactory struct {
 	schema *j5schema.EnumField
 }
 
-func (factory *enumFieldFactory) buildField(context fieldContext, value protoContext) Field {
+func (factory *enumFieldFactory) buildField(context fieldContext, value protoval.Value) Field {
 	return &enumField{
 		value:        value,
 		fieldContext: context,
@@ -48,18 +50,22 @@ type enumField struct {
 	fieldDefaults
 	fieldContext
 
-	value  protoContext
+	value  protoval.Value
 	schema *j5schema.EnumField
 }
 
 var _ EnumField = (*enumField)(nil)
 
 func (ef *enumField) IsSet() bool {
-	return ef.value.isSet()
+	return ef.value.IsSet()
 }
 
 func (ef *enumField) AsScalar() (ScalarField, bool) {
 	return ef, true
+}
+
+func (ef *enumField) SetDefaultValue() error {
+	return ef.value.SetValue(protoreflect.ValueOfEnum(protoreflect.EnumNumber(0)))
 }
 
 func (ef *enumField) AsEnum() (EnumField, bool) {
@@ -67,7 +73,7 @@ func (ef *enumField) AsEnum() (EnumField, bool) {
 }
 
 func (ef *enumField) GetValue() (EnumOption, error) {
-	val, ok := ef.value.getValue()
+	val, ok := ef.value.GetValue()
 	if !ok {
 		return nil, fmt.Errorf("enum value not set")
 	}
@@ -82,7 +88,7 @@ func (ef *enumField) GetValue() (EnumOption, error) {
 func (ef *enumField) SetFromString(val string) error {
 	option := ef.schema.Schema().OptionByName(val)
 	if option != nil {
-		return ef.value.setValue(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
+		return ef.value.SetValue(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
 	}
 	return fmt.Errorf("enum value %s not found", val)
 }
@@ -101,7 +107,7 @@ func (ef *enumField) SetGoValue(value any) error {
 		return ef.SetFromString(v)
 	case *string:
 		if v == nil {
-			return ef.value.setValue(protoreflect.ValueOfEnum(0))
+			return ef.value.SetValue(protoreflect.ValueOfEnum(0))
 		}
 		return ef.SetFromString(*v)
 	default:
@@ -181,6 +187,5 @@ func (field *mapOfEnumField) SetEnum(key string, value string) error {
 		return fmt.Errorf("enum value %s not found", value)
 	}
 
-	field.setKey(key, protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
-	return nil
+	return field.value.ValueAt(key).SetValue(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
 }

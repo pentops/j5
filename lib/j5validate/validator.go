@@ -97,11 +97,6 @@ func (v *Validator) validatePropSet(ps j5reflect.PropertySet) (Errors, int, erro
 	err := ps.RangeProperties(func(prop j5reflect.Property) error {
 		schema := prop.Schema()
 
-		field, err := prop.Field()
-		if err != nil {
-			return err
-		}
-
 		if !prop.IsSet() {
 			if schema.Required {
 				errs = append(errs, Error{
@@ -121,6 +116,11 @@ func (v *Validator) validatePropSet(ps j5reflect.PropertySet) (Errors, int, erro
 			}
 
 			return nil
+		}
+
+		field, err := prop.Field()
+		if err != nil {
+			return err
 		}
 		count++
 

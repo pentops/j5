@@ -1,8 +1,8 @@
 package j5reflect
 
 import (
+	"github.com/pentops/j5/lib/j5reflect/protoval"
 	"github.com/pentops/j5/lib/j5schema"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 /*** Interface ***/
@@ -41,6 +41,12 @@ func (obj *objectImpl) HasAvailableProperty(name string) bool {
 	return obj.HasProperty(name)
 }
 
+func (fs *objectImpl) SetDefaultValue() error {
+	// messageValue sets the value recursively from the last known value point
+	_ = fs.value.MessageValue()
+	return nil
+}
+
 var _ Object = &objectImpl{}
 
 func (fs *objectImpl) HasAnyValue() bool {
@@ -61,7 +67,8 @@ func (fs *objectImpl) RootSchema() (j5schema.RootSchema, bool) {
 }
 
 func (fs *objectImpl) Interface() any {
-	return fs.value.Interface()
+	val := fs.value.MessageValue()
+	return val.Interface()
 }
 
 type objectFieldFactory struct {
@@ -69,11 +76,15 @@ type objectFieldFactory struct {
 	propSet propSetFactory
 }
 
-var _ messageFieldFactory = (*objectFieldFactory)(nil)
+var _ fieldFactory = (*objectFieldFactory)(nil)
 
-func (f *objectFieldFactory) buildField(context fieldContext, value protoreflect.Message) Field {
+func (f *objectFieldFactory) buildField(context fieldContext, value protoval.Value) Field {
+	msgValue, ok := value.AsMessage()
+	if !ok {
+		panic("objectFieldFactory.buildField called with non-message value")
+	}
 	obj := &objectImpl{
-		propSet: f.propSet.newMessage(value),
+		propSet: f.propSet.buildForMessage(msgValue),
 		schema:  f.schema.ObjectSchema(),
 	}
 	return newObjectField(context, obj)

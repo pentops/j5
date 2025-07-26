@@ -51,6 +51,18 @@ func toObj(t *testing.T, f Field) ObjectField {
 	return asObj
 }
 
+func tSetDefault() tPathElement {
+	return func(t *testing.T, f Field) Field {
+		t.Helper()
+		t.Logf("T SetDefault")
+		obj := toObj(t, f)
+		if err := obj.SetDefaultValue(); err != nil {
+			t.Fatalf("error setting default value: %v", err)
+		}
+		return f
+	}
+}
+
 func tObjectFullName(name string) tPathElement {
 	return func(t *testing.T, f Field) Field {
 		t.Helper()
@@ -103,13 +115,17 @@ func tObjectProperty(name string) tPathElement {
 		t.Helper()
 		t.Logf("T ObjectProperty %q", name)
 		obj := toObj(t, f)
-		prop, err := obj.NewValue(name)
+		prop, err := obj.GetProperty(name)
 		if err != nil {
 			t.Fatal(err)
 		}
 		t.Logf("  found object property %s", name)
 
-		return prop
+		field, err := prop.Field()
+		if err != nil {
+			t.Fatalf("error getting field for property %s: %v", name, err)
+		}
+		return field
 	}
 }
 
@@ -138,13 +154,17 @@ func tOneofProperty(name string) tPathElement {
 		t.Helper()
 		t.Logf("T OneofProperty")
 		oneof := toOneof(t, f)
-		prop, err := oneof.NewValue(name)
+		prop, err := oneof.GetProperty(name)
 		if err != nil {
 			t.Fatal(err)
 		}
 		t.Logf("  found enum property %s", name)
 
-		return prop
+		field, err := prop.Field()
+		if err != nil {
+			t.Fatalf("error getting field for property %s: %v", name, err)
+		}
+		return field
 	}
 }
 

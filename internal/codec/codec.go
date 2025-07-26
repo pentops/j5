@@ -23,6 +23,7 @@ type Codec struct {
 	resolver MessageTypeResolver
 
 	addProtoToAny bool
+	includeEmpty  bool // include empty fields in JSON output
 }
 
 type CodecOption func(*Codec)
@@ -45,6 +46,13 @@ func WithResolver(resolver MessageTypeResolver) CodecOption {
 func WithProtoToAny() CodecOption {
 	return func(c *Codec) {
 		c.addProtoToAny = true
+	}
+}
+
+// WithIncludeEmpty includes empty fields in the JSON output.
+func WithIncludeEmpty() CodecOption {
+	return func(c *Codec) {
+		c.includeEmpty = true
 	}
 }
 

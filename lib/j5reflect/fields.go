@@ -6,6 +6,7 @@ import (
 
 type Field interface {
 	IsSet() bool
+	SetDefaultValue() error
 	FieldContext
 
 	// Fighting with go typing here, the implementations of these return

@@ -245,6 +245,25 @@ func TestValidate(t *testing.T) {
 		schema.New().SetScalar("bar", 20).AssertValid()
 	})
 
+	t.Run("Oneof", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! oneof {
+				option a object {
+					field x ! string
+				}
+				option b object {
+					field y ! string
+				}
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar.a.x", "value").AssertValid()
+		schema.New().SetScalar("bar.b.y", "value").AssertValid()
+
+	})
+
 }
 
 type reflectCase struct {
@@ -346,7 +365,7 @@ func assertInvalid(t testing.TB, obj j5reflect.Object, field string, msgContains
 	}
 	gotErr := errs[0]
 	if jp := gotErr.JSONPath(); jp != field {
-		t.Fatalf("expected JSON path %q, got %q", field, jp)
+		t.Fatalf("expected JSON path %q, got %q (for err %s)", field, jp, gotErr.Message)
 	}
 
 	for _, msg := range msgContains {

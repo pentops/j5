@@ -28,7 +28,7 @@ type j5PropSet interface {
 	// subset of j5reflect.PropertySet
 	SchemaName() string
 	RangePropertySchemas(j5reflect.RangePropertySchemasCallback) error
-	NewValue(name string) (j5reflect.Field, error)
+	//NewValue(name string) (j5reflect.Field, error)
 	GetProperty(name string) (j5reflect.Property, error)
 	GetOrCreateValue(name ...string) (j5reflect.Field, error)
 	ContainerSchema() j5schema.Container
@@ -152,11 +152,16 @@ func (sc *containerField) getOrSetValue(name string, hint SourceLocation) (Field
 }
 
 func (sc *containerField) newValue(name string, hint SourceLocation) (Field, error) {
-	val, err := sc.container.NewValue(name)
+	val, err := sc.container.GetProperty(name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting property %q: %w", name, err)
 	}
-	return sc.wrap(val, hint)
+	field, err := val.Field()
+	if err != nil {
+		return nil, fmt.Errorf("getting field for property %q: %w", name, err)
+	}
+
+	return sc.wrap(field, hint)
 }
 
 func (sc *containerField) wrap(val j5reflect.Field, hint SourceLocation) (Field, error) {

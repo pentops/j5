@@ -48,17 +48,12 @@ func mustProtoAny(t testing.TB, msg proto.Message) *anypb.Any {
 type testSchema struct {
 	t      testing.TB
 	schema string
-	codec  *Codec
 }
 
 func NewTestSchema(t testing.TB, schema string) *testSchema {
-	cache := j5schema.NewSchemaCache()
-	reflector := j5reflect.NewWithCache(cache)
-	codec := NewCodec(WithProtoToAny(), WithReflector(reflector))
 	return &testSchema{
 		t:      t,
 		schema: schema,
-		codec:  codec,
 	}
 }
 
@@ -66,24 +61,32 @@ func (dc *testSchema) Object() j5reflect.Object {
 	return j5test.DynamicObject(dc.t, dc.schema)
 }
 
-func (dc *testSchema) ExpectedJSON(j string) *testSchemaWithOutput {
+func (dc *testSchema) WantJSON(j string, opts ...CodecOption) *testSchemaWithOutput {
 	dc.t.Helper()
+
+	cache := j5schema.NewSchemaCache()
+	reflector := j5reflect.NewWithCache(cache)
+	codec := NewCodec(append(opts, WithReflector(reflector))...)
+
 	tco := &testSchemaWithOutput{
 		testSchema: dc,
 		wantOutput: []byte(j),
+		codec:      codec,
 	}
 	// assert that the expected JSON output, when given as Input, results in itself
-	tco.AssertJSON(j)
+	tco.InputJSON(j)
 	return tco
 }
 
 type testSchemaWithOutput struct {
 	*testSchema
+	codec      *Codec
 	wantOutput []byte
 }
 
-func (dc *testSchemaWithOutput) AssertJSON(jsonInput string) *testSchemaWithOutput {
+func (dc *testSchemaWithOutput) InputJSON(jsonInput string) *testSchemaWithOutput {
 	dc.t.Helper()
+
 	parsed := dc.Object()
 	err := dc.codec.JSONToReflect([]byte(jsonInput), parsed)
 	if err != nil {
@@ -94,7 +97,12 @@ func (dc *testSchemaWithOutput) AssertJSON(jsonInput string) *testSchemaWithOutp
 	if err != nil {
 		dc.t.Fatalf("ReflectToJSON: %s", err)
 	}
-	CompareJSON(dc.t, dc.wantOutput, encodedJSON)
+	match, diff := JSONEqual(dc.t, dc.wantOutput, encodedJSON)
+	if !match {
+		dc.t.Logf("For input %s", jsonInput)
+		dc.t.Errorf("JSON mismatch\n%s", diff)
+	}
+
 	return dc
 }
 
@@ -107,11 +115,14 @@ func TestDynamic(t *testing.T) {
 			}
 		`)
 
-		schema.ExpectedJSON(`{"sString": "val"}`)
-		schema.ExpectedJSON("{}").
-			AssertJSON(`{}`).
-			AssertJSON(`{"sString": null}`).
-			AssertJSON(`{"sString": ""}`)
+		schema.WantJSON(`{"sString": "val"}`)
+		schema.WantJSON(`{}`).
+			InputJSON(`{"sString": ""}`).
+			InputJSON(`{"sString": null}`)
+
+		schema.WantJSON(`{"sString": ""}`, WithIncludeEmpty()).
+			InputJSON(`{}`).
+			InputJSON(`{"sString": null}`)
 	})
 
 	t.Run("nullable string", func(t *testing.T) {
@@ -121,13 +132,21 @@ func TestDynamic(t *testing.T) {
 			}
 		`)
 
-		schema.ExpectedJSON(`{"sString": "val"}`)
+		schema.WantJSON(`{"sString": "val"}`)
+		schema.WantJSON(`{"sString": ""}`)
+		schema.WantJSON(`{}`).
+			InputJSON(`{"sString": null}`)
 
-		schema.ExpectedJSON(`{"sString": null}`).
-			AssertJSON(`{"sString": null}`)
+	})
 
-		schema.ExpectedJSON(`{"sString": ""}`).
-			AssertJSON(`{"sString": ""}`)
+	t.Run("required string", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+			object Foo {
+			  field sString ! string
+			}
+		`)
+
+		schema.WantJSON(`{"sString": "val"}`)
 	})
 }
 
@@ -677,6 +696,13 @@ func TestScalars(t *testing.T) {
 }
 
 func CompareJSON(t testing.TB, wantSRC, gotSRC []byte) {
+	match, diff := JSONEqual(t, wantSRC, gotSRC)
+	if !match {
+		t.Fatalf("JSON Mismatch: \n%s", diff)
+	}
+}
+
+func JSONEqual(t testing.TB, wantSRC, gotSRC []byte) (bool, string) {
 	t.Helper()
 	wantBuff := &bytes.Buffer{}
 	if err := json.Indent(wantBuff, wantSRC, "", "  "); err != nil {
@@ -694,17 +720,21 @@ func CompareJSON(t testing.TB, wantSRC, gotSRC []byte) {
 	gotStr := gotBuff.String()
 
 	if wantStr == gotStr {
-		return
+		return true, ""
 	}
 
 	outputBuffer := &bytes.Buffer{}
 
 	gotLines := strings.Split(gotStr, "\n")
 	wantLines := strings.Split(wantStr, "\n")
-	for i, wantLine := range wantLines {
+	for i := range max(len(wantLines), len(gotLines)) {
 		gotLine := ""
 		if i < len(gotLines) {
 			gotLine = gotLines[i]
+		}
+		wantLine := ""
+		if i < len(wantLines) {
+			wantLine = wantLines[i]
 		}
 
 		if wantLine != gotLine {
@@ -715,6 +745,6 @@ func CompareJSON(t testing.TB, wantSRC, gotSRC []byte) {
 
 	}
 
-	t.Fatalf("JSON Mismatch: \n%s", outputBuffer.String())
+	return false, outputBuffer.String()
 
 }
