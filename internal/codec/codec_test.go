@@ -150,6 +150,58 @@ func TestDynamic(t *testing.T) {
 
 		schema.WantJSON(`{"sString": "val"}`)
 	})
+
+	t.Run("integer", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+		object FooCharacteristics {
+			field weight integer:INT64 {
+				listRules.filtering.filterable = true
+				listRules.sorting.sortable = true
+			}
+
+			field height integer:INT64 {
+				listRules.filtering.filterable = true
+				listRules.sorting.sortable = true
+			}
+
+			field length integer:INT64 {
+				listRules.filtering.filterable = true
+				listRules.sorting.sortable = true
+			}
+		}
+		`)
+
+		schema.WantJSON(`{}`)
+
+		schema.WantJSON(`{"weight": "0", "height": "0", "length": "0"}`, WithIncludeEmpty()).InputJSON(`{}`)
+
+		schema.WantJSON(`{"weight": "0", "height": "0", "length": "1"}`, WithIncludeEmpty()).InputJSON(`{"length": "1"}`)
+
+		empty := schema.Object()
+
+		val, ok, err := empty.GetField("weight")
+		if err != nil {
+			t.Fatalf("GetField: %s", err)
+		}
+		if ok {
+			t.Fatalf("expected weight to not be set, but it is: %s", val)
+		}
+
+		scalar, ok := val.AsScalar()
+		if !ok {
+			t.Fatalf("expected weight to be a scalar, but it is not: %s", val)
+		}
+		goValue, err := scalar.ToGoValue()
+		if err != nil {
+			t.Fatalf("ToGoValue: %s", err)
+		}
+
+		if goValue != int64(0) {
+			t.Fatalf("expected weight to be 0, but it is: %v", goValue)
+		}
+
+	})
+
 }
 
 func TestUnmarshal(t *testing.T) {

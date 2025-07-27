@@ -288,7 +288,7 @@ func (fs *propSet) GetField(nameParts ...string) (Field, bool, error) {
 		return nil, false, err
 	}
 	if len(nameParts) == 1 {
-		return next, true, nil
+		return next, next.IsSet(), nil
 	}
 
 	container, ok := next.AsContainer()
