@@ -18,6 +18,11 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 	defer enc.closeObject()
 
 	doField := func(field j5reflect.Field) error {
+
+		if !field.IsSet() && !enc.codec.includeEmpty {
+			return nil
+		}
+
 		if !first {
 			enc.fieldSep()
 		}
@@ -103,10 +108,19 @@ func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
 		return err
 	}
 
+	if val == nil {
+		enc.addNull()
+		return nil
+	}
+
+	if val.TypeName == "" {
+		return fmt.Errorf("any type has no TypeName set")
+	}
+
 	var jsonData []byte
-	if val.J5Json != nil {
+	if len(val.J5Json) > 0 {
 		jsonData = val.J5Json
-	} else if val.Proto != nil {
+	} else if len(val.Proto) > 0 {
 
 		mt, err := enc.codec.resolver.FindMessageByName(protoreflect.FullName(val.TypeName))
 		if err != nil {
@@ -123,6 +137,8 @@ func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
 			return err
 		}
 		jsonData = innerBytes
+	} else {
+		return fmt.Errorf("any type %q has no J5Json or Proto data", val.TypeName)
 	}
 
 	enc.openObject()

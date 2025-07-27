@@ -1,9 +1,10 @@
 package j5reflect
 
 import (
+	"fmt"
+
 	"github.com/pentops/j5/lib/j5reflect/protoval"
 	"github.com/pentops/j5/lib/j5schema"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 /*** Interface ***/
@@ -20,7 +21,7 @@ type polymorphField struct {
 	fieldContext
 	schema *j5schema.PolymorphField
 
-	valueField protoreflect.FieldDescriptor
+	valueField protoval.Value
 	value      protoval.MessageValue
 
 	wrapped *anyField
@@ -33,14 +34,6 @@ func (field *polymorphField) IsSet() bool {
 }
 
 func (field *polymorphField) Unwrap() (AnyField, error) {
-	if field.wrapped == nil {
-		emptyFieldFactory := &anyFieldFactory{
-			schema: &j5schema.AnyField{},
-		}
-
-		impl := emptyFieldFactory.buildField(field.fieldContext, field.value)
-		field.wrapped = impl.(*anyField)
-	}
 	return field.wrapped, nil
 }
 
@@ -57,20 +50,32 @@ type polymorphFieldFactory struct {
 	schema *j5schema.PolymorphField
 }
 
-func (factory *polymorphFieldFactory) buildField(context fieldContext, value protoval.Value) Field {
+func (factory *polymorphFieldFactory) buildField(context fieldContext, valueGen protoval.Value) Field {
 
-	msgValue, ok := value.(protoval.MessageValue)
+	msgValue, ok := valueGen.(protoval.MessageValue)
 	if !ok {
 		panic("polymorph field factory expected a MessageValue")
 	}
 
 	desc := msgValue.MessageDescriptor()
 	valueField := desc.Fields().ByName("value")
+	valueFieldWrapped, err := msgValue.ChildField(valueField)
+	if err != nil {
+		panic(fmt.Sprintf("polymorph field factory expected a value field in the message: %s", err))
+	}
+
+	emptyFieldFactory := &anyFieldFactory{
+		schema: &j5schema.AnyField{},
+	}
+
+	impl := emptyFieldFactory.buildField(context, valueFieldWrapped)
+	wrapped := impl.(*anyField)
 
 	return &polymorphField{
 		schema:       factory.schema,
-		valueField:   valueField,
+		valueField:   valueFieldWrapped,
 		fieldContext: context,
 		value:        msgValue,
+		wrapped:      wrapped,
 	}
 }

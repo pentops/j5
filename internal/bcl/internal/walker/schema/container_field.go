@@ -118,7 +118,7 @@ func (mc mapContainer) ContainerSchema() j5schema.Container {
 }
 
 func (mc mapContainer) GetProperty(name string) (j5reflect.Property, error) {
-	return nil, fmt.Errorf("maps have no property")
+	panic("GetProperty not implemented for mapContainer")
 }
 
 func (mc mapContainer) ListPropertyNames() []string {
@@ -152,13 +152,9 @@ func (sc *containerField) getOrSetValue(name string, hint SourceLocation) (Field
 }
 
 func (sc *containerField) newValue(name string, hint SourceLocation) (Field, error) {
-	val, err := sc.container.GetProperty(name)
+	field, err := sc.container.GetOrCreateValue(name)
 	if err != nil {
 		return nil, fmt.Errorf("getting property %q: %w", name, err)
-	}
-	field, err := val.Field()
-	if err != nil {
-		return nil, fmt.Errorf("getting field for property %q: %w", name, err)
 	}
 
 	return sc.wrap(field, hint)

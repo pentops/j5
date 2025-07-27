@@ -120,12 +120,8 @@ func DeepEqual(a, b Root) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	prA, aOK := a.ProtoReflect()
-	prB, bOK := b.ProtoReflect()
-	if !aOK || !bOK {
-		return aOK == bOK
-	}
-
+	prA := a.ProtoReflect()
+	prB := b.ProtoReflect()
 	msgA := prA.Interface()
 	msgB := prB.Interface()
 	return proto.Equal(msgA, msgB)

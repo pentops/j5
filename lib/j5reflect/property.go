@@ -184,6 +184,19 @@ func (prop *property) buildField() error {
 	return nil
 }
 
+func schemaIsMutable(schema j5schema.FieldSchema) (bool, error) {
+	switch schema.(type) {
+	case *j5schema.ObjectField, *j5schema.OneofField, *j5schema.AnyField, *j5schema.PolymorphField:
+		return true, nil
+	case *j5schema.ArrayField, *j5schema.MapField:
+		return false, fmt.Errorf("ArrayField and MapField are neither mutable nor immutable")
+	case *j5schema.EnumField, *j5schema.ScalarSchema:
+		return false, nil
+	default:
+		return false, fmt.Errorf("unknown schema type %T", schema)
+	}
+}
+
 func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value protoval.Value) (Field, error) {
 
 	switch st := schema.Schema.(type) {
@@ -195,7 +208,15 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 			return nil, fmt.Errorf("ArrayField is not a proto list")
 		}
 
-		if msgDesc, ok := listVal.ItemMessageDescriptor(); ok {
+		schemaIsMutable, err := schemaIsMutable(st.ItemSchema)
+		if err != nil {
+			return nil, fmt.Errorf("checking schema mutability: %w", err)
+		}
+		if schemaIsMutable {
+			msgDesc, ok := listVal.ItemMessageDescriptor()
+			if !ok {
+				return nil, fmt.Errorf("ArrayField item is not a proto message")
+			}
 
 			ff, err := newMessageFieldFactory(st.ItemSchema, msgDesc)
 			if err != nil {
@@ -229,7 +250,15 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 			return nil, fmt.Errorf("MapField is not a proto map")
 		}
 
-		if msgDesc, ok := mapVal.ItemMessageDescriptor(); ok {
+		schemaIsMutable, err := schemaIsMutable(st.ItemSchema)
+		if err != nil {
+			return nil, fmt.Errorf("checking schema mutability: %w", err)
+		}
+		if schemaIsMutable {
+			msgDesc, ok := mapVal.ItemMessageDescriptor()
+			if !ok {
+				return nil, fmt.Errorf("MapField item is not a proto message")
+			}
 			ff, err := newMessageFieldFactory(st.ItemSchema, msgDesc)
 			if err != nil {
 				return nil, err
@@ -251,9 +280,13 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 			return nil, err
 		}
 		return field, nil
-	}
 
-	if msgVal, ok := value.AsMessage(); ok {
+	case *j5schema.ObjectField, *j5schema.OneofField, *j5schema.AnyField, *j5schema.PolymorphField:
+
+		msgVal, ok := value.AsMessage()
+		if !ok {
+			return nil, fmt.Errorf("ObjectField is not a proto message")
+		}
 		ff, err := newMessageFieldFactory(schema.Schema, msgVal.MessageDescriptor())
 		if err != nil {
 			return nil, err

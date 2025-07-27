@@ -104,7 +104,7 @@ func newObjectField(context fieldContext, obj *objectImpl) ObjectField {
 }
 
 func (obj *objectField) IsSet() bool {
-	return true
+	return obj.value.IsSet()
 }
 
 /*** Explicitly Implements ***/

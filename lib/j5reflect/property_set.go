@@ -49,7 +49,7 @@ type PropertySet interface {
 
 	// ProtoMessage returns the underlying protoreflect message. From there you are
 	// on your own, the schema may not match.
-	ProtoReflect() (protoreflect.Message, bool)
+	ProtoReflect() protoreflect.Message
 
 	implementsPropertySet()
 }
@@ -174,8 +174,12 @@ type propSet struct {
 
 // ProtoMessage returns the underlying protoreflect message. From there you are
 // on your own, the schema may not match.
-func (ps *propSet) ProtoReflect() (protoreflect.Message, bool) {
-	return ps.value.MaybeMessageValue()
+func (ps *propSet) ProtoReflect() protoreflect.Message {
+	val, ok := ps.value.MaybeMessageValue()
+	if !ok {
+		return nil
+	}
+	return val
 }
 
 func (*propSet) implementsPropertySet() {}
@@ -365,13 +369,20 @@ func (fs *propSet) GetOne() (Field, bool, error) {
 	var found bool
 
 	for _, search := range fs.asSlice {
-		field, has, err := fs.GetField(search.schema.JSONName)
+		prop, err := fs.GetProperty(search.schema.JSONName)
 		if err != nil {
 			return nil, false, err
 		}
-		if !has {
+
+		field, err := prop.Field()
+		if err != nil {
+			return nil, false, err
+		}
+
+		if !field.IsSet() {
 			continue
 		}
+
 		if found {
 			return nil, true, fmt.Errorf("multiple values set for oneof")
 		}

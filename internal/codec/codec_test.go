@@ -93,6 +93,8 @@ func (dc *testSchemaWithOutput) InputJSON(jsonInput string) *testSchemaWithOutpu
 		dc.t.Fatalf("JSONToReflect: %s", err)
 	}
 
+	dc.t.Logf("got proto:\n%s\n", prototext.Format(parsed))
+
 	encodedJSON, err := dc.codec.ReflectToJSON(parsed)
 	if err != nil {
 		dc.t.Fatalf("ReflectToJSON: %s", err)
@@ -597,7 +599,7 @@ func logIndent(t *testing.T, label, jsonStr string) {
 	buffer := &bytes.Buffer{}
 	if err := json.Indent(buffer, []byte(jsonStr), " | ", "  "); err != nil {
 		t.Log(jsonStr)
-		t.Fatalf("invalid test case: %s", err)
+		t.Fatalf("%s - invalid JSON (for indent): %s", label, err)
 	}
 	t.Logf("%s \n | %s\n", label, buffer.String())
 }

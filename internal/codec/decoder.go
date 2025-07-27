@@ -209,7 +209,11 @@ func (dec *decoder) decodeObjectProperty(prop j5reflect.Property) error {
 		return nil
 	}
 
-	genField, err := prop.CreateField()
+	genField, err := prop.Field()
+	if err != nil {
+		return err
+	}
+	err = genField.SetDefaultValue()
 	if err != nil {
 		return err
 	}
@@ -265,7 +269,11 @@ func (dec *decoder) decodeOneofProperty(prop j5reflect.Property) error {
 		return nil
 	}
 
-	genField, err := prop.CreateField()
+	genField, err := prop.Field()
+	if err != nil {
+		return err
+	}
+	err = genField.SetDefaultValue()
 	if err != nil {
 		return err
 	}
@@ -329,10 +337,19 @@ func (dec *decoder) decodeOneofInner(oneof j5reflect.Oneof) error {
 
 		// Special case, allows the consumer to set a nil value on a oneof
 		// just by using the type parameter
-		_, err := oneof.NewValue(keyTokenStr)
+		prop, err := oneof.GetProperty(keyTokenStr)
 		if err != nil {
 			return newFieldError(keyTokenStr, "no such key")
 		}
+		field, err := prop.Field()
+		if err != nil {
+			return err
+		}
+		err = field.SetDefaultValue()
+		if err != nil {
+			return newFieldError(keyTokenStr, err.Error())
+		}
+
 	}
 
 	if len(foundKeys) > 1 {
@@ -352,22 +369,13 @@ func (dec *decoder) decodeScalar(prop j5reflect.Property) error {
 		return err
 	}
 
-	// token is nil when it's literally 'null' in the JSON
-	if token == nil {
-		if prop.Schema().ExplicitlyOptional {
-			// create the null holder
-			_, err := prop.CreateField()
-			if err != nil {
-				return err
-			}
-
-		}
-		return nil
-	}
-
-	genProp, err := prop.CreateField()
+	genProp, err := prop.Field()
 	if err != nil {
 		return err
+	}
+	// token is nil when it's literally 'null' in the JSON
+	if token == nil {
+		return nil
 	}
 
 	field, ok := genProp.AsScalar()
@@ -392,7 +400,7 @@ func (dec *decoder) decodeEnum(prop j5reflect.Property) error {
 		return nil
 	}
 
-	genField, err := prop.CreateField()
+	genField, err := prop.Field()
 	if err != nil {
 		return err
 	}
@@ -421,7 +429,7 @@ func (dec *decoder) decodePolymorphProperty(prop j5reflect.Property) error {
 		return nil
 	}
 
-	genWrapper, err := prop.CreateField()
+	genWrapper, err := prop.Field()
 	if err != nil {
 		return err
 	}
@@ -456,7 +464,7 @@ func (dec *decoder) decodeAny(prop j5reflect.Property) error {
 		return nil
 	}
 
-	genField, err := prop.CreateField()
+	genField, err := prop.Field()
 	if err != nil {
 		return err
 	}
@@ -566,7 +574,7 @@ func (dec *decoder) decodeMapProperty(prop j5reflect.Property) error {
 		return nil
 	}
 
-	field, err := prop.CreateField()
+	field, err := prop.Field()
 	if err != nil {
 		return err
 	}
@@ -649,7 +657,7 @@ func (dec *decoder) decodeArrayProperty(prop j5reflect.Property) error {
 		return nil
 	}
 
-	genField, err := prop.CreateField()
+	genField, err := prop.Field()
 	if err != nil {
 		return err
 	}

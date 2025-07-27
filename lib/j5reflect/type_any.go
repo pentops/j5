@@ -36,13 +36,16 @@ type anyField struct {
 type anyImpl interface {
 	setAny(*any_j5t.Any) error
 	getAny() (*any_j5t.Any, error)
+	isSet() bool
 }
 
 var _ AnyField = (*anyField)(nil)
 
 func (field *anyField) IsSet() bool {
-	// any has message by this point
-	return true
+	if field.implType == nil {
+		return false
+	}
+	return field.implType.isSet()
 }
 
 func (field *anyField) SetDefaultValue() error {
@@ -117,6 +120,10 @@ func (impl *pbAnyImpl) setAny(val *any_j5t.Any) error {
 	return nil
 }
 
+func (impl *pbAnyImpl) isSet() bool {
+	return impl.value.IsSet()
+}
+
 func (impl *pbAnyImpl) getAny() (*any_j5t.Any, error) {
 	typeUrl := impl.value.MessageValue().Get(impl.typeUrlField).String()
 	typeName := strings.TrimPrefix(typeUrl, anyPrefix)
@@ -157,7 +164,14 @@ func (impl *j5AnyImpl) setAny(val *any_j5t.Any) error {
 	return nil
 }
 
+func (impl *j5AnyImpl) isSet() bool {
+	return impl.value.IsSet()
+}
+
 func (impl *j5AnyImpl) getAny() (*any_j5t.Any, error) {
+	if !impl.value.IsSet() {
+		return nil, nil
+	}
 	val := impl.value.MessageValue()
 	typeName := val.Get(impl.typeNameField).String()
 	out := &any_j5t.Any{
