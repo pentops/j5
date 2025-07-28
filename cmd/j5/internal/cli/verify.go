@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/builder"
 	"github.com/pentops/j5/internal/j5client"
 	"github.com/pentops/j5/internal/j5s/protobuild/protomod"
-	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/j5/internal/structure"
 	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/proto"
@@ -32,20 +31,7 @@ func runVerify(ctx context.Context, cfg struct {
 	}
 	bb := builder.NewBuilder(dockerWrapper)
 
-	err = cfg.EachBundle(ctx, func(bundle source.Bundle) error {
-
-		img, err := bundle.SourceImage(ctx, src)
-		if err != nil {
-			if ep, ok := errpos.AsErrorsWithSource(err); ok {
-				fmt.Fprintln(os.Stderr, ep.ShortString())
-			}
-			return err
-		}
-
-		bundleConfig, err := bundle.J5Config()
-		if err != nil {
-			return err
-		}
+	err = cfg.EachBundleImage(ctx, func(img *source_j5pb.SourceImage, bundleConfig *config_j5pb.BundleConfigFile) error {
 
 		sourceAPI, err := structure.APIFromImage(img)
 		if err != nil {

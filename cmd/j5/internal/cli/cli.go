@@ -14,6 +14,7 @@ import (
 	"buf.build/go/protoyaml"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/builder"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/log.go/log"
@@ -152,6 +153,46 @@ func (cfg SourceConfig) EachBundle(ctx context.Context, fn func(source.Bundle) e
 			return err
 		}
 	}
+	return nil
+}
+
+func (cfg SourceConfig) EachBundleImage(ctx context.Context, fn func(*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile) error) error {
+
+	resolver, err := cfg.resolver()
+	if err != nil {
+		return err
+	}
+
+	src, err := cfg.GetSource(ctx)
+	if err != nil {
+		return err
+	}
+	for _, bundle := range src.AllBundles() {
+		bundleConfig, err := bundle.J5Config()
+		if err != nil {
+			return fmt.Errorf("getting bundle config for %s: %w", bundle.DebugName(), err)
+		}
+
+		unresolvedImage, err := bundle.SourceImage(ctx, src)
+		if err != nil {
+			if ep, ok := errpos.AsErrorsWithSource(err); ok {
+				fmt.Fprintln(os.Stderr, ep.ShortString())
+			}
+			return err
+		}
+
+		img, err := source.ResolveIncludes(ctx, resolver, unresolvedImage, nil)
+		if err != nil {
+			return fmt.Errorf("resolving includes for bundle %s: %w", bundle.DebugName(), err)
+		}
+
+		err = fn(img, bundleConfig)
+		if err != nil {
+			return err
+		}
+
+	}
+
 	return nil
 }
 
