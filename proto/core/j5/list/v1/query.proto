@@ -49,10 +49,15 @@ message FieldType {
 
     string value = 2;
     Range range = 3;
+    Values in = 4;
   }
 }
 
 message Range {
   string min = 1;
   string max = 2;
+}
+
+message Values {
+  repeated string values = 1;
 }
