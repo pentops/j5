@@ -15,7 +15,6 @@ import (
 	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/j5/lib/id62"
 	"github.com/pentops/j5/lib/patherr"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -267,8 +266,8 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts
 		objectSchema.BCL = bclOpts
 	}
 
-	listRequestAnnotation, ok := proto.GetExtension(srcMsg.Options().(*descriptorpb.MessageOptions), list_j5pb.E_ListRequest).(*list_j5pb.ListRequestMessage)
-	if ok && listRequestAnnotation != nil {
+	listRequestAnnotation := protosrc.GetExtension[*list_j5pb.ListRequestMessage](srcMsg.Options().(*descriptorpb.MessageOptions), list_j5pb.E_ListRequest)
+	if listRequestAnnotation != nil {
 		converted, err := convertListRequest(srcMsg, listRequestAnnotation)
 		if err != nil {
 			return nil, fmt.Errorf("convert list request for %s: %w", srcMsg.FullName(), err)
