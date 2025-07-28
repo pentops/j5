@@ -181,9 +181,6 @@ func inferMessageType(src protoreflect.MessageDescriptor) messageType {
 		if field.ContainingOneof() != oneof {
 			return objectMessage
 		}
-		if field.Kind() != protoreflect.MessageKind {
-			return objectMessage
-		}
 	}
 
 	return oneofMessage
