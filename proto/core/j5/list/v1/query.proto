@@ -3,7 +3,6 @@ syntax = "proto3";
 package j5.list.v1;
 
 import "buf/validate/validate.proto";
-//import "j5/ext/v1/annotations.proto";
 
 option go_package = "github.com/pentops/j5/gen/j5/list/v1/list_j5pb";
 
@@ -47,7 +46,6 @@ message Field {
 message FieldType {
   oneof type {
     option (buf.validate.oneof).required = true;
-    //option (j5.ext.v1.oneof).expose = true;
 
     string value = 2;
     Range range = 3;
