@@ -28,9 +28,9 @@ type j5PropSet interface {
 	// subset of j5reflect.PropertySet
 	SchemaName() string
 	RangePropertySchemas(j5reflect.RangePropertySchemasCallback) error
-	NewValue(name string) (j5reflect.Field, error)
+	//NewValue(name string) (j5reflect.Field, error)
 	GetProperty(name string) (j5reflect.Property, error)
-	GetOrCreateValue(name string) (j5reflect.Field, error)
+	GetOrCreateValue(name ...string) (j5reflect.Field, error)
 	ContainerSchema() j5schema.Container
 	ListPropertyNames() []string
 	HasAvailableProperty(string) bool
@@ -64,8 +64,22 @@ func (mc mapContainer) HasProperty(name string) bool {
 	return true
 }
 
-func (mc mapContainer) GetOrCreateValue(name string) (j5reflect.Field, error) {
-	return mc.GetOrCreateElement(name)
+func (mc mapContainer) GetOrCreateValue(name ...string) (j5reflect.Field, error) {
+	if len(name) == 0 {
+		return nil, fmt.Errorf("empty path")
+	}
+	field, err := mc.GetOrCreateElement(name[0])
+	if err != nil {
+		return nil, fmt.Errorf("get or create map element %q: %w", name[0], err)
+	}
+	if len(name) == 1 {
+		return field, nil
+	}
+	itemAsContainer, ok := field.AsContainer()
+	if !ok {
+		return nil, fmt.Errorf("map item %q is not a container", name[0])
+	}
+	return itemAsContainer.GetOrCreateValue(name[1:]...)
 }
 
 func (mc mapContainer) HasAvailableProperty(name string) bool {
@@ -104,7 +118,7 @@ func (mc mapContainer) ContainerSchema() j5schema.Container {
 }
 
 func (mc mapContainer) GetProperty(name string) (j5reflect.Property, error) {
-	return nil, fmt.Errorf("maps have no property")
+	panic("GetProperty not implemented for mapContainer")
 }
 
 func (mc mapContainer) ListPropertyNames() []string {
@@ -138,11 +152,12 @@ func (sc *containerField) getOrSetValue(name string, hint SourceLocation) (Field
 }
 
 func (sc *containerField) newValue(name string, hint SourceLocation) (Field, error) {
-	val, err := sc.container.NewValue(name)
+	field, err := sc.container.GetOrCreateValue(name)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting property %q: %w", name, err)
 	}
-	return sc.wrap(val, hint)
+
+	return sc.wrap(field, hint)
 }
 
 func (sc *containerField) wrap(val j5reflect.Field, hint SourceLocation) (Field, error) {

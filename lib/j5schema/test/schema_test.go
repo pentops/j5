@@ -242,26 +242,22 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 	}
 
 	assertProperty("sString", map[string]any{
-		"protoField": jsontest.Array[float64]{1},
+		"schema.string": map[string]any{},
 	})
 
 	assertProperty("oString", map[string]any{
-		"protoField":         jsontest.Array[float64]{2},
 		"explicitlyOptional": true,
 	})
 
 	assertProperty("rString", map[string]any{
-		"protoField":                jsontest.Array[float64]{3},
 		"schema.array.items.string": map[string]any{},
 	})
 
 	assertProperty("mapStringString", map[string]any{
-		"protoField":                   jsontest.Array[float64]{50},
 		"schema.map.itemSchema.string": map[string]any{},
 	})
 
 	assertProperty("flattened", map[string]any{
-		"protoField":            jsontest.Array[float64]{52},
 		"schema.object.flatten": true,
 	})
 }
@@ -368,8 +364,8 @@ func TestSchemaTypesComplex(t *testing.T) {
 							TypeName: proto.String("test.ChildMessage"),
 							Number:   proto.Int32(1),
 						}, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
-							Type: &ext_j5pb.FieldOptions_Message{
-								Message: &ext_j5pb.MessageFieldOptions{
+							Type: &ext_j5pb.FieldOptions_Object{
+								Object: &ext_j5pb.ObjectField{
 									Flatten: true,
 								},
 							},
@@ -391,42 +387,6 @@ func TestSchemaTypesComplex(t *testing.T) {
 		})
 	})
 
-	t.Run("exposedOneof", func(t *testing.T) {
-		runTestCase(t, testCase{
-			proto: &descriptorpb.FileDescriptorProto{
-				Name:    proto.String("test.proto"),
-				Package: proto.String("test"),
-				MessageType: []*descriptorpb.DescriptorProto{{
-					Name: proto.String("TestMessage"),
-					OneofDecl: []*descriptorpb.OneofDescriptorProto{{
-						Name: proto.String("expose_me"),
-						Options: extend(&descriptorpb.OneofOptions{}, ext_j5pb.E_Oneof, &ext_j5pb.OneofOptions{
-							Expose: true,
-						}),
-					}},
-					Field: []*descriptorpb.FieldDescriptorProto{{
-						Name:       proto.String("test_field"),
-						Type:       descriptorpb.FieldDescriptorProto_TYPE_STRING.Enum(),
-						Number:     proto.Int32(1),
-						OneofIndex: proto.Int32(0),
-					}},
-				}},
-			},
-			expected: map[string]any{
-				"object.name":              "TestMessage",
-				"object.properties.0.name": "exposeMe",
-				"object.properties.0.schema.oneof.ref.package": "test",
-				"object.properties.0.schema.oneof.ref.schema":  "TestMessage_expose_me",
-				"object.properties.0.protoField":               jsontest.NotSet{},
-			},
-			expectedRefs: map[string]map[string]any{
-				"TestMessage_expose_me": {
-					"oneof.properties.0.name":       "testField",
-					"oneof.properties.0.protoField": jsontest.Array[float64]{1},
-				},
-			},
-		})
-	})
 	t.Run("map<string>string", func(t *testing.T) {
 		runTestCase(t, testCase{
 			proto: &descriptorpb.FileDescriptorProto{

@@ -2,8 +2,8 @@ package j5reflect
 
 import (
 	"fmt"
-	"sync"
 
+	"github.com/pentops/j5/lib/j5reflect/protoval"
 	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -37,12 +37,12 @@ type baseArrayField struct {
 	fieldDefaults
 	fieldContext
 
-	value  protoreflect.List
+	value  protoval.ListValue
 	schema *j5schema.ArrayField
 }
 
 func (array *baseArrayField) IsSet() bool {
-	return array.value.IsValid()
+	return array.value.IsSet()
 }
 
 func (array *baseArrayField) ItemSchema() j5schema.FieldSchema {
@@ -57,7 +57,11 @@ func (array *baseArrayField) Truncate(newLen int) {
 	array.value.Truncate(newLen)
 }
 
-func newMessageArrayField(context fieldContext, schema *j5schema.ArrayField, value protoreflect.List, factory messageFieldFactory) (ArrayField, error) {
+func (array *baseArrayField) SetDefaultValue() error {
+	return nil
+}
+
+func newMessageArrayField(context fieldContext, schema *j5schema.ArrayField, value protoval.ListValue, factory fieldFactory) (ArrayField, error) {
 	base := baseArrayField{
 		fieldContext: context,
 		schema:       schema,
@@ -86,7 +90,7 @@ func newMessageArrayField(context fieldContext, schema *j5schema.ArrayField, val
 	}
 }
 
-func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value protoreflect.List, factory fieldFactory) (ArrayField, error) {
+func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value protoval.ListValue, factory fieldFactory) (ArrayField, error) {
 	if value == nil {
 		panic("list value is nil for leaf")
 	}
@@ -124,27 +128,28 @@ func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value 
 
 type mutableArrayField struct {
 	baseArrayField
-	lock    sync.Mutex
-	factory messageFieldFactory
+	factory fieldFactory
 }
 
 var _ MutableArrayField = (*mutableArrayField)(nil)
 
 func (array *mutableArrayField) NewElement() Field {
-	array.lock.Lock()
-	idx := array.value.Len()
-	elem := array.value.AppendMutable().Message()
-	array.lock.Unlock()
+	elem, idx := array.value.AppendMessage()
 	return array.wrapValue(idx, elem)
 }
 
 func (array *mutableArrayField) RangeValues(cb RangeArrayCallback) error {
-	if !array.value.IsValid() {
+	if !array.value.IsSet() {
 		return nil // TODO: return an error? Ranging a nil array means there's certainly nothing to range
 	}
 
 	for idx := range array.value.Len() {
-		fieldVal := array.wrapValue(idx, array.value.Get(idx).Message())
+		val, hasVal := array.value.ValueAt(idx)
+		if !hasVal {
+			return fmt.Errorf("array value at index %d is not set", idx)
+		}
+
+		fieldVal := array.wrapValue(idx, val)
 		err := cb(idx, fieldVal)
 		if err != nil {
 			return err
@@ -153,7 +158,7 @@ func (array *mutableArrayField) RangeValues(cb RangeArrayCallback) error {
 	return nil
 }
 
-func (array *mutableArrayField) wrapValue(idx int, value protoreflect.Message) Field {
+func (array *mutableArrayField) wrapValue(idx int, value protoval.Value) Field {
 	schemaContext := &arrayContext{
 		index:  idx,
 		schema: array.schema,
@@ -165,17 +170,20 @@ func (array *mutableArrayField) wrapValue(idx int, value protoreflect.Message) F
 
 type leafArrayField struct {
 	baseArrayField
-	lock    sync.Mutex
 	factory fieldFactory
 }
 
 func (array *leafArrayField) RangeValues(cb RangeArrayCallback) error {
-	if !array.value.IsValid() {
+	if !array.value.IsSet() {
 		return nil // TODO: return an error? Ranging a nil array means there's certainly nothing to range
 	}
 
 	for idx := range array.value.Len() {
-		fieldVal := array.wrapValue(idx)
+		itemValue, ok := array.value.ValueAt(idx)
+		if !ok {
+			return nil // This should not happen, but if it does, we return nil
+		}
+		fieldVal := array.wrapValue(idx, itemValue)
 		err := cb(idx, fieldVal)
 		if err != nil {
 			return err
@@ -184,68 +192,20 @@ func (array *leafArrayField) RangeValues(cb RangeArrayCallback) error {
 	return nil
 }
 
-func (array *leafArrayField) wrapValue(idx int) Field {
-	protoItemContext := &protoListValue{
-		list:  array.value,
-		index: idx,
-
-		//parentField: array.fieldDescriptor,
-	}
-
+func (array *leafArrayField) wrapValue(idx int, value protoval.Value) Field {
 	schemaContext := &arrayContext{
 		index:  idx,
 		schema: array.schema,
 	}
 
-	field := array.factory.buildField(schemaContext, protoItemContext)
+	field := array.factory.buildField(schemaContext, value)
 	return field
 }
 
 func (array *leafArrayField) appendProtoValue(value protoreflect.Value) int {
-	array.lock.Lock()
-	idx := array.value.Len()
-	array.value.Append(value)
-	array.lock.Unlock()
+	_, idx := array.value.AppendValue(value)
 	return idx
 }
-
-// protoListValue wraps a scalar/leaf type array, keeping pointer to the parent
-// and the location within the parent where the object exists to make it
-// semi-mutable.
-type protoListValue struct {
-	list protoreflect.List
-	//parentField protoreflect.FieldDescriptor
-	index int
-}
-
-var _ protoContext = (*protoListValue)(nil)
-
-func (plv *protoListValue) isSet() bool {
-	_, ok := plv.getValue()
-	return ok
-}
-
-func (plv *protoListValue) setValue(val protoreflect.Value) error {
-	if !val.IsValid() {
-		return fmt.Errorf("cannot set a nil value to a list val")
-	}
-	plv.list.Set(plv.index, val)
-	return nil
-}
-
-func (plv *protoListValue) getValue() (protoreflect.Value, bool) {
-	itemVal := plv.list.Get(plv.index)
-	return itemVal, itemVal.IsValid()
-}
-
-func (plv *protoListValue) getMutableValue(createIfNotSet bool) (protoreflect.Value, error) {
-	return plv.list.Get(plv.index), nil
-}
-
-/*
-func (plv *protoListValue) fieldDescriptor() protoreflect.FieldDescriptor {
-	return plv.parentField
-}*/
 
 type arrayContext struct {
 	index  int

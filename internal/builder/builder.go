@@ -206,7 +206,8 @@ func (b *Builder) runProtocPlugin(ctx context.Context, pc PluginContext, plugin 
 
 	resp := pluginpb.CodeGeneratorResponse{}
 	if err := proto.Unmarshal(outBuffer.Bytes(), &resp); err != nil {
-		return err
+		fmt.Printf("Response: %s\n", outBuffer.String())
+		return fmt.Errorf("parsing CodeGeneratorResponse: %w", err)
 	}
 
 	if resp.Error != nil {

@@ -106,9 +106,8 @@ func wantFooState() *schema_j5pb.RootSchema {
 			Part:   schema_j5pb.EntityPart_STATE,
 		},
 		Properties: []*schema_j5pb.ObjectProperty{{
-			Name:       "fooId",
-			Required:   true,
-			ProtoField: []int32{1, 1}, // flattened
+			Name:     "fooId",
+			Required: true,
 			EntityKey: &schema_j5pb.EntityKey{
 				Primary: true,
 			},
@@ -134,8 +133,7 @@ func wantFooState() *schema_j5pb.RootSchema {
 				},
 			},
 		}, {
-			Name:       "barId",
-			ProtoField: []int32{1, 2}, // flattened
+			Name: "barId",
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Key{
 					Key: &schema_j5pb.KeyField{
@@ -162,9 +160,8 @@ func wantFooState() *schema_j5pb.RootSchema {
 				},
 			},
 		}, {
-			Name:       "status",
-			Required:   true,
-			ProtoField: []int32{2},
+			Name:     "status",
+			Required: true,
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Enum{
 					Enum: &schema_j5pb.EnumField{
@@ -186,8 +183,7 @@ func wantFooState() *schema_j5pb.RootSchema {
 				},
 			},
 		}, {
-			Name:       "name",
-			ProtoField: []int32{3},
+			Name: "name",
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_String_{
 					String_: &schema_j5pb.StringField{
@@ -200,12 +196,10 @@ func wantFooState() *schema_j5pb.RootSchema {
 				},
 			},
 		}, {
-			Name:       "bar",
-			ProtoField: []int32{4},
-			Schema:     tObjectRef("test.foo.v1", "Bar"),
+			Name:   "bar",
+			Schema: tObjectRef("test.foo.v1", "Bar"),
 		}, {
-			Name:       "createdAt",
-			ProtoField: []int32{5},
+			Name: "createdAt",
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Timestamp{
 					Timestamp: &schema_j5pb.TimestampField{

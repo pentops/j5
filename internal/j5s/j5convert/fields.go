@@ -304,8 +304,8 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				Enum: enumRules,
 			},
 		}
-		ww.file.ensureImport(bufValidateImport)
 		proto.SetExtension(desc.Options, validate.E_Field, rules)
+		ww.file.ensureImport(bufValidateImport)
 
 		if st.Enum.ListRules != nil {
 			ww.file.ensureImport(j5ListAnnotationsImport)
@@ -332,6 +332,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				},
 			}
 			proto.SetExtension(desc.Options, validate.E_Field, rules)
+			ww.file.ensureImport(bufValidateImport)
 		}
 
 		if st.Bool.ListRules != nil {
@@ -359,6 +360,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				},
 			}
 			proto.SetExtension(desc.Options, validate.E_Field, rules)
+			ww.file.ensureImport(bufValidateImport)
 		}
 
 		return desc, nil
@@ -487,24 +489,24 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 
 				if st.Integer.Rules.Maximum != nil {
 					if st.Integer.Rules.ExclusiveMaximum != nil {
-						rules.GetInt32().LessThan = &validate.Int32Rules_Lte{
-							Lte: int32(*st.Integer.Rules.Maximum),
-						}
-					} else {
 						rules.GetInt32().LessThan = &validate.Int32Rules_Lt{
 							Lt: int32(*st.Integer.Rules.Maximum),
+						}
+					} else {
+						rules.GetInt32().LessThan = &validate.Int32Rules_Lte{
+							Lte: int32(*st.Integer.Rules.Maximum),
 						}
 					}
 				}
 
 				if st.Integer.Rules.Minimum != nil {
 					if st.Integer.Rules.ExclusiveMinimum != nil {
-						rules.GetInt32().GreaterThan = &validate.Int32Rules_Gte{
-							Gte: int32(*st.Integer.Rules.Minimum),
-						}
-					} else {
 						rules.GetInt32().GreaterThan = &validate.Int32Rules_Gt{
 							Gt: int32(*st.Integer.Rules.Minimum),
+						}
+					} else {
+						rules.GetInt32().GreaterThan = &validate.Int32Rules_Gte{
+							Gte: int32(*st.Integer.Rules.Minimum),
 						}
 					}
 				}
@@ -516,24 +518,24 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 
 				if st.Integer.Rules.Maximum != nil {
 					if st.Integer.Rules.ExclusiveMaximum != nil {
-						rules.GetInt64().LessThan = &validate.Int64Rules_Lte{
-							Lte: *st.Integer.Rules.Maximum,
-						}
-					} else {
 						rules.GetInt64().LessThan = &validate.Int64Rules_Lt{
 							Lt: *st.Integer.Rules.Maximum,
+						}
+					} else {
+						rules.GetInt64().LessThan = &validate.Int64Rules_Lte{
+							Lte: *st.Integer.Rules.Maximum,
 						}
 					}
 				}
 
 				if st.Integer.Rules.Minimum != nil {
 					if st.Integer.Rules.ExclusiveMinimum != nil {
-						rules.GetInt64().GreaterThan = &validate.Int64Rules_Gte{
-							Gte: *st.Integer.Rules.Minimum,
-						}
-					} else {
 						rules.GetInt64().GreaterThan = &validate.Int64Rules_Gt{
 							Gt: *st.Integer.Rules.Minimum,
+						}
+					} else {
+						rules.GetInt64().GreaterThan = &validate.Int64Rules_Gte{
+							Gte: *st.Integer.Rules.Minimum,
 						}
 					}
 				}
@@ -545,24 +547,24 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 
 				if st.Integer.Rules.Maximum != nil {
 					if st.Integer.Rules.ExclusiveMaximum != nil {
-						rules.GetUint32().LessThan = &validate.UInt32Rules_Lte{
-							Lte: uint32(*st.Integer.Rules.Maximum),
-						}
-					} else {
 						rules.GetUint32().LessThan = &validate.UInt32Rules_Lt{
 							Lt: uint32(*st.Integer.Rules.Maximum),
+						}
+					} else {
+						rules.GetUint32().LessThan = &validate.UInt32Rules_Lte{
+							Lte: uint32(*st.Integer.Rules.Maximum),
 						}
 					}
 				}
 
 				if st.Integer.Rules.Minimum != nil {
 					if st.Integer.Rules.ExclusiveMinimum != nil {
-						rules.GetUint32().GreaterThan = &validate.UInt32Rules_Gte{
-							Gte: uint32(*st.Integer.Rules.Minimum),
-						}
-					} else {
 						rules.GetUint32().GreaterThan = &validate.UInt32Rules_Gt{
 							Gt: uint32(*st.Integer.Rules.Minimum),
+						}
+					} else {
+						rules.GetUint32().GreaterThan = &validate.UInt32Rules_Gte{
+							Gte: uint32(*st.Integer.Rules.Minimum),
 						}
 					}
 				}
@@ -574,24 +576,24 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 
 				if st.Integer.Rules.Maximum != nil {
 					if st.Integer.Rules.ExclusiveMaximum != nil {
-						rules.GetUint64().LessThan = &validate.UInt64Rules_Lte{
-							Lte: uint64(*st.Integer.Rules.Maximum),
-						}
-					} else {
 						rules.GetUint64().LessThan = &validate.UInt64Rules_Lt{
 							Lt: uint64(*st.Integer.Rules.Maximum),
+						}
+					} else {
+						rules.GetUint64().LessThan = &validate.UInt64Rules_Lte{
+							Lte: uint64(*st.Integer.Rules.Maximum),
 						}
 					}
 				}
 
 				if st.Integer.Rules.Minimum != nil {
 					if st.Integer.Rules.ExclusiveMinimum != nil {
-						rules.GetUint64().GreaterThan = &validate.UInt64Rules_Gte{
-							Gte: uint64(*st.Integer.Rules.Minimum),
-						}
-					} else {
 						rules.GetUint64().GreaterThan = &validate.UInt64Rules_Gt{
 							Gt: uint64(*st.Integer.Rules.Minimum),
+						}
+					} else {
+						rules.GetUint64().GreaterThan = &validate.UInt64Rules_Gte{
+							Gte: uint64(*st.Integer.Rules.Minimum),
 						}
 					}
 				}
@@ -601,6 +603,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 			}
 
 			proto.SetExtension(desc.Options, validate.E_Field, rules)
+			ww.file.ensureImport(bufValidateImport)
 		}
 
 		if st.Integer.ListRules != nil {
@@ -722,12 +725,12 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 			default:
 				return nil, fmt.Errorf("unknown key format %T", st.Key.Format.Type)
 			}
-			ww.file.ensureImport(bufValidateImport)
 			proto.SetExtension(desc.Options, validate.E_Field, &validate.FieldRules{
 				Type: &validate.FieldRules_String_{
 					String_: stringRules,
 				},
 			})
+			ww.file.ensureImport(bufValidateImport)
 
 		}
 		return desc, nil
@@ -772,6 +775,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				},
 			}
 			proto.SetExtension(desc.Options, validate.E_Field, fieldRules)
+			ww.file.ensureImport(bufValidateImport)
 		}
 
 		if st.String_.ListRules != nil {
@@ -804,6 +808,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 				},
 			}
 			proto.SetExtension(desc.Options, validate.E_Field, rules)
+			ww.file.ensureImport(bufValidateImport)
 		}
 
 		if st.Timestamp.ListRules != nil {

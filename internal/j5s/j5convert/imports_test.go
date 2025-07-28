@@ -323,7 +323,6 @@ func TestImportEnum(t *testing.T) {
 				Enum: enumField,
 			},
 		},
-		ProtoField: []int32{3},
 	}
 
 	runField(t, deps, inputProp, wantField)

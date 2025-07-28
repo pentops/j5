@@ -93,7 +93,7 @@ func (ll *searchLinker) linkResult(ctx context.Context, result *psrc.File) error
 	linked, err := linkResult(result, info)
 	if err != nil {
 		info.debugState(os.Stderr)
-		return fmt.Errorf("linking: %w", err)
+		return err
 	}
 
 	result.Linked = linked
@@ -200,19 +200,19 @@ func _linkDescriptorProto(ll linkInfo, desc *descriptorpb.FileDescriptorProto) (
 
 	linked, err := linker.Link(result, ll.linkerDeps(), ll.symbols, ll.errs)
 	if err != nil {
-		return nil, fmt.Errorf("descriptorToFile, link: %w", err)
+		return nil, fmt.Errorf("link: %w", err)
 	}
 
 	_, err = options.InterpretOptions(linked, ll.errs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("options: %w", err)
 	}
 
 	linked.FileDescriptorProto().SourceCodeInfo = desc.SourceCodeInfo
 
 	err = markExtensionImportsUsed(linked)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("ext-used: %w", err)
 	}
 
 	linked.PopulateSourceCodeInfo()
@@ -318,7 +318,7 @@ func markOptionImportsUsed(resolver linker.Resolver, opts proto.Message) error {
 		name := td.FullName()
 		_, err := resolver.FindExtensionByName(name)
 		if err != nil {
-			outerErr = err
+			outerErr = fmt.Errorf("resolve extension %s: %w", name, err)
 			return false
 		}
 		return true

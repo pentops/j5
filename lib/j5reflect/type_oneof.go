@@ -1,8 +1,8 @@
 package j5reflect
 
 import (
+	"github.com/pentops/j5/lib/j5reflect/protoval"
 	"github.com/pentops/j5/lib/j5schema"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 /*** Interface ***/
@@ -49,6 +49,10 @@ func (fs *oneofImpl) RootSchema() (j5schema.RootSchema, bool) {
 	return fs.schema, true
 }
 
+func (fs *oneofImpl) SetDefaultValue() error {
+	return nil
+}
+
 type oneofField struct {
 	fieldDefaults
 	fieldContext
@@ -61,12 +65,16 @@ type oneofFieldFactory struct {
 	propSet propSetFactory
 }
 
-var _ messageFieldFactory = (*oneofFieldFactory)(nil)
+var _ fieldFactory = (*oneofFieldFactory)(nil)
 
-func (f *oneofFieldFactory) buildField(context fieldContext, value protoreflect.Message) Field {
+func (f *oneofFieldFactory) buildField(context fieldContext, value protoval.Value) Field {
+	asMessage, ok := value.AsMessage()
+	if !ok {
+		panic("expected value to be a message for oneof field")
+	}
 	oneof := &oneofImpl{
 		schema:  f.schema.OneofSchema(),
-		propSet: f.propSet.newMessage(value),
+		propSet: f.propSet.buildForMessage(asMessage),
 	}
 	return newOneofField(context, f.schema, oneof)
 }
@@ -82,7 +90,10 @@ func newOneofField(context fieldContext, schema *j5schema.OneofField, value *one
 // IsSet is true for a oneof if the inner type is set.
 func (field *oneofField) IsSet() bool {
 	_, ok, err := field.GetOne()
-	return ok && err == nil
+	if err != nil {
+		panic(err)
+	}
+	return ok
 }
 
 /*** Explicitly Implements ***/

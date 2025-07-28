@@ -3,21 +3,33 @@ package j5reflect
 import (
 	"fmt"
 
+	"github.com/pentops/j5/lib/j5reflect/protoval"
 	"github.com/pentops/j5/lib/j5schema"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+// Struct is implemented by all types which can be reflected, e.g. in generated
+// proto code
+type Struct interface {
+	J5Reflect() Root
+}
+
+type SchemaCache interface {
+	Schema(msg protoreflect.MessageDescriptor) (j5schema.RootSchema, error)
+}
 
 type Root interface {
 	PropertySet
 }
 
 type Reflector struct {
-	schemaSet *j5schema.SchemaCache
+	schemaSet SchemaCache
 }
 
 func New() *Reflector {
 	return &Reflector{
-		schemaSet: j5schema.NewSchemaCache(),
+		schemaSet: j5schema.Global,
 	}
 }
 
@@ -25,6 +37,16 @@ func NewWithCache(cache *j5schema.SchemaCache) *Reflector {
 	return &Reflector{
 		schemaSet: cache,
 	}
+}
+
+var Global = New()
+
+func MustReflect(msg protoreflect.Message) Root {
+	root, err := Global.NewRoot(msg)
+	if err != nil {
+		panic(fmt.Sprintf("j5reflect: %v", err))
+	}
+	return root
 }
 
 func (r *Reflector) NewRoot(msg protoreflect.Message) (Root, error) {
@@ -39,11 +61,12 @@ func (r *Reflector) NewRoot(msg protoreflect.Message) (Root, error) {
 		return nil, nil
 	}
 
+	mv := protoval.NewRootMessageValue(msg)
 	switch schema := schema.(type) {
 	case *j5schema.ObjectSchema:
-		return buildObject(schema, msg)
+		return buildObject(schema, mv, msg.Descriptor())
 	case *j5schema.OneofSchema:
-		return buildOneof(schema, msg)
+		return buildOneof(schema, mv, msg.Descriptor())
 	default:
 		return nil, fmt.Errorf("unsupported root schema type %T", schema)
 	}
@@ -65,15 +88,15 @@ func (r *Reflector) NewObject(msg protoreflect.Message) (*objectImpl, error) {
 		return nil, fmt.Errorf("expected object schema, got %T", schema)
 	}
 
-	return buildObject(obj, msg)
+	return buildObject(obj, protoval.NewRootMessageValue(msg), descriptor)
 }
 
-func buildObject(schema *j5schema.ObjectSchema, msg protoreflect.Message) (*objectImpl, error) {
-	ps, err := newPropSet(schema, msg.Descriptor())
+func buildObject(schema *j5schema.ObjectSchema, msg protoval.MessageValue, descriptor protoreflect.MessageDescriptor) (*objectImpl, error) {
+	ps, err := newPropSetFactory(schema, descriptor)
 	if err != nil {
 		return nil, err
 	}
-	linked := ps.newMessage(msg)
+	linked := ps.buildForMessage(msg)
 	return &objectImpl{
 		propSet: linked,
 		schema:  schema,
@@ -81,14 +104,25 @@ func buildObject(schema *j5schema.ObjectSchema, msg protoreflect.Message) (*obje
 
 }
 
-func buildOneof(schema *j5schema.OneofSchema, msg protoreflect.Message) (*oneofImpl, error) {
-	ps, err := newPropSet(schema, msg.Descriptor())
+func buildOneof(schema *j5schema.OneofSchema, msg protoval.MessageValue, descriptor protoreflect.MessageDescriptor) (*oneofImpl, error) {
+	ps, err := newPropSetFactory(schema, descriptor)
 	if err != nil {
 		return nil, err
 	}
-	linked := ps.newMessage(msg)
+	linked := ps.buildForMessage(msg)
 	return &oneofImpl{
 		propSet: linked,
 		schema:  schema,
 	}, nil
+}
+
+func DeepEqual(a, b Root) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	prA := a.ProtoReflect()
+	prB := b.ProtoReflect()
+	msgA := prA.Interface()
+	msgB := prB.Interface()
+	return proto.Equal(msgA, msgB)
 }

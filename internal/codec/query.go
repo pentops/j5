@@ -30,7 +30,7 @@ func propertyAtPath(root j5reflect.Root, path string) (j5reflect.Property, error
 				return nil, err
 			}
 		} else {
-			field, err = prop.CreateField()
+			field, err = prop.Field()
 			if err != nil {
 				return nil, err
 			}
@@ -57,7 +57,7 @@ func (c *Codec) decodeQuery(queryString url.Values, msg protoreflect.Message) er
 			return err
 		}
 
-		field, err := prop.CreateField()
+		field, err := prop.Field()
 		if err != nil {
 			return status.Error(codes.InvalidArgument, fmt.Sprintf("invalid query parameter %q", key))
 		}

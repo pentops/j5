@@ -5,10 +5,16 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
+	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
+
+type MethodSchema struct {
+	Request  *ObjectSchema
+	Response *ObjectSchema
+}
 
 type RootSchema interface {
 	AsRef() *RefSchema
@@ -170,6 +176,73 @@ type ObjectSchema struct {
 	PolymorphMember []string
 	Properties      PropertySet
 	BCL             *bcl_j5pb.Block
+	ListRequest     *ListRequestDefaults
+}
+
+type ListRequestDefaults struct {
+	DefaultSort    [][]string
+	SortTiebreaker [][]string
+}
+
+func findMethodOutput(msg protoreflect.MessageDescriptor) protoreflect.MessageDescriptor {
+	allServices := msg.ParentFile().Services()
+	for i := 0; i < allServices.Len(); i++ {
+		svc := allServices.Get(i)
+		methods := svc.Methods()
+		for j := 0; j < methods.Len(); j++ {
+			method := methods.Get(j)
+			if method.Input().FullName() == msg.FullName() {
+				return method.Output()
+			}
+		}
+	}
+	return nil
+}
+
+func convertListRequest(requestMessage protoreflect.MessageDescriptor, listRequestAnnotation *list_j5pb.ListRequestMessage) (*ListRequestDefaults, error) {
+
+	output := findMethodOutput(requestMessage)
+	if output == nil {
+		return nil, fmt.Errorf("message %s has list annotations, but does not contain a matching RPC in file %s", requestMessage.FullName(), requestMessage.ParentFile().Path())
+	}
+
+	var elementMessage protoreflect.MessageDescriptor
+	outputFields := output.Fields()
+	for i := 0; i < outputFields.Len(); i++ {
+		field := outputFields.Get(i)
+		if !field.IsList() {
+			continue
+		}
+		if field.Kind() != protoreflect.MessageKind {
+			continue
+		}
+		if elementMessage != nil {
+			return nil, fmt.Errorf("message %s is used in a list response, but contains multiple repeated message fields", output.FullName())
+		}
+		elementMessage = field.Message()
+	}
+	if elementMessage == nil {
+		return nil, fmt.Errorf("message %s is used in a list response, but does not contain a repeated message field", output.FullName())
+	}
+
+	out := &ListRequestDefaults{}
+	for _, field := range listRequestAnnotation.DefaultSort {
+		jsonPath, err := protoToJSONPath(elementMessage, field)
+		if err != nil {
+			return nil, fmt.Errorf("default sort field %q: %w", field, err)
+		}
+		out.DefaultSort = append(out.DefaultSort, jsonPath)
+	}
+
+	for _, field := range listRequestAnnotation.SortTiebreaker {
+		jsonPath, err := protoToJSONPath(elementMessage, field)
+		if err != nil {
+			return nil, fmt.Errorf("sort tiebreaker field %q: %w", field, err)
+		}
+
+		out.SortTiebreaker = append(out.SortTiebreaker, jsonPath)
+	}
+	return out, nil
 }
 
 func (s *ObjectSchema) Clone() *ObjectSchema {
@@ -203,7 +276,11 @@ func (s *ObjectSchema) ToJ5Object() *schema_j5pb.Object {
 	}
 }
 
-func (s *ObjectSchema) ClientProperties() []*ObjectProperty {
+func (s *ObjectSchema) AllProperties() PropertySet {
+	return s.Properties
+}
+
+func (s *ObjectSchema) ClientProperties() PropertySet { //[]*ObjectProperty {
 	properties := make([]*ObjectProperty, 0, len(s.Properties))
 	for _, prop := range s.Properties {
 		switch propType := prop.Schema.(type) {
@@ -211,7 +288,7 @@ func (s *ObjectSchema) ClientProperties() []*ObjectProperty {
 			if propType.Flatten {
 				children := propType.ObjectSchema().ClientProperties()
 				for _, child := range children {
-					child := child.nestedClone(prop.ProtoField)
+					child := child.nestedClone() //prop.ProtoField)
 					properties = append(properties, child)
 				}
 
@@ -307,7 +384,11 @@ func (s *OneofSchema) ToJ5ClientRoot() *schema_j5pb.RootSchema {
 	return s.ToJ5Root()
 }
 
-func (s *OneofSchema) ClientProperties() []*ObjectProperty {
+func (s *OneofSchema) ClientProperties() PropertySet {
+	return s.Properties
+}
+
+func (s *OneofSchema) AllProperties() PropertySet {
 	return s.Properties
 }
 
@@ -355,7 +436,8 @@ type ObjectProperty struct {
 	Schema FieldSchema
 	Entity *schema_j5pb.EntityKey
 
-	ProtoField []protoreflect.FieldNumber
+	//ProtoField []protoreflect.FieldNumber
+	//ProtoName  []protoreflect.Name
 
 	JSONName string
 
@@ -388,10 +470,6 @@ func (prop *ObjectProperty) FullName() string {
 }
 
 func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
-	fieldPath := make([]int32, len(prop.ProtoField))
-	for idx, field := range prop.ProtoField {
-		fieldPath[idx] = int32(field)
-	}
 
 	propSchema := prop.Schema.ToJ5Field()
 
@@ -424,18 +502,18 @@ func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 		Required:           prop.Required,
 		ExplicitlyOptional: prop.ExplicitlyOptional,
 		Description:        prop.Description,
-		ProtoField:         fieldPath,
+		//	ProtoField:         int32(prop.ProtoField),
 	}
 
 }
 
-func (prop *ObjectProperty) nestedClone(inParent []protoreflect.FieldNumber) *ObjectProperty {
-	protoField := append(inParent, prop.ProtoField...)
+func (prop *ObjectProperty) nestedClone() *ObjectProperty {
+	//protoField := append(inParent, prop.ProtoField...)
 	return &ObjectProperty{
-		Parent:             prop.Parent,
-		Schema:             prop.Schema,
-		Entity:             prop.Entity,
-		ProtoField:         protoField,
+		Parent: prop.Parent,
+		Schema: prop.Schema,
+		Entity: prop.Entity,
+		//ProtoField:         protoField,
 		JSONName:           prop.JSONName,
 		Required:           prop.Required,
 		ReadOnly:           prop.ReadOnly,

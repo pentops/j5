@@ -23,9 +23,17 @@ type Codec struct {
 	resolver MessageTypeResolver
 
 	addProtoToAny bool
+	includeEmpty  bool // include empty fields in JSON output
 }
 
 type CodecOption func(*Codec)
+
+// WithReflector sets a custom reflector for decoding any types.
+func WithReflector(refl *j5reflect.Reflector) CodecOption {
+	return func(c *Codec) {
+		c.refl = refl
+	}
+}
 
 // WithResolver sets a custom resolver for decoding any types.
 func WithResolver(resolver MessageTypeResolver) CodecOption {
@@ -41,10 +49,16 @@ func WithProtoToAny() CodecOption {
 	}
 }
 
+// WithIncludeEmpty includes empty fields in the JSON output.
+func WithIncludeEmpty() CodecOption {
+	return func(c *Codec) {
+		c.includeEmpty = true
+	}
+}
+
 func NewCodec(opts ...CodecOption) *Codec {
-	refl := j5reflect.New()
 	cc := &Codec{
-		refl:     refl,
+		refl:     j5reflect.Global,
 		resolver: protoregistry.GlobalTypes,
 	}
 
@@ -59,12 +73,20 @@ func (c *Codec) JSONToProto(jsonData []byte, msg protoreflect.Message) error {
 	return c.decode(jsonData, msg)
 }
 
+func (c *Codec) JSONToReflect(jsonData []byte, obj j5reflect.Root) error {
+	return c.decodeRoot(jsonData, obj)
+}
+
 func (c *Codec) QueryToProto(queryString url.Values, msg protoreflect.Message) error {
 	return c.decodeQuery(queryString, msg)
 }
 
 func (c *Codec) ProtoToJSON(msg protoreflect.Message) ([]byte, error) {
 	return c.encode(msg)
+}
+
+func (c *Codec) ReflectToJSON(obj j5reflect.Root) ([]byte, error) {
+	return c.encodeRoot(obj)
 }
 
 func (c *Codec) EncodeAny(msg protoreflect.Message) (*any_j5t.Any, error) {

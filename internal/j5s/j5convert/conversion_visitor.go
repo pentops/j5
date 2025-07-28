@@ -296,7 +296,7 @@ func (ww *conversionVisitor) visitOneofNode(node *sourcewalk.OneofNode) {
 		SchemaVisitor: walkerSchemaVisitor(ww.inMessage(message)),
 		Property: func(node *sourcewalk.PropertyNode) error {
 			schema := node.Schema
-			schema.ProtoField = []int32{node.Number}
+			//schema.ProtoField = []int32{node.Number}
 
 			propertyDesc, err := buildProperty(ww, node)
 			if err != nil {

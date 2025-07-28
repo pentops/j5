@@ -22,6 +22,10 @@ import (
 	"github.com/pentops/j5/j5types/any_j5t"
 	"github.com/pentops/j5/j5types/date_j5t"
 	"github.com/pentops/j5/j5types/decimal_j5t"
+	"github.com/pentops/j5/lib/j5reflect"
+	"github.com/pentops/j5/lib/j5schema"
+
+	"github.com/pentops/j5/internal/j5s/j5test"
 )
 
 func mustJ5Any(t testing.TB, msg proto.Message, asJSON []byte) *any_j5t.Any {
@@ -41,9 +45,170 @@ func mustProtoAny(t testing.TB, msg proto.Message) *anypb.Any {
 	return a
 }
 
+type testSchema struct {
+	t      testing.TB
+	schema string
+}
+
+func NewTestSchema(t testing.TB, schema string) *testSchema {
+	return &testSchema{
+		t:      t,
+		schema: schema,
+	}
+}
+
+func (dc *testSchema) Object() j5reflect.Object {
+	return j5test.DynamicObject(dc.t, dc.schema)
+}
+
+func (dc *testSchema) WantJSON(j string, opts ...CodecOption) *testSchemaWithOutput {
+	dc.t.Helper()
+
+	cache := j5schema.NewSchemaCache()
+	reflector := j5reflect.NewWithCache(cache)
+	codec := NewCodec(append(opts, WithReflector(reflector))...)
+
+	tco := &testSchemaWithOutput{
+		testSchema: dc,
+		wantOutput: []byte(j),
+		codec:      codec,
+	}
+	// assert that the expected JSON output, when given as Input, results in itself
+	tco.InputJSON(j)
+	return tco
+}
+
+type testSchemaWithOutput struct {
+	*testSchema
+	codec      *Codec
+	wantOutput []byte
+}
+
+func (dc *testSchemaWithOutput) InputJSON(jsonInput string) *testSchemaWithOutput {
+	dc.t.Helper()
+
+	parsed := dc.Object()
+	err := dc.codec.JSONToReflect([]byte(jsonInput), parsed)
+	if err != nil {
+		dc.t.Fatalf("JSONToReflect: %s", err)
+	}
+
+	dc.t.Logf("got proto:\n%s\n", prototext.Format(parsed))
+
+	encodedJSON, err := dc.codec.ReflectToJSON(parsed)
+	if err != nil {
+		dc.t.Fatalf("ReflectToJSON: %s", err)
+	}
+	match, diff := JSONEqual(dc.t, dc.wantOutput, encodedJSON)
+	if !match {
+		dc.t.Logf("For input %s", jsonInput)
+		dc.t.Errorf("JSON mismatch\n%s", diff)
+	}
+
+	return dc
+}
+
+func TestDynamic(t *testing.T) {
+
+	t.Run("string", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+			object Foo {
+			  field sString string
+			}
+		`)
+
+		schema.WantJSON(`{"sString": "val"}`)
+		schema.WantJSON(`{}`).
+			InputJSON(`{"sString": ""}`).
+			InputJSON(`{"sString": null}`)
+
+		schema.WantJSON(`{"sString": ""}`, WithIncludeEmpty()).
+			InputJSON(`{}`).
+			InputJSON(`{"sString": null}`)
+	})
+
+	t.Run("nullable string", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+			object Foo {
+			  field sString ? string
+			}
+		`)
+
+		schema.WantJSON(`{"sString": "val"}`)
+		schema.WantJSON(`{"sString": ""}`)
+		schema.WantJSON(`{}`).
+			InputJSON(`{"sString": null}`)
+
+	})
+
+	t.Run("required string", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+			object Foo {
+			  field sString ! string
+			}
+		`)
+
+		schema.WantJSON(`{"sString": "val"}`)
+	})
+
+	t.Run("integer", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+		object FooCharacteristics {
+			field weight integer:INT64 {
+				listRules.filtering.filterable = true
+				listRules.sorting.sortable = true
+			}
+
+			field height integer:INT64 {
+				listRules.filtering.filterable = true
+				listRules.sorting.sortable = true
+			}
+
+			field length integer:INT64 {
+				listRules.filtering.filterable = true
+				listRules.sorting.sortable = true
+			}
+		}
+		`)
+
+		schema.WantJSON(`{}`)
+
+		schema.WantJSON(`{"weight": "0", "height": "0", "length": "0"}`, WithIncludeEmpty()).InputJSON(`{}`)
+
+		schema.WantJSON(`{"weight": "0", "height": "0", "length": "1"}`, WithIncludeEmpty()).InputJSON(`{"length": "1"}`)
+
+		empty := schema.Object()
+
+		val, ok, err := empty.GetField("weight")
+		if err != nil {
+			t.Fatalf("GetField: %s", err)
+		}
+		if ok {
+			t.Fatalf("expected weight to not be set, but it is: %s", val)
+		}
+
+		scalar, ok := val.AsScalar()
+		if !ok {
+			t.Fatalf("expected weight to be a scalar, but it is not: %s", val)
+		}
+		goValue, err := scalar.ToGoValue()
+		if err != nil {
+			t.Fatalf("ToGoValue: %s", err)
+		}
+
+		if goValue != int64(0) {
+			t.Fatalf("expected weight to be 0, but it is: %v", goValue)
+		}
+
+	})
+
+}
+
 func TestUnmarshal(t *testing.T) {
 
-	codec := NewCodec(WithProtoToAny())
+	cache := j5schema.NewSchemaCache()
+	reflector := j5reflect.NewWithCache(cache)
+	codec := NewCodec(WithProtoToAny(), WithReflector(reflector))
 
 	testTime := time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)
 
@@ -344,19 +509,6 @@ func TestUnmarshal(t *testing.T) {
 				},
 			},
 		}, {
-			name: "exposed oneof",
-			json: `{
-				"exposedOneof": {
-					"!type": "exposedString",
-					"exposedString": "stringVal"
-				}
-			}`,
-			wantProto: &schema_testpb.FullSchema{
-				ExposedOneof: &schema_testpb.FullSchema_ExposedString{
-					ExposedString: "stringVal",
-				},
-			},
-		}, {
 			name: "oneof wrapper",
 			json: `{
 				"wrappedOneof": {
@@ -370,110 +522,6 @@ func TestUnmarshal(t *testing.T) {
 						WOneofString: "Wrapped oneofStringVal",
 					},
 				},
-			},
-		}, {
-			name: "exposed oneof in nested message",
-			json: `{
-				"nestedExposedOneof": {
-					"type": {
-						"!type": "de1",
-						"de1": "de1Val"
-					}
-				}
-			  }`,
-			wantProto: &schema_testpb.FullSchema{
-				NestedExposedOneof: &schema_testpb.NestedExposed{
-					Type: &schema_testpb.NestedExposed_De1{
-						De1: "de1Val",
-					},
-				},
-			},
-		}, {
-			name: "lightly recursive nested oneof",
-			json: `{
-				"nestedExposedOneof": {
-					"type": {
-						"!type": "de3",
-						"de3": {
-							"type": {
-								"!type": "de1",
-								"de1": "de1Val"
-							}
-						}
-					}
-				}
-			}`,
-			wantProto: &schema_testpb.FullSchema{
-				NestedExposedOneof: &schema_testpb.NestedExposed{
-					Type: &schema_testpb.NestedExposed_De3{
-						De3: &schema_testpb.NestedExposed{
-							Type: &schema_testpb.NestedExposed_De1{
-								De1: "de1Val",
-							},
-						},
-					},
-				},
-			},
-		}, {
-			name: "recursive nested oneof",
-			json: `{
-				"nestedExposedOneof": {
-					"type": {
-						"!type": "de3",
-						"de3": {
-							"type": {
-								"!type": "de3",
-								"de3": {
-									"type": {
-										"!type": "de1",
-										"de1": "de1Val"
-									}
-								}
-							}
-						}
-					}
-				}
-			}`,
-			wantProto: &schema_testpb.FullSchema{
-				NestedExposedOneof: &schema_testpb.NestedExposed{
-					Type: &schema_testpb.NestedExposed_De3{
-						De3: &schema_testpb.NestedExposed{
-							Type: &schema_testpb.NestedExposed_De3{
-								De3: &schema_testpb.NestedExposed{
-									Type: &schema_testpb.NestedExposed_De1{
-										De1: "de1Val",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}, {
-			name: "repeated exposed oneof in nested message",
-			json: `{
-				"nestedExposedOneofs": [{
-					"type": {
-						"!type": "de1",
-						"de1": "de1Val"
-					}
-				}, {
-					"type": {
-						"!type": "de2",
-						"de2": "de2Val"
-					}
-				}]
-			  }`,
-			wantProto: &schema_testpb.FullSchema{
-				NestedExposedOneofs: []*schema_testpb.NestedExposed{{
-					Type: &schema_testpb.NestedExposed_De1{
-						De1: "de1Val",
-					},
-				}, {
-					Type: &schema_testpb.NestedExposed_De2{
-						De2: "de2Val",
-					},
-				}},
 			},
 		}, {
 			name: "decimal",
@@ -552,7 +600,7 @@ func TestUnmarshal(t *testing.T) {
 
 				msg := tc.wantProto.ProtoReflect().New().Interface()
 				if err := codec.JSONToProto([]byte(input), msg.ProtoReflect()); err != nil {
-					t.Fatalf("JSONToProto: %s", err)
+					t.Fatalf("Input JSONToProto: %s", err)
 				}
 
 				t.Logf("GOT proto: %s \n%v\n", msg.ProtoReflect().Descriptor().FullName(), prototext.Format(msg))
@@ -603,7 +651,7 @@ func logIndent(t *testing.T, label, jsonStr string) {
 	buffer := &bytes.Buffer{}
 	if err := json.Indent(buffer, []byte(jsonStr), " | ", "  "); err != nil {
 		t.Log(jsonStr)
-		t.Fatalf("invalid test case: %s", err)
+		t.Fatalf("%s - invalid JSON (for indent): %s", label, err)
 	}
 	t.Logf("%s \n | %s\n", label, buffer.String())
 }
@@ -619,6 +667,7 @@ func TestScalars(t *testing.T) {
 	}
 
 	runTest := func(t testing.TB, tc testCase) {
+		t.Helper()
 
 		codec := NewCodec()
 
@@ -701,6 +750,13 @@ func TestScalars(t *testing.T) {
 }
 
 func CompareJSON(t testing.TB, wantSRC, gotSRC []byte) {
+	match, diff := JSONEqual(t, wantSRC, gotSRC)
+	if !match {
+		t.Fatalf("JSON Mismatch: \n%s", diff)
+	}
+}
+
+func JSONEqual(t testing.TB, wantSRC, gotSRC []byte) (bool, string) {
 	t.Helper()
 	wantBuff := &bytes.Buffer{}
 	if err := json.Indent(wantBuff, wantSRC, "", "  "); err != nil {
@@ -718,17 +774,21 @@ func CompareJSON(t testing.TB, wantSRC, gotSRC []byte) {
 	gotStr := gotBuff.String()
 
 	if wantStr == gotStr {
-		return
+		return true, ""
 	}
 
 	outputBuffer := &bytes.Buffer{}
 
 	gotLines := strings.Split(gotStr, "\n")
 	wantLines := strings.Split(wantStr, "\n")
-	for i, wantLine := range wantLines {
+	for i := range max(len(wantLines), len(gotLines)) {
 		gotLine := ""
 		if i < len(gotLines) {
 			gotLine = gotLines[i]
+		}
+		wantLine := ""
+		if i < len(wantLines) {
+			wantLine = wantLines[i]
 		}
 
 		if wantLine != gotLine {
@@ -739,6 +799,6 @@ func CompareJSON(t testing.TB, wantSRC, gotSRC []byte) {
 
 	}
 
-	t.Fatalf("JSON Mismatch: \n%s", outputBuffer.String())
+	return false, outputBuffer.String()
 
 }

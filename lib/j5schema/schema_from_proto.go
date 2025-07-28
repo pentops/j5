@@ -2,12 +2,12 @@ package j5schema
 
 import (
 	"fmt"
+	"regexp"
 	"slices"
 	"strings"
 
 	"buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 
-	"github.com/iancoleman/strcase"
 	"github.com/pentops/j5/gen/j5/bcl/v1/bcl_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
@@ -15,8 +15,10 @@ import (
 	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/j5/lib/id62"
 	"github.com/pentops/j5/lib/patherr"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func SchemaSetFromFiles(descFiles *protoregistry.Files, include func(protoreflect.FileDescriptor) bool) (*SchemaSet, error) {
@@ -133,10 +135,6 @@ func splitDescriptorName(descriptor protoreflect.Descriptor) (string, string) {
 	}
 }
 
-func jsonFieldName(s protoreflect.Name) string {
-	return strcase.ToLowerCamel(string(s))
-}
-
 func IsOneofWrapper(msg protoreflect.MessageDescriptor) bool {
 	return inferMessageType(msg) == oneofMessage
 }
@@ -175,13 +173,6 @@ func inferMessageType(src protoreflect.MessageDescriptor) messageType {
 	}
 
 	if oneof.Name() != "type" {
-		return objectMessage
-	}
-
-	ext := protosrc.GetExtension[*ext_j5pb.OneofOptions](oneof.Options(), ext_j5pb.E_Oneof)
-	if ext != nil {
-		// even if it is marked to expose, still don't automatically make it a
-		// oneof.
 		return objectMessage
 	}
 
@@ -276,7 +267,40 @@ func (ss *Package) buildObjectSchema(srcMsg protoreflect.MessageDescriptor, opts
 		objectSchema.BCL = bclOpts
 	}
 
+	listRequestAnnotation, ok := proto.GetExtension(srcMsg.Options().(*descriptorpb.MessageOptions), list_j5pb.E_ListRequest).(*list_j5pb.ListRequestMessage)
+	if ok && listRequestAnnotation != nil {
+		converted, err := convertListRequest(srcMsg, listRequestAnnotation)
+		if err != nil {
+			return nil, fmt.Errorf("convert list request for %s: %w", srcMsg.FullName(), err)
+		}
+		objectSchema.ListRequest = converted
+	}
+
 	return objectSchema, nil
+}
+
+var reProtoName = regexp.MustCompile(`^[a-z_][a-z0-9_]*$`)
+
+func protoToJSONPath(msg protoreflect.MessageDescriptor, field string) ([]string, error) {
+	parts := strings.Split(field, ".")
+	jsonPath := make([]string, 0, len(parts))
+	for idx, pathPart := range parts {
+		if !reProtoName.MatchString(pathPart) {
+			return nil, fmt.Errorf("invalid proto field name %q in path %q", pathPart, field)
+		}
+		matchingField := msg.Fields().ByName(protoreflect.Name(pathPart))
+		if matchingField == nil {
+			return nil, fmt.Errorf("unknown proto field %q in path %q from %q", pathPart, field, msg.FullName())
+		}
+		jsonPath = append(jsonPath, string(matchingField.JSONName()))
+		if idx < len(parts)-1 {
+			msg = matchingField.Message()
+			if msg == nil {
+				return nil, fmt.Errorf("field %q in path %q is not a message", pathPart, field)
+			}
+		}
+	}
+	return jsonPath, nil
 }
 
 func (ss *Package) buildPolymorphSchema(srcMsg protoreflect.MessageDescriptor, opts *ext_j5pb.PolymorphMessageOptions) (*PolymorphSchema, error) {
@@ -341,50 +365,51 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 
 	properties := make([]*ObjectProperty, 0, src.Fields().Len())
 
-	exposeOneofs := make(map[string]*OneofSchema)
-	pendingOneofProps := make(map[string]*ObjectProperty)
+	//exposeOneofs := make(map[string]*OneofSchema)
+	//pendingOneofProps := make(map[string]*ObjectProperty)
 
-	for idx := range src.Oneofs().Len() {
-		oneof := src.Oneofs().Get(idx)
-		if oneof.IsSynthetic() {
-			continue
-		}
+	/*
+		for idx := range src.Oneofs().Len() {
+			oneof := src.Oneofs().Get(idx)
+			if oneof.IsSynthetic() {
+				continue
+			}
 
-		ext := protosrc.GetExtension[*ext_j5pb.OneofOptions](oneof.Options(), ext_j5pb.E_Oneof)
-		if ext == nil {
-			continue
-		} else if !ext.Expose {
-			// By default, do not expose oneofs
-			continue
-		}
+			ext := protosrc.GetExtension[*ext_j5pb.OneofOptions](oneof.Options(), ext_j5pb.E_Oneof)
+			if ext == nil {
+				continue
+			} else if !ext.Expose {
+				// By default, do not expose oneofs
+				continue
+			}
 
-		oneofName := string(oneof.Name())
-		oneofObject := &OneofSchema{
-			rootSchema: ss.schemaRootFromProto(oneof),
-			//oneofDescriptor: oneof,
-		}
-		refPlaceholder, didExist := newRefPlaceholder(ss.PackageSet, oneof)
-		if didExist {
-			return nil, fmt.Errorf("placeholder already exists for oneof wrapper %q", oneofName)
-		}
-		refPlaceholder.To = oneofObject
-		if err := refPlaceholder.check(); err != nil {
-			return nil, err
-		}
+			oneofName := string(oneof.Name())
+			oneofObject := &OneofSchema{
+				rootSchema: ss.schemaRootFromProto(oneof),
+				//oneofDescriptor: oneof,
+			}
+			refPlaceholder, didExist := newRefPlaceholder(ss.PackageSet, oneof)
+			if didExist {
+				return nil, fmt.Errorf("placeholder already exists for oneof wrapper %q", oneofName)
+			}
+			refPlaceholder.To = oneofObject
+			if err := refPlaceholder.check(); err != nil {
+				return nil, err
+			}
 
-		prop := &ObjectProperty{
-			Parent:      parent,
-			JSONName:    jsonFieldName(oneof.Name()),
-			Description: commentDescription(src),
-			Schema: &OneofField{
-				Ref: refPlaceholder,
-				// TODO: Oneof Rules
-			},
-		}
-		pendingOneofProps[oneofName] = prop
-		exposeOneofs[oneofName] = oneofObject
+			prop := &ObjectProperty{
+				Parent:      parent,
+				JSONName:    jsonFieldName(oneof.Name()),
+				Description: commentDescription(src),
+				Schema: &OneofField{
+					Ref: refPlaceholder,
+					// TODO: Oneof Rules
+				},
+			}
+			pendingOneofProps[oneofName] = prop
+			exposeOneofs[oneofName] = oneofObject
 
-	}
+		}*/
 
 	for ii := range src.Fields().Len() {
 		field := src.Fields().Get(ii)
@@ -424,6 +449,10 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 				childExt.validate = ext.validate.GetRepeated().GetItems()
 			}
 
+			if ext.list != nil {
+				return nil, fmt.Errorf("list constraints not supported for arrays")
+			}
+
 			fieldSchema, err := ss.buildSchema(childContext, field, childExt)
 			if err != nil {
 				return nil, patherr.Wrap(err, string(field.Name()))
@@ -432,8 +461,8 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			arrayField.ItemSchema = fieldSchema
 
 			prop := &ObjectProperty{
-				Parent:      parent,
-				ProtoField:  []protoreflect.FieldNumber{field.Number()},
+				Parent: parent,
+				//ProtoField:  []protoreflect.FieldNumber{field.Number()},
 				JSONName:    string(field.JSONName()),
 				Description: commentDescription(field),
 				Schema:      arrayField,
@@ -479,6 +508,10 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 				}
 			}
 
+			if ext.list != nil {
+				return nil, fmt.Errorf("list constraints not supported for maps")
+			}
+
 			valueSchema, err := ss.buildSchema(childContext, field.MapValue(), childExt)
 			if err != nil {
 				return nil, patherr.Wrap(err, string(field.Name()))
@@ -487,7 +520,7 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			mapField.ItemSchema = valueSchema
 
 			prop := &ObjectProperty{
-				ProtoField:  []protoreflect.FieldNumber{field.Number()},
+				//ProtoField:  []protoreflect.FieldNumber{field.Number()},
 				JSONName:    string(field.JSONName()),
 				Description: commentDescription(field),
 				Schema:      mapField,
@@ -509,28 +542,32 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			continue
 		}
 
-		name := string(inOneof.Name())
+		/*
+			name := string(inOneof.Name())
 
-		oneof, ok := exposeOneofs[name]
-		if !ok {
-			properties = append(properties, prop)
-			continue
-		}
+			oneof, ok := exposeOneofs[name]
+			if !ok {
+		*/
+		properties = append(properties, prop)
+		/*
+				continue
+			}
 
-		oneof.Properties = append(oneof.Properties, prop)
+			oneof.Properties = append(oneof.Properties, prop)
 
-		// defers adding the oneof to the property array until the first
-		// field is encountered, i.e. preserves ordering
-		pending, ok := pendingOneofProps[name]
-		if ok {
-			properties = append(properties, pending)
-			delete(pendingOneofProps, name)
-		}
+			// defers adding the oneof to the property array until the first
+			// field is encountered, i.e. preserves ordering
+			pending, ok := pendingOneofProps[name]
+			if ok {
+				properties = append(properties, pending)
+				delete(pendingOneofProps, name)
+			}*/
 	}
 
-	for _, pending := range pendingOneofProps {
-		return nil, fmt.Errorf("oneof %s has not been added", pending.JSONName)
-	}
+	/*
+		for _, pending := range pendingOneofProps {
+			return nil, fmt.Errorf("oneof %s has not been added", pending.JSONName)
+		}*/
 
 	return properties, nil
 
@@ -578,16 +615,6 @@ type protoFieldExtensions struct {
 
 func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensions {
 	validateConstraint := protosrc.GetExtension[*validate.FieldRules](src.Options(), validate.E_Field)
-	if validateConstraint != nil && validateConstraint.Ignore != nil && *validateConstraint.Ignore != validate.Ignore_IGNORE_ALWAYS {
-		// constraint.IgnoreEmpty doesn't really apply
-
-		// if the constraint is repeated, unwrap it
-		repeatedConstraint, ok := validateConstraint.Type.(*validate.FieldRules_Repeated)
-		if ok {
-			validateConstraint = repeatedConstraint.Repeated.Items
-		}
-	}
-
 	if validateConstraint == nil {
 		validateConstraint = &validate.FieldRules{}
 	}
@@ -610,8 +637,8 @@ func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensi
 
 func (pkg *Package) buildSchemaProperty(context fieldContext, src protoreflect.FieldDescriptor) (*ObjectProperty, error) {
 	prop := &ObjectProperty{
-		JSONName:    string(src.JSONName()),
-		ProtoField:  []protoreflect.FieldNumber{src.Number()},
+		JSONName: string(src.JSONName()),
+		//	ProtoField:  []protoreflect.FieldNumber{src.Number()},
 		Description: commentDescription(src),
 	}
 
@@ -680,6 +707,9 @@ func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions)
 		boolItem := &schema_j5pb.BoolField{}
 
 		if boolConstraint != nil {
+			if boolItem.Rules == nil {
+				boolItem.Rules = &schema_j5pb.BoolField_Rules{}
+			}
 			if boolConstraint.Const != nil {
 				boolItem.Rules.Const = boolConstraint.Const
 			}
@@ -1180,15 +1210,6 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflect.FieldDescriptor, ext protoFieldExtensions) (FieldSchema, error) {
 	flatten := false
 	if ext.j5 != nil {
-		if msgOptions := ext.j5.GetMessage(); msgOptions != nil {
-			if src.Kind() != protoreflect.MessageKind {
-				return nil, fmt.Errorf("field %s is not a message but has a message annotation", src.Name())
-			}
-
-			if msgOptions.Flatten {
-				flatten = true
-			}
-		}
 		if objOptions := ext.j5.GetObject(); objOptions != nil {
 			if src.Kind() != protoreflect.MessageKind {
 				return nil, fmt.Errorf("field %s is not a message but has a object annotation", src.Name())
@@ -1226,10 +1247,20 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 
 	switch inferMessageType(msg) {
 	case oneofMessage:
-		return &OneofField{
+		field := &OneofField{
 			fieldContext: context,
 			Ref:          ref,
-		}, nil
+		}
+		if ext.list != nil {
+			oneofRules, ok := ext.list.Type.(*list_j5pb.FieldConstraint_Oneof)
+			if !ok {
+				return nil, fmt.Errorf("list annotation for oneof is %T", ext.list.Type)
+			}
+
+			field.ListRules = oneofRules.Oneof
+
+		}
+		return field, nil
 
 	case objectMessage:
 		return &ObjectField{
@@ -1484,7 +1515,6 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 				}
 			default:
 				return nil, fmt.Errorf("unknown key type %T", keyFieldOpt.Type)
-
 			}
 		} else {
 			keyField.Format = &schema_j5pb.KeyFormat{
@@ -1493,7 +1523,6 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 				},
 			}
 		}
-
 	}
 
 	if stringItem.Format != nil {

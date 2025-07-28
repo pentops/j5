@@ -457,6 +457,61 @@ func byteValueFromString(val string) (protoreflect.Value, error) {
 	return protoreflect.ValueOfBytes(b), nil
 }
 
+func defaultGoValue(schema *schema_j5pb.Field) (any, error) {
+	switch st := schema.Type.(type) {
+	case *schema_j5pb.Field_Any:
+		return AnyValue(nil), nil
+
+	case *schema_j5pb.Field_Bool:
+		return false, nil
+
+	case *schema_j5pb.Field_String_:
+		return "", nil
+
+	case *schema_j5pb.Field_Key:
+		return "", nil
+
+	case *schema_j5pb.Field_Integer:
+		switch st.Integer.Format {
+		case schema_j5pb.IntegerField_FORMAT_INT32:
+			return int32(0), nil
+		case schema_j5pb.IntegerField_FORMAT_INT64:
+			return int64(0), nil
+		case schema_j5pb.IntegerField_FORMAT_UINT32:
+			return uint32(0), nil
+		case schema_j5pb.IntegerField_FORMAT_UINT64:
+			return uint64(0), nil
+		default:
+			return nil, fmt.Errorf("unsupported integer format %v", st.Integer.Format)
+		}
+
+	case *schema_j5pb.Field_Float:
+		switch st.Float.Format {
+		case schema_j5pb.FloatField_FORMAT_FLOAT32:
+			return float32(0), nil
+		case schema_j5pb.FloatField_FORMAT_FLOAT64:
+			return float64(0), nil
+		default:
+			return nil, fmt.Errorf("unsupported float format %v", st.Float.Format)
+		}
+
+	case *schema_j5pb.Field_Bytes:
+		return []byte{}, nil
+
+	case *schema_j5pb.Field_Date:
+		return &date_j5t.Date{}, nil
+
+	case *schema_j5pb.Field_Decimal:
+		return &decimal_j5t.Decimal{}, nil
+
+	case *schema_j5pb.Field_Timestamp:
+		return time.Time{}, nil
+
+	default:
+		return nil, fmt.Errorf("unsupported scalar type %T", st)
+	}
+}
+
 func scalarGoFromReflect(schema *schema_j5pb.Field, val protoreflect.Value) (any, error) {
 	switch st := schema.Type.(type) {
 	case *schema_j5pb.Field_Any:
@@ -529,4 +584,16 @@ func scalarGoFromReflect(schema *schema_j5pb.Field, val protoreflect.Value) (any
 		return nil, fmt.Errorf("unsupported scalar type %T", st)
 	}
 
+}
+
+func copyReflect(a, b protoreflect.Message) {
+	bFields := b.Descriptor().Fields()
+	a.Range(func(fd protoreflect.FieldDescriptor, val protoreflect.Value) bool {
+		bField := bFields.ByNumber(fd.Number())
+		if bField == nil || bField.Kind() != fd.Kind() || bField.Name() != fd.Name() {
+			panic(fmt.Sprintf("CopyReflect: field %s not found in %s", fd.FullName(), b.Descriptor().FullName()))
+		}
+		b.Set(bField, val)
+		return true
+	})
 }

@@ -1,8 +1,10 @@
 package j5reflect
 
 import (
+	"fmt"
+
+	"github.com/pentops/j5/lib/j5reflect/protoval"
 	"github.com/pentops/j5/lib/j5schema"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
 /*** Interface ***/
@@ -19,7 +21,8 @@ type polymorphField struct {
 	fieldContext
 	schema *j5schema.PolymorphField
 
-	valuePair *protoPair
+	valueField protoval.Value
+	value      protoval.MessageValue
 
 	wrapped *anyField
 }
@@ -31,20 +34,12 @@ func (field *polymorphField) IsSet() bool {
 }
 
 func (field *polymorphField) Unwrap() (AnyField, error) {
-	if field.wrapped == nil {
-		mv, err := field.valuePair.getMutableValue(true)
-		if err != nil {
-			return nil, err
-		}
-
-		emptyFieldFactory := &anyFieldFactory{
-			schema: &j5schema.AnyField{},
-		}
-
-		impl := emptyFieldFactory.buildField(field.fieldContext, mv.Message())
-		field.wrapped = impl.(*anyField)
-	}
 	return field.wrapped, nil
+}
+
+func (field *polymorphField) SetDefaultValue() error {
+	// Default value for polymorph is not defined, so we do nothing here.
+	return nil
 }
 
 func (field *polymorphField) AsPolymorph() (PolymorphField, bool) {
@@ -55,15 +50,32 @@ type polymorphFieldFactory struct {
 	schema *j5schema.PolymorphField
 }
 
-func (factory *polymorphFieldFactory) buildField(context fieldContext, value protoreflect.Message) Field {
+func (factory *polymorphFieldFactory) buildField(context fieldContext, valueGen protoval.Value) Field {
 
-	desc := value.Descriptor()
+	msgValue, ok := valueGen.(protoval.MessageValue)
+	if !ok {
+		panic("polymorph field factory expected a MessageValue")
+	}
+
+	desc := msgValue.MessageDescriptor()
 	valueField := desc.Fields().ByName("value")
-	pair := newProtoPair(value, valueField)
+	valueFieldWrapped, err := msgValue.ChildField(valueField)
+	if err != nil {
+		panic(fmt.Sprintf("polymorph field factory expected a value field in the message: %s", err))
+	}
+
+	emptyFieldFactory := &anyFieldFactory{
+		schema: &j5schema.AnyField{},
+	}
+
+	impl := emptyFieldFactory.buildField(context, valueFieldWrapped)
+	wrapped := impl.(*anyField)
 
 	return &polymorphField{
 		schema:       factory.schema,
-		valuePair:    pair,
+		valueField:   valueFieldWrapped,
 		fieldContext: context,
+		value:        msgValue,
+		wrapped:      wrapped,
 	}
 }

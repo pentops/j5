@@ -17,21 +17,39 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 	enc.openObject()
 	defer enc.closeObject()
 
-	return fieldSet.RangeValues(func(prop j5reflect.Field) error {
+	doField := func(field j5reflect.Field) error {
+
+		if !field.IsSet() && !enc.codec.includeEmpty {
+			return nil
+		}
+
 		if !first {
 			enc.fieldSep()
 		}
 		first = false
-		if err := enc.fieldLabel(prop.NameInParent()); err != nil {
+		if err := enc.fieldLabel(field.NameInParent()); err != nil {
 			return err
 		}
 
-		if err := enc.encodeValue(prop); err != nil {
+		if err := enc.encodeValue(field); err != nil {
 			return err
 		}
 
 		return nil
+	}
+
+	if !enc.codec.includeEmpty {
+		return fieldSet.RangeValues(doField)
+	}
+
+	return fieldSet.RangeProperties(func(prop j5reflect.Property) error {
+		field, err := prop.Field()
+		if err != nil {
+			return err
+		}
+		return doField(field)
 	})
+
 }
 
 func (enc *encoder) encodeOneofBody(fieldSet j5reflect.Oneof) error {
@@ -90,10 +108,19 @@ func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
 		return err
 	}
 
+	if val == nil {
+		enc.addNull()
+		return nil
+	}
+
+	if val.TypeName == "" {
+		return fmt.Errorf("any type has no TypeName set")
+	}
+
 	var jsonData []byte
-	if val.J5Json != nil {
+	if len(val.J5Json) > 0 {
 		jsonData = val.J5Json
-	} else if val.Proto != nil {
+	} else if len(val.Proto) > 0 {
 
 		mt, err := enc.codec.resolver.FindMessageByName(protoreflect.FullName(val.TypeName))
 		if err != nil {
@@ -110,6 +137,8 @@ func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
 			return err
 		}
 		jsonData = innerBytes
+	} else {
+		return fmt.Errorf("any type %q has no J5Json or Proto data", val.TypeName)
 	}
 
 	enc.openObject()
@@ -251,6 +280,10 @@ func (enc *encoder) encodeScalarField(scalar j5reflect.ScalarField) error {
 
 	case time.Time:
 		return enc.addString(vt.In(time.UTC).Format(time.RFC3339Nano))
+
+	case nil:
+		enc.addNull()
+		return nil
 
 	default:
 		return fmt.Errorf("unsupported scalar type %T", vt)

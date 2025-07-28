@@ -27,3 +27,8 @@ func WithResolver(resolver MessageTypeResolver) CodecOption {
 func WithProtoToAny() CodecOption {
 	return codec.WithProtoToAny()
 }
+
+// WithIncludeEmpty includes empty fields in the JSON output.
+func WithIncludeEmpty() CodecOption {
+	return codec.WithIncludeEmpty()
+}

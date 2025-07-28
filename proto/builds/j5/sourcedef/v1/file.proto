@@ -91,7 +91,7 @@ message Entity {
 }
 
 message Event {
-  j5.schema.v1.Object def = 1 [(j5.ext.v1.field).message.flatten = true];
+  j5.schema.v1.Object def = 1 [(j5.ext.v1.field).object.flatten = true];
   
   repeated Transition transitions = 2 [(j5.ext.v1.field).array.single_form = "transition"];
 
@@ -186,10 +186,10 @@ message NestedSchema {
 message EntityKey {
   j5.schema.v1.ObjectProperty def = 1 [
     (buf.validate.field).required = true,
-    (j5.ext.v1.field).message.flatten = true
+    (j5.ext.v1.field).object.flatten = true
   ];
 
-  j5.schema.v1.EntityKey key = 2 [(j5.ext.v1.field).message.flatten = true];
+  j5.schema.v1.EntityKey key = 2 [(j5.ext.v1.field).object.flatten = true];
 
   option (j5.bcl.v1.block).type_select = {
     field_name: "schema",
@@ -201,7 +201,7 @@ message EntityKey {
 }
 
 message Oneof {
-  j5.schema.v1.Oneof def = 1 [(j5.ext.v1.field).message.flatten = true];
+  j5.schema.v1.Oneof def = 1 [(j5.ext.v1.field).object.flatten = true];
 
   repeated NestedSchema schemas = 3;
   
@@ -212,7 +212,7 @@ message Oneof {
 }
 
 message Object {
-  j5.schema.v1.Object def = 1 [(j5.ext.v1.field).message.flatten = true];
+  j5.schema.v1.Object def = 1 [(j5.ext.v1.field).object.flatten = true];
 
   repeated NestedSchema schemas = 3;
   
@@ -223,7 +223,7 @@ message Object {
 }
 
 message Polymorph {
-  j5.schema.v1.Polymorph def = 1 [(j5.ext.v1.field).message.flatten = true];
+  j5.schema.v1.Polymorph def = 1 [(j5.ext.v1.field).object.flatten = true];
 
   // list of other polymorph types
   // The members of the listed types are included in this type.
@@ -233,7 +233,7 @@ message Polymorph {
 }
 
 message EntityElement {
-  Entity entity = 1 [(j5.ext.v1.field).message.flatten = true];
+  Entity entity = 1 [(j5.ext.v1.field).object.flatten = true];
 }
 
 message Topic {

@@ -99,17 +99,17 @@ func (sn *serviceBuilder) accept(visitor ServiceFileVisitor) error {
 
 			if method.Paged {
 				request.Properties = append(request.Properties, &schema_j5pb.ObjectProperty{
-					Name:       "page",
-					ProtoField: []int32{100},
-					Schema:     schemaRefField("j5.list.v1", "PageRequest"),
+					Name: "page",
+					//ProtoField: []int32{100},
+					Schema: schemaRefField("j5.list.v1", "PageRequest"),
 				})
 			}
 
 			if method.Query {
 				request.Properties = append(request.Properties, &schema_j5pb.ObjectProperty{
-					Name:       "query",
-					ProtoField: []int32{101},
-					Schema:     schemaRefField("j5.list.v1", "QueryRequest"),
+					Name: "query",
+					//ProtoField: []int32{101},
+					Schema: schemaRefField("j5.list.v1", "QueryRequest"),
 				})
 			}
 
@@ -136,9 +136,9 @@ func (sn *serviceBuilder) accept(visitor ServiceFileVisitor) error {
 			}
 			if method.Paged {
 				response.Properties = append(response.Properties, &schema_j5pb.ObjectProperty{
-					Name:       "page",
-					ProtoField: []int32{100},
-					Schema:     schemaRefField("j5.list.v1", "PageResponse"),
+					Name: "page",
+					//	ProtoField: []int32{100},
+					Schema: schemaRefField("j5.list.v1", "PageResponse"),
 				})
 			}
 

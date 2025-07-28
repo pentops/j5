@@ -75,6 +75,7 @@ func TestSetter(t *testing.T) {
 		testPath(t, root,
 			tObjectProperty("wrappedOneof"),
 			tOneofProperty("wOneofBar"),
+			tSetDefault(),
 		)
 
 		if msg.WrappedOneof == nil {
@@ -124,14 +125,19 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a map scalar field
-		sMapProp, err := root.NewValue("mapStringString")
+		sMapProp, err := root.GetProperty("mapStringString")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		sMap, ok := sMapProp.(MapOfScalarField)
+		sMapField, err := sMapProp.Field()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		sMap, ok := sMapField.AsMapOfScalar()
 		if !ok {
-			t.Fatalf("Wrong type for field: %T", sMapProp)
+			t.Fatalf("Wrong type for field: %s (expecing MapOfScalarField)", sMapProp.PropertyType())
 		}
 
 		must(t, sMap.SetGoValue("key", "value"))
@@ -142,12 +148,17 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a map scalar field
-		sMapProp, err := root.NewValue("mapStringBar")
+		sMapProp, err := root.GetProperty("mapStringBar")
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		sMap, ok := sMapProp.(MapOfObjectField)
+		sMapField, err := sMapProp.Field()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		sMap, ok := sMapField.AsMapOfObject()
 		if !ok {
 			t.Fatalf("Wrong type for field: %T", sMapProp)
 		}
@@ -233,11 +244,17 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a nil boolean field
-		sBoolProp, err := root.NewValue("oBool")
+		sBoolProp, err := root.GetProperty("oBool")
 		if err != nil {
 			t.Fatal("missing field sBool")
 		}
-		sBool, ok := sBoolProp.(ScalarField)
+
+		sBoolField, err := sBoolProp.Field()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		sBool, ok := sBoolField.AsScalar()
 		if !ok {
 			t.Fatalf("Wrong type for field: %T", sBoolProp)
 		}
@@ -260,11 +277,16 @@ func TestSetter(t *testing.T) {
 		root, msg := newRoot(t)
 
 		// Set a nil boolean field
-		sBoolProp, err := root.NewValue("sBool")
+		sBoolProp, err := root.GetProperty("sBool")
 		if err != nil {
 			t.Fatal(err)
 		}
-		sBool, ok := sBoolProp.(ScalarField)
+
+		sBoolField, err := sBoolProp.Field()
+		if err != nil {
+			t.Fatal(err)
+		}
+		sBool, ok := sBoolField.AsScalar()
 		if !ok {
 			t.Fatalf("Wrong type for field: %T", sBoolProp)
 		}

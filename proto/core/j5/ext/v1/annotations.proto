@@ -96,6 +96,7 @@ message PolymorphMessageOptions {
   repeated string members = 1;
 }
 
+/*
 extend google.protobuf.OneofOptions {
   OneofOptions oneof = 555000;
 }
@@ -107,7 +108,7 @@ message OneofOptions {
   bool expose = 1;
 
   FilteringConstraint filtering = 10;
-}
+}*/
 
 extend google.protobuf.MethodOptions {
   MethodOptions method = 555000;
@@ -167,9 +168,6 @@ message FieldOptions {
   string description = 2;
 
   oneof type {
-    // message != object, this is a proto-level annotation
-    MessageFieldOptions message = 1;
-
     AnyField any = 9;
     ObjectField object = 10;
     EnumField enum = 11;
@@ -191,12 +189,6 @@ message FieldOptions {
   }
 }
 
-// DEPRECATED: Use ObjectField instead.
-message MessageFieldOptions {
-  // When true, the fields of the child message are flattened into the parent
-  // message, overriding this to not be an object in the client schemas.
-  bool flatten = 1;
-}
 
 // AnyField is valid for j5.types.embed.v1.Any and google.protobuf.Any
 message AnyField {

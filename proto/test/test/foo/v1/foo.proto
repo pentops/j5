@@ -26,7 +26,7 @@ message FooKeys {
 }
 
 message FooState {
-  FooKeys keys = 1 [(j5.ext.v1.field).message.flatten = true];
+  FooKeys keys = 1 [(j5.ext.v1.field).object.flatten = true];
 
   FooStatus status = 2 [
     (buf.validate.field).required = true,
@@ -61,7 +61,7 @@ message Bar {
 
 message FooEvent {
   option (j5.ext.v1.psm).entity_name = "foo";
-  FooKeys keys = 1 [(j5.ext.v1.field).message.flatten = true];
+  FooKeys keys = 1 [(j5.ext.v1.field).object.flatten = true];
   FooEventType event = 2 [(buf.validate.field).required = true];
 }
 

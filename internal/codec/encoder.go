@@ -10,14 +10,19 @@ import (
 )
 
 func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
-	enc := &encoder{
-		codec: c,
-		b:     &bytes.Buffer{},
-	}
 
 	root, err := c.refl.NewRoot(msg)
 	if err != nil {
 		return nil, err
+	}
+
+	return c.encodeRoot(root)
+}
+
+func (c *Codec) encodeRoot(root j5reflect.Root) ([]byte, error) {
+	enc := &encoder{
+		codec: c,
+		b:     &bytes.Buffer{},
 	}
 
 	switch schema := root.(type) {
@@ -122,7 +127,6 @@ func (enc *encoder) addFloat(val float64, bitSize int) {
 	enc.add([]byte(str))
 }
 
-/*
 func (enc *encoder) addNull() {
 	enc.add([]byte("null"))
-}*/
+}

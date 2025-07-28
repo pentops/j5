@@ -224,9 +224,9 @@ func (ent *entityNode) acceptState(visitor FileVisitor) error {
 	}
 
 	statusField := &schema_j5pb.ObjectProperty{
-		Name:       "status",
-		ProtoField: []int32{4},
-		Required:   true,
+		Name: "status",
+		//ProtoField: []int32{4},
+		Required: true,
 		Schema: &schema_j5pb.Field{
 			Type: &schema_j5pb.Field_Enum{
 				Enum: statusEnumField,
@@ -241,20 +241,20 @@ func (ent *entityNode) acceptState(visitor FileVisitor) error {
 			Part:   schema_j5pb.EntityPart_STATE,
 		},
 		Properties: []*schema_j5pb.ObjectProperty{{
-			Name:       "metadata",
-			ProtoField: []int32{1},
-			Required:   true,
-			Schema:     schemaRefField("j5.state.v1", "StateMetadata"),
+			Name: "metadata",
+			//ProtoField: []int32{1},
+			Required: true,
+			Schema:   schemaRefField("j5.state.v1", "StateMetadata"),
 		}, {
-			Name:       "keys",
-			ProtoField: []int32{2},
-			Required:   true,
-			Schema:     objKeys,
+			Name: "keys",
+			//ProtoField: []int32{2},
+			Required: true,
+			Schema:   objKeys,
 		}, {
-			Name:       "data",
-			ProtoField: []int32{3},
-			Required:   true,
-			Schema:     ent.innerRef("Data"),
+			Name: "data",
+			//ProtoField: []int32{3},
+			Required: true,
+			Schema:   ent.innerRef("Data"),
 		},
 			statusField,
 		}}
@@ -294,8 +294,8 @@ func (ent *entityNode) acceptEventOneof(visitor FileVisitor) error {
 		})
 
 		propSchema := &schema_j5pb.ObjectProperty{
-			Name:       strcase.ToLowerCamel(eventSchema.Def.Name),
-			ProtoField: []int32{int32(idx + 1)},
+			Name: strcase.ToLowerCamel(eventSchema.Def.Name),
+			//ProtoField: []int32{int32(idx + 1)},
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Object{
 					Object: &schema_j5pb.ObjectField{
@@ -342,19 +342,19 @@ func (ent *entityNode) acceptEvent(visitor FileVisitor) error {
 			Part:   schema_j5pb.EntityPart_EVENT,
 		},
 		Properties: []*schema_j5pb.ObjectProperty{{
-			Name:       "metadata",
-			ProtoField: []int32{1},
-			Required:   true,
-			Schema:     schemaRefField("j5.state.v1", "EventMetadata"),
+			Name: "metadata",
+			//ProtoField: []int32{1},
+			Required: true,
+			Schema:   schemaRefField("j5.state.v1", "EventMetadata"),
 		}, {
-			Name:       "keys",
-			ProtoField: []int32{2},
-			Required:   true,
-			Schema:     eventKeys,
+			Name: "keys",
+			//ProtoField: []int32{2},
+			Required: true,
+			Schema:   eventKeys,
 		}, {
-			Name:       "event",
-			ProtoField: []int32{3},
-			Required:   true,
+			Name: "event",
+			//ProtoField: []int32{3},
+			Required: true,
 			Schema: &schema_j5pb.Field{
 				Type: &schema_j5pb.Field_Oneof{
 					Oneof: &schema_j5pb.OneofField{
@@ -431,10 +431,10 @@ func (ent *entityNode) acceptCommands(visitor FileVisitor) error {
 			}
 			method.Response = &sourcedef_j5pb.AnonymousObject{
 				Properties: []*schema_j5pb.ObjectProperty{{
-					Name:       strcase.ToLowerCamel(ent.Schema.Name),
-					ProtoField: []int32{1},
-					Schema:     ent.innerRef("State"),
-					Required:   true,
+					Name: strcase.ToLowerCamel(ent.Schema.Name),
+					//ProtoField: []int32{1},
+					Schema:   ent.innerRef("State"),
+					Required: true,
 				}},
 			}
 		}
@@ -505,19 +505,19 @@ func (ent *entityNode) acceptPublishTopic(visitor FileVisitor) error {
 	source := ent.Source.child(virtualPathNode, "publish")
 
 	properties := []*schema_j5pb.ObjectProperty{{
-		Name:       "metadata",
-		ProtoField: []int32{1},
-		Required:   true,
-		Schema:     schemaRefField("j5.state.v1", "EventPublishMetadata"),
+		Name: "metadata",
+		//ProtoField: []int32{1},
+		Required: true,
+		Schema:   schemaRefField("j5.state.v1", "EventPublishMetadata"),
 	}, {
-		Name:       "keys",
-		ProtoField: []int32{2},
-		Required:   true,
-		Schema:     schemaRefField("", ent.componentName("Keys")),
+		Name: "keys",
+		//	ProtoField: []int32{2},
+		Required: true,
+		Schema:   schemaRefField("", ent.componentName("Keys")),
 	}, {
-		Name:       "event",
-		ProtoField: []int32{3},
-		Required:   true,
+		Name: "event",
+		//	ProtoField: []int32{3},
+		Required: true,
 		Schema: &schema_j5pb.Field{
 			Type: &schema_j5pb.Field_Oneof{
 				Oneof: &schema_j5pb.OneofField{
@@ -530,14 +530,14 @@ func (ent *entityNode) acceptPublishTopic(visitor FileVisitor) error {
 			},
 		},
 	}, {
-		Name:       "data",
-		ProtoField: []int32{3},
-		Required:   true,
-		Schema:     ent.innerRef("Data"),
+		Name: "data",
+		//	ProtoField: []int32{3},
+		Required: true,
+		Schema:   ent.innerRef("Data"),
 	}, {
-		Name:       "status",
-		ProtoField: []int32{4},
-		Required:   true,
+		Name: "status",
+		//	ProtoField: []int32{4},
+		Required: true,
 		Schema: &schema_j5pb.Field{
 			Type: &schema_j5pb.Field_Enum{
 				Enum: &schema_j5pb.EnumField{
@@ -635,10 +635,10 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 
 		Response: &sourcedef_j5pb.AnonymousObject{
 			Properties: []*schema_j5pb.ObjectProperty{{
-				Name:       strcase.ToLowerCamel(name),
-				ProtoField: []int32{1},
-				Schema:     ent.innerRef("State"),
-				Required:   true,
+				Name: strcase.ToLowerCamel(name),
+				//ProtoField: []int32{1},
+				Schema:   ent.innerRef("State"),
+				Required: true,
 			}},
 		},
 		Options: &ext_j5pb.MethodOptions{
@@ -659,8 +659,8 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 		},
 		Response: &sourcedef_j5pb.AnonymousObject{
 			Properties: []*schema_j5pb.ObjectProperty{{
-				Name:       strcase.ToLowerCamel(name),
-				ProtoField: []int32{1},
+				Name: strcase.ToLowerCamel(name),
+				//ProtoField: []int32{1},
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Array{
 						Array: &schema_j5pb.ArrayField{
@@ -688,8 +688,8 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 		},
 		Response: &sourcedef_j5pb.AnonymousObject{
 			Properties: []*schema_j5pb.ObjectProperty{{
-				Name:       "events",
-				ProtoField: []int32{1},
+				Name: "events",
+				//	ProtoField: []int32{1},
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Array{
 						Array: &schema_j5pb.ArrayField{
@@ -710,8 +710,8 @@ func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
 	if ent.Schema.Query != nil {
 		if ent.Schema.Query.EventsInGet {
 			getMethod.Response.Properties = append(getMethod.Response.Properties, &schema_j5pb.ObjectProperty{
-				Name:       "events",
-				ProtoField: []int32{2},
+				Name: "events",
+				//ProtoField: []int32{2},
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Array{
 						Array: &schema_j5pb.ArrayField{
