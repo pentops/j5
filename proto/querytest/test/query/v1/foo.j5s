@@ -1,0 +1,114 @@
+package test.query.v1
+
+object FooState {
+	field keys object:FooKeys {
+		flatten = true
+		field fooId ! key:uuid {
+			listRules.filtering.filterable = true
+		}
+
+		field tenantId ? key:uuid {
+			listRules.filtering.filterable = true
+		}
+
+		field metaTenantId key:uuid {
+			listRules.filtering.filterable = true
+		}
+	}
+
+	field createdAt ! timestamp {
+		listRules.filtering.filterable = true
+		listRules.sorting.defaultSort = true
+		listRules.sorting.sortable = true
+	}
+
+	field status enum:FooStatus {
+		listRules.filtering.filterable = true
+		listRules.filtering.defaultFilters = ["ACTIVE"]
+	}
+
+	field data object {
+		field name string {
+			listRules.searching.searchable = true
+			listRules.searching.fieldIdentifier = "tsv_name"
+		}
+
+		field field string {
+			listRules.searching.searchable = true
+			listRules.searching.fieldIdentifier = "tsv_field"
+		}
+
+		field description ? string {
+			listRules.searching.searchable = true
+			listRules.searching.fieldIdentifier = "tsv_description"
+		}
+
+		field shape oneof:FooShape {
+			listRules.filtering.filterable = true
+			option circle object {
+				field radius integer:INT64 {
+					listRules.filtering.filterable = true
+					listRules.sorting.sortable = true
+				}
+			}
+			option square object {
+				field side integer:INT64 {
+					listRules.filtering.filterable = true
+					listRules.sorting.sortable = true
+				}
+			}
+		}
+
+		field characteristics object:FooCharacteristics
+		field profiles array:object:FooProfile
+	}
+}
+	
+enum FooStatus {
+	option ACTIVE
+	option DELETED
+}
+
+object FooCharacteristics {
+	field weight integer:INT64 {
+		listRules.filtering.filterable = true
+		listRules.sorting.sortable = true
+	}
+
+	field height integer:INT64 {
+		listRules.filtering.filterable = true
+		listRules.sorting.sortable = true
+	}
+
+	field length integer:INT64 {
+		listRules.filtering.filterable = true
+		listRules.sorting.sortable = true
+	}
+}
+
+object FooProfile {
+	field place integer:INT64 {
+		listRules.filtering.filterable = true
+	}
+
+	field name string {
+		listRules.searching.searchable = true
+		listRules.searching.fieldIdentifier = "tsv_profile_name"
+	}
+}
+
+service Foo {
+
+	method FooList {
+		httpMethod = "GET"
+		httpPath = "/v1/foo"
+		paged = true
+		query = true
+		request {
+		}
+		response {
+			field foo array:object:FooState {
+			}
+		}
+	}
+}

@@ -1,0 +1,7 @@
+---
+packages:
+  - name: test.query.v1
+
+options:
+  subPackages:
+    - name: "service"
