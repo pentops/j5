@@ -75,7 +75,8 @@ func (ef *enumField) AsEnum() (EnumField, bool) {
 func (ef *enumField) GetValue() (EnumOption, error) {
 	val, ok := ef.value.GetValue()
 	if !ok {
-		return nil, fmt.Errorf("enum value not set")
+		isSet := ef.value.IsSet()
+		return nil, fmt.Errorf("enum value not set (isSet: %t)", isSet)
 	}
 	numVal := int32(val.Enum())
 	opt := ef.schema.Schema().OptionByNumber(numVal)
@@ -90,7 +91,7 @@ func (ef *enumField) SetFromString(val string) error {
 	if option != nil {
 		return ef.value.SetValue(protoreflect.ValueOfEnum(protoreflect.EnumNumber(option.Number())))
 	}
-	return fmt.Errorf("enum value %s not found", val)
+	return fmt.Errorf("enum value %q not found", val)
 }
 
 func (ef *enumField) SetASTValue(value ASTValue) error {

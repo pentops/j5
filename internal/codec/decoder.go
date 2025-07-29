@@ -414,6 +414,9 @@ func (dec *decoder) decodeEnum(prop j5reflect.Property) error {
 	if !ok {
 		return unexpectedTokenError(token, "string")
 	}
+	if stringVal == "" {
+		return nil
+	}
 
 	return field.SetFromString(stringVal)
 }

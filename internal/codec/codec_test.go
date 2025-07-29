@@ -202,6 +202,23 @@ func TestDynamic(t *testing.T) {
 
 	})
 
+	t.Run("enum", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+			object Foo {
+				field status enum:Test
+			}
+			enum Test {
+				option ACTIVE
+				option ARCHIVED
+			}
+		`)
+
+		schema.WantJSON(`{}`)
+		schema.WantJSON(`{"status": null}`, WithIncludeEmpty()).
+			InputJSON(`{}`).
+			InputJSON(`{"status": ""}`)
+	})
+
 }
 
 func TestUnmarshal(t *testing.T) {

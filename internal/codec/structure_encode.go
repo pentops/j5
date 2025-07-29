@@ -231,6 +231,10 @@ func (enc *encoder) encodeArray(array j5reflect.ArrayField) error {
 }
 
 func (enc *encoder) encodeEnum(enum j5reflect.EnumField) error {
+	if !enum.IsSet() {
+		enc.addNull()
+		return nil
+	}
 	val, err := enum.GetValue()
 	if err != nil {
 		return err

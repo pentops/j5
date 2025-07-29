@@ -43,7 +43,11 @@ func (pp *protoPair) IsSet() bool {
 	if !ok {
 		return false
 	}
-	return pm.Has(pp.fieldInParent)
+	if !pm.Has(pp.fieldInParent) {
+		return false
+	}
+	val := pm.Get(pp.fieldInParent)
+	return val.IsValid()
 }
 
 func (pp *protoPair) Create() {
