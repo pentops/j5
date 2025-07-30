@@ -714,6 +714,10 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			}
 		}
 
+		if st.Key.Format == nil {
+			return nil, fmt.Errorf("key field has no format defined")
+		}
+
 		switch ft := st.Key.Format.Type.(type) {
 		case *schema_j5pb.KeyFormat_Custom_:
 			pattern, err := regexp.Compile(ft.Custom.Pattern)

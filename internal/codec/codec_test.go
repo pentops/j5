@@ -219,6 +219,25 @@ func TestDynamic(t *testing.T) {
 			InputJSON(`{"status": ""}`)
 	})
 
+	t.Run("object", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+			object Foo {
+				field bar object:Bar {
+					field barId string
+				}
+			}
+
+		`)
+
+		schema.WantJSON(`{}`).
+			InputJSON(`{"bar": null}`)
+
+		schema.WantJSON(`{"bar": null}`, WithIncludeEmpty()).
+			InputJSON(`{}`)
+
+		schema.WantJSON(`{"bar": {"barId": "id"}}`)
+	})
+
 }
 
 func TestUnmarshal(t *testing.T) {

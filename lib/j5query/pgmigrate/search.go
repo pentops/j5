@@ -11,7 +11,7 @@ import (
 	"github.com/pentops/sqrlx.go/sqrlx"
 )
 
-func IndexMigrations(spec pquery.TableSpec) ([]MigrationItem, error) {
+func IndexMigrations(spec j5query.TableSpec) ([]MigrationItem, error) {
 	allMigrations := make([]MigrationItem, 0)
 	indexes, err := buildIndexes(spec.TableName, spec.DataColumn, spec.RootObject)
 	if err != nil {
@@ -25,7 +25,7 @@ func IndexMigrations(spec pquery.TableSpec) ([]MigrationItem, error) {
 	return allMigrations, nil
 }
 
-func AddIndexes(ctx context.Context, conn sqrlx.Connection, specs ...pquery.TableSpec) error {
+func AddIndexes(ctx context.Context, conn sqrlx.Connection, specs ...j5query.TableSpec) error {
 	allIndexes := make([]searchSpec, 0)
 	for _, spec := range specs {
 		indexes, err := buildIndexes(spec.TableName, spec.DataColumn, spec.RootObject)
@@ -42,12 +42,12 @@ type searchSpec struct {
 	tsvColumn  string
 	tableName  string
 	columnName string
-	path       pquery.Path
+	path       j5query.Path
 }
 
 func buildIndexes(tableName string, columnName string, rootType *j5schema.ObjectSchema) ([]searchSpec, error) {
 
-	cols, err := pquery.TSVColumns(rootType)
+	cols, err := j5query.TSVColumns(rootType)
 	if err != nil {
 		return nil, err
 	}

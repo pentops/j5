@@ -43,6 +43,7 @@ type PropertySet interface {
 	GetField(name ...string) (Field, bool, error)
 	GetOrCreateValue(path ...string) (Field, error)
 	SetScalar(value any, path ...string) error
+	SetNull() error
 	//NewValue(name string) (Field, error)
 
 	ListPropertyNames() []string
@@ -274,11 +275,24 @@ func (fs *propSet) SetScalar(value any, nameParts ...string) error {
 		return scalar.SetGoValue(value)
 	}
 	asScalar, ok := reflectField.AsArrayOfScalar()
-	if !ok {
-		return fmt.Errorf("property %s is not a scalar, or array of scalar", reflectField.FullTypeName())
+	if ok {
+		_, err = asScalar.AppendGoValue(value)
+		return err
 	}
-	_, err = asScalar.AppendGoValue(value)
-	return err
+
+	if value == nil {
+		// special case to null an object
+		asObject, ok := reflectField.AsContainer()
+		if ok {
+			return asObject.SetNull()
+		}
+	}
+
+	return fmt.Errorf("property %s is not a scalar, or array of scalar", reflectField.FullTypeName())
+}
+
+func (fs *propSet) SetNull() error {
+	return fs.value.SetValue(protoreflect.Value{})
 }
 
 func (fs *propSet) GetField(nameParts ...string) (Field, bool, error) {

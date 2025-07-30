@@ -1336,8 +1336,8 @@ const (
 )
 
 func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
-	stringItem := &schema_j5pb.StringField{}
 
+	stringItem := &schema_j5pb.StringField{}
 	looksLikeKey := false
 
 	if ext.validate != nil && ext.validate.Type != nil {
@@ -1464,7 +1464,20 @@ func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtens
 		looksLikeKey = true
 	}
 
-	keyFieldOpt := ext.j5.GetKey()
+	var keyFieldOpt *ext_j5pb.KeyField
+	if ext.j5 != nil {
+		switch ext.j5.Type.(type) {
+		case *ext_j5pb.FieldOptions_Key:
+			keyFieldOpt = ext.j5.GetKey()
+		case *ext_j5pb.FieldOptions_String_:
+			return &schema_j5pb.Field_String_{
+				String_: stringItem,
+			}, nil
+		default:
+			return nil, fmt.Errorf("unknown field type for string %T", ext.j5.Type)
+		}
+	}
+
 	if keyFieldOpt != nil {
 		looksLikeKey = true
 	}

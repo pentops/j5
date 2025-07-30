@@ -29,6 +29,21 @@ func TestValidate(t *testing.T) {
 		schema.New().SetScalar("bar", "f").AssertInvalid("bar", "minimum length")
 	})
 
+	t.Run("Key", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field k1 key:id62
+			field k2 key:uuid
+			field k3 key:custom {
+				pattern = "^[a-zA-Z0-9]{10}$"
+			}
+			field k4 key 
+		}`)
+
+		schema.New().SetScalar("k1", "030CwigNfSed7iOSKYfXYO").AssertValid()
+		schema.New().SetScalar("k4", "asdf").AssertValid()
+	})
+
 	t.Run("NestedString", func(t *testing.T) {
 		schema := newReflectCase(t, `
 		object Foo {
@@ -262,6 +277,37 @@ func TestValidate(t *testing.T) {
 		schema.New().SetScalar("bar.a.x", "value").AssertValid()
 		schema.New().SetScalar("bar.b.y", "value").AssertValid()
 
+	})
+
+	t.Run("Enum", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! enum:TestEnum
+		}
+		
+		enum TestEnum {
+		option A
+		option B
+		}
+		`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "A").AssertValid()
+	})
+
+	t.Run("Optional Nil Object", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ? object {
+				field baz ! string
+				field other string
+			}
+		}`)
+
+		schema.New().AssertValid()
+		schema.New().SetScalar("bar", nil).AssertValid()
+		schema.New().SetScalar("bar.other", "value").AssertInvalid("bar.baz", "required")
+		schema.New().SetScalar("bar.baz", "value").AssertValid()
 	})
 
 }

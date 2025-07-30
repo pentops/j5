@@ -1,4 +1,4 @@
-package pquery
+package j5query
 
 import (
 	"fmt"
@@ -56,6 +56,23 @@ func filtersForField(field *j5schema.ObjectProperty) ([]any, error) {
 		}
 
 		return vals, nil
+
+	case *j5schema.ObjectField:
+		// none
+		return nil, nil
+	case *j5schema.AnyField:
+		// none
+		return nil, nil
+	case *j5schema.MapField:
+		// none
+		return nil, nil
+	case *j5schema.ArrayField:
+		// none
+		return nil, nil
+
+	case *j5schema.PolymorphField:
+		// none
+		return nil, nil
 
 	case *j5schema.ScalarSchema:
 		j5Field := field.Schema.ToJ5Field()
@@ -213,18 +230,6 @@ func filtersForField(field *j5schema.ObjectProperty) ([]any, error) {
 		default:
 			return nil, fmt.Errorf("unknown scalar type for default filter (%s): %T", field.JSONName, st)
 		}
-	case *j5schema.ObjectField:
-		// none
-		return nil, nil
-	case *j5schema.AnyField:
-		// none
-		return nil, nil
-	case *j5schema.MapField:
-		// none
-		return nil, nil
-	case *j5schema.ArrayField:
-		// none
-		return nil, nil
 
 	default:
 		return nil, fmt.Errorf("unknown field type for filter rules %T", bigType)

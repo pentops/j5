@@ -1,4 +1,4 @@
-package pquery
+package j5query
 
 import (
 	"fmt"
