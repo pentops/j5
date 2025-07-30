@@ -10,6 +10,9 @@ bundles:
   - name: test
     dir: proto/test
 
+  - name: querytest
+    dir: proto/querytest
+
   - name: bcltest
     dir: proto/bcltest
 
@@ -64,7 +67,26 @@ generate:
     plugins:
       - base: go
       - base: go-sugar
-      - base: go-grpc 
+      - base: go-grpc
+
+  - name: fulltest
+    inputs:
+      - local: querytest
+    output: .
+    mods:
+      - goPackageNames: 
+          prefix: github.com/pentops/j5/internal/gen
+          suffixes:
+            "": "_testpb"
+            "service": "_testspb"
+    opts:
+      paths: import
+      module: github.com/pentops/j5
+    plugins:
+      - base: go
+      - base: go-sugar
+      - base: go-grpc
+      - base: go-j5
 
   - name: registry
     inputs:
@@ -110,3 +132,15 @@ plugins:
     docker:
       image: ghcr.io/pentops/protoc-gen-go-o5-messaging:7e07c29129f03edc9ef01ba4739328625ef24746
 
+  - base: go
+    name: go-j5
+    docker:
+      image: ghcr.io/pentops/protoc-gen-go-j5:latest
+
+pluginOverrides:
+  - name: go-j5
+    local:
+      cmd: protoc-gen-go-j5
+  - name: go-psm
+    local:
+      cmd: protoc-gen-go-psm
