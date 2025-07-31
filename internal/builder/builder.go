@@ -17,7 +17,6 @@ import (
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/builder/protogen/j5go"
 	"github.com/pentops/j5/internal/j5client"
-	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/j5/internal/structure"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/parallel"
@@ -116,7 +115,7 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input *sourc
 
 		switch plugin.Type {
 		case config_j5pb.Plugin_PLUGIN_PROTO:
-			protoBuildRequest, err := protosrc.CodeGeneratorRequestFromImage(input)
+			protoBuildRequest, err := structure.CodeGeneratorRequestFromImage(input)
 			if err != nil {
 				return fmt.Errorf("CodeGeneratorRequestFromImage for image %s: %w", input.SourceName, err)
 			}

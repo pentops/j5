@@ -1,4 +1,4 @@
-package protosrc
+package structure
 
 import (
 	"fmt"

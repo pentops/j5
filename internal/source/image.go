@@ -7,7 +7,7 @@ import (
 
 	"github.com/pentops/j5/internal/j5s/protobuild"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
-	"github.com/pentops/j5/internal/protosrc"
+	"github.com/pentops/j5/internal/structure"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -48,7 +48,7 @@ func (ib *imageBuilder) addBuilt(built *protobuild.BuiltPackage) error {
 		descriptors = append(descriptors, descriptor)
 	}
 
-	sorted, err := protosrc.SortByDependency(descriptors, false)
+	sorted, err := structure.SortByDependency(descriptors, false)
 	if err != nil {
 		return fmt.Errorf("sort by dependency: %w", err)
 	}

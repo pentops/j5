@@ -13,6 +13,7 @@ import (
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5s/sourcewalk"
+	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/j5/lib/id62"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -111,7 +112,7 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 
 		ww.setJ5Ext(node.Source, fieldDesc.Options, "array", st.Array.Ext)
 
-		validateExt := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldRules)
+		validateExt := protosrc.GetExtension[*validate.FieldRules](fieldDesc.Options, validate.E_Field)
 
 		// Add validation rules based on the type of the array regardless of array
 		// rules being specified. This is specifically to cover cases where types

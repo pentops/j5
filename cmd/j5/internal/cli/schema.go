@@ -16,7 +16,6 @@ import (
 	"github.com/pentops/j5/internal/structure"
 	"github.com/pentops/j5/lib/j5codec"
 	"github.com/pentops/runner/commander"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func schemaSet() *commander.CommandSet {
@@ -104,7 +103,7 @@ func RunImage(ctx context.Context, cfg BuildConfig) error {
 		return err
 	}
 
-	bb, err := protojson.Marshal(image)
+	bb, err := j5codec.Global.ProtoToJSON(image.ProtoReflect())
 	if err != nil {
 		return err
 	}
