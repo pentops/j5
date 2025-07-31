@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"io/fs"
 	"maps"
+	"path/filepath"
 	"strings"
 
-	"buf.build/go/protoyaml"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/lib/j5codec"
 	"google.golang.org/protobuf/proto"
+	"sigs.k8s.io/yaml"
 )
 
 var ErrPluginCycle = errors.New("plugin cycle detected")
@@ -25,38 +27,56 @@ var bundleConfigPaths = []string{
 	"j5.yaml",
 }
 
-func readBytesFromAny(root fs.FS, filenames []string) ([]byte, error) {
+func readBytesFromAny(root fs.FS, filenames []string) ([]byte, string, error) {
 	for _, filename := range filenames {
 		data, err := fs.ReadFile(root, filename)
 		if err == nil {
-			return data, nil
+			return data, filename, nil
 		}
 		if !errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("reading file %s: %w", filename, err)
+			return nil, "", fmt.Errorf("reading file %s: %w", filename, err)
 		}
 	}
-	return nil, fmt.Errorf("searching %s: %w", strings.Join(filenames, ", "), fs.ErrNotExist)
+	return nil, "", fmt.Errorf("searching %s: %w", strings.Join(filenames, ", "), fs.ErrNotExist)
+}
+
+func unmarshalFile(filename string, data []byte, out proto.Message) error {
+
+	switch filepath.Ext(filename) {
+	case ".yaml", ".yml":
+		jsonData, err := yaml.YAMLToJSON(data)
+		if err != nil {
+			return fmt.Errorf("unmarshal %s: %w", filename, err)
+		}
+		return j5codec.Global.JSONToProto(jsonData, out.ProtoReflect())
+
+	case ".json":
+		return j5codec.Global.JSONToProto(data, out.ProtoReflect())
+
+	default:
+		return fmt.Errorf("unmarshal %s: unknown file extension %q", filename, filepath.Ext(filename))
+	}
 }
 
 func readDirConfigs(root fs.FS) (*config_j5pb.RepoConfigFile, error) {
-	data, err := readBytesFromAny(root, configPaths)
+	data, filename, err := readBytesFromAny(root, configPaths)
 	if err != nil {
 		return nil, fmt.Errorf("repo config: %w", err)
 	}
 	config := &config_j5pb.RepoConfigFile{}
-	if err := protoyaml.Unmarshal(data, config); err != nil {
+	if err := unmarshalFile(filename, data, config); err != nil {
 		return nil, err
 	}
 	return config, nil
 }
 
 func readBundleConfigFile(root fs.FS) (*config_j5pb.BundleConfigFile, error) {
-	data, err := readBytesFromAny(root, bundleConfigPaths)
+	data, filename, err := readBytesFromAny(root, bundleConfigPaths)
 	if err != nil {
 		return nil, fmt.Errorf("bundle config: %w", err)
 	}
 	config := &config_j5pb.BundleConfigFile{}
-	if err := protoyaml.Unmarshal(data, config); err != nil {
+	if err := unmarshalFile(filename, data, config); err != nil {
 		return nil, err
 	}
 	return config, nil
@@ -68,7 +88,7 @@ func readLockFile(root fs.FS, filename string) (*config_j5pb.LockFile, error) {
 		return nil, err
 	}
 	lockFile := &config_j5pb.LockFile{}
-	if err := protoyaml.Unmarshal(data, lockFile); err != nil {
+	if err := unmarshalFile(filename, data, lockFile); err != nil {
 		return nil, err
 	}
 	return lockFile, nil
@@ -168,10 +188,9 @@ func extendPlugin(base, ext *config_j5pb.BuildPlugin) *config_j5pb.BuildPlugin {
 		ext.Name = base.Name
 	}
 
-	if ext.Local == nil && ext.Docker == nil {
-		ext.Local = base.Local
-		ext.Docker = base.Docker
-		// If either are set, the extension wins.
+	if ext.RunType == nil {
+		ext.RunType = base.RunType
+
 	}
 
 	if ext.Type == config_j5pb.Plugin_UNSPECIFIED {
@@ -230,8 +249,7 @@ func resolvePlugins(base *pluginBase, plugins []*config_j5pb.BuildPlugin, baseOp
 
 		// override AFTER using as a base.
 		if override, ok := base.overrides[plugin.Name]; ok {
-			plugin.Local = override.Local
-			plugin.Docker = override.Docker
+			plugin.RunType = override.RunType
 		}
 		plugins[idx] = plugin
 	}

@@ -7,6 +7,7 @@ import (
 	fmt "fmt"
 )
 
+type IsPluginRunType_Type = isPluginRunType_Type
 type IsDockerRegistryAuth_Auth = isDockerRegistryAuth_Auth
 
 // Plugin

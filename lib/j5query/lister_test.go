@@ -510,7 +510,7 @@ func TestBuildListReflection(t *testing.T) {
 		}
 		`,
 		nil,
-		"list constraints not supported for arrays",
+		"sort constraints not supported for arrays",
 	)
 
 	/*

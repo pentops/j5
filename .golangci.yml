@@ -24,6 +24,11 @@ linters:
       - third_party$
       - builtin$
       - examples$
+  settings:
+    forbidigo:
+      forbid:
+        - pattern: ^proto\.GetExtension.*$
+          msg: "Use protosrc.GetExtension instead of proto.GetExtension"
 formatters:
   enable:
     - gofmt

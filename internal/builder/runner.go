@@ -56,30 +56,32 @@ type RunContext struct {
 
 func (rr *Runner) Run(ctx context.Context, rc RunContext) error {
 
-	if rc.Command.Local != nil {
-		envVars, err := mapEnvVars(rc.Command.Local.Env, rc.Vars)
+	switch rt := rc.Command.RunType.Type.(type) {
+	case *config_j5pb.PluginRunType_Local:
+		envVars, err := mapEnvVars(rt.Local.Env, rc.Vars)
 		if err != nil {
 			return err
 		}
 		baseEnv := os.Environ()
 		envVars = append(baseEnv, envVars...)
-		cmd := exec.CommandContext(ctx, rc.Command.Local.Cmd, rc.Command.Local.Args...)
+		cmd := exec.CommandContext(ctx, rt.Local.Cmd, rt.Local.Args...)
 		cmd.Stdin = rc.StdIn
 		cmd.Stdout = rc.StdOut
 		cmd.Stderr = rc.StdErr
 		cmd.Env = envVars
 		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("running command %q: %w", rc.Command.Local.Cmd, err)
+			return fmt.Errorf("running command %q: %w", rt.Local.Cmd, err)
 		}
 		return nil
-	} else if rc.Command.Docker != nil {
+	case *config_j5pb.PluginRunType_Docker:
 		err := rr.runDocker(ctx, rc)
 		if err != nil {
 			return fmt.Errorf("running docker: %w", err)
 		}
 		return nil
-	} else {
-		return fmt.Errorf("no command specified")
+
+	default:
+		return fmt.Errorf("unsupported run type: %T", rt)
 	}
 
 }

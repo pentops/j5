@@ -449,7 +449,11 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			}
 
 			if ext.list != nil {
-				return nil, fmt.Errorf("list constraints not supported for arrays")
+				gen := ext.genericList()
+				if gen.sorting != nil {
+					return nil, fmt.Errorf("sort constraints not supported for arrays")
+				}
+				childExt.list = ext.list
 			}
 
 			fieldSchema, err := ss.buildSchema(childContext, field, childExt)
@@ -508,7 +512,11 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			}
 
 			if ext.list != nil {
-				return nil, fmt.Errorf("list constraints not supported for maps")
+				gen := ext.genericList()
+				if gen.sorting != nil {
+					return nil, fmt.Errorf("sort constraints not supported for maps")
+				}
+				childExt.list = ext.list
 			}
 
 			valueSchema, err := ss.buildSchema(childContext, field.MapValue(), childExt)
@@ -610,6 +618,151 @@ type protoFieldExtensions struct {
 	list      *list_j5pb.FieldConstraint
 	j5        *ext_j5pb.FieldOptions
 	entityKey *schema_j5pb.EntityKey
+}
+
+type genericList struct {
+	filtering *list_j5pb.FilteringConstraint
+	sorting   *list_j5pb.SortingConstraint
+	searching *list_j5pb.SearchingConstraint
+}
+
+func (pfe protoFieldExtensions) genericList() genericList {
+	if pfe.list == nil {
+		return genericList{}
+	}
+	switch lt := pfe.list.Type.(type) {
+	case *list_j5pb.FieldConstraint_Double:
+		return genericList{
+			filtering: lt.Double.Filtering,
+			sorting:   lt.Double.Sorting,
+		}
+
+	case *list_j5pb.FieldConstraint_Fixed32:
+		return genericList{
+			filtering: lt.Fixed32.Filtering,
+			sorting:   lt.Fixed32.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Fixed64:
+		return genericList{
+			filtering: lt.Fixed64.Filtering,
+			sorting:   lt.Fixed64.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Float:
+		return genericList{
+			filtering: lt.Float.Filtering,
+			sorting:   lt.Float.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Int32:
+		return genericList{
+			filtering: lt.Int32.Filtering,
+			sorting:   lt.Int32.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Int64:
+		return genericList{
+			filtering: lt.Int64.Filtering,
+			sorting:   lt.Int64.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Sfixed32:
+		return genericList{
+			filtering: lt.Sfixed32.Filtering,
+			sorting:   lt.Sfixed32.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Sfixed64:
+		return genericList{
+			filtering: lt.Sfixed64.Filtering,
+			sorting:   lt.Sfixed64.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Sint32:
+		return genericList{
+			filtering: lt.Sint32.Filtering,
+			sorting:   lt.Sint32.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Sint64:
+		return genericList{
+			filtering: lt.Sint64.Filtering,
+			sorting:   lt.Sint64.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Uint32:
+		return genericList{
+			filtering: lt.Uint32.Filtering,
+			sorting:   lt.Uint32.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Uint64:
+		return genericList{
+			filtering: lt.Uint64.Filtering,
+			sorting:   lt.Uint64.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Bool:
+		return genericList{
+			filtering: lt.Bool.Filtering,
+		}
+	case *list_j5pb.FieldConstraint_String_:
+		if lt.String_.WellKnown == nil {
+			return genericList{}
+		}
+		switch st := lt.String_.WellKnown.(type) {
+		case *list_j5pb.StringRules_Date:
+			return genericList{
+				filtering: st.Date.Filtering,
+				//	sorting:   st.Date.Sorting,
+			}
+		case *list_j5pb.StringRules_ForeignKey:
+			switch kt := st.ForeignKey.Type.(type) {
+			case *list_j5pb.ForeignKeyRules_Id62:
+				return genericList{
+					filtering: kt.Id62.Filtering,
+				}
+			case *list_j5pb.ForeignKeyRules_UniqueString:
+				return genericList{
+					filtering: kt.UniqueString.Filtering,
+				}
+			case *list_j5pb.ForeignKeyRules_Uuid:
+				return genericList{
+					filtering: kt.Uuid.Filtering,
+				}
+			default:
+				panic(fmt.Sprintf("unknown foreign key type %T in %s", st.ForeignKey.Type, pfe.list.Type))
+			}
+		case *list_j5pb.StringRules_OpenText:
+			return genericList{
+				searching: st.OpenText.Searching,
+			}
+		default:
+			panic(fmt.Sprintf("unknown string type %T in %s", lt.String_.WellKnown, pfe.list.Type))
+
+		}
+
+	case *list_j5pb.FieldConstraint_Enum:
+		return genericList{
+			filtering: lt.Enum.Filtering,
+		}
+	case *list_j5pb.FieldConstraint_Oneof:
+		return genericList{
+			filtering: lt.Oneof.Filtering,
+		}
+
+	case *list_j5pb.FieldConstraint_Timestamp:
+		return genericList{
+			filtering: lt.Timestamp.Filtering,
+			sorting:   lt.Timestamp.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Date:
+		return genericList{
+			filtering: lt.Date.Filtering,
+		}
+	case *list_j5pb.FieldConstraint_Decimal:
+		return genericList{
+			filtering: lt.Decimal.Filtering,
+			sorting:   lt.Decimal.Sorting,
+		}
+	case *list_j5pb.FieldConstraint_Any:
+		return genericList{
+			filtering: lt.Any.Filtering,
+		}
+
+	default:
+		panic(fmt.Sprintf("unknown list type %T in %s", lt, pfe.list.Type))
+	}
 }
 
 func getProtoFieldExtensions(src protoreflect.FieldDescriptor) protoFieldExtensions {

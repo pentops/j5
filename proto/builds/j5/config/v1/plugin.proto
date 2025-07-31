@@ -3,6 +3,7 @@ syntax = "proto3";
 package j5.config.v1;
 
 import "j5/config/v1/mods.proto";
+import "j5/ext/v1/annotations.proto";
 
 message BuildPlugin {
   // extend the base plugin.
@@ -21,12 +22,21 @@ message BuildPlugin {
   // 3. plugin opts here
   map<string, string> opts = 4;
 
-  // For non-docker, an executable in $PATH, also serves as the 'name' of the
-  // command for logging. Not passed in when using docker comtainers.
-  CommandSpec local = 5;
+  PluginRunType run_type = 7 [(j5.ext.v1.field).object.flatten = true];
+}
 
-  // a docker container to replace the local $PATH executable.
-  DockerSpec docker = 8;
+
+message PluginRunType {
+  oneof type {
+    string builtin = 1;
+
+    // For non-docker, an executable in $PATH, also serves as the 'name' of the
+    // command for logging. Not passed in when using docker comtainers.
+    CommandSpec local = 2;
+
+    // a docker container to replace the local $PATH executable.
+    DockerSpec docker = 3;
+  }
 }
 
 message DockerSpec {
@@ -99,10 +109,5 @@ message PluginOverride {
   // The name of the plugin to override
   string name = 1;
 
-  // For non-docker, an executable in $PATH, also serves as the 'name' of the
-  // command for logging. Not passed in when using docker comtainers.
-  CommandSpec local = 5;
-
-  // a docker container to replace the local $PATH executable.
-  DockerSpec docker = 8;
+  PluginRunType run_type = 7 [(j5.ext.v1.field).object.flatten = true];
 }

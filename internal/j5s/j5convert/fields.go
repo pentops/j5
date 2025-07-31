@@ -673,7 +673,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 					fkt = &list_j5pb.ForeignKeyRules_Uuid{
 						Uuid: st.Key.ListRules,
 					}
-				case *schema_j5pb.KeyFormat_Custom_:
+				case *schema_j5pb.KeyFormat_Custom_, *schema_j5pb.KeyFormat_Informal_:
 					fkt = &list_j5pb.ForeignKeyRules_UniqueString{
 						UniqueString: st.Key.ListRules,
 					}
