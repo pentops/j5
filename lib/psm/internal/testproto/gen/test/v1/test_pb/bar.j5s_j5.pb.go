@@ -55,19 +55,19 @@ func (msg *BarState) J5Object() j5reflect.Object {
 type BarEventTypeKey string
 
 const (
-	BarEvent_Created BarEventTypeKey = "created"
-	BarEvent_Updated BarEventTypeKey = "updated"
-	BarEvent_Deleted BarEventTypeKey = "deleted"
+	BarEvent_Type_Created BarEventTypeKey = "created"
+	BarEvent_Type_Updated BarEventTypeKey = "updated"
+	BarEvent_Type_Deleted BarEventTypeKey = "deleted"
 )
 
 func (x *BarEventType) TypeKey() (BarEventTypeKey, bool) {
 	switch x.Type.(type) {
 	case *BarEventType_Created_:
-		return BarEvent_Created, true
+		return BarEvent_Type_Created, true
 	case *BarEventType_Updated_:
-		return BarEvent_Updated, true
+		return BarEvent_Type_Updated, true
 	case *BarEventType_Deleted_:
-		return BarEvent_Deleted, true
+		return BarEvent_Type_Deleted, true
 	default:
 		return "", false
 	}
@@ -101,13 +101,13 @@ func (x *BarEventType) Get() IsBarEventTypeWrappedType {
 	}
 }
 func (x *BarEventType_Created) TypeKey() BarEventTypeKey {
-	return BarEvent_Created
+	return BarEvent_Type_Created
 }
 func (x *BarEventType_Updated) TypeKey() BarEventTypeKey {
-	return BarEvent_Updated
+	return BarEvent_Type_Updated
 }
 func (x *BarEventType_Deleted) TypeKey() BarEventTypeKey {
-	return BarEvent_Deleted
+	return BarEvent_Type_Deleted
 }
 func (msg *BarEventType) Clone() any {
 	return proto.Clone(msg).(*BarEventType)

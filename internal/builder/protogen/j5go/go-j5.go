@@ -117,6 +117,12 @@ func generateBaseFile(gen *protogen.Plugin, file *protogen.File) error {
 	var doMsg func(msg *protogen.Message) error
 	doMsg = func(msg *protogen.Message) error {
 
+		if msg.Desc.IsMapEntry() {
+			// map entry is a virtual message type used by protobuf to represent
+			// map fields
+			return nil
+		}
+
 		err := genMessage(g, msg)
 		if err != nil {
 			return fmt.Errorf("error generating message %s: %w", msg.GoIdent, err)
@@ -198,7 +204,7 @@ func genMessage(g *protogen.GeneratedFile, message *protogen.Message) error {
 	}
 
 	filePackage := message.Desc.ParentFile().Package()
-	if filePackage == "j5.schema.v1" {
+	if strings.HasPrefix(string(filePackage), "j5.") {
 		g.P("// ", filePackage, " is a J5 schema message, No J5 Methods")
 		g.P()
 		return nil
@@ -228,19 +234,29 @@ func genOneof(g *protogen.GeneratedFile, message *protogen.Message, _ *j5schema.
 	prefix := strings.TrimSuffix(message.GoIdent.GoName, "Type")
 
 	allMessages := true
+	countPerType := make(map[string]int)
 	for _, field := range message.Fields {
 		if field.Desc.Kind() != protoreflect.MessageKind {
 			allMessages = false
 			break
 		}
+		if field.Message.GoIdent.GoImportPath != message.GoIdent.GoImportPath {
+			allMessages = false
+			break
+		}
+		typeName := field.Message.GoIdent.GoName
+		countPerType[typeName]++
+		if countPerType[typeName] > 1 {
+			// if there are multiple fields of the same type, we cannot use the type name as the key
+			allMessages = false
+		}
 	}
 
 	typeKeyName := prefix + "TypeKey"
-	isATypeName := "Is" + message.GoIdent.GoName + "WrappedType"
 	g.P("type ", typeKeyName, " string")
 	g.P("const (")
 	for _, field := range message.Fields {
-		g.P(prefix, "_", field.GoName, " ", typeKeyName, ` = "`, field.Desc.JSONName(), `"`)
+		g.P(prefix, "_Type_", field.GoName, " ", typeKeyName, ` = "`, field.Desc.JSONName(), `"`)
 	}
 	g.P(")") // end const
 
@@ -248,7 +264,7 @@ func genOneof(g *protogen.GeneratedFile, message *protogen.Message, _ *j5schema.
 	g.P("	switch x.Type.(type) {")
 	for _, field := range message.Fields {
 		g.P("	case *", field.GoIdent, ":")
-		g.P("		return ", prefix, "_", field.GoName, ", true")
+		g.P("		return ", prefix, "_Type_", field.GoName, ", true")
 	}
 	g.P("	default:")
 	g.P("		return \"\", false")
@@ -260,6 +276,7 @@ func genOneof(g *protogen.GeneratedFile, message *protogen.Message, _ *j5schema.
 		return nil
 	}
 
+	isATypeName := "Is" + message.GoIdent.GoName + "WrappedType"
 	g.P("type ", isATypeName, " interface {")
 	g.P("	TypeKey() ", typeKeyName)
 	g.P("   ", protoPackage.Ident("Message"))
@@ -268,13 +285,8 @@ func genOneof(g *protogen.GeneratedFile, message *protogen.Message, _ *j5schema.
 	g.P("func (x *", message.GoIdent, ") Set(val ", isATypeName, ") {")
 	g.P("	switch v := val.(type) {")
 	for _, field := range message.Fields {
-		if field.Desc.Kind() != protoreflect.MessageKind {
-			//g.P("   case *", field.GoIdent, ":")
-
-		} else {
-			g.P("	case *", field.Message.GoIdent, ":")
-			g.P("		x.Type = &", field.GoIdent, "{", field.GoName, ": v}")
-		}
+		g.P("	case *", field.Message.GoIdent, ":")
+		g.P("		x.Type = &", field.GoIdent, "{", field.GoName, ": v}")
 	}
 	g.P("	}")
 	g.P("}")
@@ -282,13 +294,8 @@ func genOneof(g *protogen.GeneratedFile, message *protogen.Message, _ *j5schema.
 	g.P("func (x *", message.GoIdent, ") Get() ", isATypeName, " {")
 	g.P("	switch v := x.Type.(type) {")
 	for _, field := range message.Fields {
-		if field.Desc.Kind() != protoreflect.MessageKind {
-			g.P("	case *", field.GoIdent, ":")
-			g.P("     return v") // return the default wrapper type
-		} else {
-			g.P("	case *", field.GoIdent, ":")
-			g.P("		return v.", field.GoName)
-		}
+		g.P("	case *", field.GoIdent, ":")
+		g.P("		return v.", field.GoName)
 	}
 	g.P("	default:")
 	g.P("		return nil")
@@ -297,7 +304,7 @@ func genOneof(g *protogen.GeneratedFile, message *protogen.Message, _ *j5schema.
 
 	for _, field := range message.Fields {
 		g.P("func (x *", field.Message.GoIdent, ") TypeKey() ", typeKeyName, "  {")
-		g.P("		return ", prefix, "_", field.GoName)
+		g.P("		return ", prefix, "_Type_", field.GoName)
 		g.P("}")
 	}
 	return nil

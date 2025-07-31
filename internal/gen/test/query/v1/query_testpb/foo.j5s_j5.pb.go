@@ -55,16 +55,16 @@ func (msg *FooState_Data) J5Object() j5reflect.Object {
 type FooState_Data_ShapeTypeKey string
 
 const (
-	FooState_Data_Shape_Circle FooState_Data_ShapeTypeKey = "circle"
-	FooState_Data_Shape_Square FooState_Data_ShapeTypeKey = "square"
+	FooState_Data_Shape_Type_Circle FooState_Data_ShapeTypeKey = "circle"
+	FooState_Data_Shape_Type_Square FooState_Data_ShapeTypeKey = "square"
 )
 
 func (x *FooState_Data_Shape) TypeKey() (FooState_Data_ShapeTypeKey, bool) {
 	switch x.Type.(type) {
 	case *FooState_Data_Shape_Circle_:
-		return FooState_Data_Shape_Circle, true
+		return FooState_Data_Shape_Type_Circle, true
 	case *FooState_Data_Shape_Square_:
-		return FooState_Data_Shape_Square, true
+		return FooState_Data_Shape_Type_Square, true
 	default:
 		return "", false
 	}
@@ -94,10 +94,10 @@ func (x *FooState_Data_Shape) Get() IsFooState_Data_ShapeWrappedType {
 	}
 }
 func (x *FooState_Data_Shape_Circle) TypeKey() FooState_Data_ShapeTypeKey {
-	return FooState_Data_Shape_Circle
+	return FooState_Data_Shape_Type_Circle
 }
 func (x *FooState_Data_Shape_Square) TypeKey() FooState_Data_ShapeTypeKey {
-	return FooState_Data_Shape_Square
+	return FooState_Data_Shape_Type_Square
 }
 func (msg *FooState_Data_Shape) Clone() any {
 	return proto.Clone(msg).(*FooState_Data_Shape)

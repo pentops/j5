@@ -141,7 +141,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 			},
 		},
 		expected: map[string]any{
-			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_INT32.String(),
+			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_INT32.ShortString(),
 			"schema.integer.rules.minimum":          "1",
 			"schema.integer.rules.maximum":          "10",
 			"schema.integer.rules.exclusiveMaximum": true,
@@ -191,7 +191,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 			},
 		},
 		expected: map[string]any{
-			"schema.integer.format":                 "UINT32",
+			"schema.integer.format":                 schema_j5pb.IntegerField_Format_UINT32.ShortString(),
 			"schema.integer.rules.minimum":          "1",
 			"schema.integer.rules.maximum":          "10",
 			"schema.integer.rules.exclusiveMaximum": true,

@@ -41,16 +41,16 @@ func (msg *FooData) J5Object() j5reflect.Object {
 type FooData_ShapeTypeKey string
 
 const (
-	FooData_Shape_Circle FooData_ShapeTypeKey = "circle"
-	FooData_Shape_Square FooData_ShapeTypeKey = "square"
+	FooData_Shape_Type_Circle FooData_ShapeTypeKey = "circle"
+	FooData_Shape_Type_Square FooData_ShapeTypeKey = "square"
 )
 
 func (x *FooData_Shape) TypeKey() (FooData_ShapeTypeKey, bool) {
 	switch x.Type.(type) {
 	case *FooData_Shape_Circle_:
-		return FooData_Shape_Circle, true
+		return FooData_Shape_Type_Circle, true
 	case *FooData_Shape_Square_:
-		return FooData_Shape_Square, true
+		return FooData_Shape_Type_Square, true
 	default:
 		return "", false
 	}
@@ -80,10 +80,10 @@ func (x *FooData_Shape) Get() IsFooData_ShapeWrappedType {
 	}
 }
 func (x *FooData_Shape_Circle) TypeKey() FooData_ShapeTypeKey {
-	return FooData_Shape_Circle
+	return FooData_Shape_Type_Circle
 }
 func (x *FooData_Shape_Square) TypeKey() FooData_ShapeTypeKey {
-	return FooData_Shape_Square
+	return FooData_Shape_Type_Square
 }
 func (msg *FooData_Shape) Clone() any {
 	return proto.Clone(msg).(*FooData_Shape)
@@ -143,19 +143,19 @@ func (msg *FooState) J5Object() j5reflect.Object {
 type FooEventTypeKey string
 
 const (
-	FooEvent_Created FooEventTypeKey = "created"
-	FooEvent_Updated FooEventTypeKey = "updated"
-	FooEvent_Deleted FooEventTypeKey = "deleted"
+	FooEvent_Type_Created FooEventTypeKey = "created"
+	FooEvent_Type_Updated FooEventTypeKey = "updated"
+	FooEvent_Type_Deleted FooEventTypeKey = "deleted"
 )
 
 func (x *FooEventType) TypeKey() (FooEventTypeKey, bool) {
 	switch x.Type.(type) {
 	case *FooEventType_Created_:
-		return FooEvent_Created, true
+		return FooEvent_Type_Created, true
 	case *FooEventType_Updated_:
-		return FooEvent_Updated, true
+		return FooEvent_Type_Updated, true
 	case *FooEventType_Deleted_:
-		return FooEvent_Deleted, true
+		return FooEvent_Type_Deleted, true
 	default:
 		return "", false
 	}
@@ -189,13 +189,13 @@ func (x *FooEventType) Get() IsFooEventTypeWrappedType {
 	}
 }
 func (x *FooEventType_Created) TypeKey() FooEventTypeKey {
-	return FooEvent_Created
+	return FooEvent_Type_Created
 }
 func (x *FooEventType_Updated) TypeKey() FooEventTypeKey {
-	return FooEvent_Updated
+	return FooEvent_Type_Updated
 }
 func (x *FooEventType_Deleted) TypeKey() FooEventTypeKey {
-	return FooEvent_Deleted
+	return FooEvent_Type_Deleted
 }
 func (msg *FooEventType) Clone() any {
 	return proto.Clone(msg).(*FooEventType)

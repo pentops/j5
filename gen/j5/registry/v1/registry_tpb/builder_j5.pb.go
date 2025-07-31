@@ -3,51 +3,86 @@
 package registry_tpb
 
 import (
-	j5reflect "github.com/pentops/j5/lib/j5reflect"
+	driver "database/sql/driver"
+	fmt "fmt"
 	proto "google.golang.org/protobuf/proto"
 )
-
-func (msg *PublishMessage) J5Reflect() j5reflect.Root {
-	return j5reflect.MustReflect(msg.ProtoReflect())
-}
-
-func (msg *PublishMessage) J5Object() j5reflect.Object {
-	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
 
 func (msg *PublishMessage) Clone() any {
 	return proto.Clone(msg).(*PublishMessage)
 }
-func (msg *BuildAPIMessage) J5Reflect() j5reflect.Root {
-	return j5reflect.MustReflect(msg.ProtoReflect())
-}
 
-func (msg *BuildAPIMessage) J5Object() j5reflect.Object {
-	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
+// j5.registry.v1.topic is a J5 schema message, No J5 Methods
 
 func (msg *BuildAPIMessage) Clone() any {
 	return proto.Clone(msg).(*BuildAPIMessage)
 }
-func (msg *J5BuildStatusMessage) J5Reflect() j5reflect.Root {
-	return j5reflect.MustReflect(msg.ProtoReflect())
-}
 
-func (msg *J5BuildStatusMessage) J5Object() j5reflect.Object {
-	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
+// j5.registry.v1.topic is a J5 schema message, No J5 Methods
 
 func (msg *J5BuildStatusMessage) Clone() any {
 	return proto.Clone(msg).(*J5BuildStatusMessage)
 }
-func (msg *BuildOutput) J5Reflect() j5reflect.Root {
-	return j5reflect.MustReflect(msg.ProtoReflect())
-}
 
-func (msg *BuildOutput) J5Object() j5reflect.Object {
-	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
+// j5.registry.v1.topic is a J5 schema message, No J5 Methods
 
 func (msg *BuildOutput) Clone() any {
 	return proto.Clone(msg).(*BuildOutput)
+}
+
+// j5.registry.v1.topic is a J5 schema message, No J5 Methods
+
+// BuildStatus
+const (
+	BuildStatus_UNSPECIFIED BuildStatus = 0
+	BuildStatus_IN_PROGRESS BuildStatus = 1
+	BuildStatus_SUCCESS     BuildStatus = 2
+	BuildStatus_FAILURE     BuildStatus = 3
+)
+
+var (
+	BuildStatus_name_short = map[int32]string{
+		0: "UNSPECIFIED",
+		1: "IN_PROGRESS",
+		2: "SUCCESS",
+		3: "FAILURE",
+	}
+	BuildStatus_value_short = map[string]int32{
+		"UNSPECIFIED": 0,
+		"IN_PROGRESS": 1,
+		"SUCCESS":     2,
+		"FAILURE":     3,
+	}
+	BuildStatus_value_either = map[string]int32{
+		"UNSPECIFIED":              0,
+		"BUILD_STATUS_UNSPECIFIED": 0,
+		"IN_PROGRESS":              1,
+		"BUILD_STATUS_IN_PROGRESS": 1,
+		"SUCCESS":                  2,
+		"BUILD_STATUS_SUCCESS":     2,
+		"FAILURE":                  3,
+		"BUILD_STATUS_FAILURE":     3,
+	}
+)
+
+// ShortString returns the un-prefixed string representation of the enum value
+func (x BuildStatus) ShortString() string {
+	return BuildStatus_name_short[int32(x)]
+}
+func (x BuildStatus) Value() (driver.Value, error) {
+	return []uint8(x.ShortString()), nil
+}
+func (x *BuildStatus) Scan(value interface{}) error {
+	var strVal string
+	switch vt := value.(type) {
+	case []uint8:
+		strVal = string(vt)
+	case string:
+		strVal = vt
+	default:
+		return fmt.Errorf("invalid type %T", value)
+	}
+	val := BuildStatus_value_either[strVal]
+	*x = BuildStatus(val)
+	return nil
 }
