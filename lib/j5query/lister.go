@@ -416,7 +416,6 @@ func encodePageToken(rowMessage j5reflect.Object, sortFields []sortSpec) (string
 		if err != nil {
 			return "", fmt.Errorf("sort field %s: %w", sortField.errorName(), err)
 		}
-		fmt.Printf("Set Sort Field %s to %v\n", sortField.errorName(), fieldVal)
 		vals[sortField.Path.IDPath()] = fieldVal
 
 	}

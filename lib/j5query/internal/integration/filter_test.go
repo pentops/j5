@@ -373,6 +373,51 @@ func TestDynamicFiltering(t *testing.T) {
 		}
 	})
 
+	t.Run("In Filter", func(t *testing.T) {
+		req := &query_testspb.FooListRequest{
+			Page: &list_j5pb.PageRequest{
+				PageSize: proto.Int64(5),
+			},
+			Query: &list_j5pb.QueryRequest{
+				Filters: []*list_j5pb.Filter{
+					{
+						Type: &list_j5pb.Filter_Field{
+							Field: &list_j5pb.Field{
+								Name: "data.characteristics.weight",
+								Type: &list_j5pb.FieldType{
+									Type: &list_j5pb.FieldType_In{
+										In: &list_j5pb.Values{
+											Values: []string{"14", "15"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		res := &query_testspb.FooListResponse{}
+
+		err := queryer.List(t.Context(), uu.DB, req.J5Object(), res.J5Object())
+		if err != nil {
+			t.Fatal(err.Error())
+		}
+
+		if len(res.Foo) != 2 {
+			t.Fatalf("expected %d states, got %d", 2, len(res.Foo))
+		}
+
+		for ii, state := range res.Foo {
+			t.Logf("%d: %s", ii, state.Data.Field)
+			weight := state.Data.Characteristics.Weight
+			if weight != 14 && weight != 15 {
+				t.Fatalf("expected weight to be 14 or 15, got %d", weight)
+			}
+		}
+
+	})
+
 	t.Run("Multi Range Filter", func(t *testing.T) {
 		nextToken := ""
 		query := &list_j5pb.QueryRequest{

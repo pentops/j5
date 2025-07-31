@@ -309,12 +309,27 @@ func (ll *ListReflectionSet) buildDynamicFilter(tableAlias string, filters []*li
 			or = append(or, f...)
 
 			out = append(out, or)
+
+		default:
+			return nil, fmt.Errorf("dynamic filter: unknown filter type: %T", filters[i].GetType())
 		}
 	}
 
 	return out, nil
 }
 
+func filterQueryValue(spec *NestedField, val string) (any, error) {
+	switch schema := spec.Path.LeafField().Schema.(type) {
+	case *j5schema.EnumField:
+		option := schema.Schema().OptionByName(val)
+		if option == nil {
+			return nil, fmt.Errorf("enum value '%s' not found in field '%s'", val, spec.Path.LeafField().JSONName)
+		}
+		val = option.Name() // Use the name of the option, not the value
+	}
+	return val, nil
+
+}
 func (ll *ListReflectionSet) buildDynamicFilterField(tableAlias string, spec *NestedField, filter *list_j5pb.Filter) (sq.Sqlizer, error) {
 	var out sq.And
 
@@ -324,15 +339,9 @@ func (ll *ListReflectionSet) buildDynamicFilterField(tableAlias string, spec *Ne
 
 	switch ft := filter.GetField().GetType().Type.(type) {
 	case *list_j5pb.FieldType_Value:
-		val := ft.Value
-
-		switch schema := spec.Path.LeafField().Schema.(type) {
-		case *j5schema.EnumField:
-			option := schema.Schema().OptionByName(val)
-			if option == nil {
-				return nil, fmt.Errorf("enum value '%s' not found in field '%s'", val, spec.Path.LeafField().JSONName)
-			}
-			val = option.Name() // Use the name of the option, not the value
+		val, err := filterQueryValue(spec, ft.Value)
+		if err != nil {
+			return nil, fmt.Errorf("dynamic filter: field to query value: %w", err)
 		}
 
 		out = sq.And{sq.Expr(
@@ -341,6 +350,28 @@ func (ll *ListReflectionSet) buildDynamicFilterField(tableAlias string, spec *Ne
 				spec.RootColumn,
 				spec.Path.JSONPathQuery(),
 			), pg.JSONB(val))}
+
+		return out, nil
+
+	case *list_j5pb.FieldType_In:
+		if len(ft.In.GetValues()) == 0 {
+			return nil, fmt.Errorf("dynamic filter: 'in' filter with no values")
+		}
+		or := sq.Or{}
+		for _, valStr := range ft.In.Values {
+			val, err := filterQueryValue(spec, valStr)
+			if err != nil {
+				return nil, fmt.Errorf("dynamic filter: field to query value: %w", err)
+			}
+
+			or = append(or, sq.Expr(
+				fmt.Sprintf("jsonb_path_query_array(%s.%s, '%s') @> ?",
+					tableAlias,
+					spec.RootColumn,
+					spec.Path.JSONPathQuery(),
+				), pg.JSONB(val)))
+		}
+		return or, nil
 
 	case *list_j5pb.FieldType_Range:
 		min := ft.Range.GetMin()
@@ -357,9 +388,13 @@ func (ll *ListReflectionSet) buildDynamicFilterField(tableAlias string, spec *Ne
 			exprStr := fmt.Sprintf("jsonb_path_query_array(%s.%s, '%s ?? (@ <= $max)', jsonb_build_object('max', ?::text)) <> '[]'::jsonb", tableAlias, spec.RootColumn, spec.Path.JSONPathQuery())
 			out = sq.And{sq.Expr(exprStr, max)}
 		}
+
+		return out, nil
+
+	default:
+		return nil, fmt.Errorf("dynamic filter: unknown field type for filter: %T", ft)
 	}
 
-	return out, nil
 }
 
 func validateQueryRequestFilters(message *j5schema.ObjectSchema, filters []*list_j5pb.Filter) error {
