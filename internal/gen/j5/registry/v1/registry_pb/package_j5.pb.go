@@ -7,6 +7,12 @@ import (
 	proto "google.golang.org/protobuf/proto"
 )
 
+func (msg *J5Package) Clone() any {
+	return proto.Clone(msg).(*J5Package)
+}
+
+// j5.registry.v1 is OK for  J5 Methods
+
 func (msg *J5Package) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -15,17 +21,16 @@ func (msg *J5Package) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *J5Package) Clone() any {
-	return proto.Clone(msg).(*J5Package)
+func (msg *GoModule) Clone() any {
+	return proto.Clone(msg).(*GoModule)
 }
+
+// j5.registry.v1 is OK for  J5 Methods
+
 func (msg *GoModule) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
 
 func (msg *GoModule) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
-
-func (msg *GoModule) Clone() any {
-	return proto.Clone(msg).(*GoModule)
 }

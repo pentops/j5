@@ -58,7 +58,7 @@ func (r *Reflector) NewRoot(msg protoreflect.Message) (Root, error) {
 
 	schema, err := r.schemaSet.Schema(descriptor)
 	if err != nil {
-		return nil, nil
+		return nil, err
 	}
 
 	mv := protoval.NewRootMessageValue(msg)

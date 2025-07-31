@@ -19,7 +19,6 @@ import (
 	"github.com/pentops/sqrlx.go/sqrlx"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 )
@@ -201,7 +200,7 @@ func TestChain(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 
-		t.Log(protojson.Format(res))
+		t.Log(prototext.Format(res))
 		if len(res.Events) != 3 {
 			t.Fatalf("expected 3 events for foo 2, got %d", len(res.Events))
 		}
@@ -219,7 +218,7 @@ func TestChain(t *testing.T) {
 		if deleteEvent.Metadata.Cause == nil {
 			t.Fatalf("expected derived event to have cause")
 		}
-		t.Log(protojson.Format(deleteEvent.Metadata.Cause))
+		t.Log(prototext.Format(deleteEvent.Metadata.Cause))
 		causeEvent := deleteEvent.Metadata.Cause.GetPsmEvent()
 
 		if causeEvent == nil {
@@ -291,7 +290,7 @@ func TestLink(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 
-		t.Log(protojson.Format(res))
+		t.Log(prototext.Format(res))
 
 		if len(res.Bar) != 1 {
 			t.Fatalf("expected 1 BAR, got %d", len(res.Bar))
@@ -318,7 +317,7 @@ func TestLink(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 
-		t.Log(protojson.Format(res))
+		t.Log(prototext.Format(res))
 
 		if res.Bar.Keys.BarOtherId != foo1ID {
 			t.Fatalf("expected BarOtherId to match FooId")
@@ -492,7 +491,7 @@ func TestStateMachineIdempotencyInitial(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 
-		t.Log(protojson.Format(res))
+		t.Log(prototext.Format(res))
 		if len(res.Events) != 1 {
 			t.Fatalf("expected 1 events, got %d", len(res.Events))
 		}
@@ -606,7 +605,7 @@ func TestFooStateMachine(t *testing.T) {
 				t.Fatal("expected non-nil response")
 			}
 		*/
-		t.Log(protojson.Format(res))
+		t.Log(prototext.Format(res))
 		if len(res.Foo) != 0 {
 			t.Fatalf("expected 0 states")
 		}
@@ -656,7 +655,7 @@ func TestFooStateMachine(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 
-		t.Log(protojson.Format(res))
+		t.Log(prototext.Format(res))
 		if len(res.Events) != 2 {
 			t.Fatalf("expected 2 events for foo 1, got %d", len(res.Events))
 		}
@@ -681,7 +680,7 @@ func TestFooStateMachine(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 
-		t.Log(protojson.Format(res))
+		t.Log(prototext.Format(res))
 		if len(res.Events) != 3 {
 			t.Fatalf("expected 3 events for foo 2, got %d", len(res.Events))
 		}
@@ -716,7 +715,7 @@ func TestFooStateMachine(t *testing.T) {
 			t.Fatal(err.Error())
 		}
 
-		t.Log(protojson.Format(res))
+		t.Log(prototext.Format(res))
 		if len(res.Foo) != 1 {
 			t.Fatalf("expected 1 states for default filter (ACTIVE), got %d", len(res.Foo))
 		}

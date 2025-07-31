@@ -32,8 +32,8 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
+      - base: go-j5
 
   - name: builds
     inputs:
@@ -44,8 +44,8 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
+      - base: go-j5
     output: .
     mods:
       - goPackageNames: 
@@ -69,8 +69,8 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
+      - base: go-j5
 
   - name: fulltest
     inputs:
@@ -87,7 +87,6 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
       - base: go-j5
 
@@ -103,7 +102,6 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
       - base: go-j5
       - base: go-o5-messaging
@@ -117,7 +115,6 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
       - base: go-j5
       - base: go-o5-messaging
@@ -139,12 +136,6 @@ plugins:
     runType:
       docker:
         image: ghcr.io/pentops/protoc-gen-go-grpc:v1.4.0
-
-  - name: go-sugar
-    type: PLUGIN_PROTO
-    runType:
-      docker:
-        image: ghcr.io/pentops/protoc-gen-go-sugar:b1e769eeea97192209ab5a4e8fc560bf72ce5ba7
 
   - name: go-o5-messaging
     base: go

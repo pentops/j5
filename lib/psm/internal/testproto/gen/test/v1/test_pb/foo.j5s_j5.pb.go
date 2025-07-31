@@ -3,9 +3,17 @@
 package test_pb
 
 import (
+	driver "database/sql/driver"
+	fmt "fmt"
 	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
+
+func (msg *FooKeys) Clone() any {
+	return proto.Clone(msg).(*FooKeys)
+}
+
+// test.v1 is OK for  J5 Methods
 
 func (msg *FooKeys) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
@@ -15,9 +23,12 @@ func (msg *FooKeys) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooKeys) Clone() any {
-	return proto.Clone(msg).(*FooKeys)
+func (msg *FooData) Clone() any {
+	return proto.Clone(msg).(*FooData)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooData) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -26,16 +37,72 @@ func (msg *FooData) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooData) Clone() any {
-	return proto.Clone(msg).(*FooData)
+// FooData_Shape is a oneof wrapper
+type FooData_ShapeTypeKey string
+
+const (
+	FooData_Shape_Circle FooData_ShapeTypeKey = "circle"
+	FooData_Shape_Square FooData_ShapeTypeKey = "square"
+)
+
+func (x *FooData_Shape) TypeKey() (FooData_ShapeTypeKey, bool) {
+	switch x.Type.(type) {
+	case *FooData_Shape_Circle_:
+		return FooData_Shape_Circle, true
+	case *FooData_Shape_Square_:
+		return FooData_Shape_Square, true
+	default:
+		return "", false
+	}
 }
+
+type IsFooData_ShapeWrappedType interface {
+	TypeKey() FooData_ShapeTypeKey
+	proto.Message
+}
+
+func (x *FooData_Shape) Set(val IsFooData_ShapeWrappedType) {
+	switch v := val.(type) {
+	case *FooData_Shape_Circle:
+		x.Type = &FooData_Shape_Circle_{Circle: v}
+	case *FooData_Shape_Square:
+		x.Type = &FooData_Shape_Square_{Square: v}
+	}
+}
+func (x *FooData_Shape) Get() IsFooData_ShapeWrappedType {
+	switch v := x.Type.(type) {
+	case *FooData_Shape_Circle_:
+		return v.Circle
+	case *FooData_Shape_Square_:
+		return v.Square
+	default:
+		return nil
+	}
+}
+func (x *FooData_Shape_Circle) TypeKey() FooData_ShapeTypeKey {
+	return FooData_Shape_Circle
+}
+func (x *FooData_Shape_Square) TypeKey() FooData_ShapeTypeKey {
+	return FooData_Shape_Square
+}
+func (msg *FooData_Shape) Clone() any {
+	return proto.Clone(msg).(*FooData_Shape)
+}
+
+type IsFooData_Shape_Type = isFooData_Shape_Type
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooData_Shape) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
 
-func (msg *FooData_Shape) Clone() any {
-	return proto.Clone(msg).(*FooData_Shape)
+func (msg *FooData_Shape_Circle) Clone() any {
+	return proto.Clone(msg).(*FooData_Shape_Circle)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooData_Shape_Circle) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -44,9 +111,12 @@ func (msg *FooData_Shape_Circle) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooData_Shape_Circle) Clone() any {
-	return proto.Clone(msg).(*FooData_Shape_Circle)
+func (msg *FooData_Shape_Square) Clone() any {
+	return proto.Clone(msg).(*FooData_Shape_Square)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooData_Shape_Square) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -55,9 +125,12 @@ func (msg *FooData_Shape_Square) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooData_Shape_Square) Clone() any {
-	return proto.Clone(msg).(*FooData_Shape_Square)
+func (msg *FooState) Clone() any {
+	return proto.Clone(msg).(*FooState)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooState) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -66,16 +139,82 @@ func (msg *FooState) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooState) Clone() any {
-	return proto.Clone(msg).(*FooState)
+// FooEventType is a oneof wrapper
+type FooEventTypeKey string
+
+const (
+	FooEvent_Created FooEventTypeKey = "created"
+	FooEvent_Updated FooEventTypeKey = "updated"
+	FooEvent_Deleted FooEventTypeKey = "deleted"
+)
+
+func (x *FooEventType) TypeKey() (FooEventTypeKey, bool) {
+	switch x.Type.(type) {
+	case *FooEventType_Created_:
+		return FooEvent_Created, true
+	case *FooEventType_Updated_:
+		return FooEvent_Updated, true
+	case *FooEventType_Deleted_:
+		return FooEvent_Deleted, true
+	default:
+		return "", false
+	}
 }
+
+type IsFooEventTypeWrappedType interface {
+	TypeKey() FooEventTypeKey
+	proto.Message
+}
+
+func (x *FooEventType) Set(val IsFooEventTypeWrappedType) {
+	switch v := val.(type) {
+	case *FooEventType_Created:
+		x.Type = &FooEventType_Created_{Created: v}
+	case *FooEventType_Updated:
+		x.Type = &FooEventType_Updated_{Updated: v}
+	case *FooEventType_Deleted:
+		x.Type = &FooEventType_Deleted_{Deleted: v}
+	}
+}
+func (x *FooEventType) Get() IsFooEventTypeWrappedType {
+	switch v := x.Type.(type) {
+	case *FooEventType_Created_:
+		return v.Created
+	case *FooEventType_Updated_:
+		return v.Updated
+	case *FooEventType_Deleted_:
+		return v.Deleted
+	default:
+		return nil
+	}
+}
+func (x *FooEventType_Created) TypeKey() FooEventTypeKey {
+	return FooEvent_Created
+}
+func (x *FooEventType_Updated) TypeKey() FooEventTypeKey {
+	return FooEvent_Updated
+}
+func (x *FooEventType_Deleted) TypeKey() FooEventTypeKey {
+	return FooEvent_Deleted
+}
+func (msg *FooEventType) Clone() any {
+	return proto.Clone(msg).(*FooEventType)
+}
+
+type IsFooEventType_Type = isFooEventType_Type
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooEventType) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
 
-func (msg *FooEventType) Clone() any {
-	return proto.Clone(msg).(*FooEventType)
+func (msg *FooEventType_Created) Clone() any {
+	return proto.Clone(msg).(*FooEventType_Created)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooEventType_Created) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -84,9 +223,12 @@ func (msg *FooEventType_Created) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooEventType_Created) Clone() any {
-	return proto.Clone(msg).(*FooEventType_Created)
+func (msg *FooEventType_Updated) Clone() any {
+	return proto.Clone(msg).(*FooEventType_Updated)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooEventType_Updated) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -95,9 +237,12 @@ func (msg *FooEventType_Updated) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooEventType_Updated) Clone() any {
-	return proto.Clone(msg).(*FooEventType_Updated)
+func (msg *FooEventType_Deleted) Clone() any {
+	return proto.Clone(msg).(*FooEventType_Deleted)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooEventType_Deleted) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -106,9 +251,12 @@ func (msg *FooEventType_Deleted) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooEventType_Deleted) Clone() any {
-	return proto.Clone(msg).(*FooEventType_Deleted)
+func (msg *FooEvent) Clone() any {
+	return proto.Clone(msg).(*FooEvent)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooEvent) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -117,9 +265,12 @@ func (msg *FooEvent) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooEvent) Clone() any {
-	return proto.Clone(msg).(*FooEvent)
+func (msg *FooCharacteristics) Clone() any {
+	return proto.Clone(msg).(*FooCharacteristics)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooCharacteristics) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -128,9 +279,12 @@ func (msg *FooCharacteristics) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooCharacteristics) Clone() any {
-	return proto.Clone(msg).(*FooCharacteristics)
+func (msg *FooProfile) Clone() any {
+	return proto.Clone(msg).(*FooProfile)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *FooProfile) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -139,6 +293,52 @@ func (msg *FooProfile) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooProfile) Clone() any {
-	return proto.Clone(msg).(*FooProfile)
+// FooStatus
+const (
+	FooStatus_UNSPECIFIED FooStatus = 0
+	FooStatus_ACTIVE      FooStatus = 1
+	FooStatus_DELETED     FooStatus = 2
+)
+
+var (
+	FooStatus_name_short = map[int32]string{
+		0: "UNSPECIFIED",
+		1: "ACTIVE",
+		2: "DELETED",
+	}
+	FooStatus_value_short = map[string]int32{
+		"UNSPECIFIED": 0,
+		"ACTIVE":      1,
+		"DELETED":     2,
+	}
+	FooStatus_value_either = map[string]int32{
+		"UNSPECIFIED":            0,
+		"FOO_STATUS_UNSPECIFIED": 0,
+		"ACTIVE":                 1,
+		"FOO_STATUS_ACTIVE":      1,
+		"DELETED":                2,
+		"FOO_STATUS_DELETED":     2,
+	}
+)
+
+// ShortString returns the un-prefixed string representation of the enum value
+func (x FooStatus) ShortString() string {
+	return FooStatus_name_short[int32(x)]
+}
+func (x FooStatus) Value() (driver.Value, error) {
+	return []uint8(x.ShortString()), nil
+}
+func (x *FooStatus) Scan(value interface{}) error {
+	var strVal string
+	switch vt := value.(type) {
+	case []uint8:
+		strVal = string(vt)
+	case string:
+		strVal = vt
+	default:
+		return fmt.Errorf("invalid type %T", value)
+	}
+	val := FooStatus_value_either[strVal]
+	*x = FooStatus(val)
+	return nil
 }

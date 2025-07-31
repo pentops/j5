@@ -200,8 +200,6 @@ github.com/opencontainers/image-spec v1.1.1/go.mod h1:qpqAh3Dmcf36wStyyWU+kCeDgr
 github.com/opentracing/opentracing-go v1.1.0/go.mod h1:UkNAQd3GIcIGf0SeVgPpRdFStlNbqXla1AfSYxPUl2o=
 github.com/pentops/envconf.go v0.0.0-20241008010024-9864aef6219d h1:8+nKhf+5Ms60LUBx3K3ccTyM1PWZrjgIEb0lJBvVwj4=
 github.com/pentops/envconf.go v0.0.0-20241008010024-9864aef6219d/go.mod h1:NYtaIY8a+Y8LYV9Y/nJb24zxx8mQyRK4h9k2oZDJveI=
-github.com/pentops/flowtest v0.0.0-20250716231535-9c97a48adf21 h1:EIMCYtccNxV59aqpmPV/6iJcREagf5WiPg7KXLe3XPk=
-github.com/pentops/flowtest v0.0.0-20250716231535-9c97a48adf21/go.mod h1:vNp8crAKcH0f/sZU9frkmQLUeDsTIgMqV14kQtkAqC0=
 github.com/pentops/golib v0.0.0-20250326060930-8c83d58ddb63 h1:s5qtWT2/s79gy/wm3/bwvKYLK6u2AkW05JiLPqxraP0=
 github.com/pentops/golib v0.0.0-20250326060930-8c83d58ddb63/go.mod h1:I58JIVvL1/nP4CEHGKGbBhvWIEA9mVkGeoviemaqanU=
 github.com/pentops/grpc.go v0.0.0-20250604193928-b45524df9c41 h1:Ub9nGu8V3M1NWsaKspUg7EpCISt2GCXf9TNLgH4URjU=

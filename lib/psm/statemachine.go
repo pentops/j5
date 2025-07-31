@@ -696,9 +696,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) validateEvent(event E) error {
 
 	err := sm.validator.Validate(event.J5Reflect())
 	if err != nil {
-		txt := prototext.Format(event)
-		fmt.Printf("Event validation failed: %s\n%s\n", err.Error(), txt)
-
 		return fmt.Errorf("validate event: %w", err)
 	}
 	return nil

@@ -2,12 +2,13 @@ package j5grpc
 
 import (
 	"fmt"
+	"io"
 	"sort"
 
 	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
+	"github.com/pentops/j5/internal/protosrc"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/grpc"
-	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 )
@@ -16,7 +17,7 @@ type InfoProvider interface {
 	GetServiceInfo() map[string]grpc.ServiceInfo
 }
 
-func PrintServerInfo(server InfoProvider) error {
+func PrintServerInfo(dest io.Writer, server InfoProvider) error {
 	info := server.GetServiceInfo()
 	subscriptions := make([]string, 0)
 
@@ -33,7 +34,7 @@ func PrintServerInfo(server InfoProvider) error {
 			return fmt.Errorf("not a service: %s", name)
 		}
 
-		serviceOpt := proto.GetExtension(desc.Options(), messaging_j5pb.E_Service).(*messaging_j5pb.ServiceConfig)
+		serviceOpt := protosrc.GetExtension[*messaging_j5pb.ServiceConfig](desc.Options(), messaging_j5pb.E_Service)
 		if serviceOpt != nil {
 			var role string
 			switch rr := serviceOpt.Role.(type) {
@@ -60,9 +61,11 @@ func PrintServerInfo(server InfoProvider) error {
 
 		for i := range serviceDesc.Methods().Len() {
 			method := serviceDesc.Methods().Get(i)
-			fmt.Printf("  %s\n", method.FullName())
+			if _, err := fmt.Fprintf(dest, "  %s\n", method.FullName()); err != nil {
+				return err
+			}
 
-			httpOpt := proto.GetExtension(method.Options(), annotations.E_Http).(*annotations.HttpRule)
+			httpOpt := protosrc.GetExtension[*annotations.HttpRule](method.Options(), annotations.E_Http)
 			if httpOpt == nil {
 				return fmt.Errorf("no http rule on %s", method.FullName())
 			}
@@ -98,13 +101,19 @@ func PrintServerInfo(server InfoProvider) error {
 
 	sort.Strings(paths)
 	for _, path := range paths {
-		fmt.Println(path)
+		if _, err := fmt.Fprintln(dest, path); err != nil {
+			return err
+		}
 	}
 
 	sort.Strings(subscriptions)
-	fmt.Println("subscriptions:")
+	if _, err := fmt.Fprintln(dest, "subscriptions:"); err != nil {
+		return err
+	}
 	for _, sub := range subscriptions {
-		fmt.Println(sub)
+		if _, err := fmt.Fprintln(dest, sub); err != nil {
+			return err
+		}
 	}
 
 	return nil

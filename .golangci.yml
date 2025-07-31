@@ -25,6 +25,10 @@ linters:
       - third_party$
       - builtin$
       - examples$
+    rules:
+      - path: cmd
+        linters:
+          - forbidigo
   settings:
     forbidigo:
       forbid:
@@ -32,6 +36,7 @@ linters:
           msg: "Use protosrc.GetExtension instead of proto.GetExtension"
         - pattern: ^protojson.*
           msg: "Use j5codec instead of protojson"
+        - pattern: ^(fmt\.Print(|f|ln))$
 formatters:
   enable:
     - gofmt

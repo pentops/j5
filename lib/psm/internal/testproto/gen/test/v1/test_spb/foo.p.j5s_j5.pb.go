@@ -7,6 +7,12 @@ import (
 	proto "google.golang.org/protobuf/proto"
 )
 
+func (msg *FooGetRequest) Clone() any {
+	return proto.Clone(msg).(*FooGetRequest)
+}
+
+// test.v1.service is OK for  J5 Methods
+
 func (msg *FooGetRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -15,9 +21,12 @@ func (msg *FooGetRequest) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooGetRequest) Clone() any {
-	return proto.Clone(msg).(*FooGetRequest)
+func (msg *FooGetResponse) Clone() any {
+	return proto.Clone(msg).(*FooGetResponse)
 }
+
+// test.v1.service is OK for  J5 Methods
+
 func (msg *FooGetResponse) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -26,9 +35,12 @@ func (msg *FooGetResponse) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooGetResponse) Clone() any {
-	return proto.Clone(msg).(*FooGetResponse)
+func (msg *FooListRequest) Clone() any {
+	return proto.Clone(msg).(*FooListRequest)
 }
+
+// test.v1.service is OK for  J5 Methods
+
 func (msg *FooListRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -37,9 +49,12 @@ func (msg *FooListRequest) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooListRequest) Clone() any {
-	return proto.Clone(msg).(*FooListRequest)
+func (msg *FooListResponse) Clone() any {
+	return proto.Clone(msg).(*FooListResponse)
 }
+
+// test.v1.service is OK for  J5 Methods
+
 func (msg *FooListResponse) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -48,9 +63,12 @@ func (msg *FooListResponse) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooListResponse) Clone() any {
-	return proto.Clone(msg).(*FooListResponse)
+func (msg *FooEventsRequest) Clone() any {
+	return proto.Clone(msg).(*FooEventsRequest)
 }
+
+// test.v1.service is OK for  J5 Methods
+
 func (msg *FooEventsRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -59,9 +77,12 @@ func (msg *FooEventsRequest) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooEventsRequest) Clone() any {
-	return proto.Clone(msg).(*FooEventsRequest)
+func (msg *FooEventsResponse) Clone() any {
+	return proto.Clone(msg).(*FooEventsResponse)
 }
+
+// test.v1.service is OK for  J5 Methods
+
 func (msg *FooEventsResponse) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -70,9 +91,12 @@ func (msg *FooEventsResponse) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooEventsResponse) Clone() any {
-	return proto.Clone(msg).(*FooEventsResponse)
+func (msg *FooSummaryRequest) Clone() any {
+	return proto.Clone(msg).(*FooSummaryRequest)
 }
+
+// test.v1.service is OK for  J5 Methods
+
 func (msg *FooSummaryRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -81,17 +105,16 @@ func (msg *FooSummaryRequest) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooSummaryRequest) Clone() any {
-	return proto.Clone(msg).(*FooSummaryRequest)
+func (msg *FooSummaryResponse) Clone() any {
+	return proto.Clone(msg).(*FooSummaryResponse)
 }
+
+// test.v1.service is OK for  J5 Methods
+
 func (msg *FooSummaryResponse) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
 
 func (msg *FooSummaryResponse) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
-
-func (msg *FooSummaryResponse) Clone() any {
-	return proto.Clone(msg).(*FooSummaryResponse)
 }

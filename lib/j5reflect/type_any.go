@@ -22,6 +22,14 @@ type AnyField interface {
 	GetProtoAny() (*anypb.Any, error)
 }
 
+type MapOfAnyField interface {
+	MapField
+}
+
+type ArrayOfAnyField interface {
+	ArrayField
+}
+
 /*** Implementation ***/
 
 type anyField struct {
@@ -133,6 +141,30 @@ func (impl *pbAnyImpl) getAny() (*any_j5t.Any, error) {
 	}, nil
 }
 
+type exitAnyImpl struct {
+	value     protoval.MessageValue
+	valueType string
+}
+
+func newExitAnyImpl(valueType string, value protoval.MessageValue) anyImpl {
+	return &exitAnyImpl{
+		value:     value,
+		valueType: valueType,
+	}
+}
+
+func (impl *exitAnyImpl) isSet() bool {
+	return impl.value.IsSet()
+}
+
+func (impl *exitAnyImpl) setAny(val *any_j5t.Any) error {
+	return fmt.Errorf("setAny not implemented for exit Any type %s", impl.valueType)
+}
+
+func (impl *exitAnyImpl) getAny() (*any_j5t.Any, error) {
+	return nil, fmt.Errorf("getAny not implemented for exit Any type %s", impl.valueType)
+}
+
 type j5AnyImpl struct {
 	value         protoval.MessageValue
 	typeNameField protoreflect.FieldDescriptor
@@ -207,7 +239,7 @@ func (factory *anyFieldFactory) buildField(context fieldContext, value protoval.
 	case "j5.types.any.v1.Any":
 		impl = newJ5AnyImpl(msgVal)
 	default:
-		panic(fmt.Sprintf("unsupported Any type %s", valueType))
+		impl = newExitAnyImpl(string(valueType), msgVal)
 	}
 
 	return &anyField{
@@ -216,3 +248,19 @@ func (factory *anyFieldFactory) buildField(context fieldContext, value protoval.
 		implType:     impl,
 	}
 }
+
+/*** Implement Array Of Any ***/
+
+type arrayOfAnyField struct {
+	mutableArrayField
+}
+
+var _ ArrayOfAnyField = (*arrayOfAnyField)(nil)
+
+/*** Implement Map Of Any ***/
+
+type mapOfAnyField struct {
+	mutableMapField
+}
+
+var _ MapOfAnyField = (*mapOfAnyField)(nil)

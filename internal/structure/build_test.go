@@ -10,7 +10,7 @@ import (
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/genproto/googleapis/api/annotations"
-	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/testing/protocmp"
@@ -445,7 +445,7 @@ func TestBuildPath(t *testing.T) {
 
 		ref := fEnum.Schema.GetEnum().GetRef()
 		if ref.Schema != "TestEnum" || ref.Package != "test.v1" {
-			refStr := protojson.Format(ref)
+			refStr := prototext.Format(ref)
 			t.Fatalf("ref is %s", refStr)
 		}
 

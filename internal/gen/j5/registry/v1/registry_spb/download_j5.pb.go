@@ -7,6 +7,12 @@ import (
 	proto "google.golang.org/protobuf/proto"
 )
 
+func (msg *DownloadImageRequest) Clone() any {
+	return proto.Clone(msg).(*DownloadImageRequest)
+}
+
+// j5.registry.v1.service is OK for  J5 Methods
+
 func (msg *DownloadImageRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -15,9 +21,12 @@ func (msg *DownloadImageRequest) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *DownloadImageRequest) Clone() any {
-	return proto.Clone(msg).(*DownloadImageRequest)
+func (msg *DownloadSwaggerRequest) Clone() any {
+	return proto.Clone(msg).(*DownloadSwaggerRequest)
 }
+
+// j5.registry.v1.service is OK for  J5 Methods
+
 func (msg *DownloadSwaggerRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -26,9 +35,12 @@ func (msg *DownloadSwaggerRequest) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *DownloadSwaggerRequest) Clone() any {
-	return proto.Clone(msg).(*DownloadSwaggerRequest)
+func (msg *DownloadClientAPIRequest) Clone() any {
+	return proto.Clone(msg).(*DownloadClientAPIRequest)
 }
+
+// j5.registry.v1.service is OK for  J5 Methods
+
 func (msg *DownloadClientAPIRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -37,17 +49,16 @@ func (msg *DownloadClientAPIRequest) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *DownloadClientAPIRequest) Clone() any {
-	return proto.Clone(msg).(*DownloadClientAPIRequest)
+func (msg *DownloadClientAPIResponse) Clone() any {
+	return proto.Clone(msg).(*DownloadClientAPIResponse)
 }
+
+// j5.registry.v1.service is OK for  J5 Methods
+
 func (msg *DownloadClientAPIResponse) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
 
 func (msg *DownloadClientAPIResponse) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
-
-func (msg *DownloadClientAPIResponse) Clone() any {
-	return proto.Clone(msg).(*DownloadClientAPIResponse)
 }

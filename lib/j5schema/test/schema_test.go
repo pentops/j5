@@ -8,10 +8,11 @@ import (
 	"github.com/pentops/flowtest/jsontest"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
+	"github.com/pentops/j5/lib/j5codec"
 	"github.com/pentops/j5/lib/j5schema"
 
 	"github.com/pentops/j5/internal/gen/test/schema/v1/schema_testpb"
-	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -42,7 +43,7 @@ func buildFieldSchema(t *testing.T, field *descriptorpb.FieldDescriptorProto, va
 	}
 	prop := obj.Object.Properties[0]
 
-	bt, err := protojson.Marshal(prop)
+	bt, err := j5codec.Global.ProtoToJSON(prop.ProtoReflect())
 	if err != nil {
 		t.Fatal(err.Error())
 	}
@@ -165,7 +166,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 			},
 		},
 		expected: map[string]any{
-			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_INT64.String(),
+			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_INT64.ShortString(),
 			"schema.integer.rules.minimum":          "1",
 			"schema.integer.rules.maximum":          "10",
 			"schema.integer.rules.exclusiveMaximum": true,
@@ -190,7 +191,7 @@ func TestSchemaTypesSimple(t *testing.T) {
 			},
 		},
 		expected: map[string]any{
-			"schema.integer.format":                 schema_j5pb.IntegerField_FORMAT_UINT32.String(),
+			"schema.integer.format":                 "UINT32",
 			"schema.integer.rules.minimum":          "1",
 			"schema.integer.rules.maximum":          "10",
 			"schema.integer.rules.exclusiveMaximum": true,
@@ -212,7 +213,7 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 
 	fooDesc := (&schema_testpb.FullSchema{}).ProtoReflect().Descriptor()
 
-	t.Log(protojson.Format(protodesc.ToDescriptorProto(fooDesc)))
+	t.Log(prototext.Format(protodesc.ToDescriptorProto(fooDesc)))
 
 	reflectRoot, err := ss.Schema(fooDesc)
 	if err != nil {

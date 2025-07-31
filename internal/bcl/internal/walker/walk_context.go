@@ -523,11 +523,11 @@ func (se *scopedError) Unwrap() error {
 
 func logError(err error) {
 	scoped := &scopedError{}
+	pf := prefixer(log.Printf, "ERR | ")
 	if !errors.As(err, &scoped) {
-		fmt.Printf("Error %s\n", err)
+		pf("Error (unscoped): %s\n", err)
 		return
 	}
-	pf := prefixer(log.Printf, "ERR | ")
 	msg := scoped.err.Err.Error()
 	pf("Error: %s", msg)
 	pf("Location: %s", scoped.err.Pos)

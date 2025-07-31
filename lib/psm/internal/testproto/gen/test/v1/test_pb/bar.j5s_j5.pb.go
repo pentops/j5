@@ -3,9 +3,17 @@
 package test_pb
 
 import (
+	driver "database/sql/driver"
+	fmt "fmt"
 	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
+
+func (msg *BarKeys) Clone() any {
+	return proto.Clone(msg).(*BarKeys)
+}
+
+// test.v1 is OK for  J5 Methods
 
 func (msg *BarKeys) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
@@ -15,9 +23,12 @@ func (msg *BarKeys) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *BarKeys) Clone() any {
-	return proto.Clone(msg).(*BarKeys)
+func (msg *BarData) Clone() any {
+	return proto.Clone(msg).(*BarData)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *BarData) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -26,9 +37,12 @@ func (msg *BarData) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *BarData) Clone() any {
-	return proto.Clone(msg).(*BarData)
+func (msg *BarState) Clone() any {
+	return proto.Clone(msg).(*BarState)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *BarState) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -37,16 +51,82 @@ func (msg *BarState) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *BarState) Clone() any {
-	return proto.Clone(msg).(*BarState)
+// BarEventType is a oneof wrapper
+type BarEventTypeKey string
+
+const (
+	BarEvent_Created BarEventTypeKey = "created"
+	BarEvent_Updated BarEventTypeKey = "updated"
+	BarEvent_Deleted BarEventTypeKey = "deleted"
+)
+
+func (x *BarEventType) TypeKey() (BarEventTypeKey, bool) {
+	switch x.Type.(type) {
+	case *BarEventType_Created_:
+		return BarEvent_Created, true
+	case *BarEventType_Updated_:
+		return BarEvent_Updated, true
+	case *BarEventType_Deleted_:
+		return BarEvent_Deleted, true
+	default:
+		return "", false
+	}
 }
+
+type IsBarEventTypeWrappedType interface {
+	TypeKey() BarEventTypeKey
+	proto.Message
+}
+
+func (x *BarEventType) Set(val IsBarEventTypeWrappedType) {
+	switch v := val.(type) {
+	case *BarEventType_Created:
+		x.Type = &BarEventType_Created_{Created: v}
+	case *BarEventType_Updated:
+		x.Type = &BarEventType_Updated_{Updated: v}
+	case *BarEventType_Deleted:
+		x.Type = &BarEventType_Deleted_{Deleted: v}
+	}
+}
+func (x *BarEventType) Get() IsBarEventTypeWrappedType {
+	switch v := x.Type.(type) {
+	case *BarEventType_Created_:
+		return v.Created
+	case *BarEventType_Updated_:
+		return v.Updated
+	case *BarEventType_Deleted_:
+		return v.Deleted
+	default:
+		return nil
+	}
+}
+func (x *BarEventType_Created) TypeKey() BarEventTypeKey {
+	return BarEvent_Created
+}
+func (x *BarEventType_Updated) TypeKey() BarEventTypeKey {
+	return BarEvent_Updated
+}
+func (x *BarEventType_Deleted) TypeKey() BarEventTypeKey {
+	return BarEvent_Deleted
+}
+func (msg *BarEventType) Clone() any {
+	return proto.Clone(msg).(*BarEventType)
+}
+
+type IsBarEventType_Type = isBarEventType_Type
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *BarEventType) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
 
-func (msg *BarEventType) Clone() any {
-	return proto.Clone(msg).(*BarEventType)
+func (msg *BarEventType_Created) Clone() any {
+	return proto.Clone(msg).(*BarEventType_Created)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *BarEventType_Created) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -55,9 +135,12 @@ func (msg *BarEventType_Created) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *BarEventType_Created) Clone() any {
-	return proto.Clone(msg).(*BarEventType_Created)
+func (msg *BarEventType_Updated) Clone() any {
+	return proto.Clone(msg).(*BarEventType_Updated)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *BarEventType_Updated) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -66,9 +149,12 @@ func (msg *BarEventType_Updated) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *BarEventType_Updated) Clone() any {
-	return proto.Clone(msg).(*BarEventType_Updated)
+func (msg *BarEventType_Deleted) Clone() any {
+	return proto.Clone(msg).(*BarEventType_Deleted)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *BarEventType_Deleted) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -77,9 +163,12 @@ func (msg *BarEventType_Deleted) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *BarEventType_Deleted) Clone() any {
-	return proto.Clone(msg).(*BarEventType_Deleted)
+func (msg *BarEvent) Clone() any {
+	return proto.Clone(msg).(*BarEvent)
 }
+
+// test.v1 is OK for  J5 Methods
+
 func (msg *BarEvent) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -88,6 +177,52 @@ func (msg *BarEvent) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *BarEvent) Clone() any {
-	return proto.Clone(msg).(*BarEvent)
+// BarStatus
+const (
+	BarStatus_UNSPECIFIED BarStatus = 0
+	BarStatus_ACTIVE      BarStatus = 1
+	BarStatus_DELETED     BarStatus = 2
+)
+
+var (
+	BarStatus_name_short = map[int32]string{
+		0: "UNSPECIFIED",
+		1: "ACTIVE",
+		2: "DELETED",
+	}
+	BarStatus_value_short = map[string]int32{
+		"UNSPECIFIED": 0,
+		"ACTIVE":      1,
+		"DELETED":     2,
+	}
+	BarStatus_value_either = map[string]int32{
+		"UNSPECIFIED":            0,
+		"BAR_STATUS_UNSPECIFIED": 0,
+		"ACTIVE":                 1,
+		"BAR_STATUS_ACTIVE":      1,
+		"DELETED":                2,
+		"BAR_STATUS_DELETED":     2,
+	}
+)
+
+// ShortString returns the un-prefixed string representation of the enum value
+func (x BarStatus) ShortString() string {
+	return BarStatus_name_short[int32(x)]
+}
+func (x BarStatus) Value() (driver.Value, error) {
+	return []uint8(x.ShortString()), nil
+}
+func (x *BarStatus) Scan(value interface{}) error {
+	var strVal string
+	switch vt := value.(type) {
+	case []uint8:
+		strVal = string(vt)
+	case string:
+		strVal = vt
+	default:
+		return fmt.Errorf("invalid type %T", value)
+	}
+	val := BarStatus_value_either[strVal]
+	*x = BarStatus(val)
+	return nil
 }

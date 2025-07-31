@@ -6,8 +6,8 @@ import (
 	"io"
 
 	"github.com/pentops/j5/internal/registry/anyfs"
+	"github.com/pentops/j5/lib/j5codec"
 	"github.com/pentops/sqrlx.go/sqrlx"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -56,5 +56,5 @@ func (s *PackageStore) selectDataRow(ctx context.Context, query sqrlx.Sqlizer, d
 		return err
 	}
 
-	return protojson.Unmarshal(bytesOut, dest)
+	return j5codec.Global.JSONToProto(bytesOut, dest.ProtoReflect())
 }

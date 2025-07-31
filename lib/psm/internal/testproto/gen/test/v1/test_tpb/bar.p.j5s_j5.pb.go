@@ -7,14 +7,16 @@ import (
 	proto "google.golang.org/protobuf/proto"
 )
 
+func (msg *BarEventMessage) Clone() any {
+	return proto.Clone(msg).(*BarEventMessage)
+}
+
+// test.v1.topic is OK for  J5 Methods
+
 func (msg *BarEventMessage) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
 
 func (msg *BarEventMessage) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
-
-func (msg *BarEventMessage) Clone() any {
-	return proto.Clone(msg).(*BarEventMessage)
 }

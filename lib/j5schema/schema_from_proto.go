@@ -364,52 +364,6 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 
 	properties := make([]*ObjectProperty, 0, src.Fields().Len())
 
-	//exposeOneofs := make(map[string]*OneofSchema)
-	//pendingOneofProps := make(map[string]*ObjectProperty)
-
-	/*
-		for idx := range src.Oneofs().Len() {
-			oneof := src.Oneofs().Get(idx)
-			if oneof.IsSynthetic() {
-				continue
-			}
-
-			ext := protosrc.GetExtension[*ext_j5pb.OneofOptions](oneof.Options(), ext_j5pb.E_Oneof)
-			if ext == nil {
-				continue
-			} else if !ext.Expose {
-				// By default, do not expose oneofs
-				continue
-			}
-
-			oneofName := string(oneof.Name())
-			oneofObject := &OneofSchema{
-				rootSchema: ss.schemaRootFromProto(oneof),
-				//oneofDescriptor: oneof,
-			}
-			refPlaceholder, didExist := newRefPlaceholder(ss.PackageSet, oneof)
-			if didExist {
-				return nil, fmt.Errorf("placeholder already exists for oneof wrapper %q", oneofName)
-			}
-			refPlaceholder.To = oneofObject
-			if err := refPlaceholder.check(); err != nil {
-				return nil, err
-			}
-
-			prop := &ObjectProperty{
-				Parent:      parent,
-				JSONName:    jsonFieldName(oneof.Name()),
-				Description: commentDescription(src),
-				Schema: &OneofField{
-					Ref: refPlaceholder,
-					// TODO: Oneof Rules
-				},
-			}
-			pendingOneofProps[oneofName] = prop
-			exposeOneofs[oneofName] = oneofObject
-
-		}*/
-
 	for ii := range src.Fields().Len() {
 		field := src.Fields().Get(ii)
 
@@ -462,6 +416,13 @@ func (ss *Package) messageProperties(parent RootSchema, src protoreflect.Message
 			}
 
 			arrayField.ItemSchema = fieldSchema
+
+			switch fieldSchema.(type) {
+			case *ArrayField:
+				return nil, patherr.Wrap(fmt.Errorf("can't nest array in array"), string(field.Name()))
+			case *MapField:
+				return nil, patherr.Wrap(fmt.Errorf("can't nest map in array"), string(field.Name()))
+			}
 
 			prop := &ObjectProperty{
 				Parent: parent,
@@ -1336,10 +1297,13 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 			},
 		}, true, nil
 
-	case "google.protobuf.Struct", "google.protobuf.FileDescriptorProto":
+	case "google.protobuf.Struct":
 		return &MapField{
 			ItemSchema: &AnyField{},
 		}, true, nil
+
+	case "google.protobuf.FileDescriptorProto":
+		return &AnyField{}, true, nil
 
 	case "j5.types.any.v1.Any", "google.protobuf.Any":
 		field := &AnyField{
