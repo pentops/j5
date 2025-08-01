@@ -291,7 +291,9 @@ func protoToJSONPath(msg protoreflect.MessageDescriptor, field string) ([]string
 		if matchingField == nil {
 			return nil, fmt.Errorf("unknown proto field %q in path %q from %q", pathPart, field, msg.FullName())
 		}
-		jsonPath = append(jsonPath, string(matchingField.JSONName()))
+		if !isFlattenedObjectField(matchingField) {
+			jsonPath = append(jsonPath, string(matchingField.JSONName()))
+		}
 		if idx < len(parts)-1 {
 			msg = matchingField.Message()
 			if msg == nil {
@@ -300,6 +302,18 @@ func protoToJSONPath(msg protoreflect.MessageDescriptor, field string) ([]string
 		}
 	}
 	return jsonPath, nil
+}
+
+func isFlattenedObjectField(matchingField protoreflect.FieldDescriptor) bool {
+	fieldExt := protosrc.GetExtension[*ext_j5pb.FieldOptions](matchingField.Options(), ext_j5pb.E_Field)
+	if fieldExt == nil {
+		return false
+	}
+	obj := fieldExt.GetObject()
+	if obj == nil {
+		return false
+	}
+	return obj.Flatten
 }
 
 func (ss *Package) buildPolymorphSchema(srcMsg protoreflect.MessageDescriptor, opts *ext_j5pb.PolymorphMessageOptions) (*PolymorphSchema, error) {

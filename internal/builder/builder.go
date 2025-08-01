@@ -317,14 +317,16 @@ func (b *Builder) runBuiltinProtogen(ctx context.Context, pc PluginContext, plug
 		return err
 	}
 	if err := f(gen); err != nil {
-		// Errors from the plugin function are reported by setting the
-		// error field in the CodeGeneratorResponse.
-		//
-		// In contrast, errors that indicate a problem in protoc
-		// itself (unparsable input, I/O errors, etc.) are reported
-		// to stderr.
-		gen.Error(err)
+		return err
 	}
 	resp := gen.Response()
-	return handleResponseFiles(ctx, resp, pc.Dest)
+	err = handleResponseFiles(ctx, resp, pc.Dest)
+	if err != nil {
+		return fmt.Errorf("handling response files: %w", err)
+	}
+
+	log.WithFields(ctx, map[string]any{
+		"files": len(resp.File),
+	}).Info("Protoc Plugin Complete")
+	return nil
 }

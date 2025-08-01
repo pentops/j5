@@ -229,6 +229,8 @@ func JSONPath(path ...string) JSONPathSpec {
 	return JSONPathSpec(path)
 }
 
+type ProtoPathSpec []string
+
 func ParseJSONPathSpec(path string) JSONPathSpec {
 	return JSONPathSpec(strings.Split(path, "."))
 }
@@ -241,7 +243,7 @@ func NewJSONPath(rootMessage *j5schema.ObjectSchema, fieldPath JSONPathSpec) (*P
 	return newPath(rootMessage, []string(fieldPath), clientPath)
 }
 
-func NewOuterPath(rootMessage *j5schema.ObjectSchema, fieldPath JSONPathSpec) (*Path, error) {
+func NewProtoPath(rootMessage *j5schema.ObjectSchema, fieldPath ProtoPathSpec) (*Path, error) {
 	return newPath(rootMessage, []string(fieldPath), outerPath)
 }
 
