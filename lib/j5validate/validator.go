@@ -330,6 +330,7 @@ func (v *Validator) validateField(field j5reflect.Field, schema j5schema.FieldSc
 		}
 
 		return validateScalar(gotValue, st)
+
 	default:
 		return nil, fmt.Errorf("unsupported schema type %T", st)
 
@@ -433,6 +434,8 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 				}}, nil
 			}
 		}
+
+		return nil, nil
 
 	case *schema_j5pb.Field_Date:
 		if st.Date.Rules == nil {
@@ -599,6 +602,8 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			}
 		}
 
+		return nil, nil
+
 	case *schema_j5pb.Field_Float:
 		if st.Float.Rules == nil {
 			return nil, nil
@@ -648,6 +653,8 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 				}
 			}
 		}
+
+		return nil, nil
 
 	case *schema_j5pb.Field_Integer:
 		if st.Integer.Rules == nil {
@@ -755,5 +762,4 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 		return nil, fmt.Errorf("unsupported scalar type %T", j5Schema.Type)
 	}
 
-	return nil, fmt.Errorf("scalar validation not implemented for type %T", j5Schema.Type)
 }
