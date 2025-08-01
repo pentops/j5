@@ -146,5 +146,5 @@ plugins:
   - base: go
     name: go-j5
     runType:
-      builtin: "j5-go"
+      builtin: "go-j5"
 

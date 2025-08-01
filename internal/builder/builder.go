@@ -301,7 +301,7 @@ func (b *Builder) runBuiltinProtogen(ctx context.Context, pc PluginContext, plug
 	name := plugin.RunType.GetBuiltin()
 	var f func(*protogen.Plugin) error
 	switch name {
-	case "j5-go":
+	case "go-j5":
 		f = j5go.ProtocPlugin()
 	default:
 		return fmt.Errorf("unknown builtin plugin: %s", name)
