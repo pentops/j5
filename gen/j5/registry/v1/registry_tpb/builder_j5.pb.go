@@ -5,32 +5,53 @@ package registry_tpb
 import (
 	driver "database/sql/driver"
 	fmt "fmt"
+	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
 
 func (msg *PublishMessage) Clone() any {
 	return proto.Clone(msg).(*PublishMessage)
 }
+func (msg *PublishMessage) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.registry.v1.topic is a J5 schema message, No J5 Methods
+func (msg *PublishMessage) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *BuildAPIMessage) Clone() any {
 	return proto.Clone(msg).(*BuildAPIMessage)
 }
+func (msg *BuildAPIMessage) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.registry.v1.topic is a J5 schema message, No J5 Methods
+func (msg *BuildAPIMessage) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *J5BuildStatusMessage) Clone() any {
 	return proto.Clone(msg).(*J5BuildStatusMessage)
 }
+func (msg *J5BuildStatusMessage) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.registry.v1.topic is a J5 schema message, No J5 Methods
+func (msg *J5BuildStatusMessage) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *BuildOutput) Clone() any {
 	return proto.Clone(msg).(*BuildOutput)
 }
+func (msg *BuildOutput) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.registry.v1.topic is a J5 schema message, No J5 Methods
+func (msg *BuildOutput) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 // BuildStatus
 const (

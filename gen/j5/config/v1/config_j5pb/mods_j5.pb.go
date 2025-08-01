@@ -3,6 +3,7 @@
 package config_j5pb
 
 import (
+	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
 
@@ -50,10 +51,17 @@ func (msg *ProtoMod) Clone() any {
 
 type IsProtoMod_Type = isProtoMod_Type
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *ProtoMod) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
 func (msg *ProtoMod_GoPackageNames) Clone() any {
 	return proto.Clone(msg).(*ProtoMod_GoPackageNames)
 }
+func (msg *ProtoMod_GoPackageNames) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *ProtoMod_GoPackageNames) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}

@@ -12,9 +12,6 @@ import (
 func (msg *BarKeys) Clone() any {
 	return proto.Clone(msg).(*BarKeys)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *BarKeys) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -26,9 +23,6 @@ func (msg *BarKeys) J5Object() j5reflect.Object {
 func (msg *BarData) Clone() any {
 	return proto.Clone(msg).(*BarData)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *BarData) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -40,9 +34,6 @@ func (msg *BarData) J5Object() j5reflect.Object {
 func (msg *BarState) Clone() any {
 	return proto.Clone(msg).(*BarState)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *BarState) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -115,8 +106,6 @@ func (msg *BarEventType) Clone() any {
 
 type IsBarEventType_Type = isBarEventType_Type
 
-// test.v1 is OK for  J5 Methods
-
 func (msg *BarEventType) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -124,9 +113,6 @@ func (msg *BarEventType) J5Reflect() j5reflect.Root {
 func (msg *BarEventType_Created) Clone() any {
 	return proto.Clone(msg).(*BarEventType_Created)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *BarEventType_Created) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -138,9 +124,6 @@ func (msg *BarEventType_Created) J5Object() j5reflect.Object {
 func (msg *BarEventType_Updated) Clone() any {
 	return proto.Clone(msg).(*BarEventType_Updated)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *BarEventType_Updated) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -152,9 +135,6 @@ func (msg *BarEventType_Updated) J5Object() j5reflect.Object {
 func (msg *BarEventType_Deleted) Clone() any {
 	return proto.Clone(msg).(*BarEventType_Deleted)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *BarEventType_Deleted) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -166,9 +146,6 @@ func (msg *BarEventType_Deleted) J5Object() j5reflect.Object {
 func (msg *BarEvent) Clone() any {
 	return proto.Clone(msg).(*BarEvent)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *BarEvent) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }

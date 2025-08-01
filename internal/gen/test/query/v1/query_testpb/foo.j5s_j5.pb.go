@@ -12,9 +12,6 @@ import (
 func (msg *FooState) Clone() any {
 	return proto.Clone(msg).(*FooState)
 }
-
-// test.query.v1 is OK for  J5 Methods
-
 func (msg *FooState) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -26,9 +23,6 @@ func (msg *FooState) J5Object() j5reflect.Object {
 func (msg *FooState_Keys) Clone() any {
 	return proto.Clone(msg).(*FooState_Keys)
 }
-
-// test.query.v1 is OK for  J5 Methods
-
 func (msg *FooState_Keys) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -40,9 +34,6 @@ func (msg *FooState_Keys) J5Object() j5reflect.Object {
 func (msg *FooState_Data) Clone() any {
 	return proto.Clone(msg).(*FooState_Data)
 }
-
-// test.query.v1 is OK for  J5 Methods
-
 func (msg *FooState_Data) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -105,8 +96,6 @@ func (msg *FooState_Data_Shape) Clone() any {
 
 type IsFooState_Data_Shape_Type = isFooState_Data_Shape_Type
 
-// test.query.v1 is OK for  J5 Methods
-
 func (msg *FooState_Data_Shape) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -114,9 +103,6 @@ func (msg *FooState_Data_Shape) J5Reflect() j5reflect.Root {
 func (msg *FooState_Data_Shape_Circle) Clone() any {
 	return proto.Clone(msg).(*FooState_Data_Shape_Circle)
 }
-
-// test.query.v1 is OK for  J5 Methods
-
 func (msg *FooState_Data_Shape_Circle) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -128,9 +114,6 @@ func (msg *FooState_Data_Shape_Circle) J5Object() j5reflect.Object {
 func (msg *FooState_Data_Shape_Square) Clone() any {
 	return proto.Clone(msg).(*FooState_Data_Shape_Square)
 }
-
-// test.query.v1 is OK for  J5 Methods
-
 func (msg *FooState_Data_Shape_Square) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -142,9 +125,6 @@ func (msg *FooState_Data_Shape_Square) J5Object() j5reflect.Object {
 func (msg *FooCharacteristics) Clone() any {
 	return proto.Clone(msg).(*FooCharacteristics)
 }
-
-// test.query.v1 is OK for  J5 Methods
-
 func (msg *FooCharacteristics) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -156,9 +136,6 @@ func (msg *FooCharacteristics) J5Object() j5reflect.Object {
 func (msg *FooProfile) Clone() any {
 	return proto.Clone(msg).(*FooProfile)
 }
-
-// test.query.v1 is OK for  J5 Methods
-
 func (msg *FooProfile) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }

@@ -5,14 +5,20 @@ package config_j5pb
 import (
 	driver "database/sql/driver"
 	fmt "fmt"
+	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
 
 func (msg *BuildPlugin) Clone() any {
 	return proto.Clone(msg).(*BuildPlugin)
 }
+func (msg *BuildPlugin) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *BuildPlugin) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 // PluginRunType is a oneof wrapper
 type PluginRunTypeKey string
@@ -41,19 +47,31 @@ func (msg *PluginRunType) Clone() any {
 
 type IsPluginRunType_Type = isPluginRunType_Type
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *PluginRunType) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
 func (msg *DockerSpec) Clone() any {
 	return proto.Clone(msg).(*DockerSpec)
 }
+func (msg *DockerSpec) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *DockerSpec) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *CommandSpec) Clone() any {
 	return proto.Clone(msg).(*CommandSpec)
 }
+func (msg *CommandSpec) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *CommandSpec) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *DockerRegistryAuth) Clone() any {
 	return proto.Clone(msg).(*DockerRegistryAuth)
@@ -61,31 +79,57 @@ func (msg *DockerRegistryAuth) Clone() any {
 
 type IsDockerRegistryAuth_Auth = isDockerRegistryAuth_Auth
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *DockerRegistryAuth) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
+
+func (msg *DockerRegistryAuth) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *DockerRegistryAuth_Basic) Clone() any {
 	return proto.Clone(msg).(*DockerRegistryAuth_Basic)
 }
+func (msg *DockerRegistryAuth_Basic) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *DockerRegistryAuth_Basic) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *DockerRegistryAuth_AWSECS) Clone() any {
 	return proto.Clone(msg).(*DockerRegistryAuth_AWSECS)
 }
+func (msg *DockerRegistryAuth_AWSECS) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *DockerRegistryAuth_AWSECS) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *DockerRegistryAuth_Github) Clone() any {
 	return proto.Clone(msg).(*DockerRegistryAuth_Github)
 }
+func (msg *DockerRegistryAuth_Github) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *DockerRegistryAuth_Github) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *PluginOverride) Clone() any {
 	return proto.Clone(msg).(*PluginOverride)
 }
+func (msg *PluginOverride) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *PluginOverride) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 // Plugin
 const (

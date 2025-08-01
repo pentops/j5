@@ -3,29 +3,50 @@
 package registry_spb
 
 import (
+	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
 
 func (msg *DownloadImageRequest) Clone() any {
 	return proto.Clone(msg).(*DownloadImageRequest)
 }
+func (msg *DownloadImageRequest) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.registry.v1.service is a J5 schema message, No J5 Methods
+func (msg *DownloadImageRequest) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *DownloadSwaggerRequest) Clone() any {
 	return proto.Clone(msg).(*DownloadSwaggerRequest)
 }
+func (msg *DownloadSwaggerRequest) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.registry.v1.service is a J5 schema message, No J5 Methods
+func (msg *DownloadSwaggerRequest) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *DownloadClientAPIRequest) Clone() any {
 	return proto.Clone(msg).(*DownloadClientAPIRequest)
 }
+func (msg *DownloadClientAPIRequest) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.registry.v1.service is a J5 schema message, No J5 Methods
+func (msg *DownloadClientAPIRequest) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *DownloadClientAPIResponse) Clone() any {
 	return proto.Clone(msg).(*DownloadClientAPIResponse)
 }
+func (msg *DownloadClientAPIResponse) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.registry.v1.service is a J5 schema message, No J5 Methods
+func (msg *DownloadClientAPIResponse) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}

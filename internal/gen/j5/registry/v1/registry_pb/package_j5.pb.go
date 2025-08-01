@@ -3,17 +3,28 @@
 package registry_pb
 
 import (
+	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
 
 func (msg *J5Package) Clone() any {
 	return proto.Clone(msg).(*J5Package)
 }
+func (msg *J5Package) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.registry.v1 is a J5 schema message, No J5 Methods
+func (msg *J5Package) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *GoModule) Clone() any {
 	return proto.Clone(msg).(*GoModule)
 }
+func (msg *GoModule) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.registry.v1 is a J5 schema message, No J5 Methods
+func (msg *GoModule) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}

@@ -3,50 +3,86 @@
 package config_j5pb
 
 import (
+	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
 
 func (msg *BundleConfigFile) Clone() any {
 	return proto.Clone(msg).(*BundleConfigFile)
 }
+func (msg *BundleConfigFile) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *BundleConfigFile) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *Include) Clone() any {
 	return proto.Clone(msg).(*Include)
 }
+func (msg *Include) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *Include) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *RegistryConfig) Clone() any {
 	return proto.Clone(msg).(*RegistryConfig)
 }
+func (msg *RegistryConfig) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *RegistryConfig) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *PackageConfig) Clone() any {
 	return proto.Clone(msg).(*PackageConfig)
 }
+func (msg *PackageConfig) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *PackageConfig) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *PublishConfig) Clone() any {
 	return proto.Clone(msg).(*PublishConfig)
 }
+func (msg *PublishConfig) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *PublishConfig) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *PackageOptions) Clone() any {
 	return proto.Clone(msg).(*PackageOptions)
 }
+func (msg *PackageOptions) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *PackageOptions) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *SubPackageType) Clone() any {
 	return proto.Clone(msg).(*SubPackageType)
 }
+func (msg *SubPackageType) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *SubPackageType) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 // OutputType is a oneof wrapper
 type OutputTypeKey string
@@ -92,16 +128,28 @@ func (msg *OutputType) Clone() any {
 
 type IsOutputType_Type = isOutputType_Type
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *OutputType) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
 func (msg *OutputType_GoProxy) Clone() any {
 	return proto.Clone(msg).(*OutputType_GoProxy)
 }
+func (msg *OutputType_GoProxy) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *OutputType_GoProxy) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *OutputType_GoProxy_Dep) Clone() any {
 	return proto.Clone(msg).(*OutputType_GoProxy_Dep)
 }
+func (msg *OutputType_GoProxy_Dep) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *OutputType_GoProxy_Dep) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}

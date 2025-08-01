@@ -3,26 +3,42 @@
 package sourcedef_j5pb
 
 import (
+	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
 
 func (msg *SourceFile) Clone() any {
 	return proto.Clone(msg).(*SourceFile)
 }
+func (msg *SourceFile) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *SourceFile) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *Package) Clone() any {
 	return proto.Clone(msg).(*Package)
 }
+func (msg *Package) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *Package) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *Import) Clone() any {
 	return proto.Clone(msg).(*Import)
 }
+func (msg *Import) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *Import) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 // RootElement is a oneof wrapper
 type RootElementTypeKey string
@@ -66,55 +82,97 @@ func (msg *RootElement) Clone() any {
 
 type IsRootElement_Type = isRootElement_Type
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *RootElement) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
 func (msg *Entity) Clone() any {
 	return proto.Clone(msg).(*Entity)
 }
+func (msg *Entity) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *Entity) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *Event) Clone() any {
 	return proto.Clone(msg).(*Event)
 }
+func (msg *Event) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *Event) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *Transition) Clone() any {
 	return proto.Clone(msg).(*Transition)
 }
+func (msg *Transition) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *Transition) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *EntityQuery) Clone() any {
 	return proto.Clone(msg).(*EntityQuery)
 }
+func (msg *EntityQuery) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *EntityQuery) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *APIMethod) Clone() any {
 	return proto.Clone(msg).(*APIMethod)
 }
+func (msg *APIMethod) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *APIMethod) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *AnonymousObject) Clone() any {
 	return proto.Clone(msg).(*AnonymousObject)
 }
+func (msg *AnonymousObject) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *AnonymousObject) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *Service) Clone() any {
 	return proto.Clone(msg).(*Service)
 }
+func (msg *Service) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *Service) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *EntitySummary) Clone() any {
 	return proto.Clone(msg).(*EntitySummary)
 }
+func (msg *EntitySummary) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *EntitySummary) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 // NestedSchema is a oneof wrapper
 type NestedSchemaTypeKey string
@@ -143,43 +201,75 @@ func (msg *NestedSchema) Clone() any {
 
 type IsNestedSchema_Type = isNestedSchema_Type
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *NestedSchema) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
 func (msg *EntityKey) Clone() any {
 	return proto.Clone(msg).(*EntityKey)
 }
+func (msg *EntityKey) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *EntityKey) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *Oneof) Clone() any {
 	return proto.Clone(msg).(*Oneof)
 }
+func (msg *Oneof) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *Oneof) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *Object) Clone() any {
 	return proto.Clone(msg).(*Object)
 }
+func (msg *Object) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *Object) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *Polymorph) Clone() any {
 	return proto.Clone(msg).(*Polymorph)
 }
+func (msg *Polymorph) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *Polymorph) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *EntityElement) Clone() any {
 	return proto.Clone(msg).(*EntityElement)
 }
+func (msg *EntityElement) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *EntityElement) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *Topic) Clone() any {
 	return proto.Clone(msg).(*Topic)
 }
+func (msg *Topic) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *Topic) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 // TopicType is a oneof wrapper
 type TopicTypeKey string
@@ -255,34 +345,61 @@ func (msg *TopicType) Clone() any {
 
 type IsTopicType_Type = isTopicType_Type
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *TopicType) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
 func (msg *TopicType_Publish) Clone() any {
 	return proto.Clone(msg).(*TopicType_Publish)
 }
+func (msg *TopicType_Publish) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *TopicType_Publish) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *TopicType_ReqRes) Clone() any {
 	return proto.Clone(msg).(*TopicType_ReqRes)
 }
+func (msg *TopicType_ReqRes) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *TopicType_ReqRes) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *TopicType_Upsert) Clone() any {
 	return proto.Clone(msg).(*TopicType_Upsert)
 }
+func (msg *TopicType_Upsert) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *TopicType_Upsert) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *TopicType_Event) Clone() any {
 	return proto.Clone(msg).(*TopicType_Event)
 }
+func (msg *TopicType_Event) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *TopicType_Event) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *TopicMethod) Clone() any {
 	return proto.Clone(msg).(*TopicMethod)
 }
+func (msg *TopicMethod) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.sourcedef.v1 is a J5 schema message, No J5 Methods
+func (msg *TopicMethod) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}

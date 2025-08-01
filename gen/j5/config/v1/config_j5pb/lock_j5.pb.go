@@ -3,23 +3,39 @@
 package config_j5pb
 
 import (
+	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
 
 func (msg *LockFile) Clone() any {
 	return proto.Clone(msg).(*LockFile)
 }
+func (msg *LockFile) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *LockFile) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *InputLock) Clone() any {
 	return proto.Clone(msg).(*InputLock)
 }
+func (msg *InputLock) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *InputLock) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *PluginLock) Clone() any {
 	return proto.Clone(msg).(*PluginLock)
 }
+func (msg *PluginLock) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *PluginLock) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}

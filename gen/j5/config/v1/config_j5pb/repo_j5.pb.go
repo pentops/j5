@@ -3,29 +3,50 @@
 package config_j5pb
 
 import (
+	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
 
 func (msg *RepoConfigFile) Clone() any {
 	return proto.Clone(msg).(*RepoConfigFile)
 }
+func (msg *RepoConfigFile) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *RepoConfigFile) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *BundleReference) Clone() any {
 	return proto.Clone(msg).(*BundleReference)
 }
+func (msg *BundleReference) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *BundleReference) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *GitConfig) Clone() any {
 	return proto.Clone(msg).(*GitConfig)
 }
+func (msg *GitConfig) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *GitConfig) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
 
 func (msg *GenerateConfig) Clone() any {
 	return proto.Clone(msg).(*GenerateConfig)
 }
+func (msg *GenerateConfig) J5Reflect() j5reflect.Root {
+	return j5reflect.MustReflect(msg.ProtoReflect())
+}
 
-// j5.config.v1 is a J5 schema message, No J5 Methods
+func (msg *GenerateConfig) J5Object() j5reflect.Object {
+	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}

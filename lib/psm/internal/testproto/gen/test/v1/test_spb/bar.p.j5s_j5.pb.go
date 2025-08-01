@@ -10,9 +10,6 @@ import (
 func (msg *BarGetRequest) Clone() any {
 	return proto.Clone(msg).(*BarGetRequest)
 }
-
-// test.v1.service is OK for  J5 Methods
-
 func (msg *BarGetRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -24,9 +21,6 @@ func (msg *BarGetRequest) J5Object() j5reflect.Object {
 func (msg *BarGetResponse) Clone() any {
 	return proto.Clone(msg).(*BarGetResponse)
 }
-
-// test.v1.service is OK for  J5 Methods
-
 func (msg *BarGetResponse) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -38,9 +32,6 @@ func (msg *BarGetResponse) J5Object() j5reflect.Object {
 func (msg *BarListRequest) Clone() any {
 	return proto.Clone(msg).(*BarListRequest)
 }
-
-// test.v1.service is OK for  J5 Methods
-
 func (msg *BarListRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -52,9 +43,6 @@ func (msg *BarListRequest) J5Object() j5reflect.Object {
 func (msg *BarListResponse) Clone() any {
 	return proto.Clone(msg).(*BarListResponse)
 }
-
-// test.v1.service is OK for  J5 Methods
-
 func (msg *BarListResponse) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -66,9 +54,6 @@ func (msg *BarListResponse) J5Object() j5reflect.Object {
 func (msg *BarEventsRequest) Clone() any {
 	return proto.Clone(msg).(*BarEventsRequest)
 }
-
-// test.v1.service is OK for  J5 Methods
-
 func (msg *BarEventsRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -80,9 +65,6 @@ func (msg *BarEventsRequest) J5Object() j5reflect.Object {
 func (msg *BarEventsResponse) Clone() any {
 	return proto.Clone(msg).(*BarEventsResponse)
 }
-
-// test.v1.service is OK for  J5 Methods
-
 func (msg *BarEventsResponse) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }

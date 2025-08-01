@@ -10,9 +10,6 @@ import (
 func (msg *BarEventMessage) Clone() any {
 	return proto.Clone(msg).(*BarEventMessage)
 }
-
-// test.v1.topic is OK for  J5 Methods
-
 func (msg *BarEventMessage) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }

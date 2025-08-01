@@ -12,9 +12,6 @@ import (
 func (msg *FooKeys) Clone() any {
 	return proto.Clone(msg).(*FooKeys)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooKeys) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -26,9 +23,6 @@ func (msg *FooKeys) J5Object() j5reflect.Object {
 func (msg *FooData) Clone() any {
 	return proto.Clone(msg).(*FooData)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooData) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -91,8 +85,6 @@ func (msg *FooData_Shape) Clone() any {
 
 type IsFooData_Shape_Type = isFooData_Shape_Type
 
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooData_Shape) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -100,9 +92,6 @@ func (msg *FooData_Shape) J5Reflect() j5reflect.Root {
 func (msg *FooData_Shape_Circle) Clone() any {
 	return proto.Clone(msg).(*FooData_Shape_Circle)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooData_Shape_Circle) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -114,9 +103,6 @@ func (msg *FooData_Shape_Circle) J5Object() j5reflect.Object {
 func (msg *FooData_Shape_Square) Clone() any {
 	return proto.Clone(msg).(*FooData_Shape_Square)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooData_Shape_Square) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -128,9 +114,6 @@ func (msg *FooData_Shape_Square) J5Object() j5reflect.Object {
 func (msg *FooState) Clone() any {
 	return proto.Clone(msg).(*FooState)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooState) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -203,8 +186,6 @@ func (msg *FooEventType) Clone() any {
 
 type IsFooEventType_Type = isFooEventType_Type
 
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooEventType) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -212,9 +193,6 @@ func (msg *FooEventType) J5Reflect() j5reflect.Root {
 func (msg *FooEventType_Created) Clone() any {
 	return proto.Clone(msg).(*FooEventType_Created)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooEventType_Created) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -226,9 +204,6 @@ func (msg *FooEventType_Created) J5Object() j5reflect.Object {
 func (msg *FooEventType_Updated) Clone() any {
 	return proto.Clone(msg).(*FooEventType_Updated)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooEventType_Updated) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -240,9 +215,6 @@ func (msg *FooEventType_Updated) J5Object() j5reflect.Object {
 func (msg *FooEventType_Deleted) Clone() any {
 	return proto.Clone(msg).(*FooEventType_Deleted)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooEventType_Deleted) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -254,9 +226,6 @@ func (msg *FooEventType_Deleted) J5Object() j5reflect.Object {
 func (msg *FooEvent) Clone() any {
 	return proto.Clone(msg).(*FooEvent)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooEvent) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -268,9 +237,6 @@ func (msg *FooEvent) J5Object() j5reflect.Object {
 func (msg *FooCharacteristics) Clone() any {
 	return proto.Clone(msg).(*FooCharacteristics)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooCharacteristics) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -282,9 +248,6 @@ func (msg *FooCharacteristics) J5Object() j5reflect.Object {
 func (msg *FooProfile) Clone() any {
 	return proto.Clone(msg).(*FooProfile)
 }
-
-// test.v1 is OK for  J5 Methods
-
 func (msg *FooProfile) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
