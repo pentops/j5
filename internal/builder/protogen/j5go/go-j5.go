@@ -300,7 +300,7 @@ func genOneof(g *protogen.GeneratedFile, message *protogen.Message, _ *j5schema.
 
 	isATypeName := "Is" + message.GoIdent.GoName + "WrappedType"
 	g.P("type ", isATypeName, " interface {")
-	g.P("	TypeKey() ", typeKeyName)
+	g.P("	", typeKeyName, "() ", typeKeyName)
 	g.P("   ", protoPackage.Ident("Message"))
 	g.P("}")
 
@@ -325,7 +325,7 @@ func genOneof(g *protogen.GeneratedFile, message *protogen.Message, _ *j5schema.
 	g.P("}")
 
 	for _, field := range message.Fields {
-		g.P("func (x *", field.Message.GoIdent, ") TypeKey() ", typeKeyName, "  {")
+		g.P("func (x *", field.Message.GoIdent, ") ", typeKeyName, "() ", typeKeyName, "  {")
 		g.P("		return ", prefix, "_Type_", field.GoName)
 		g.P("}")
 	}
