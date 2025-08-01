@@ -148,10 +148,44 @@ func repoPluginBase(config *config_j5pb.RepoConfigFile) (*pluginBase, error) {
 	}, nil
 }
 
+func upscalePlugin(plugin *config_j5pb.BuildPlugin) error {
+	if plugin.RunType != nil {
+		if plugin.Docker != nil {
+			return fmt.Errorf("plugin %q has both runType (new format) and docker (legacy), please use only one", plugin.Name)
+		}
+		if plugin.Local != nil {
+			return fmt.Errorf("plugin %q has both runType (new format) and local (legacy), please use only one", plugin.Name)
+		}
+		return nil // uses latest
+	}
+
+	plugin.RunType = &config_j5pb.PluginRunType{}
+	if plugin.Docker != nil {
+		plugin.RunType.Type = &config_j5pb.PluginRunType_Docker{
+			Docker: plugin.Docker,
+		}
+		plugin.Docker = nil // remove legacy field
+		return nil
+	}
+
+	if plugin.Local != nil {
+		plugin.RunType.Type = &config_j5pb.PluginRunType_Local{
+			Local: plugin.Local,
+		}
+		plugin.Local = nil // remove legacy field
+		return nil
+	}
+
+	// some don't specify any, if they extend.
+	return nil
+}
 func buildRootPlugins(specified []*config_j5pb.BuildPlugin, parentPlugins map[string]*config_j5pb.BuildPlugin) (map[string]*config_j5pb.BuildPlugin, error) {
 	rootPlugins := map[string]*config_j5pb.BuildPlugin{}
 
 	for _, plugin := range specified {
+		if err := upscalePlugin(plugin); err != nil {
+			return nil, fmt.Errorf("plugin %q: %w", plugin.Name, err)
+		}
 		if plugin.Base == nil {
 			rootPlugins[plugin.Name] = plugin
 			continue

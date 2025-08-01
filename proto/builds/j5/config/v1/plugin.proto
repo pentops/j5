@@ -22,7 +22,14 @@ message BuildPlugin {
   // 3. plugin opts here
   map<string, string> opts = 4;
 
-  PluginRunType run_type = 7 [(j5.ext.v1.field).object.flatten = true];
+  PluginRunType run_type = 7;
+
+
+  // deprecated: use run_type.local
+  CommandSpec local = 10;
+
+  // deprecated: use run_type.docker
+  DockerSpec docker = 11;
 }
 
 
