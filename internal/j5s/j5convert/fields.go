@@ -13,6 +13,7 @@ import (
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5s/sourcewalk"
+	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/j5/lib/id62"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -111,7 +112,7 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 
 		ww.setJ5Ext(node.Source, fieldDesc.Options, "array", st.Array.Ext)
 
-		validateExt := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldRules)
+		validateExt := protosrc.GetExtension[*validate.FieldRules](fieldDesc.Options, validate.E_Field)
 
 		// Add validation rules based on the type of the array regardless of array
 		// rules being specified. This is specifically to cover cases where types
@@ -145,7 +146,7 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 	}
 
 	required := node.Schema.Required
-	if ext := proto.GetExtension(fieldDesc.Options, ext_j5pb.E_Key).(*schema_j5pb.EntityKey); ext != nil {
+	if ext := protosrc.GetExtension[*schema_j5pb.EntityKey](fieldDesc.Options, ext_j5pb.E_Key); ext != nil {
 		if ext.Primary { //|| ext.PrimaryKey {
 			// even if not explicitly set, a primary key is required, we don't support partial primary keys.
 			required = true
@@ -153,7 +154,7 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 	}
 
 	if required {
-		ext := proto.GetExtension(fieldDesc.Options, validate.E_Field).(*validate.FieldRules)
+		ext := protosrc.GetExtension[*validate.FieldRules](fieldDesc.Options, validate.E_Field)
 		if ext == nil {
 			ext = &validate.FieldRules{}
 		}
@@ -673,7 +674,7 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 					fkt = &list_j5pb.ForeignKeyRules_Uuid{
 						Uuid: st.Key.ListRules,
 					}
-				case *schema_j5pb.KeyFormat_Custom_:
+				case *schema_j5pb.KeyFormat_Custom_, *schema_j5pb.KeyFormat_Informal_:
 					fkt = &list_j5pb.ForeignKeyRules_UniqueString{
 						UniqueString: st.Key.ListRules,
 					}

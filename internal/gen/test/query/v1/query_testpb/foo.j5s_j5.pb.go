@@ -3,9 +3,17 @@
 package query_testpb
 
 import (
+	driver "database/sql/driver"
+	fmt "fmt"
 	j5reflect "github.com/pentops/j5/lib/j5reflect"
 	proto "google.golang.org/protobuf/proto"
 )
+
+func (msg *FooState) Clone() any {
+	return proto.Clone(msg).(*FooState)
+}
+
+// test.query.v1 is OK for  J5 Methods
 
 func (msg *FooState) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
@@ -15,9 +23,12 @@ func (msg *FooState) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooState) Clone() any {
-	return proto.Clone(msg).(*FooState)
+func (msg *FooState_Keys) Clone() any {
+	return proto.Clone(msg).(*FooState_Keys)
 }
+
+// test.query.v1 is OK for  J5 Methods
+
 func (msg *FooState_Keys) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -26,9 +37,12 @@ func (msg *FooState_Keys) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooState_Keys) Clone() any {
-	return proto.Clone(msg).(*FooState_Keys)
+func (msg *FooState_Data) Clone() any {
+	return proto.Clone(msg).(*FooState_Data)
 }
+
+// test.query.v1 is OK for  J5 Methods
+
 func (msg *FooState_Data) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -37,16 +51,72 @@ func (msg *FooState_Data) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooState_Data) Clone() any {
-	return proto.Clone(msg).(*FooState_Data)
+// FooState_Data_Shape is a oneof wrapper
+type FooState_Data_ShapeTypeKey string
+
+const (
+	FooState_Data_Shape_Type_Circle FooState_Data_ShapeTypeKey = "circle"
+	FooState_Data_Shape_Type_Square FooState_Data_ShapeTypeKey = "square"
+)
+
+func (x *FooState_Data_Shape) TypeKey() (FooState_Data_ShapeTypeKey, bool) {
+	switch x.Type.(type) {
+	case *FooState_Data_Shape_Circle_:
+		return FooState_Data_Shape_Type_Circle, true
+	case *FooState_Data_Shape_Square_:
+		return FooState_Data_Shape_Type_Square, true
+	default:
+		return "", false
+	}
 }
+
+type IsFooState_Data_ShapeWrappedType interface {
+	TypeKey() FooState_Data_ShapeTypeKey
+	proto.Message
+}
+
+func (x *FooState_Data_Shape) Set(val IsFooState_Data_ShapeWrappedType) {
+	switch v := val.(type) {
+	case *FooState_Data_Shape_Circle:
+		x.Type = &FooState_Data_Shape_Circle_{Circle: v}
+	case *FooState_Data_Shape_Square:
+		x.Type = &FooState_Data_Shape_Square_{Square: v}
+	}
+}
+func (x *FooState_Data_Shape) Get() IsFooState_Data_ShapeWrappedType {
+	switch v := x.Type.(type) {
+	case *FooState_Data_Shape_Circle_:
+		return v.Circle
+	case *FooState_Data_Shape_Square_:
+		return v.Square
+	default:
+		return nil
+	}
+}
+func (x *FooState_Data_Shape_Circle) TypeKey() FooState_Data_ShapeTypeKey {
+	return FooState_Data_Shape_Type_Circle
+}
+func (x *FooState_Data_Shape_Square) TypeKey() FooState_Data_ShapeTypeKey {
+	return FooState_Data_Shape_Type_Square
+}
+func (msg *FooState_Data_Shape) Clone() any {
+	return proto.Clone(msg).(*FooState_Data_Shape)
+}
+
+type IsFooState_Data_Shape_Type = isFooState_Data_Shape_Type
+
+// test.query.v1 is OK for  J5 Methods
+
 func (msg *FooState_Data_Shape) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
 
-func (msg *FooState_Data_Shape) Clone() any {
-	return proto.Clone(msg).(*FooState_Data_Shape)
+func (msg *FooState_Data_Shape_Circle) Clone() any {
+	return proto.Clone(msg).(*FooState_Data_Shape_Circle)
 }
+
+// test.query.v1 is OK for  J5 Methods
+
 func (msg *FooState_Data_Shape_Circle) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -55,9 +125,12 @@ func (msg *FooState_Data_Shape_Circle) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooState_Data_Shape_Circle) Clone() any {
-	return proto.Clone(msg).(*FooState_Data_Shape_Circle)
+func (msg *FooState_Data_Shape_Square) Clone() any {
+	return proto.Clone(msg).(*FooState_Data_Shape_Square)
 }
+
+// test.query.v1 is OK for  J5 Methods
+
 func (msg *FooState_Data_Shape_Square) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -66,9 +139,12 @@ func (msg *FooState_Data_Shape_Square) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooState_Data_Shape_Square) Clone() any {
-	return proto.Clone(msg).(*FooState_Data_Shape_Square)
+func (msg *FooCharacteristics) Clone() any {
+	return proto.Clone(msg).(*FooCharacteristics)
 }
+
+// test.query.v1 is OK for  J5 Methods
+
 func (msg *FooCharacteristics) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -77,9 +153,12 @@ func (msg *FooCharacteristics) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooCharacteristics) Clone() any {
-	return proto.Clone(msg).(*FooCharacteristics)
+func (msg *FooProfile) Clone() any {
+	return proto.Clone(msg).(*FooProfile)
 }
+
+// test.query.v1 is OK for  J5 Methods
+
 func (msg *FooProfile) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -88,6 +167,52 @@ func (msg *FooProfile) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooProfile) Clone() any {
-	return proto.Clone(msg).(*FooProfile)
+// FooStatus
+const (
+	FooStatus_UNSPECIFIED FooStatus = 0
+	FooStatus_ACTIVE      FooStatus = 1
+	FooStatus_DELETED     FooStatus = 2
+)
+
+var (
+	FooStatus_name_short = map[int32]string{
+		0: "UNSPECIFIED",
+		1: "ACTIVE",
+		2: "DELETED",
+	}
+	FooStatus_value_short = map[string]int32{
+		"UNSPECIFIED": 0,
+		"ACTIVE":      1,
+		"DELETED":     2,
+	}
+	FooStatus_value_either = map[string]int32{
+		"UNSPECIFIED":            0,
+		"FOO_STATUS_UNSPECIFIED": 0,
+		"ACTIVE":                 1,
+		"FOO_STATUS_ACTIVE":      1,
+		"DELETED":                2,
+		"FOO_STATUS_DELETED":     2,
+	}
+)
+
+// ShortString returns the un-prefixed string representation of the enum value
+func (x FooStatus) ShortString() string {
+	return FooStatus_name_short[int32(x)]
+}
+func (x FooStatus) Value() (driver.Value, error) {
+	return []uint8(x.ShortString()), nil
+}
+func (x *FooStatus) Scan(value interface{}) error {
+	var strVal string
+	switch vt := value.(type) {
+	case []uint8:
+		strVal = string(vt)
+	case string:
+		strVal = vt
+	default:
+		return fmt.Errorf("invalid type %T", value)
+	}
+	val := FooStatus_value_either[strVal]
+	*x = FooStatus(val)
+	return nil
 }

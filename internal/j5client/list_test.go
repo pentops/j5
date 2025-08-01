@@ -3,10 +3,10 @@ package j5client
 import (
 	"testing"
 
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/encoding/prototext"
 	"google.golang.org/protobuf/reflect/protodesc"
 
+	"github.com/pentops/flowtest/prototest"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/internal/gen/test/foo/v1/foo_testspb"
 	"github.com/pentops/j5/lib/j5schema"
@@ -18,7 +18,7 @@ func TestTestListRequest(t *testing.T) {
 
 	fooDesc := (&foo_testspb.ListFoosResponse{}).ProtoReflect().Descriptor()
 
-	t.Log(protojson.Format(protodesc.ToDescriptorProto(fooDesc)))
+	t.Log(prototext.Format(protodesc.ToDescriptorProto(fooDesc)))
 
 	schemaItem, err := ss.Schema(fooDesc)
 	if err != nil {
@@ -57,10 +57,6 @@ func TestTestListRequest(t *testing.T) {
 		},
 	}
 
-	if !proto.Equal(listRequest, want) {
-		t.Logf("got: %s", protojson.Format(listRequest))
-		t.Logf("want: %s", protojson.Format(want))
-		t.Fatal("List method did not return expected ListRequest")
-	}
+	prototest.AssertEqualProto(t, want, listRequest)
 
 }

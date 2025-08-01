@@ -7,6 +7,12 @@ import (
 	proto "google.golang.org/protobuf/proto"
 )
 
+func (msg *FooListRequest) Clone() any {
+	return proto.Clone(msg).(*FooListRequest)
+}
+
+// test.query.v1.service is OK for  J5 Methods
+
 func (msg *FooListRequest) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
@@ -15,17 +21,16 @@ func (msg *FooListRequest) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *FooListRequest) Clone() any {
-	return proto.Clone(msg).(*FooListRequest)
+func (msg *FooListResponse) Clone() any {
+	return proto.Clone(msg).(*FooListResponse)
 }
+
+// test.query.v1.service is OK for  J5 Methods
+
 func (msg *FooListResponse) J5Reflect() j5reflect.Root {
 	return j5reflect.MustReflect(msg.ProtoReflect())
 }
 
 func (msg *FooListResponse) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
-
-func (msg *FooListResponse) Clone() any {
-	return proto.Clone(msg).(*FooListResponse)
 }

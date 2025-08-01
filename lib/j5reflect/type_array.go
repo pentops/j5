@@ -85,8 +85,16 @@ func newMessageArrayField(context fieldContext, schema *j5schema.ArrayField, val
 			},
 		}, nil
 
+	case *j5schema.AnyField:
+		return &arrayOfAnyField{
+			mutableArrayField: mutableArrayField{
+				baseArrayField: base,
+				factory:        factory,
+			},
+		}, nil
+
 	default:
-		return nil, fmt.Errorf("unsupported array item schema %T", schema.ItemSchema)
+		return nil, fmt.Errorf("unsupported (message) array item schema %T", schema.ItemSchema)
 	}
 }
 
@@ -121,7 +129,7 @@ func newLeafArrayField(context fieldContext, schema *j5schema.ArrayField, value 
 			itemSchema: st.Schema(),
 		}, nil
 	default:
-		return nil, fmt.Errorf("unsupported array item schema %T", schema.ItemSchema)
+		return nil, fmt.Errorf("unsupported (leaf) array item schema %T", schema.ItemSchema)
 	}
 
 }

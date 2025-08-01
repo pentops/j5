@@ -69,7 +69,7 @@ func APIFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 		protoregistry.GlobalFiles,
 	}
 
-	files, err := protosrc.SortByDependency(image.File, true)
+	files, err := SortByDependency(image.File, true)
 	if err != nil {
 		return nil, err
 	}

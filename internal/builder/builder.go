@@ -3,6 +3,7 @@ package builder
 import (
 	"bytes"
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"strings"
@@ -14,12 +15,13 @@ import (
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/plugin/v1/plugin_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/builder/protogen/j5go"
 	"github.com/pentops/j5/internal/j5client"
-	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/j5/internal/structure"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/parallel"
 	"golang.org/x/mod/modfile"
+	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 )
@@ -113,7 +115,7 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input *sourc
 
 		switch plugin.Type {
 		case config_j5pb.Plugin_PLUGIN_PROTO:
-			protoBuildRequest, err := protosrc.CodeGeneratorRequestFromImage(input)
+			protoBuildRequest, err := structure.CodeGeneratorRequestFromImage(input)
 			if err != nil {
 				return fmt.Errorf("CodeGeneratorRequestFromImage for image %s: %w", input.SourceName, err)
 			}
@@ -171,20 +173,24 @@ func (b *Builder) runProtocPlugin(ctx context.Context, pc PluginContext, plugin 
 
 	start := time.Now()
 
-	if plugin.Local != nil {
-		ctx = log.WithField(ctx, "local-cmd", plugin.Local.Cmd)
-	} else {
-		ctx = log.WithField(ctx, "docker-runner", plugin.Docker.Image)
-	}
-
-	log.Debug(ctx, "Running Protoc Plugin")
-
 	parameters := make([]string, 0, len(plugin.Opts))
 	for k, v := range plugin.Opts {
 		parameters = append(parameters, fmt.Sprintf("%s=%s", k, v))
 	}
 	parameter := strings.Join(parameters, ",")
 	sourceProto.Parameter = &parameter
+
+	switch pt := plugin.RunType.Type.(type) {
+	case *config_j5pb.PluginRunType_Local:
+		ctx = log.WithField(ctx, "local-cmd", pt.Local.Cmd)
+	case *config_j5pb.PluginRunType_Docker:
+		ctx = log.WithField(ctx, "docker-runner", pt.Docker.Image)
+	case *config_j5pb.PluginRunType_Builtin:
+		ctx = log.WithField(ctx, "builtin", pt.Builtin)
+		return b.runBuiltinProtogen(ctx, pc, plugin, sourceProto)
+	}
+
+	log.Debug(ctx, "Running Protoc Plugin")
 
 	reqBytes, err := proto.Marshal(sourceProto)
 	if err != nil {
@@ -204,9 +210,8 @@ func (b *Builder) runProtocPlugin(ctx context.Context, pc PluginContext, plugin 
 		return err
 	}
 
-	resp := pluginpb.CodeGeneratorResponse{}
-	if err := proto.Unmarshal(outBuffer.Bytes(), &resp); err != nil {
-		fmt.Printf("Response: %s\n", outBuffer.String())
+	resp := &pluginpb.CodeGeneratorResponse{}
+	if err := proto.Unmarshal(outBuffer.Bytes(), resp); err != nil {
 		return fmt.Errorf("parsing CodeGeneratorResponse: %w", err)
 	}
 
@@ -214,13 +219,8 @@ func (b *Builder) runProtocPlugin(ctx context.Context, pc PluginContext, plugin 
 		return fmt.Errorf("plugin error: %s", *resp.Error)
 	}
 
-	for _, f := range resp.File {
-		name := f.GetName()
-		reader := bytes.NewReader([]byte(f.GetContent()))
-		log.WithField(ctx, "file", name).Debug("Writing File")
-		if err := pc.Dest.PutFile(ctx, name, reader); err != nil {
-			return err
-		}
+	if err := handleResponseFiles(ctx, resp, pc.Dest); err != nil {
+		return fmt.Errorf("handling response files: %w", err)
 	}
 
 	log.WithFields(ctx, map[string]any{
@@ -228,6 +228,18 @@ func (b *Builder) runProtocPlugin(ctx context.Context, pc PluginContext, plugin 
 		"durationSeconds": time.Since(start).Seconds(),
 	}).Info("Protoc Plugin Complete")
 
+	return nil
+}
+
+func handleResponseFiles(ctx context.Context, resp *pluginpb.CodeGeneratorResponse, dest Dest) error {
+	for _, f := range resp.File {
+		name := f.GetName()
+		reader := bytes.NewReader([]byte(f.GetContent()))
+		log.WithField(ctx, "file", name).Debug("Writing File")
+		if err := dest.PutFile(ctx, name, reader); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -283,4 +295,36 @@ func (b *Builder) runJ5ClientPlugin(ctx context.Context, pc PluginContext, plugi
 
 	return nil
 
+}
+
+func (b *Builder) runBuiltinProtogen(ctx context.Context, pc PluginContext, plugin *config_j5pb.BuildPlugin, req *pluginpb.CodeGeneratorRequest) error {
+	name := plugin.RunType.GetBuiltin()
+	var f func(*protogen.Plugin) error
+	switch name {
+	case "j5-go":
+		f = j5go.ProtocPlugin()
+	default:
+		return fmt.Errorf("unknown builtin plugin: %s", name)
+	}
+
+	var flags flag.FlagSet
+	opts := protogen.Options{
+		ParamFunc: flags.Set,
+	}
+
+	gen, err := opts.New(req)
+	if err != nil {
+		return err
+	}
+	if err := f(gen); err != nil {
+		// Errors from the plugin function are reported by setting the
+		// error field in the CodeGeneratorResponse.
+		//
+		// In contrast, errors that indicate a problem in protoc
+		// itself (unparsable input, I/O errors, etc.) are reported
+		// to stderr.
+		gen.Error(err)
+	}
+	resp := gen.Response()
+	return handleResponseFiles(ctx, resp, pc.Dest)
 }

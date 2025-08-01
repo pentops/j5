@@ -5,6 +5,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"path"
 	"strings"
 
@@ -13,6 +14,7 @@ import (
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/gen/j5/registry/v1/registry_pb"
 	"github.com/pentops/j5/internal/source"
+	"github.com/pentops/j5/lib/j5codec"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/sqrlx.go/sqrlx"
 	"google.golang.org/grpc/codes"
@@ -72,7 +74,7 @@ func (s *PackageStore) GetJ5Image(ctx context.Context, orgName, imageName, versi
 	}
 
 	img := &source_j5pb.SourceImage{}
-	if err := protojson.Unmarshal(data, img); err != nil {
+	if err := protojson.Unmarshal(data, img); err != nil { // nolint:forbidigo
 		return nil, err
 	}
 
@@ -103,9 +105,9 @@ func (s *PackageStore) UploadJ5Image(ctx context.Context, commitInfo *source_j5p
 
 	root := s.fs.Join("repo", commitInfo.Owner, commitInfo.Repo, "commit", commitInfo.Hash, "j5", packageName)
 
-	imageBytes, err := protojson.Marshal(img)
+	imageBytes, err := protojson.Marshal(img) // nolint:forbidigo
 	if err != nil {
-		return err
+		return fmt.Errorf("marshal image: %w", err)
 	}
 
 	storageKey := s.fs.Join(root, "image.json")
@@ -131,7 +133,7 @@ func (s *PackageStore) UploadJ5Image(ctx context.Context, commitInfo *source_j5p
 		Aliases:    versionDests,
 	}
 
-	pkgJSON, err := protojson.Marshal(pkg)
+	pkgJSON, err := j5codec.Global.ProtoToJSON(pkg.ProtoReflect())
 	if err != nil {
 		return err
 	}

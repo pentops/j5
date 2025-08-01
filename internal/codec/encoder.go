@@ -35,7 +35,7 @@ func (c *Codec) encodeRoot(root j5reflect.Root) ([]byte, error) {
 			return nil, err
 		}
 	default:
-		return nil, fmt.Errorf("unsupported root schema type %T", schema)
+		return nil, fmt.Errorf("unsupported root schema type %T", root)
 	}
 	return enc.b.Bytes(), nil
 }

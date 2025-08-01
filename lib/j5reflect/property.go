@@ -189,7 +189,7 @@ func schemaIsMutable(schema j5schema.FieldSchema) (bool, error) {
 	case *j5schema.ObjectField, *j5schema.OneofField, *j5schema.AnyField, *j5schema.PolymorphField:
 		return true, nil
 	case *j5schema.ArrayField, *j5schema.MapField:
-		return false, fmt.Errorf("ArrayField and MapField are neither mutable nor immutable")
+		return false, fmt.Errorf("item schema must not itself be an array or map")
 	case *j5schema.EnumField, *j5schema.ScalarSchema:
 		return false, nil
 	default:
@@ -210,7 +210,7 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 
 		schemaIsMutable, err := schemaIsMutable(st.ItemSchema)
 		if err != nil {
-			return nil, fmt.Errorf("checking schema mutability: %w", err)
+			return nil, fmt.Errorf("item schema for Array %s: %w", context.FullTypeName(), err)
 		}
 		if schemaIsMutable {
 			msgDesc, ok := listVal.ItemMessageDescriptor()
@@ -252,7 +252,7 @@ func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value 
 
 		schemaIsMutable, err := schemaIsMutable(st.ItemSchema)
 		if err != nil {
-			return nil, fmt.Errorf("checking schema mutability: %w", err)
+			return nil, fmt.Errorf("item schema for Map %s: %w", context.FullTypeName(), err)
 		}
 		if schemaIsMutable {
 			msgDesc, ok := mapVal.ItemMessageDescriptor()

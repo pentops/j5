@@ -19,6 +19,9 @@ bundles:
   - name: registry
     dir: proto/registry
 
+  - name: psmtest
+    dir: lib/psm/internal/testproto
+
 generate:
   - name: base
     inputs:
@@ -29,8 +32,8 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
+      - base: go-j5
 
   - name: builds
     inputs:
@@ -41,8 +44,8 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
+      - base: go-j5
     output: .
     mods:
       - goPackageNames: 
@@ -66,8 +69,8 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
+      - base: go-j5
 
   - name: fulltest
     inputs:
@@ -84,9 +87,24 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
       - base: go-j5
+
+  - name: psmtest
+    inputs:
+      - local: psmtest
+    output: .
+    mods:
+      - goPackageNames: 
+          prefix: github.com/pentops/j5/lib/psm/internal/testproto/gen
+    opts:
+      paths: import
+      module: github.com/pentops/j5
+    plugins:
+      - base: go
+      - base: go-grpc
+      - base: go-j5
+      - base: go-o5-messaging
 
   - name: registry
     inputs:
@@ -97,50 +115,36 @@ generate:
       module: github.com/pentops/j5
     plugins:
       - base: go
-      - base: go-sugar
       - base: go-grpc
-      - base: go-psm
+      - base: go-j5
       - base: go-o5-messaging
 
 managedPaths:
  - gen
  - internal/gen
+ - lib/psm/internal/testproto/gen
 
 plugins:
   - name: go
     type: PLUGIN_PROTO
-    docker:
-      image: ghcr.io/pentops/protoc-gen-go:v1.34.2
+    runType:
+      docker:
+        image: ghcr.io/pentops/protoc-gen-go:v1.34.2
 
   - name: go-grpc
     type: PLUGIN_PROTO
-    docker:
-      image: ghcr.io/pentops/protoc-gen-go-grpc:v1.4.0
-
-  - name: go-sugar
-    type: PLUGIN_PROTO
-    docker:
-      image: ghcr.io/pentops/protoc-gen-go-sugar:b1e769eeea97192209ab5a4e8fc560bf72ce5ba7
-
-  - name: go-psm
-    base: go
-    docker:
-      image: ghcr.io/pentops/protoc-gen-go-protostate:ea6dfe7edca959f8943ec0b1cd3e9c04e801fb7e
+    runType:
+      docker:
+        image: ghcr.io/pentops/protoc-gen-go-grpc:v1.4.0
 
   - name: go-o5-messaging
     base: go
-    docker:
-      image: ghcr.io/pentops/protoc-gen-go-o5-messaging:7e07c29129f03edc9ef01ba4739328625ef24746
+    runType:
+      docker:
+        image: ghcr.io/pentops/protoc-gen-go-o5-messaging:7e07c29129f03edc9ef01ba4739328625ef24746
 
   - base: go
     name: go-j5
-    docker:
-      image: ghcr.io/pentops/protoc-gen-go-j5:latest
+    runType:
+      builtin: "j5-go"
 
-pluginOverrides:
-  - name: go-j5
-    local:
-      cmd: protoc-gen-go-j5
-  - name: go-psm
-    local:
-      cmd: protoc-gen-go-psm

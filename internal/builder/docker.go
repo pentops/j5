@@ -101,6 +101,10 @@ func (dr *dockerRun) start(ctx context.Context) error {
 }
 
 func (dw *Runner) containerCreate(ctx context.Context, rc RunContext) (*dockerRun, error) {
+	rcDocker := rc.Command.RunType.GetDocker()
+	if rcDocker == nil {
+		return nil, fmt.Errorf("run type is not docker")
+	}
 	resp, err := dw.client.ContainerCreate(ctx, &container.Config{
 		AttachStdin:  true,
 		AttachStdout: true,
@@ -110,10 +114,10 @@ func (dw *Runner) containerCreate(ctx context.Context, rc RunContext) (*dockerRu
 
 		Tty: false,
 
-		Env:        rc.Command.Docker.Env,
-		Image:      rc.Command.Docker.Image,
-		Entrypoint: rc.Command.Docker.Entrypoint,
-		Cmd:        rc.Command.Docker.Cmd,
+		Env:        rcDocker.Env,
+		Image:      rcDocker.Image,
+		Entrypoint: rcDocker.Entrypoint,
+		Cmd:        rcDocker.Cmd,
 	}, nil, nil, nil, "")
 	if err != nil {
 		log.WithError(ctx, err).Error("failed to start container")
@@ -150,10 +154,15 @@ func (dr *dockerRun) wait(ctx context.Context) error {
 
 func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
 
-	ctx = log.WithField(ctx, "image", rc.Command.Docker.Image)
+	rcDocker := rc.Command.RunType.GetDocker()
+	if rcDocker == nil {
+		return fmt.Errorf("run type is not docker")
+	}
+
+	ctx = log.WithField(ctx, "image", rcDocker.Image)
 	t0 := time.Now()
 	log.WithField(ctx, "t0", time.Since(t0).String()).Debug("Pull If Needed")
-	if err := dw.pullIfNeeded(ctx, rc.Command.Docker.Image); err != nil {
+	if err := dw.pullIfNeeded(ctx, rcDocker.Image); err != nil {
 		log.WithError(ctx, err).Error("failed to pull image")
 		return err
 	}

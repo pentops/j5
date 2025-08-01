@@ -8,7 +8,7 @@ import (
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/j5/internal/j5s/protobuild/errset"
-	"google.golang.org/protobuf/proto"
+	"github.com/pentops/j5/internal/protosrc"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
@@ -29,7 +29,7 @@ func SummaryFromDescriptor(res *descriptorpb.FileDescriptorProto, errs *errset.E
 			Package: res.GetPackage(),
 		}
 		exports[msg.GetName()] = typeRef
-		options := proto.GetExtension(msg.Options, ext_j5pb.E_Message).(*ext_j5pb.MessageOptions)
+		options := protosrc.GetExtension[*ext_j5pb.MessageOptions](msg.Options, ext_j5pb.E_Message)
 		if options != nil {
 			switch et := options.Type.(type) {
 			case *ext_j5pb.MessageOptions_Oneof:
@@ -59,7 +59,7 @@ func SummaryFromDescriptor(res *descriptorpb.FileDescriptorProto, errs *errset.E
 		}
 	}
 
-	packageExt := proto.GetExtension(res.Options, ext_j5pb.E_Package).(*ext_j5pb.PackageOptions)
+	packageExt := protosrc.GetExtension[*ext_j5pb.PackageOptions](res.Options, ext_j5pb.E_Package)
 	if packageExt != nil {
 		for _, stringFormat := range packageExt.StringFormats {
 			exports[stringFormat.Name] = &j5convert.TypeRef{

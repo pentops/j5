@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
+	"github.com/pentops/j5/internal/protosrc"
 	"github.com/pentops/log.go/log"
 	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/api/httpbody"
@@ -138,7 +139,7 @@ func (rr *Router) RegisterGRPCService(ctx context.Context, sd protoreflect.Servi
 		defaultAuth = &auth_j5pb.MethodAuthType_JWTBearer{}
 	}
 
-	serviceExt := proto.GetExtension(sd.Options(), ext_j5pb.E_Service).(*ext_j5pb.ServiceOptions)
+	serviceExt := protosrc.GetExtension[*ext_j5pb.ServiceOptions](sd.Options(), ext_j5pb.E_Service)
 	if serviceExt != nil {
 		if serviceExt.DefaultAuth != nil {
 			defaultAuth = serviceExt.DefaultAuth.Get()
@@ -164,14 +165,14 @@ func (rr *Router) buildMethod(md protoreflect.MethodDescriptor, conn AppConn, au
 
 	methodOptions := md.Options().(*descriptorpb.MethodOptions)
 
-	if j5Method := proto.GetExtension(methodOptions, ext_j5pb.E_Method).(*ext_j5pb.MethodOptions); j5Method != nil {
+	if j5Method := protosrc.GetExtension[*ext_j5pb.MethodOptions](methodOptions, ext_j5pb.E_Method); j5Method != nil {
 		if j5Method.Auth != nil {
 			auth = j5Method.Auth.Get()
 		}
 	}
 
 	serviceName := md.Parent().(protoreflect.ServiceDescriptor).FullName()
-	httpOpt := proto.GetExtension(methodOptions, annotations.E_Http).(*annotations.HttpRule)
+	httpOpt := protosrc.GetExtension[*annotations.HttpRule](methodOptions, annotations.E_Http)
 
 	var httpMethod string
 	var httpPath string
