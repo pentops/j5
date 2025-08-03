@@ -320,6 +320,10 @@ func (b *Builder) runBuiltinProtogen(ctx context.Context, pc PluginContext, plug
 		return err
 	}
 	resp := gen.Response()
+
+	if resp.Error != nil {
+		return fmt.Errorf("plugin error: %s", *resp.Error)
+	}
 	err = handleResponseFiles(ctx, resp, pc.Dest)
 	if err != nil {
 		return fmt.Errorf("handling response files: %w", err)

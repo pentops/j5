@@ -16,7 +16,10 @@ import (
 
 const (
 	j5reflectImportPath = protogen.GoImportPath("github.com/pentops/j5/lib/j5reflect")
+	j5schemaImportPath  = protogen.GoImportPath("github.com/pentops/j5/lib/j5schema")
 	protoImportPath     = protogen.GoImportPath("google.golang.org/protobuf/proto")
+	protoPackage        = protogen.GoImportPath("google.golang.org/protobuf/proto")
+	driverPackage       = protogen.GoImportPath("database/sql/driver")
 )
 
 func ProtocPlugin() func(gen *protogen.Plugin) error {
@@ -102,11 +105,6 @@ func generateFile(gen *protogen.Plugin, file *protogen.File) error {
 	return nil
 }
 
-var (
-	protoPackage  = protogen.GoImportPath("google.golang.org/protobuf/proto")
-	driverPackage = protogen.GoImportPath("database/sql/driver")
-)
-
 func generateBaseFile(gen *protogen.Plugin, file *protogen.File) error {
 	filename := file.GeneratedFilenamePrefix + "_j5.pb.go"
 	g := gen.NewGeneratedFile(filename, file.GoImportPath)
@@ -160,6 +158,24 @@ func generateBaseFile(gen *protogen.Plugin, file *protogen.File) error {
 		err := genEnum(g, enum)
 		if err != nil {
 			return fmt.Errorf("error generating enum %s: %w", enum.GoIdent, err)
+		}
+	}
+
+	for _, service := range file.Services {
+		for _, method := range service.Methods {
+			/*
+				return &j5schema.MethodSchema{
+					Request: j5schema.MustObjectSchema((&FooGetRequest{}).ProtoReflect().Descriptor()),
+					Response: j5schema.MustObjectSchema((&FooGetRequest{}).ProtoReflect().Descriptor()),
+				}
+			*/
+			g.P("// ", method.GoName, " is a J5 method for service ", service.GoName)
+			g.P("func ", method.GoName, "J5MethodSchema() *", j5schemaImportPath.Ident("MethodSchema"), " {")
+			g.P("  return &", j5schemaImportPath.Ident("MethodSchema"), "{")
+			g.P("    Request: ", j5schemaImportPath.Ident("MustObjectSchema"), "((&", method.Input.GoIdent, "{}).ProtoReflect().Descriptor()),")
+			g.P("    Response: ", j5schemaImportPath.Ident("MustObjectSchema"), "((&", method.Output.GoIdent, "{}).ProtoReflect().Descriptor()),")
+			g.P("  }")
+			g.P("}")
 		}
 	}
 
