@@ -34,7 +34,7 @@ runtimes:
 
       - prefix: "/gopkg/"
         protocol: ROUTE_PROTOCOL_HTTP
-        bypass_ingress: true
+        bypassIngress: true
         port: 8081
 
       - prefix: "/registry/v1/"
