@@ -413,6 +413,10 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value any) (protoreflect.Val
 }
 
 func decimalFromString(val string) (protoreflect.Value, error) {
+	if val == "" {
+		return protoreflect.ValueOf(nil), nil
+
+	}
 	d, err := decimal.NewFromString(val)
 	if err != nil {
 		return protoreflect.Value{}, err
@@ -567,10 +571,16 @@ func scalarGoFromReflect(schema *schema_j5pb.Field, val protoreflect.Value) (any
 		return val, nil
 
 	case *schema_j5pb.Field_Decimal:
+		if !val.IsValid() {
+			return nil, nil
+		}
 		msg := val.Message()
 		val := &decimal_j5t.Decimal{}
 		pv := val.ProtoReflect()
 		copyReflect(msg, pv)
+		if val.Value == "" {
+			return nil, nil // empty decimal
+		}
 		return val, nil
 
 	case *schema_j5pb.Field_Timestamp:

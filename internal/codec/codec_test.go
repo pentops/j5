@@ -238,6 +238,21 @@ func TestDynamic(t *testing.T) {
 		schema.WantJSON(`{"bar": {"barId": "id"}}`)
 	})
 
+	t.Run("decimal", func(t *testing.T) {
+		schema := NewTestSchema(t, `
+			object Foo {
+				field decimal decimal 
+			}
+		`)
+
+		schema.WantJSON(`{}`)
+
+		schema.WantJSON(`{"decimal": ""}`, WithIncludeEmpty()).InputJSON(`{}`)
+
+		schema.WantJSON(`{"decimal": "1.1"}`, WithIncludeEmpty()).InputJSON(`{"decimal": "1.1"}`)
+
+	})
+
 }
 
 func TestUnmarshal(t *testing.T) {
