@@ -72,7 +72,7 @@ runtimes:
           - name: REGISTRY_STORAGE
             blobstore:
               name: images
-              s3_direct: true
+              s3Direct: true
           - name: GH_PRIVATE_KEY
             secret:
               secretName: github
