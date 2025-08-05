@@ -114,3 +114,19 @@ func (d *Decimal) Scan(src any) error {
 		return fmt.Errorf("unsupported type %T", src)
 	}
 }
+
+type Testing interface {
+	Errorf(format string, args ...any)
+}
+
+func AssertEqual(t Testing, want string, d1 *Decimal, name string) {
+	dWant, err := decimal.NewFromString(want)
+	if err != nil {
+		t.Errorf("%s: error converting want %s to decimal: %v", name, want, err)
+		return
+	}
+
+	if !d1.Decimal().Equal(dWant) {
+		t.Errorf("%s: expected %s, got %s", name, want, d1.ToString())
+	}
+}
