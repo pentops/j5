@@ -115,6 +115,15 @@ func (ent *entityNode) acceptKeys(visitor FileVisitor) error {
 		}
 		key.Def.EntityKey = key.Key
 
+		keySchema := key.Def.Schema.GetKey()
+		if keySchema != nil && keySchema.ListRules == nil {
+			keySchema.ListRules = &list_j5pb.KeyRules{
+				Filtering: &list_j5pb.FilteringConstraint{
+					Filterable: true,
+				},
+			}
+		}
+
 		keyProps = append(keyProps, key.Def)
 	}
 	object, err := newVirtualObjectNode(
