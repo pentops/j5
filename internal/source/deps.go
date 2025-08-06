@@ -2,14 +2,9 @@ package source
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/bufbuild/protocompile"
-	"github.com/google/go-cmp/cmp"
-	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -80,59 +75,4 @@ func (ii *imageFiles) AllDependencyFiles() ([]*descriptorpb.FileDescriptorProto,
 		filenames = append(filenames, file.GetName())
 	}
 	return files, filenames
-}
-
-func combineSourceImages(images []*source_j5pb.SourceImage) (*imageFiles, error) {
-
-	fileMap := map[string]*descriptorpb.FileDescriptorProto{}
-	depMap := map[string]*descriptorpb.FileDescriptorProto{}
-	fileSourceMap := map[string]*source_j5pb.SourceImage{}
-	for _, img := range images {
-		isSource := map[string]bool{}
-		for _, file := range img.SourceFilenames {
-			isSource[file] = true
-		}
-
-		for _, file := range img.File {
-			if !isSource[*file.Name] {
-				depMap[*file.Name] = file
-				continue
-			}
-			existing, ok := fileMap[*file.Name]
-			if !ok {
-				fileMap[*file.Name] = file
-				fileSourceMap[*file.Name] = img
-				continue
-			}
-
-			if proto.Equal(existing, file) {
-				continue
-			}
-
-			a := proto.Clone(existing).(*descriptorpb.FileDescriptorProto)
-			b := proto.Clone(file).(*descriptorpb.FileDescriptorProto)
-			// ignore source code info for comparison
-			a.SourceCodeInfo = nil
-			b.SourceCodeInfo = nil
-			if proto.Equal(a, b) {
-				continue
-			}
-
-			diff := cmp.Diff(existing, file, protocmp.Transform())
-			fmt.Fprintln(os.Stderr, diff)
-
-			added := fileSourceMap[*file.Name]
-			aName := fmt.Sprintf("%s:%s", added.SourceName, strVal(added.Version))
-			bName := fmt.Sprintf("%s:%s", img.SourceName, strVal(img.Version))
-
-			return nil, fmt.Errorf("file %q has conflicting content in %s and %s", *file.Name, aName, bName)
-		}
-	}
-
-	combined := &imageFiles{
-		primary:      fileMap,
-		dependencies: depMap,
-	}
-
-	return combined, nil
 }

@@ -42,7 +42,7 @@ func (x *ServiceType) TypeKey() (ServiceTypeKey, bool) {
 }
 
 type IsServiceTypeWrappedType interface {
-	TypeKey() ServiceTypeKey
+	ServiceTypeKey() ServiceTypeKey
 	proto.Message
 }
 
@@ -64,10 +64,10 @@ func (x *ServiceType) Get() IsServiceTypeWrappedType {
 		return nil
 	}
 }
-func (x *ServiceType_StateEntityQuery) TypeKey() ServiceTypeKey {
+func (x *ServiceType_StateEntityQuery) ServiceTypeKey() ServiceTypeKey {
 	return Service_Type_StateEntityQuery
 }
-func (x *ServiceType_StateEntityCommand) TypeKey() ServiceTypeKey {
+func (x *ServiceType_StateEntityCommand) ServiceTypeKey() ServiceTypeKey {
 	return Service_Type_StateEntityCommand
 }
 func (msg *ServiceType) Clone() any {
@@ -103,7 +103,7 @@ func (x *MethodType) TypeKey() (MethodTypeKey, bool) {
 }
 
 type IsMethodTypeWrappedType interface {
-	TypeKey() MethodTypeKey
+	MethodTypeKey() MethodTypeKey
 	proto.Message
 }
 
@@ -121,7 +121,7 @@ func (x *MethodType) Get() IsMethodTypeWrappedType {
 		return nil
 	}
 }
-func (x *MethodType_StateQuery) TypeKey() MethodTypeKey {
+func (x *MethodType_StateQuery) MethodTypeKey() MethodTypeKey {
 	return Method_Type_StateQuery
 }
 func (msg *MethodType) Clone() any {

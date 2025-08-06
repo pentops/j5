@@ -35,7 +35,7 @@ func (x *RootSchema) TypeKey() (RootSchemaTypeKey, bool) {
 }
 
 type IsRootSchemaWrappedType interface {
-	TypeKey() RootSchemaTypeKey
+	RootSchemaTypeKey() RootSchemaTypeKey
 	proto.Message
 }
 
@@ -65,16 +65,16 @@ func (x *RootSchema) Get() IsRootSchemaWrappedType {
 		return nil
 	}
 }
-func (x *Oneof) TypeKey() RootSchemaTypeKey {
+func (x *Oneof) RootSchemaTypeKey() RootSchemaTypeKey {
 	return RootSchema_Type_Oneof
 }
-func (x *Object) TypeKey() RootSchemaTypeKey {
+func (x *Object) RootSchemaTypeKey() RootSchemaTypeKey {
 	return RootSchema_Type_Object
 }
-func (x *Enum) TypeKey() RootSchemaTypeKey {
+func (x *Enum) RootSchemaTypeKey() RootSchemaTypeKey {
 	return RootSchema_Type_Enum
 }
-func (x *Polymorph) TypeKey() RootSchemaTypeKey {
+func (x *Polymorph) RootSchemaTypeKey() RootSchemaTypeKey {
 	return RootSchema_Type_Polymorph
 }
 func (msg *RootSchema) Clone() any {
@@ -145,7 +145,7 @@ func (x *Field) TypeKey() (FieldTypeKey, bool) {
 }
 
 type IsFieldWrappedType interface {
-	TypeKey() FieldTypeKey
+	FieldTypeKey() FieldTypeKey
 	proto.Message
 }
 
@@ -223,52 +223,52 @@ func (x *Field) Get() IsFieldWrappedType {
 		return nil
 	}
 }
-func (x *AnyField) TypeKey() FieldTypeKey {
+func (x *AnyField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Any
 }
-func (x *OneofField) TypeKey() FieldTypeKey {
+func (x *OneofField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Oneof
 }
-func (x *ObjectField) TypeKey() FieldTypeKey {
+func (x *ObjectField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Object
 }
-func (x *PolymorphField) TypeKey() FieldTypeKey {
+func (x *PolymorphField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Polymorph
 }
-func (x *EnumField) TypeKey() FieldTypeKey {
+func (x *EnumField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Enum
 }
-func (x *ArrayField) TypeKey() FieldTypeKey {
+func (x *ArrayField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Array
 }
-func (x *MapField) TypeKey() FieldTypeKey {
+func (x *MapField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Map
 }
-func (x *StringField) TypeKey() FieldTypeKey {
+func (x *StringField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_String_
 }
-func (x *IntegerField) TypeKey() FieldTypeKey {
+func (x *IntegerField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Integer
 }
-func (x *FloatField) TypeKey() FieldTypeKey {
+func (x *FloatField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Float
 }
-func (x *BoolField) TypeKey() FieldTypeKey {
+func (x *BoolField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Bool
 }
-func (x *BytesField) TypeKey() FieldTypeKey {
+func (x *BytesField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Bytes
 }
-func (x *DecimalField) TypeKey() FieldTypeKey {
+func (x *DecimalField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Decimal
 }
-func (x *DateField) TypeKey() FieldTypeKey {
+func (x *DateField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Date
 }
-func (x *TimestampField) TypeKey() FieldTypeKey {
+func (x *TimestampField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Timestamp
 }
-func (x *KeyField) TypeKey() FieldTypeKey {
+func (x *KeyField) FieldTypeKey() FieldTypeKey {
 	return Field_Type_Key
 }
 func (msg *Field) Clone() any {
@@ -454,7 +454,7 @@ func (x *KeyFormat) TypeKey() (KeyFormatTypeKey, bool) {
 }
 
 type IsKeyFormatWrappedType interface {
-	TypeKey() KeyFormatTypeKey
+	KeyFormatTypeKey() KeyFormatTypeKey
 	proto.Message
 }
 
@@ -488,19 +488,19 @@ func (x *KeyFormat) Get() IsKeyFormatWrappedType {
 		return nil
 	}
 }
-func (x *KeyFormat_Informal) TypeKey() KeyFormatTypeKey {
+func (x *KeyFormat_Informal) KeyFormatTypeKey() KeyFormatTypeKey {
 	return KeyFormat_Type_Informal
 }
-func (x *KeyFormat_Custom) TypeKey() KeyFormatTypeKey {
+func (x *KeyFormat_Custom) KeyFormatTypeKey() KeyFormatTypeKey {
 	return KeyFormat_Type_Custom
 }
-func (x *KeyFormat_UUID) TypeKey() KeyFormatTypeKey {
+func (x *KeyFormat_UUID) KeyFormatTypeKey() KeyFormatTypeKey {
 	return KeyFormat_Type_Uuid
 }
-func (x *KeyFormat_ID62) TypeKey() KeyFormatTypeKey {
+func (x *KeyFormat_ID62) KeyFormatTypeKey() KeyFormatTypeKey {
 	return KeyFormat_Type_Id62
 }
-func (x *StringFormat) TypeKey() KeyFormatTypeKey {
+func (x *StringFormat) KeyFormatTypeKey() KeyFormatTypeKey {
 	return KeyFormat_Type_Format
 }
 func (msg *KeyFormat) Clone() any {

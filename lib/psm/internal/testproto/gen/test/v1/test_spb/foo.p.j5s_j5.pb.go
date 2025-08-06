@@ -4,6 +4,7 @@ package test_spb
 
 import (
 	j5reflect "github.com/pentops/j5/lib/j5reflect"
+	j5schema "github.com/pentops/j5/lib/j5schema"
 	proto "google.golang.org/protobuf/proto"
 )
 
@@ -93,4 +94,36 @@ func (msg *FooSummaryResponse) J5Reflect() j5reflect.Root {
 
 func (msg *FooSummaryResponse) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
+
+// FooGet is a J5 method for service FooQueryService
+func FooGetJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&FooGetRequest{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&FooGetResponse{}).ProtoReflect().Descriptor()),
+	}
+}
+
+// FooList is a J5 method for service FooQueryService
+func FooListJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&FooListRequest{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&FooListResponse{}).ProtoReflect().Descriptor()),
+	}
+}
+
+// FooEvents is a J5 method for service FooQueryService
+func FooEventsJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&FooEventsRequest{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&FooEventsResponse{}).ProtoReflect().Descriptor()),
+	}
+}
+
+// FooSummary is a J5 method for service FooService
+func FooSummaryJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&FooSummaryRequest{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&FooSummaryResponse{}).ProtoReflect().Descriptor()),
+	}
 }

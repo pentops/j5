@@ -16,6 +16,7 @@ import (
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/j5/internal/j5s/protoprint"
 	"github.com/pentops/j5/internal/source"
+	"github.com/pentops/j5/internal/source/resolver"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
 	"google.golang.org/protobuf/reflect/protodesc"
@@ -34,7 +35,7 @@ func runJ5sLint(ctx context.Context, cfg struct {
 	File string `flag:"file" required:"false" description:"Single file to format"`
 }) error {
 
-	resolver, err := source.NewEnvResolver()
+	imageResolver, err := resolver.NewEnvResolver()
 	if err != nil {
 		return err
 	}
@@ -46,7 +47,7 @@ func runJ5sLint(ctx context.Context, cfg struct {
 		}
 	}
 	fsRoot := os.DirFS(cfg.Dir)
-	srcRoot, err := source.NewFSRepoRoot(ctx, fsRoot, resolver)
+	srcRoot, err := source.NewFSRepoRoot(ctx, fsRoot, imageResolver)
 	if err != nil {
 		return err
 	}

@@ -153,7 +153,7 @@ func (src *RepoRoot) newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
 
 	for _, refConfig := range config.Bundles {
 		bundleRoot := repoRoot
-		debugName := fmt.Sprintf("%s/%s", debugName, refConfig.Dir)
+		debugName := fmt.Sprintf("local/%s/%s", debugName, refConfig.Dir)
 		if refConfig.Dir != "" {
 			bundleRoot, err = fs.Sub(bundleRoot, refConfig.Dir)
 			if err != nil {
@@ -184,7 +184,7 @@ func (src *RepoRoot) newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
 	if len(config.Packages) > 0 || len(config.Publish) > 0 || config.Registry != nil {
 		// Inline Bundle
 		thisRepo.bundles = append(thisRepo.bundles, &bundleSource{
-			debugName: debugName,
+			debugName: fmt.Sprintf("local/%s/root", debugName),
 			fs:        repoRoot,
 			refConfig: &config_j5pb.BundleReference{
 				Name: "",

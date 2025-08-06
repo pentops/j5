@@ -1,6 +1,7 @@
 package j5client
 
 import (
+	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
@@ -29,6 +30,14 @@ func wantAPI() *client_j5pb.API {
 			FullGrpcName: "/test.foo.v1.FooQueryService/GetFoo",
 			HttpMethod:   schema_j5pb.HTTPMethod_GET,
 			HttpPath:     "/test/v1/foo/:id",
+			MethodType: &schema_j5pb.MethodType{
+				Type: &schema_j5pb.MethodType_StateQuery_{
+					StateQuery: &schema_j5pb.MethodType_StateQuery{
+						EntityName: "test.foo.v1/foo",
+						QueryPart:  schema_j5pb.StateQueryPart_GET,
+					},
+				},
+			},
 		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
@@ -104,6 +113,14 @@ func wantAPI() *client_j5pb.API {
 			HttpMethod:   schema_j5pb.HTTPMethod_GET,
 
 			HttpPath: "/test/v1/foos",
+			MethodType: &schema_j5pb.MethodType{
+				Type: &schema_j5pb.MethodType_StateQuery_{
+					StateQuery: &schema_j5pb.MethodType_StateQuery{
+						EntityName: "test.foo.v1/foo",
+						QueryPart:  schema_j5pb.StateQueryPart_LIST,
+					},
+				},
+			},
 		},
 		Request: &client_j5pb.Method_Request{
 			QueryParameters: []*schema_j5pb.ObjectProperty{{
@@ -120,7 +137,8 @@ func wantAPI() *client_j5pb.API {
 					Name: "bar.field",
 				}},
 				SortableFields: []*client_j5pb.ListRequest_SortField{{
-					Name: "createdAt",
+					Name:        "createdAt",
+					DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
 				}},
 				FilterableFields: []*client_j5pb.ListRequest_FilterField{{
 					Name: "fooId",
@@ -139,6 +157,9 @@ func wantAPI() *client_j5pb.API {
 			Properties: []*schema_j5pb.ObjectProperty{{
 				Name:   "foos",
 				Schema: array(objectRef("test.foo.v1", "FooState")),
+			}, {
+				Name:   "page",
+				Schema: objectRef("j5.list.v1", "PageResponse"),
 			}},
 		},
 	}
@@ -150,6 +171,14 @@ func wantAPI() *client_j5pb.API {
 			FullGrpcName: "/test.foo.v1.FooQueryService/ListFooEvents",
 			HttpMethod:   schema_j5pb.HTTPMethod_GET,
 			HttpPath:     "/test/v1/foo/:id/events",
+			MethodType: &schema_j5pb.MethodType{
+				Type: &schema_j5pb.MethodType_StateQuery_{
+					StateQuery: &schema_j5pb.MethodType_StateQuery{
+						EntityName: "test.foo.v1/foo",
+						QueryPart:  schema_j5pb.StateQueryPart_LIST_EVENTS,
+					},
+				},
+			},
 		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
@@ -188,6 +217,12 @@ func wantAPI() *client_j5pb.API {
 			List: &client_j5pb.ListRequest{
 				FilterableFields: []*client_j5pb.ListRequest_FilterField{{
 					Name: "fooId",
+				}, {
+					Name: "timestamp",
+				}},
+				SortableFields: []*client_j5pb.ListRequest_SortField{{
+					Name:        "timestamp",
+					DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
 				}},
 			},
 		},
@@ -196,6 +231,9 @@ func wantAPI() *client_j5pb.API {
 			Properties: []*schema_j5pb.ObjectProperty{{
 				Name:   "events",
 				Schema: array(objectRef("test.foo.v1", "FooEvent")),
+			}, {
+				Name:   "page",
+				Schema: objectRef("j5.list.v1", "PageResponse"),
 			}},
 		},
 	}

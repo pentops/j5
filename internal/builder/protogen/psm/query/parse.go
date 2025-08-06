@@ -40,7 +40,7 @@ func WalkFile(file *protogen.File) ([]*PSMQuerySet, error) {
 			if methodOpt != nil {
 				stateQuery = methodOpt.GetStateQuery()
 				if stateQuery == nil {
-					return nil, fmt.Errorf("method %s does not have a state query type", method.Desc.Name())
+					return nil, fmt.Errorf("method %s does not have a state query type", method.Desc.FullName())
 				}
 			} else {
 				name := string(method.Desc.Name())
@@ -57,7 +57,7 @@ func WalkFile(file *protogen.File) ([]*PSMQuerySet, error) {
 						List: true,
 					}
 				} else {
-					return nil, fmt.Errorf("method %s does not have a state query type", name)
+					return nil, fmt.Errorf("method %s does not have a state query type", method.Desc.FullName())
 				}
 			}
 

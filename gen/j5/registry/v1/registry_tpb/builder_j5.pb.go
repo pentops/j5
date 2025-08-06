@@ -6,7 +6,9 @@ import (
 	driver "database/sql/driver"
 	fmt "fmt"
 	j5reflect "github.com/pentops/j5/lib/j5reflect"
+	j5schema "github.com/pentops/j5/lib/j5schema"
 	proto "google.golang.org/protobuf/proto"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 func (msg *PublishMessage) Clone() any {
@@ -106,4 +108,28 @@ func (x *BuildStatus) Scan(value interface{}) error {
 	val := BuildStatus_value_either[strVal]
 	*x = BuildStatus(val)
 	return nil
+}
+
+// Publish is a J5 method for service BuilderRequestTopic
+func PublishJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&PublishMessage{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&emptypb.Empty{}).ProtoReflect().Descriptor()),
+	}
+}
+
+// BuildAPI is a J5 method for service BuilderRequestTopic
+func BuildAPIJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&BuildAPIMessage{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&emptypb.Empty{}).ProtoReflect().Descriptor()),
+	}
+}
+
+// J5BuildStatus is a J5 method for service BuildReplyTopic
+func J5BuildStatusJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&J5BuildStatusMessage{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&emptypb.Empty{}).ProtoReflect().Descriptor()),
+	}
 }

@@ -20,6 +20,7 @@ import (
 	"github.com/pentops/j5/internal/j5s/protobuild"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/j5/internal/source"
+	"github.com/pentops/j5/internal/source/resolver"
 	"github.com/pentops/j5/lib/id62"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
@@ -93,7 +94,7 @@ type lspCompiler struct {
 }
 
 func newLspCompiler(ctx context.Context, dir string) (*lspCompiler, error) {
-	resolver, err := source.NewEnvResolver()
+	imageResolver, err := resolver.NewEnvResolver()
 	if err != nil {
 		return nil, err
 	}
@@ -102,7 +103,7 @@ func newLspCompiler(ctx context.Context, dir string) (*lspCompiler, error) {
 		return nil, err
 	}
 	fsRoot := os.DirFS(fullDir)
-	srcRoot, err := source.NewFSRepoRoot(ctx, fsRoot, resolver)
+	srcRoot, err := source.NewFSRepoRoot(ctx, fsRoot, imageResolver)
 	if err != nil {
 		return nil, err
 	}

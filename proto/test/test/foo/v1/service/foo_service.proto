@@ -16,15 +16,18 @@ service FooQueryService {
 
   rpc GetFoo(GetFooRequest) returns (GetFooResponse) {
     option (google.api.http) = {get: "/test/v1/foo/{id}"};
+    option (j5.ext.v1.method).state_query.get = true;
   }
 
   rpc ListFoos(ListFoosRequest) returns (ListFoosResponse) {
     option (j5.ext.v1.method).auth.jwt_bearer = {};
     option (google.api.http) = {get: "/test/v1/foos"};
+    option (j5.ext.v1.method).state_query.list = true;
   }
 
   rpc ListFooEvents(ListFooEventsRequest) returns (ListFooEventsResponse) {
     option (google.api.http) = {get: "/test/v1/foo/{id}/events"};
+    option (j5.ext.v1.method).state_query.list_events = true;
   }
 }
 
@@ -80,6 +83,7 @@ message ListFoosRequest {
 
 message ListFoosResponse {
   repeated test.foo.v1.FooState foos = 1;
+  j5.list.v1.PageResponse page = 100;
 }
 
 message ListFooEventsRequest {
@@ -90,6 +94,7 @@ message ListFooEventsRequest {
 
 message ListFooEventsResponse {
   repeated test.foo.v1.FooEvent events = 1;
+  j5.list.v1.PageResponse page = 100;
 }
 
 message DownloadRawRequest {

@@ -33,7 +33,7 @@ func (x *MethodAuthType) TypeKey() (MethodAuthTypeKey, bool) {
 }
 
 type IsMethodAuthTypeWrappedType interface {
-	TypeKey() MethodAuthTypeKey
+	MethodAuthTypeKey() MethodAuthTypeKey
 	proto.Message
 }
 
@@ -63,16 +63,16 @@ func (x *MethodAuthType) Get() IsMethodAuthTypeWrappedType {
 		return nil
 	}
 }
-func (x *MethodAuthType_None) TypeKey() MethodAuthTypeKey {
+func (x *MethodAuthType_None) MethodAuthTypeKey() MethodAuthTypeKey {
 	return MethodAuth_Type_None
 }
-func (x *MethodAuthType_JWTBearer) TypeKey() MethodAuthTypeKey {
+func (x *MethodAuthType_JWTBearer) MethodAuthTypeKey() MethodAuthTypeKey {
 	return MethodAuth_Type_JwtBearer
 }
-func (x *MethodAuthType_Custom) TypeKey() MethodAuthTypeKey {
+func (x *MethodAuthType_Custom) MethodAuthTypeKey() MethodAuthTypeKey {
 	return MethodAuth_Type_Custom
 }
-func (x *MethodAuthType_Cookie) TypeKey() MethodAuthTypeKey {
+func (x *MethodAuthType_Cookie) MethodAuthTypeKey() MethodAuthTypeKey {
 	return MethodAuth_Type_Cookie
 }
 func (msg *MethodAuthType) Clone() any {

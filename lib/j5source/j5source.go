@@ -6,6 +6,7 @@ import (
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/internal/source"
+	"github.com/pentops/j5/internal/source/resolver"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
@@ -36,7 +37,7 @@ func (w *Source) BundleFS(name string) (fs.FS, error) {
 }
 
 func NewFSSource(ctx context.Context, root fs.FS) (*Source, error) {
-	resolver, err := source.NewEnvResolver()
+	resolver, err := resolver.NewEnvResolver()
 	if err != nil {
 		return nil, err
 	}

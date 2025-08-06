@@ -4,6 +4,8 @@ package registry_spb
 
 import (
 	j5reflect "github.com/pentops/j5/lib/j5reflect"
+	j5schema "github.com/pentops/j5/lib/j5schema"
+	httpbody "google.golang.org/genproto/googleapis/api/httpbody"
 	proto "google.golang.org/protobuf/proto"
 )
 
@@ -49,4 +51,28 @@ func (msg *DownloadClientAPIResponse) J5Reflect() j5reflect.Root {
 
 func (msg *DownloadClientAPIResponse) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
+
+// DownloadImage is a J5 method for service DownloadService
+func DownloadImageJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&DownloadImageRequest{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&httpbody.HttpBody{}).ProtoReflect().Descriptor()),
+	}
+}
+
+// DownloadSwagger is a J5 method for service DownloadService
+func DownloadSwaggerJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&DownloadSwaggerRequest{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&httpbody.HttpBody{}).ProtoReflect().Descriptor()),
+	}
+}
+
+// DownloadClientAPI is a J5 method for service DownloadService
+func DownloadClientAPIJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&DownloadClientAPIRequest{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&DownloadClientAPIResponse{}).ProtoReflect().Descriptor()),
+	}
 }

@@ -4,6 +4,7 @@ package test_spb
 
 import (
 	j5reflect "github.com/pentops/j5/lib/j5reflect"
+	j5schema "github.com/pentops/j5/lib/j5schema"
 	proto "google.golang.org/protobuf/proto"
 )
 
@@ -71,4 +72,28 @@ func (msg *BarEventsResponse) J5Reflect() j5reflect.Root {
 
 func (msg *BarEventsResponse) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
+}
+
+// BarGet is a J5 method for service BarQueryService
+func BarGetJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&BarGetRequest{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&BarGetResponse{}).ProtoReflect().Descriptor()),
+	}
+}
+
+// BarList is a J5 method for service BarQueryService
+func BarListJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&BarListRequest{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&BarListResponse{}).ProtoReflect().Descriptor()),
+	}
+}
+
+// BarEvents is a J5 method for service BarQueryService
+func BarEventsJ5MethodSchema() *j5schema.MethodSchema {
+	return &j5schema.MethodSchema{
+		Request:  j5schema.MustObjectSchema((&BarEventsRequest{}).ProtoReflect().Descriptor()),
+		Response: j5schema.MustObjectSchema((&BarEventsResponse{}).ProtoReflect().Descriptor()),
+	}
 }

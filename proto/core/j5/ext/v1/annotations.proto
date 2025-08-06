@@ -18,10 +18,15 @@ option (j5.ext.v1.package).string_formats = {
 
 extend google.protobuf.FileOptions {
   PackageOptions package = 555101;
+  J5Source j5_source = 555102;
 }
 
 message PackageOptions {
   repeated StringFormat string_formats = 1;
+}
+
+message J5Source {
+  string source = 1;
 }
 
 message StringFormat {

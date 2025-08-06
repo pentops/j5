@@ -101,7 +101,7 @@ func (x *OutputType) TypeKey() (OutputTypeKey, bool) {
 }
 
 type IsOutputTypeWrappedType interface {
-	TypeKey() OutputTypeKey
+	OutputTypeKey() OutputTypeKey
 	proto.Message
 }
 
@@ -119,7 +119,7 @@ func (x *OutputType) Get() IsOutputTypeWrappedType {
 		return nil
 	}
 }
-func (x *OutputType_GoProxy) TypeKey() OutputTypeKey {
+func (x *OutputType_GoProxy) OutputTypeKey() OutputTypeKey {
 	return Output_Type_GoProxy
 }
 func (msg *OutputType) Clone() any {

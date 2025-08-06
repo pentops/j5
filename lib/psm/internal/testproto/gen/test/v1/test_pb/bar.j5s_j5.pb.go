@@ -65,7 +65,7 @@ func (x *BarEventType) TypeKey() (BarEventTypeKey, bool) {
 }
 
 type IsBarEventTypeWrappedType interface {
-	TypeKey() BarEventTypeKey
+	BarEventTypeKey() BarEventTypeKey
 	proto.Message
 }
 
@@ -91,13 +91,13 @@ func (x *BarEventType) Get() IsBarEventTypeWrappedType {
 		return nil
 	}
 }
-func (x *BarEventType_Created) TypeKey() BarEventTypeKey {
+func (x *BarEventType_Created) BarEventTypeKey() BarEventTypeKey {
 	return BarEvent_Type_Created
 }
-func (x *BarEventType_Updated) TypeKey() BarEventTypeKey {
+func (x *BarEventType_Updated) BarEventTypeKey() BarEventTypeKey {
 	return BarEvent_Type_Updated
 }
-func (x *BarEventType_Deleted) TypeKey() BarEventTypeKey {
+func (x *BarEventType_Deleted) BarEventTypeKey() BarEventTypeKey {
 	return BarEvent_Type_Deleted
 }
 func (msg *BarEventType) Clone() any {

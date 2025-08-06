@@ -62,7 +62,7 @@ func (x *FooState_Data_Shape) TypeKey() (FooState_Data_ShapeTypeKey, bool) {
 }
 
 type IsFooState_Data_ShapeWrappedType interface {
-	TypeKey() FooState_Data_ShapeTypeKey
+	FooState_Data_ShapeTypeKey() FooState_Data_ShapeTypeKey
 	proto.Message
 }
 
@@ -84,10 +84,10 @@ func (x *FooState_Data_Shape) Get() IsFooState_Data_ShapeWrappedType {
 		return nil
 	}
 }
-func (x *FooState_Data_Shape_Circle) TypeKey() FooState_Data_ShapeTypeKey {
+func (x *FooState_Data_Shape_Circle) FooState_Data_ShapeTypeKey() FooState_Data_ShapeTypeKey {
 	return FooState_Data_Shape_Type_Circle
 }
-func (x *FooState_Data_Shape_Square) TypeKey() FooState_Data_ShapeTypeKey {
+func (x *FooState_Data_Shape_Square) FooState_Data_ShapeTypeKey() FooState_Data_ShapeTypeKey {
 	return FooState_Data_Shape_Type_Square
 }
 func (msg *FooState_Data_Shape) Clone() any {

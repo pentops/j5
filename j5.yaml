@@ -70,7 +70,7 @@ generate:
     plugins:
       - base: go
       - base: go-grpc
-      - base: go-j5
+      #- base: go-j5
 
   - name: fulltest
     inputs:

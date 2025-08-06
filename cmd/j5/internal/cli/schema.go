@@ -24,6 +24,7 @@ func schemaSet() *commander.CommandSet {
 	genGroup.Add("source", commander.NewCommand(RunSource))
 	genGroup.Add("client", commander.NewCommand(RunClient))
 	genGroup.Add("swagger", commander.NewCommand(RunSwagger))
+	genGroup.Add("sources", commander.NewCommand(RunSources))
 	return genGroup
 }
 
@@ -108,6 +109,20 @@ func RunImage(ctx context.Context, cfg BuildConfig) error {
 		return err
 	}
 	return writeBytes(cfg.Output, bb)
+}
+
+func RunSources(ctx context.Context, cfg BuildConfig) error {
+
+	image, err := cfg.GetSource(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, file := range image.File {
+		fmt.Printf("File: %s\n", file.GetName())
+	}
+
+	return nil
 }
 
 func RunSource(ctx context.Context, cfg struct {

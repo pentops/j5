@@ -128,7 +128,7 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input *sourc
 					return fmt.Errorf("plugin type mismatch: %s", plugin.Type)
 				}
 				if err := b.runProtocPlugin(ctx, pc, plugin, protoBuildRequest); err != nil {
-					return fmt.Errorf("proto plugin %s: %w", plugin.Name, err)
+					return fmt.Errorf("proto plugin %s for %s: %w", plugin.Name, input.SourceName, err)
 				}
 				return nil
 			})

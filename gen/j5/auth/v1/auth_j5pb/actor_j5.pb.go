@@ -40,7 +40,7 @@ func (x *AuthenticationMethod) TypeKey() (AuthenticationMethodTypeKey, bool) {
 }
 
 type IsAuthenticationMethodWrappedType interface {
-	TypeKey() AuthenticationMethodTypeKey
+	AuthenticationMethodTypeKey() AuthenticationMethodTypeKey
 	proto.Message
 }
 
@@ -66,13 +66,13 @@ func (x *AuthenticationMethod) Get() IsAuthenticationMethodWrappedType {
 		return nil
 	}
 }
-func (x *AuthenticationMethod_JWT) TypeKey() AuthenticationMethodTypeKey {
+func (x *AuthenticationMethod_JWT) AuthenticationMethodTypeKey() AuthenticationMethodTypeKey {
 	return AuthenticationMethod_Type_Jwt
 }
-func (x *AuthenticationMethod_Session) TypeKey() AuthenticationMethodTypeKey {
+func (x *AuthenticationMethod_Session) AuthenticationMethodTypeKey() AuthenticationMethodTypeKey {
 	return AuthenticationMethod_Type_Session
 }
-func (x *AuthenticationMethod_External) TypeKey() AuthenticationMethodTypeKey {
+func (x *AuthenticationMethod_External) AuthenticationMethodTypeKey() AuthenticationMethodTypeKey {
 	return AuthenticationMethod_Type_External
 }
 func (msg *AuthenticationMethod) Clone() any {

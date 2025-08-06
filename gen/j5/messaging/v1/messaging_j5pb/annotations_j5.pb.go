@@ -64,7 +64,7 @@ func (x *Config) TypeKey() (ConfigTypeKey, bool) {
 }
 
 type IsConfigWrappedType interface {
-	TypeKey() ConfigTypeKey
+	ConfigTypeKey() ConfigTypeKey
 	proto.Message
 }
 
@@ -94,16 +94,16 @@ func (x *Config) Get() IsConfigWrappedType {
 		return nil
 	}
 }
-func (x *BroadcastConfig) TypeKey() ConfigTypeKey {
+func (x *BroadcastConfig) ConfigTypeKey() ConfigTypeKey {
 	return Config_Type_Broadcast
 }
-func (x *UnicastConfig) TypeKey() ConfigTypeKey {
+func (x *UnicastConfig) ConfigTypeKey() ConfigTypeKey {
 	return Config_Type_Unicast
 }
-func (x *RequestConfig) TypeKey() ConfigTypeKey {
+func (x *RequestConfig) ConfigTypeKey() ConfigTypeKey {
 	return Config_Type_Request
 }
-func (x *ReplyConfig) TypeKey() ConfigTypeKey {
+func (x *ReplyConfig) ConfigTypeKey() ConfigTypeKey {
 	return Config_Type_Reply
 }
 func (msg *Config) Clone() any {

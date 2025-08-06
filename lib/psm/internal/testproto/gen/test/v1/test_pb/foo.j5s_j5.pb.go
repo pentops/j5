@@ -51,7 +51,7 @@ func (x *FooData_Shape) TypeKey() (FooData_ShapeTypeKey, bool) {
 }
 
 type IsFooData_ShapeWrappedType interface {
-	TypeKey() FooData_ShapeTypeKey
+	FooData_ShapeTypeKey() FooData_ShapeTypeKey
 	proto.Message
 }
 
@@ -73,10 +73,10 @@ func (x *FooData_Shape) Get() IsFooData_ShapeWrappedType {
 		return nil
 	}
 }
-func (x *FooData_Shape_Circle) TypeKey() FooData_ShapeTypeKey {
+func (x *FooData_Shape_Circle) FooData_ShapeTypeKey() FooData_ShapeTypeKey {
 	return FooData_Shape_Type_Circle
 }
-func (x *FooData_Shape_Square) TypeKey() FooData_ShapeTypeKey {
+func (x *FooData_Shape_Square) FooData_ShapeTypeKey() FooData_ShapeTypeKey {
 	return FooData_Shape_Type_Square
 }
 func (msg *FooData_Shape) Clone() any {
@@ -145,7 +145,7 @@ func (x *FooEventType) TypeKey() (FooEventTypeKey, bool) {
 }
 
 type IsFooEventTypeWrappedType interface {
-	TypeKey() FooEventTypeKey
+	FooEventTypeKey() FooEventTypeKey
 	proto.Message
 }
 
@@ -171,13 +171,13 @@ func (x *FooEventType) Get() IsFooEventTypeWrappedType {
 		return nil
 	}
 }
-func (x *FooEventType_Created) TypeKey() FooEventTypeKey {
+func (x *FooEventType_Created) FooEventTypeKey() FooEventTypeKey {
 	return FooEvent_Type_Created
 }
-func (x *FooEventType_Updated) TypeKey() FooEventTypeKey {
+func (x *FooEventType_Updated) FooEventTypeKey() FooEventTypeKey {
 	return FooEvent_Type_Updated
 }
-func (x *FooEventType_Deleted) TypeKey() FooEventTypeKey {
+func (x *FooEventType_Deleted) FooEventTypeKey() FooEventTypeKey {
 	return FooEvent_Type_Deleted
 }
 func (msg *FooEventType) Clone() any {

@@ -10,6 +10,7 @@ import (
 	"github.com/pentops/j5/internal/builder"
 	"github.com/pentops/j5/internal/j5s/protobuild/protomod"
 	"github.com/pentops/j5/internal/source"
+	"github.com/pentops/j5/internal/source/resolver"
 )
 
 type RegistryClient interface {
@@ -19,7 +20,7 @@ type RegistryClient interface {
 
 func NewBuilder(regClient RegistryClient) (*Builder, error) {
 
-	resolver, err := source.NewResolver(regClient)
+	resolver, err := resolver.NewResolver(regClient)
 	if err != nil {
 		return nil, err
 	}

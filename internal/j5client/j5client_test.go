@@ -205,7 +205,8 @@ func wantFooState() *schema_j5pb.RootSchema {
 					Timestamp: &schema_j5pb.TimestampField{
 						ListRules: &list_j5pb.TimestampRules{
 							Sorting: &list_j5pb.SortingConstraint{
-								Sortable: true,
+								Sortable:    true,
+								DefaultSort: true,
 							},
 							Filtering: &list_j5pb.FilteringConstraint{
 								Filterable: true,

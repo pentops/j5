@@ -17,6 +17,7 @@ import (
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/builder"
 	"github.com/pentops/j5/internal/source"
+	"github.com/pentops/j5/internal/source/resolver"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
 )
@@ -75,12 +76,12 @@ func runLatestDeps(ctx context.Context, cfg struct {
 		return err
 	}
 
-	resolver, err := source.NewEnvResolver()
+	imageResolver, err := resolver.NewEnvResolver()
 	if err != nil {
 		return err
 	}
 
-	newLockFile, err := resolver.LatestLocks(ctx, allDeps)
+	newLockFile, err := imageResolver.LatestLocks(ctx, allDeps)
 	if err != nil {
 		return err
 	}
@@ -97,16 +98,16 @@ type SourceConfig struct {
 	Bundle string `flag:"bundle" default:"" description:"When the bundle j5.yaml is in a subdirectory"`
 
 	_resolved *source.RepoRoot
-	_resolver *source.Resolver
+	_resolver *resolver.Resolver
 }
 
-func (cfg SourceConfig) resolver() (*source.Resolver, error) {
+func (cfg SourceConfig) resolver() (*resolver.Resolver, error) {
 	if cfg._resolver == nil {
-		resolver, err := source.NewEnvResolver()
+		imageResolver, err := resolver.NewEnvResolver()
 		if err != nil {
 			return nil, fmt.Errorf("creating resolver: %w", err)
 		}
-		cfg._resolver = resolver
+		cfg._resolver = imageResolver
 	}
 	return cfg._resolver, nil
 }

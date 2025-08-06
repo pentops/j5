@@ -297,7 +297,7 @@ func (x *TopicType) TypeKey() (TopicTypeKey, bool) {
 }
 
 type IsTopicTypeWrappedType interface {
-	TypeKey() TopicTypeKey
+	TopicTypeKey() TopicTypeKey
 	proto.Message
 }
 
@@ -327,16 +327,16 @@ func (x *TopicType) Get() IsTopicTypeWrappedType {
 		return nil
 	}
 }
-func (x *TopicType_Publish) TypeKey() TopicTypeKey {
+func (x *TopicType_Publish) TopicTypeKey() TopicTypeKey {
 	return Topic_Type_Publish
 }
-func (x *TopicType_ReqRes) TypeKey() TopicTypeKey {
+func (x *TopicType_ReqRes) TopicTypeKey() TopicTypeKey {
 	return Topic_Type_Reqres
 }
-func (x *TopicType_Upsert) TypeKey() TopicTypeKey {
+func (x *TopicType_Upsert) TopicTypeKey() TopicTypeKey {
 	return Topic_Type_Upsert
 }
-func (x *TopicType_Event) TypeKey() TopicTypeKey {
+func (x *TopicType_Event) TopicTypeKey() TopicTypeKey {
 	return Topic_Type_Event
 }
 func (msg *TopicType) Clone() any {

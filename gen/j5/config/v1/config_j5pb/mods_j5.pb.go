@@ -24,7 +24,7 @@ func (x *ProtoMod) TypeKey() (ProtoModTypeKey, bool) {
 }
 
 type IsProtoModWrappedType interface {
-	TypeKey() ProtoModTypeKey
+	ProtoModTypeKey() ProtoModTypeKey
 	proto.Message
 }
 
@@ -42,7 +42,7 @@ func (x *ProtoMod) Get() IsProtoModWrappedType {
 		return nil
 	}
 }
-func (x *ProtoMod_GoPackageNames) TypeKey() ProtoModTypeKey {
+func (x *ProtoMod_GoPackageNames) ProtoModTypeKey() ProtoModTypeKey {
 	return ProtoMod_Type_GoPackageNames
 }
 func (msg *ProtoMod) Clone() any {

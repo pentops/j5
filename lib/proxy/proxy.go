@@ -144,7 +144,7 @@ func (rr *Router) RegisterGRPCService(ctx context.Context, sd protoreflect.Servi
 		if serviceExt.DefaultAuth != nil {
 			defaultAuth = serviceExt.DefaultAuth.Get()
 			log.WithFields(ctx, map[string]any{
-				"authMethod": defaultAuth.TypeKey(),
+				"authMethod": defaultAuth.MethodAuthTypeKey(),
 				"service":    sd.FullName(),
 			}).Debug("Service Default Auth")
 		}

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
+	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/j5s/j5convert"
 	"github.com/pentops/j5/internal/j5s/protobuild"
@@ -177,7 +178,9 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 	}
 
 	for _, pkg := range built {
-		err = img.addBuilt(pkg)
+		err = img.addBuilt(pkg, &ext_j5pb.J5Source{
+			Source: bundle.debugName,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -194,7 +197,7 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 			}
 			localInclude.SourceName = inputName(spec.Input)
 
-			err = img.include(localInclude)
+			err = img.include(ctx, localInclude)
 			if err != nil {
 				return nil, err
 			}

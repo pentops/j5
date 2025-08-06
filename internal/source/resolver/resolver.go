@@ -1,4 +1,4 @@
-package source
+package resolver
 
 import (
 	"context"
@@ -42,42 +42,6 @@ func NewEnvResolver() (*Resolver, error) {
 		j5Cache:   cache,
 	}, nil
 }
-
-func ResolveIncludes(ctx context.Context, rr RemoteResolver, img *source_j5pb.SourceImage, locks *config_j5pb.LockFile) (*source_j5pb.SourceImage, error) {
-
-	ib := newImageBuilderFromImage(img)
-	for _, include := range img.Includes {
-		inputSpec := &config_j5pb.Input{
-			Type: &config_j5pb.Input_Registry_{
-				Registry: &config_j5pb.Input_Registry{
-					Owner:     include.Owner,
-					Name:      include.Name,
-					Version:   include.Version,
-					Reference: include.Reference,
-				},
-			},
-		}
-
-		includedImage, err := rr.GetRemoteDependency(ctx, inputSpec, locks)
-		if err != nil {
-			return nil, fmt.Errorf("resolving included dependency %s/%s: %w", include.Owner, include.Name, err)
-		}
-
-		resolvedIncluded, err := ResolveIncludes(ctx, rr, includedImage, locks)
-		if err != nil {
-			return nil, fmt.Errorf("resolving includes for %s/%s: %w", include.Owner, include.Name, err)
-		}
-
-		if err := ib.include(resolvedIncluded); err != nil {
-			return nil, fmt.Errorf("including dependency %s/%s: %w", include.Owner, include.Name, err)
-		}
-	}
-
-	ib.img.Includes = nil // clear includes to avoid duplication in the final image
-
-	return ib.img, nil
-}
-
 func (rr *Resolver) GetRemoteDependency(ctx context.Context, input *config_j5pb.Input, locks *config_j5pb.LockFile) (*source_j5pb.SourceImage, error) {
 	switch st := input.Type.(type) {
 

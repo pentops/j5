@@ -12,6 +12,9 @@ import (
 func (msg *PackageOptions) Clone() any {
 	return proto.Clone(msg).(*PackageOptions)
 }
+func (msg *J5Source) Clone() any {
+	return proto.Clone(msg).(*J5Source)
+}
 func (msg *StringFormat) Clone() any {
 	return proto.Clone(msg).(*StringFormat)
 }

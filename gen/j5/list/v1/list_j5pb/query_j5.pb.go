@@ -40,7 +40,7 @@ func (x *Filter) TypeKey() (FilterTypeKey, bool) {
 }
 
 type IsFilterWrappedType interface {
-	TypeKey() FilterTypeKey
+	FilterTypeKey() FilterTypeKey
 	proto.Message
 }
 
@@ -66,13 +66,13 @@ func (x *Filter) Get() IsFilterWrappedType {
 		return nil
 	}
 }
-func (x *Field) TypeKey() FilterTypeKey {
+func (x *Field) FilterTypeKey() FilterTypeKey {
 	return Filter_Type_Field
 }
-func (x *And) TypeKey() FilterTypeKey {
+func (x *And) FilterTypeKey() FilterTypeKey {
 	return Filter_Type_And
 }
-func (x *Or) TypeKey() FilterTypeKey {
+func (x *Or) FilterTypeKey() FilterTypeKey {
 	return Filter_Type_Or
 }
 func (msg *Filter) Clone() any {
