@@ -12,8 +12,6 @@ import (
 	"github.com/pentops/j5/internal/bcl"
 	"github.com/pentops/j5/internal/bcl/errpos"
 	"github.com/pentops/j5/internal/j5s/j5parse"
-	"github.com/pentops/j5/internal/j5s/protobuild"
-	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/j5/internal/j5s/protoprint"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/j5/internal/source/resolver"
@@ -74,16 +72,7 @@ func runJ5sLintFile(ctx context.Context, srcRoot *source.RepoRoot, fileRel strin
 		return err
 	}
 
-	deps, err := bundle.GetDependencies(ctx, srcRoot)
-	if err != nil {
-		return err
-	}
-	fileSource, err := bundle.FileSource()
-	if err != nil {
-		return err
-	}
-
-	compiler, err := protobuild.NewPackageSet(psrc.DescriptorFiles(deps), fileSource)
+	compiler, err := bundle.Compiler(ctx, srcRoot)
 	if err != nil {
 		return err
 	}
@@ -120,14 +109,9 @@ func runJ5sLintAll(ctx context.Context, srcRoot *source.RepoRoot) error {
 
 	for _, bundle := range bundles {
 
-		fileSource, err := bundle.FileSource()
+		ps, err := bundle.Compiler(ctx, srcRoot)
 		if err != nil {
-			return err
-		}
-
-		ps, err := protobuild.NewPackageSet(externalDeps, fileSource)
-		if err != nil {
-			return err
+			return fmt.Errorf("compiler: %w", err)
 		}
 
 		allPackages := ps.ListLocalPackages()
@@ -249,17 +233,7 @@ func runJ5sGenProto(ctx context.Context, cfg j5sGenProtoConfig) error {
 		ctx = log.WithField(ctx, "bundle", bundle.DebugName())
 		log.Debug(ctx, "GenProto for Bundle")
 
-		deps, err := bundle.GetDependencies(ctx, src)
-		if err != nil {
-			return err
-		}
-
-		localFiles, err := bundle.FileSource()
-		if err != nil {
-			return err
-		}
-
-		compiler, err := protobuild.NewPackageSet(psrc.DescriptorFiles(deps), localFiles)
+		compiler, err := bundle.Compiler(ctx, src)
 		if err != nil {
 			return err
 		}
@@ -277,7 +251,7 @@ func runJ5sGenProto(ctx context.Context, cfg j5sGenProtoConfig) error {
 			return fmt.Errorf("clean: %w", err)
 		}
 
-		for _, pkg := range localFiles.ListPackages() {
+		for _, pkg := range compiler.ListLocalPackages() {
 
 			out, err := compiler.CompilePackage(ctx, pkg)
 			if err != nil {

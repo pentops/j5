@@ -27,7 +27,9 @@ type Bundle interface {
 	FS() fs.FS
 	GetDependencies(ctx context.Context, resolver InputSource) (map[string]*descriptorpb.FileDescriptorProto, error)
 
-	FileSource() (protobuild.LocalFileSource, error)
+	//FileSource() (protobuild.LocalFileSource, error)
+
+	Compiler(context.Context, InputSource) (*protobuild.PackageSet, error)
 }
 
 type bundleSource struct {
@@ -138,6 +140,27 @@ func inputName(input *config_j5pb.Input) string {
 	return "<unknown>"
 }
 
+func (bundle *bundleSource) Compiler(ctx context.Context, resolver InputSource) (*protobuild.PackageSet, error) {
+	deps, err := bundle.getDependencyFiles(ctx, resolver)
+	if err != nil {
+		return nil, fmt.Errorf("getting dependency files: %w", err)
+	}
+
+	depResolver := psrc.DescriptorFiles(deps.primary)
+
+	localFiles, err := bundle.FileSource()
+	if err != nil {
+		return nil, fmt.Errorf("getting local file source: %w", err)
+	}
+
+	compiler, err := protobuild.NewPackageSet(depResolver, localFiles)
+	if err != nil {
+		return nil, fmt.Errorf("creating package set: %w", err)
+	}
+
+	return compiler, nil
+}
+
 func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver InputSource) (*source_j5pb.SourceImage, error) {
 	j5Config, err := bundle.J5Config()
 	if err != nil {
@@ -146,21 +169,22 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 
 	deps, err := bundle.getDependencyFiles(ctx, resolver)
 	if err != nil {
-		return nil, err
-	}
-
-	localFiles, err := bundle.FileSource()
-	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting dependency files: %w", err)
 	}
 
 	depResolver := psrc.DescriptorFiles(deps.primary)
-	compiler, err := protobuild.NewPackageSet(depResolver, localFiles)
+
+	localFiles, err := bundle.FileSource()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("getting local file source: %w", err)
 	}
 
-	img := newImageBuilder(deps)
+	compiler, err := protobuild.NewPackageSet(depResolver, localFiles)
+	if err != nil {
+		return nil, fmt.Errorf("creating package set: %w", err)
+	}
+
+	img := newImageBuilder()
 
 	pkgNames := make([]string, 0, len(bundle.config.Packages))
 	for _, pkg := range bundle.config.Packages {
@@ -184,6 +208,11 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	err = img.includeDependencies(ctx, deps)
+	if err != nil {
+		return nil, err
 	}
 
 	for _, spec := range j5Config.Includes {
@@ -225,9 +254,8 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 	return img.img, nil
 }
 
-func (bundle *bundleSource) FileSource() (protobuild.LocalFileSource, error) {
+func (bundle *bundleSource) ListPackages() ([]string, error) {
 	bundleDir := bundle.DirInRepo()
-
 	packages := []string{}
 	packageMap := make(map[string]struct{})
 	for _, pkg := range bundle.config.Packages {
@@ -245,6 +273,15 @@ func (bundle *bundleSource) FileSource() (protobuild.LocalFileSource, error) {
 		}
 		packages = append(packages, pkg)
 	}
+	return packages, nil
+}
+
+func (bundle *bundleSource) FileSource() (protobuild.LocalFileSource, error) {
+	packages, err := bundle.ListPackages()
+	if err != nil {
+		return nil, fmt.Errorf("listing packages: %w", err)
+	}
+	bundleDir := bundle.DirInRepo()
 
 	localFiles := &fileReader{
 		fs:       bundle.fs,

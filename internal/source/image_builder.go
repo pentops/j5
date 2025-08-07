@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"slices"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
@@ -22,14 +21,14 @@ import (
 type imageBuilder struct {
 	img               *source_j5pb.SourceImage
 	includedFilenames map[string]struct{}
-	deps              *imageFiles
+	//deps              *imageFiles
 }
 
-func newImageBuilder(deps *imageFiles) *imageBuilder {
+func newImageBuilder() *imageBuilder {
 	return &imageBuilder{
 		img:               &source_j5pb.SourceImage{},
 		includedFilenames: make(map[string]struct{}),
-		deps:              deps,
+		//deps:              deps,
 	}
 }
 
@@ -37,10 +36,11 @@ func newImageBuilderFromImage(img *source_j5pb.SourceImage) *imageBuilder {
 	return &imageBuilder{
 		img:               img,
 		includedFilenames: make(map[string]struct{}),
-		deps: &imageFiles{
-			primary:      make(map[string]*descriptorpb.FileDescriptorProto),
-			dependencies: make(map[string]*descriptorpb.FileDescriptorProto),
-		},
+		/*
+			deps: &imageFiles{
+				primary:      make(map[string]*descriptorpb.FileDescriptorProto),
+				dependencies: make(map[string]*descriptorpb.FileDescriptorProto),
+			},*/
 	}
 }
 
@@ -64,9 +64,10 @@ func (ib *imageBuilder) addBuilt(built *protobuild.BuiltPackage, source *ext_j5p
 		return fmt.Errorf("sort by dependency: %w", err)
 	}
 	for _, descriptor := range sorted {
-		if err := ib.addFile(descriptor, true); err != nil {
+		if err := ib._addFile(descriptor); err != nil {
 			return fmt.Errorf("add file %s: %w", descriptor.GetName(), err)
 		}
+		ib.img.SourceFilenames = append(ib.img.SourceFilenames, descriptor.GetName())
 	}
 	for _, file := range built.Prose {
 		ib.addProseFile(file)
@@ -74,33 +75,7 @@ func (ib *imageBuilder) addBuilt(built *protobuild.BuiltPackage, source *ext_j5p
 	return nil
 }
 
-func (ib *imageBuilder) addFile(file *descriptorpb.FileDescriptorProto, asSource bool) error {
-	for _, dependencyFilename := range file.Dependency {
-		if _, ok := ib.includedFilenames[dependencyFilename]; ok {
-			continue
-		}
-
-		if dep, ok := ib.deps.primary[dependencyFilename]; ok {
-			if err := ib.addFile(dep, false); err != nil {
-				return fmt.Errorf("add file %s: %w", dependencyFilename, err)
-			}
-			continue
-		}
-
-		if dep, ok := ib.deps.dependencies[dependencyFilename]; ok {
-			if err := ib.addFile(dep, false); err != nil {
-				return fmt.Errorf("add file %s: %w", dependencyFilename, err)
-			}
-			continue
-		}
-
-		if _, ok := psrc.BuiltinFile(dependencyFilename); ok {
-			// not required to add
-			continue
-		}
-
-		return fmt.Errorf("file %s not found in dependencies", dependencyFilename)
-	}
+func (ib *imageBuilder) _addFile(file *descriptorpb.FileDescriptorProto) error {
 
 	if _, ok := ib.includedFilenames[file.GetName()]; ok {
 		for _, existingFile := range ib.img.File {
@@ -112,20 +87,62 @@ func (ib *imageBuilder) addFile(file *descriptorpb.FileDescriptorProto, asSource
 			}
 			break
 		}
-		if asSource {
-			if !slices.Contains(ib.img.SourceFilenames, file.GetName()) {
-				ib.img.SourceFilenames = append(ib.img.SourceFilenames, file.GetName())
-			}
-		}
 		return nil
 	}
 
 	ib.img.File = append(ib.img.File, file)
 	ib.includedFilenames[file.GetName()] = struct{}{}
-	if asSource {
-		ib.img.SourceFilenames = append(ib.img.SourceFilenames, file.GetName())
+
+	return nil
+}
+
+func (ib *imageBuilder) includeDependencies(ctx context.Context, deps *imageFiles) error {
+
+	var addDependency func(file *descriptorpb.FileDescriptorProto) error
+	var doFile func(file *descriptorpb.FileDescriptorProto) error
+
+	addDependency = func(dep *descriptorpb.FileDescriptorProto) error {
+		if err := ib._addFile(dep); err != nil {
+			return fmt.Errorf("add file %s: %w", dep.GetName(), err)
+		}
+		return doFile(dep)
+	}
+	doFile = func(file *descriptorpb.FileDescriptorProto) error {
+		for _, dependencyFilename := range file.Dependency {
+			if _, ok := ib.includedFilenames[dependencyFilename]; ok {
+				continue
+			}
+
+			if _, ok := psrc.BuiltinFile(dependencyFilename); ok {
+				// not required to add
+				continue
+			}
+
+			if dep, ok := deps.primary[dependencyFilename]; ok {
+				if err := addDependency(dep); err != nil {
+					return err
+				}
+				continue
+			}
+
+			if dep, ok := deps.dependencies[dependencyFilename]; ok {
+				if err := addDependency(dep); err != nil {
+					return err
+				}
+				continue
+			}
+
+			return fmt.Errorf("file %s not found in dependencies", dependencyFilename)
+		}
+		return nil
 	}
 
+	for _, file := range ib.img.File {
+		err := doFile(file)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -152,7 +169,7 @@ func (ib *imageBuilder) include(ctx context.Context, img *source_j5pb.SourceImag
 		}
 		proto.SetExtension(file.Options, ext_j5pb.E_J5Source, source)
 
-		err = ib.addFile(file, false)
+		err = ib._addFile(file)
 		if err != nil {
 			return err
 		}
