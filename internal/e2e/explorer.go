@@ -7,7 +7,9 @@ import (
 
 	"github.com/pentops/flowtest/jsontest"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
+	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/lib/j5codec"
+	"google.golang.org/protobuf/proto"
 )
 
 type ClientAsserter struct {
@@ -63,18 +65,46 @@ type MethodAsserter struct {
 }
 
 func (ma *MethodAsserter) JSONAsserter() *jsontest.TestAsserter {
+	return toJSONAsserter(ma.t, ma.Method)
+}
 
+type ObjectAsserter struct {
+	t      testing.TB
+	Object *schema_j5pb.Object
+}
+
+func (pa *PackageAsserter) GetObject(name string) *ObjectAsserter {
+	pa.t.Helper()
+	schema, ok := pa.Schemas[name]
+	if !ok {
+		pa.t.Fatalf("FATAL: Object %s not found in package %s", name, pa.Name)
+	}
+	asObject := schema.GetObject()
+	if asObject == nil {
+		pa.t.Fatalf("FATAL: Object %s in package %s is not an object schema", name, pa.Name)
+	}
+
+	return &ObjectAsserter{
+		t:      pa.t,
+		Object: asObject,
+	}
+}
+
+func (oa *ObjectAsserter) JSONAsserter() *jsontest.TestAsserter {
+	return toJSONAsserter(oa.t, oa.Object)
+}
+
+func toJSONAsserter(t testing.TB, v proto.Message) *jsontest.TestAsserter {
 	codec := j5codec.NewCodec(j5codec.WithIncludeEmpty())
-
-	baseJSON, err := codec.ProtoToJSON(ma.ProtoReflect())
+	baseJSON, err := codec.ProtoToJSON(v.ProtoReflect())
 	if err != nil {
-		ma.t.Fatalf("FATAL: ProtoToJSON failed: %v", err)
+		t.Fatalf("FATAL: ProtoToJSON failed: %v", err)
 	}
 
 	out := bytes.NewBuffer(nil)
 	if err := json.Indent(out, baseJSON, "", "  "); err != nil {
-		ma.t.Fatalf("FATAL: json.Indent failed: %v", err)
+		t.Fatalf("FATAL: json.Indent failed: %v", err)
 	}
 
-	return jsontest.NewTestAsserter(ma.t, out.String())
+	return jsontest.NewTestAsserter(t, out.String())
 }

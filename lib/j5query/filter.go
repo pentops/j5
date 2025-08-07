@@ -17,6 +17,113 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+func getFieldFiltering(field *j5schema.ObjectProperty) *list_j5pb.FilteringConstraint {
+	switch bigType := field.Schema.(type) {
+	case *j5schema.EnumField:
+		if bigType.ListRules == nil || bigType.ListRules.Filtering == nil {
+			return nil
+		}
+
+		schema := bigType.Schema()
+		vals := []string{}
+		for _, val := range bigType.ListRules.Filtering.DefaultFilters {
+			option := schema.OptionByName(val)
+			if option == nil {
+				panic(fmt.Sprintf("default filter value '%s' not found in enum '%s'", val, field.JSONName))
+			}
+
+			vals = append(vals, option.Name())
+		}
+		bigType.ListRules.Filtering.DefaultFilters = vals
+
+		return bigType.ListRules.Filtering
+
+	case *j5schema.OneofField:
+		if bigType.ListRules == nil {
+			return nil
+		}
+		return bigType.ListRules.Filtering
+
+	case *j5schema.ObjectField:
+		// none
+		return nil
+	case *j5schema.AnyField:
+		// none
+		return nil
+	case *j5schema.MapField:
+		// none
+		return nil
+	case *j5schema.ArrayField:
+		// none
+		return nil
+
+	case *j5schema.PolymorphField:
+		// none
+		return nil
+
+	case *j5schema.ScalarSchema:
+		j5Field := field.Schema.ToJ5Field()
+
+		switch st := j5Field.Type.(type) {
+		case *schema_j5pb.Field_Float:
+
+			if st.Float.ListRules == nil {
+				return nil
+			}
+			return st.Float.ListRules.Filtering
+
+		case *schema_j5pb.Field_Integer:
+			if st.Integer.ListRules == nil {
+				return nil
+			}
+			return st.Integer.ListRules.Filtering
+
+		case *schema_j5pb.Field_Bool:
+			if st.Bool.ListRules == nil {
+				return nil
+			}
+			return st.Bool.ListRules.Filtering
+
+		case *schema_j5pb.Field_Key:
+			if st.Key.ListRules == nil {
+				return nil
+			}
+			return st.Key.ListRules.Filtering
+
+		case *schema_j5pb.Field_Timestamp:
+			if st.Timestamp.ListRules == nil {
+				return nil
+			}
+			return st.Timestamp.ListRules.Filtering
+
+		case *schema_j5pb.Field_Date:
+			if st.Date.ListRules == nil {
+				return nil
+			}
+			return st.Date.ListRules.Filtering
+
+		case *schema_j5pb.Field_Decimal:
+			if st.Decimal.ListRules == nil {
+				return nil
+			}
+			return st.Decimal.ListRules.Filtering
+
+		case *schema_j5pb.Field_String_:
+			// no filters definable
+			return nil
+		case *schema_j5pb.Field_Bytes:
+			return nil
+
+		default:
+			panic(fmt.Sprintf("unknown scalar type for default filter (%s): %T", field.JSONName, st))
+		}
+
+	default:
+		panic(fmt.Sprintf("unknown field type for filter rules %T", bigType))
+	}
+
+}
+
 type filterSpec struct {
 	*NestedField
 	filterVals []any

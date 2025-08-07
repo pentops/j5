@@ -38,8 +38,6 @@ func TestInt(t *testing.T) {
 	method.AssertEqual("request.list.filterableFields.0.name", "int")
 }
 
-/*
-
 func TestDate(t *testing.T) {
 
 	fb := NewFileBuilder("test/v1/test.j5s")
@@ -63,9 +61,15 @@ func TestDate(t *testing.T) {
 
 	client := NewClientExplorer(t, fb.BuildClientAPI(t))
 
-	method := client.GetPackage("test.v1").GetMethod("ListFoos").JSONAsserter()
+	pkg := client.GetPackage("test.v1")
+
+	fooSchema := pkg.GetObject("Foo").JSONAsserter()
+	fooSchema.AssertEqual("properties.0.name", "date")
+	fooSchema.AssertEqual("properties.0.schema.date.listRules.filtering.filterable", true)
+
+	method := pkg.GetMethod("ListFoos").JSONAsserter()
 	method.Print()
 
 	method.AssertEqual("request.list.filterableFields.0.name", "date")
 
-}*/
+}

@@ -201,6 +201,23 @@ type TSVColumn struct {
 	ColumnName string
 }
 
+func getFieldSearching(field *j5schema.ObjectProperty) *list_j5pb.SearchingConstraint {
+	switch bigSchema := field.Schema.(type) {
+
+	case *j5schema.ScalarSchema:
+		innerSchema := bigSchema.ToJ5Field()
+		switch ist := innerSchema.Type.(type) {
+		case *schema_j5pb.Field_String_:
+			if ist.String_.ListRules == nil {
+				return nil // not searchable
+			}
+			return ist.String_.ListRules.Searching
+
+		}
+	}
+	return nil
+}
+
 func tsvColumns(message *j5schema.ObjectSchema) ([]*TSVColumn, error) {
 
 	usedColNames := make(map[string]struct{})
