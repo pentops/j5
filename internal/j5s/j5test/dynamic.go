@@ -90,8 +90,13 @@ func ObjectReflect(t testing.TB, file string) protoreflect.MessageDescriptor {
 	locals := newTestFiles()
 	locals.tAddJ5SFile(pkgName+"/v1/file.j5s", file)
 
+	localResolver, err := protobuild.NewSourceResolver(locals)
+	if err != nil {
+		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
+	}
+
 	deps := psrc.NewBuiltinResolver()
-	ps, err := protobuild.NewPackageSet(deps, locals)
+	ps, err := protobuild.NewPackageSet(deps, localResolver)
 	if err != nil {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}

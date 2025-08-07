@@ -17,13 +17,6 @@ import (
 	"github.com/pentops/log.go/log"
 )
 
-type LocalFileSource interface {
-	GetLocalFile(context.Context, string) ([]byte, error)
-	ProseFiles(pkgName string) ([]*source_j5pb.ProseFile, error)
-	ListPackages() []string
-	ListSourceFiles(ctx context.Context, pkgName string) ([]string, error)
-}
-
 type SourceFile struct {
 	Summary *j5convert.FileSummary
 
@@ -68,6 +61,13 @@ func (sf *SourceFile) toSearchResults(typeResolver j5convert.TypeResolver) ([]*p
 	return nil, fmt.Errorf("source file %s has no result and is not j5s", sf.Summary.SourceFilename)
 }
 
+type LocalFileSource interface {
+	GetLocalFile(context.Context, string) ([]byte, error)
+	ProseFiles(pkgName string) ([]*source_j5pb.ProseFile, error)
+	ListPackages() []string
+	ListSourceFiles(ctx context.Context, pkgName string) ([]string, error)
+}
+
 type sourceResolver struct {
 	bundleFiles       LocalFileSource
 	j5Parser          *j5parse.Parser
@@ -75,7 +75,7 @@ type sourceResolver struct {
 	localPackageNames map[string]struct{}
 }
 
-func newSourceResolver(localFiles LocalFileSource) (*sourceResolver, error) {
+func NewSourceResolver(localFiles LocalFileSource) (*sourceResolver, error) {
 	packages := localFiles.ListPackages()
 
 	localPackageNames := map[string]struct{}{}
@@ -106,7 +106,7 @@ func (sr *sourceResolver) ListPackages() []string {
 	return sr.bundleFiles.ListPackages()
 }
 
-func (sr *sourceResolver) ProseFiles(pkgName string) ([]*source_j5pb.ProseFile, error) {
+func (sr *sourceResolver) PackageProseFiles(pkgName string) ([]*source_j5pb.ProseFile, error) {
 	return sr.bundleFiles.ProseFiles(pkgName)
 }
 
@@ -119,7 +119,7 @@ func hasAPrefix(s string, prefixes []string) bool {
 	return false
 }
 
-func (sr *sourceResolver) packageForFile(filename string) (string, bool, error) {
+func (sr *sourceResolver) PackageForFile(filename string) (string, bool, error) {
 	if !hasAPrefix(filename, sr.localPrefixes) {
 		// not a local file, not in scope.
 		return "", false, nil
@@ -132,7 +132,7 @@ func (sr *sourceResolver) packageForFile(filename string) (string, bool, error) 
 	return pkg, true, nil
 }
 
-func (sr *sourceResolver) isLocalPackage(pkgName string) bool {
+func (sr *sourceResolver) IsLocalPackage(pkgName string) bool {
 	_, ok := sr.localPackageNames[pkgName]
 	return ok
 }
@@ -154,10 +154,6 @@ func (sr *sourceResolver) listPackageFiles(ctx context.Context, pkgName string) 
 	return filtered, nil
 }
 
-func (sr *sourceResolver) getFileContent(ctx context.Context, sourceFilename string) ([]byte, error) {
-	return sr.bundleFiles.GetLocalFile(ctx, sourceFilename)
-}
-
 func (sr *sourceResolver) getFile(ctx context.Context, sourceFilename string) (*SourceFile, error) {
 	log.WithField(ctx, "sourceFilename", sourceFilename).Debug("read local source file")
 
@@ -175,6 +171,25 @@ func (sr *sourceResolver) getFile(ctx context.Context, sourceFilename string) (*
 	}
 
 	return nil, fmt.Errorf("unsupported file type: %s", sourceFilename)
+}
+
+func (sr *sourceResolver) PackageSourceFiles(ctx context.Context, packageName string) ([]*SourceFile, error) {
+
+	fileNames, err := sr.listPackageFiles(ctx, packageName)
+	if err != nil {
+		return nil, fmt.Errorf("package files for (local) %s: %w", packageName, err)
+	}
+
+	files := make([]*SourceFile, 0, len(fileNames))
+	for _, filename := range fileNames {
+		file, err := sr.getFile(ctx, filename)
+		if err != nil {
+			return nil, fmt.Errorf("GetLocalFile %s: %w", filename, err)
+		}
+		files = append(files, file)
+	}
+	return files, nil
+
 }
 
 func (sr *sourceResolver) parseJ5s(sourceFilename string, data []byte) (*SourceFile, error) {

@@ -179,6 +179,34 @@ func (pp *Path) JSONPathQuery() string {
 	return strings.Join(elements, "")
 }
 
+func (pp Path) ClientPath() string {
+	elements := make([]string, 0, len(pp.path))
+	for _, part := range pp.path {
+		if obj, ok := part.field.Schema.(*j5schema.ObjectField); ok {
+			if obj.Flatten {
+				continue // Flattened fields are not in the JSONB tree
+			}
+		}
+		if part.field == nil {
+			panic(fmt.Sprintf("invalid path: %v", pp.DebugName()))
+		}
+		elements = append(elements, part.field.JSONName)
+		switch part.field.Schema.(type) {
+		case *j5schema.MapField:
+			panic("map fields not supported by ClientPath()")
+		case *j5schema.ArrayField:
+			// pass through, client paths ignore array items in the path
+		}
+	}
+
+	if pp.leafOneof != nil {
+		// Can't use quotes, must escape the !
+		elements = append(elements, `\!type`)
+	}
+
+	return strings.Join(elements, ".")
+}
+
 // WalkPathNodes visits every field in the message tree other than the root
 // message itself, calling the callback for each.
 func WalkPathNodes(rootMessage *j5schema.ObjectSchema, callback func(Path) error) error {
