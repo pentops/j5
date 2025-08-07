@@ -14,9 +14,17 @@ import (
 	"github.com/pentops/log.go/log"
 )
 
+type LocalSourceResolver interface {
+	ListPackages() []string
+	PackageForFile(filename string) (string, bool, error)
+	IsLocalPackage(name string) bool
+	PackageSourceFiles(ctx context.Context, pkgName string) ([]*SourceFile, error)
+	PackageProseFiles(pkgName string) ([]*source_j5pb.ProseFile, error)
+}
+
 type PackageSet struct {
 	dependencyResolver psrc.Resolver
-	sourceResolver     *sourceResolver
+	sourceResolver     LocalSourceResolver
 
 	// symbols is reused for the entire package set, all files must be linked
 	// using the same symbols instance.
@@ -25,19 +33,14 @@ type PackageSet struct {
 	Packages map[string]*Package
 }
 
-func NewPackageSet(deps psrc.Resolver, localFiles LocalFileSource) (*PackageSet, error) {
-	resolver, err := psrc.ChainResolver(deps)
+func NewPackageSet(deps psrc.Resolver, sourceResolver LocalSourceResolver) (*PackageSet, error) {
+	dependencyResolver, err := psrc.ChainResolver(deps)
 	if err != nil {
 		return nil, fmt.Errorf("dependencyChainResolver: %w", err)
 	}
 
-	sourceResolver, err := newSourceResolver(localFiles)
-	if err != nil {
-		return nil, fmt.Errorf("newSourceResolver: %w", err)
-	}
-
 	cc := &PackageSet{
-		dependencyResolver: resolver,
+		dependencyResolver: dependencyResolver,
 		sourceResolver:     sourceResolver,
 		Packages:           map[string]*Package{},
 		symbols:            &linker.Symbols{},
@@ -46,19 +49,11 @@ func NewPackageSet(deps psrc.Resolver, localFiles LocalFileSource) (*PackageSet,
 }
 
 func (ps *PackageSet) PackageForLocalFile(filename string) (string, bool, error) {
-	return ps.sourceResolver.packageForFile(filename)
+	return ps.sourceResolver.PackageForFile(filename)
 }
 
 func (ps *PackageSet) ListLocalPackages() []string {
 	return ps.sourceResolver.ListPackages()
-}
-
-func (ps *PackageSet) GetLocalFileContent(ctx context.Context, filename string) (string, error) {
-	data, err := ps.sourceResolver.getFileContent(ctx, filename)
-	if err != nil {
-		return "", fmt.Errorf("getFileContent %s: %w", filename, err)
-	}
-	return string(data), nil
 }
 
 func (ps *PackageSet) ListPackageFiles(pkgName string) ([]string, error) {
@@ -71,7 +66,7 @@ func (ps *PackageSet) FindFileByPath(filename string) (*psrc.File, error) {
 		return nil, errors.New("empty filename")
 	}
 
-	pkgName, isLocal, err := ps.sourceResolver.packageForFile(filename)
+	pkgName, isLocal, err := ps.sourceResolver.PackageForFile(filename)
 	if err != nil {
 		return nil, fmt.Errorf("packageForFile: %w", err)
 	}
@@ -105,7 +100,7 @@ func (ps *PackageSet) loadPackage(ctx context.Context, rb *resolveBaton, name st
 		return nil, err
 	}
 
-	isLocal := ps.sourceResolver.isLocalPackage(name)
+	isLocal := ps.sourceResolver.IsLocalPackage(name)
 
 	pkg, ok := ps.Packages[name]
 	if ok {
@@ -154,16 +149,11 @@ func (ps *PackageSet) localPackageIO(ctx context.Context, name string) (*Package
 
 	pkg := ps.newPackage(name)
 
-	fileNames, err := ps.sourceResolver.listPackageFiles(ctx, name)
+	files, err := ps.sourceResolver.PackageSourceFiles(ctx, name)
 	if err != nil {
-		return nil, fmt.Errorf("package files for (local) %s: %w", name, err)
+		return nil, fmt.Errorf("sourceFiles for %s: %w", name, err)
 	}
-
-	for _, filename := range fileNames {
-		file, err := ps.sourceResolver.getFile(ctx, filename)
-		if err != nil {
-			return nil, fmt.Errorf("GetLocalFile %s: %w", filename, err)
-		}
+	for _, file := range files {
 		pkg.SourceFiles = append(pkg.SourceFiles, file)
 		pkg.includeIO(file.Summary)
 	}
@@ -226,7 +216,7 @@ func (ps *PackageSet) buildLocalPackage(ctx context.Context, pkg *Package) error
 		return fmt.Errorf("resolveAll files for %s: %w", pkg.Name, err)
 	}
 
-	prose, err := ps.sourceResolver.ProseFiles(pkg.Name)
+	prose, err := ps.sourceResolver.PackageProseFiles(pkg.Name)
 	if err != nil {
 		return err
 	}
@@ -307,7 +297,7 @@ func (ps *PackageSet) BuildPackages(ctx context.Context, pkgNames []string) ([]*
 
 	// IO Summary for all packages
 	for _, pkgName := range pkgNames {
-		if !ps.sourceResolver.isLocalPackage(pkgName) {
+		if !ps.sourceResolver.IsLocalPackage(pkgName) {
 			return nil, fmt.Errorf("package %s is not a local package", pkgName)
 		}
 

@@ -91,11 +91,11 @@ func TestLocalResolver(t *testing.T) {
 	tf.tAddProtoFile("local/v1/foo.proto", "local.v1")
 	tf.tAddJ5SFile("local/v1/bar.j5s", "local.v1")
 
-	sourceResolver, err := newSourceResolver(tf)
+	sourceResolver, err := NewSourceResolver(tf)
 	if err != nil {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}
-	pkgName, isLocal, err := sourceResolver.packageForFile("local/v1/foo.proto")
+	pkgName, isLocal, err := sourceResolver.PackageForFile("local/v1/foo.proto")
 	if err != nil {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}
@@ -106,7 +106,7 @@ func TestLocalResolver(t *testing.T) {
 		t.Fatalf("Expected package name to be local.v1, got %s", pkgName)
 	}
 
-	pkgIsLocal := sourceResolver.isLocalPackage("local.v1")
+	pkgIsLocal := sourceResolver.IsLocalPackage("local.v1")
 	if !pkgIsLocal {
 		t.Fatalf("Expected local package, got external")
 	}

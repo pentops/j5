@@ -35,7 +35,13 @@ func testCompile(t *testing.T, tf *testFiles, td psrc.DescriptorFiles, pkg strin
 	defer func() {
 		log.DefaultLogger = before
 	}()
-	cc, err := NewPackageSet(td, tf)
+
+	tfResolver, err := NewSourceResolver(tf)
+	if err != nil {
+		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
+	}
+
+	cc, err := NewPackageSet(td, tfResolver)
 	if err != nil {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}
@@ -193,7 +199,11 @@ func TestCircularDependency(t *testing.T) {
 		localPackages: []string{"foo.v1", "bar.v1", "baz.v1"},
 	}
 
-	cc, err := NewPackageSet(psrc.DescriptorFiles{}, tf)
+	tfResolver, err := NewSourceResolver(tf)
+	if err != nil {
+		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
+	}
+	cc, err := NewPackageSet(psrc.DescriptorFiles{}, tfResolver)
 	if err != nil {
 		t.Fatalf("FATAL: Unexpected error: %s", err.Error())
 	}

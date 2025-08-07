@@ -1,4 +1,4 @@
-package source
+package image
 
 import (
 	"context"
@@ -15,30 +15,30 @@ import (
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-type imageBuilder struct {
+type Builder struct {
 	img               *source_j5pb.SourceImage
 	includedFilenames map[string]struct{}
 }
 
-func newImageBuilder() *imageBuilder {
-	return &imageBuilder{
+func NewBuilder() *Builder {
+	return &Builder{
 		img:               &source_j5pb.SourceImage{},
 		includedFilenames: make(map[string]struct{}),
 	}
 }
 
-func newImageBuilderFromImage(img *source_j5pb.SourceImage) *imageBuilder {
-	return &imageBuilder{
+func NewBuilderFromImage(img *source_j5pb.SourceImage) *Builder {
+	return &Builder{
 		img:               img,
 		includedFilenames: make(map[string]struct{}),
 	}
 }
 
-func (ib *imageBuilder) addPackage(pkg *source_j5pb.Package) {
+func (ib *Builder) AddPackage(pkg *source_j5pb.Package) {
 	ib.img.Packages = append(ib.img.Packages, pkg)
 }
 
-func (ib *imageBuilder) addBuilt(built *protobuild.BuiltPackage, source *ext_j5pb.J5Source) error {
+func (ib *Builder) AddBuilt(built *protobuild.BuiltPackage, source *ext_j5pb.J5Source) error {
 	descriptors := make([]*descriptorpb.FileDescriptorProto, 0, len(built.Proto))
 	for _, file := range built.Proto {
 		descriptor := protodesc.ToFileDescriptorProto(file.Linked)
@@ -60,12 +60,12 @@ func (ib *imageBuilder) addBuilt(built *protobuild.BuiltPackage, source *ext_j5p
 		ib.img.SourceFilenames = append(ib.img.SourceFilenames, descriptor.GetName())
 	}
 	for _, file := range built.Prose {
-		ib.addProseFile(file)
+		ib.AddProseFile(file)
 	}
 	return nil
 }
 
-func (ib *imageBuilder) _addFile(file *descriptorpb.FileDescriptorProto) error {
+func (ib *Builder) _addFile(file *descriptorpb.FileDescriptorProto) error {
 
 	if _, ok := ib.includedFilenames[file.GetName()]; ok {
 		for _, existingFile := range ib.img.File {
@@ -86,7 +86,7 @@ func (ib *imageBuilder) _addFile(file *descriptorpb.FileDescriptorProto) error {
 	return nil
 }
 
-func (ib *imageBuilder) includeDependencies(ctx context.Context, deps psrc.DescriptorFiles) error {
+func (ib *Builder) IncludeDependencies(ctx context.Context, deps psrc.DescriptorFiles) error {
 
 	var addDependency func(file *descriptorpb.FileDescriptorProto) error
 	var doFile func(file *descriptorpb.FileDescriptorProto) error
@@ -129,11 +129,11 @@ func (ib *imageBuilder) includeDependencies(ctx context.Context, deps psrc.Descr
 	return nil
 }
 
-func (ib *imageBuilder) addProseFile(file *source_j5pb.ProseFile) {
+func (ib *Builder) AddProseFile(file *source_j5pb.ProseFile) {
 	ib.img.Prose = append(ib.img.Prose, file)
 }
 
-func (ib *imageBuilder) include(ctx context.Context, img *source_j5pb.SourceImage) error {
+func (ib *Builder) Include(ctx context.Context, img *source_j5pb.SourceImage) error {
 	ib.img.Prose = append(ib.img.Prose, img.Prose...)
 	ib.img.SourceFilenames = append(ib.img.SourceFilenames, img.SourceFilenames...)
 	var err error
@@ -159,7 +159,11 @@ func (ib *imageBuilder) include(ctx context.Context, img *source_j5pb.SourceImag
 	}
 
 	for _, pkg := range img.Packages {
-		ib.addPackage(pkg)
+		ib.AddPackage(pkg)
 	}
 	return nil
+}
+
+func (ib *Builder) Image() *source_j5pb.SourceImage {
+	return ib.img
 }

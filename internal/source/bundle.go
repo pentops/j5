@@ -15,6 +15,7 @@ import (
 	"github.com/pentops/j5/internal/j5s/protobuild"
 	"github.com/pentops/j5/internal/j5s/protobuild/protomod"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
+	"github.com/pentops/j5/internal/source/image"
 )
 
 type Bundle interface {
@@ -197,11 +198,11 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 		return nil, fmt.Errorf("creating package set: %w", err)
 	}
 
-	img := newImageBuilder()
+	img := image.NewBuilder()
 
 	pkgNames := make([]string, 0, len(bundle.config.Packages))
 	for _, pkg := range bundle.config.Packages {
-		img.addPackage(&source_j5pb.Package{
+		img.AddPackage(&source_j5pb.Package{
 			Name:  pkg.Name,
 			Prose: pkg.Prose,
 			Label: pkg.Label,
@@ -215,7 +216,7 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 	}
 
 	for _, pkg := range built {
-		err = img.addBuilt(pkg, &ext_j5pb.J5Source{
+		err = img.AddBuilt(pkg, &ext_j5pb.J5Source{
 			Source: bundle.debugName,
 		})
 		if err != nil {
@@ -223,24 +224,26 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 		}
 	}
 
-	err = img.includeDependencies(ctx, depMap)
+	err = img.IncludeDependencies(ctx, depMap)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, include := range localIncludes {
-		err = img.include(ctx, include)
+		err = img.Include(ctx, include)
 		if err != nil {
 			return nil, err
 		}
 	}
-	img.img.Includes = includes
-	err = protomod.MutateImageWithMods(img.img, bundle.config.Mods)
+	out := img.Image()
+
+	out.Includes = includes
+	err = protomod.MutateImageWithMods(out, bundle.config.Mods)
 	if err != nil {
 		return nil, fmt.Errorf("MutateImageWithMods: %w", err)
 	}
 
-	return img.img, nil
+	return out, nil
 }
 
 func (bundle *bundleSource) ListPackages() ([]string, error) {
@@ -265,7 +268,7 @@ func (bundle *bundleSource) ListPackages() ([]string, error) {
 	return packages, nil
 }
 
-func (bundle *bundleSource) FileSource() (protobuild.LocalFileSource, error) {
+func (bundle *bundleSource) FileSource() (protobuild.LocalSourceResolver, error) {
 	packages, err := bundle.ListPackages()
 	if err != nil {
 		return nil, fmt.Errorf("listing packages: %w", err)
@@ -278,7 +281,12 @@ func (bundle *bundleSource) FileSource() (protobuild.LocalFileSource, error) {
 		packages: packages,
 	}
 
-	return localFiles, nil
+	sourceResolver, err := protobuild.NewSourceResolver(localFiles)
+	if err != nil {
+		return nil, fmt.Errorf("newSourceResolver: %w", err)
+	}
+
+	return sourceResolver, nil
 
 }
 
