@@ -15,20 +15,15 @@ import (
 	"github.com/pentops/j5/internal/j5s/protobuild"
 	"github.com/pentops/j5/internal/j5s/protobuild/protomod"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
-	"github.com/pentops/log.go/log"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type Bundle interface {
 	DebugName() string
 	J5Config() (*config_j5pb.BundleConfigFile, error)
-	SourceImage(ctx context.Context, resolver InputSource) (*source_j5pb.SourceImage, error)
 	DirInRepo() string
 	FS() fs.FS
-	GetDependencies(ctx context.Context, resolver InputSource) (map[string]*descriptorpb.FileDescriptorProto, error)
 
-	//FileSource() (protobuild.LocalFileSource, error)
-
+	SourceImage(ctx context.Context, resolver InputSource) (*source_j5pb.SourceImage, error)
 	Compiler(context.Context, InputSource) (*protobuild.PackageSet, error)
 }
 
@@ -93,67 +88,43 @@ func (b *bundleSource) SourceImage(ctx context.Context, resolver InputSource) (*
 	return img, nil
 }
 
-func (bundle *bundleSource) GetDependencies(ctx context.Context, resolver InputSource) (map[string]*descriptorpb.FileDescriptorProto, error) {
-	ds, err := bundle.getDependencyFiles(ctx, resolver)
-	if err != nil {
-		return nil, err
-	}
-
-	return ds.primary, nil
-
-}
-
-func (bundle *bundleSource) getDependencyFiles(ctx context.Context, resolver InputSource) (*imageFiles, error) {
-	ctx = log.WithField(ctx, "bundleDeps", bundle.DebugName())
+func (bundle *bundleSource) Compiler(ctx context.Context, resolver InputSource) (*protobuild.PackageSet, error) {
 
 	j5Config, err := bundle.J5Config()
 	if err != nil {
 		return nil, err
 	}
-	dependencies := make([]*source_j5pb.SourceImage, 0, len(j5Config.Dependencies))
+
+	depMap := psrc.DescriptorFiles{}
+
 	for _, dep := range j5Config.Dependencies {
 		img, err := resolver.GetSourceImage(ctx, dep)
 		if err != nil {
 			return nil, err
 		}
-		dependencies = append(dependencies, img)
+		err = depMap.AddFiles(img.File)
+		if err != nil {
+			return nil, fmt.Errorf("adding files from dependency %s: %w", img.SourceName, err)
+		}
 	}
-	for _, dep := range j5Config.Includes {
-		img, err := resolver.GetSourceImage(ctx, dep.Input)
+
+	for _, spec := range j5Config.Includes {
+		img, err := resolver.GetSourceImage(ctx, spec.Input)
 		if err != nil {
 			return nil, err
 		}
-		img.SourceName = inputName(dep.Input)
-		dependencies = append(dependencies, img)
+		err = depMap.AddFiles(img.File)
+		if err != nil {
+			return nil, fmt.Errorf("adding files from include %s: %w", img.SourceName, err)
+		}
 	}
-	return combineSourceImages(dependencies)
-}
-
-func inputName(input *config_j5pb.Input) string {
-	switch it := input.Type.(type) {
-	case *config_j5pb.Input_Local:
-		return it.Local
-	case *config_j5pb.Input_Registry_:
-		return fmt.Sprintf("%s/%s", it.Registry.Owner, it.Registry.Name)
-	}
-
-	return "<unknown>"
-}
-
-func (bundle *bundleSource) Compiler(ctx context.Context, resolver InputSource) (*protobuild.PackageSet, error) {
-	deps, err := bundle.getDependencyFiles(ctx, resolver)
-	if err != nil {
-		return nil, fmt.Errorf("getting dependency files: %w", err)
-	}
-
-	depResolver := psrc.DescriptorFiles(deps.primary)
 
 	localFiles, err := bundle.FileSource()
 	if err != nil {
 		return nil, fmt.Errorf("getting local file source: %w", err)
 	}
 
-	compiler, err := protobuild.NewPackageSet(depResolver, localFiles)
+	compiler, err := protobuild.NewPackageSet(depMap, localFiles)
 	if err != nil {
 		return nil, fmt.Errorf("creating package set: %w", err)
 	}
@@ -167,19 +138,61 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 		return nil, err
 	}
 
-	deps, err := bundle.getDependencyFiles(ctx, resolver)
-	if err != nil {
-		return nil, fmt.Errorf("getting dependency files: %w", err)
+	includes := make([]*source_j5pb.Include, 0)
+	localIncludes := make([]*source_j5pb.SourceImage, 0)
+
+	depMap := psrc.DescriptorFiles{}
+
+	for _, dep := range j5Config.Dependencies {
+		img, err := resolver.GetSourceImage(ctx, dep)
+		if err != nil {
+			return nil, err
+		}
+		err = depMap.AddFiles(img.File)
+		if err != nil {
+			return nil, fmt.Errorf("adding files from dependency %s: %w", img.SourceName, err)
+		}
 	}
 
-	depResolver := psrc.DescriptorFiles(deps.primary)
+	for _, spec := range j5Config.Includes {
+
+		img, err := resolver.GetSourceImage(ctx, spec.Input)
+		if err != nil {
+			return nil, err
+		}
+
+		err = depMap.AddFiles(img.File)
+		if err != nil {
+			return nil, fmt.Errorf("adding files from include %s: %w", img.SourceName, err)
+		}
+
+		switch st := spec.Input.Type.(type) {
+		case *config_j5pb.Input_Local:
+			// include the local image in the source, since it will always have
+			// the same commit hash
+			localIncludes = append(localIncludes, img)
+
+		case *config_j5pb.Input_Registry_:
+			// reference the include spec in the output image so it can be
+			// included on-the-fly at read time, taking the latest version
+			includes = append(includes, &source_j5pb.Include{
+				Name:      st.Registry.Name,
+				Owner:     st.Registry.Owner,
+				Version:   st.Registry.Version,
+				Reference: st.Registry.Reference,
+			})
+
+		default:
+			return nil, fmt.Errorf("unsupported include type %T", st)
+		}
+	}
 
 	localFiles, err := bundle.FileSource()
 	if err != nil {
 		return nil, fmt.Errorf("getting local file source: %w", err)
 	}
 
-	compiler, err := protobuild.NewPackageSet(depResolver, localFiles)
+	compiler, err := protobuild.NewPackageSet(depMap, localFiles)
 	if err != nil {
 		return nil, fmt.Errorf("creating package set: %w", err)
 	}
@@ -210,42 +223,18 @@ func (bundle *bundleSource) readImageFromDir(ctx context.Context, resolver Input
 		}
 	}
 
-	err = img.includeDependencies(ctx, deps)
+	err = img.includeDependencies(ctx, depMap)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, spec := range j5Config.Includes {
-		switch st := spec.Input.Type.(type) {
-		case *config_j5pb.Input_Local:
-			// include the local image in the source, since it will always have
-			// the same commit hash
-			localInclude, err := resolver.GetSourceImage(ctx, spec.Input)
-			if err != nil {
-				return nil, err
-			}
-			localInclude.SourceName = inputName(spec.Input)
-
-			err = img.include(ctx, localInclude)
-			if err != nil {
-				return nil, err
-			}
-
-		case *config_j5pb.Input_Registry_:
-			// reference the include spec in the output image so it can be
-			// included on-the-fly at read time, taking the latest version
-			img.img.Includes = append(img.img.Includes, &source_j5pb.Include{
-				Name:      st.Registry.Name,
-				Owner:     st.Registry.Owner,
-				Version:   st.Registry.Version,
-				Reference: st.Registry.Reference,
-			})
-
-		default:
-			return nil, fmt.Errorf("unsupported include type %T", st)
+	for _, include := range localIncludes {
+		err = img.include(ctx, include)
+		if err != nil {
+			return nil, err
 		}
 	}
-
+	img.img.Includes = includes
 	err = protomod.MutateImageWithMods(img.img, bundle.config.Mods)
 	if err != nil {
 		return nil, fmt.Errorf("MutateImageWithMods: %w", err)

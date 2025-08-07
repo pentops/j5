@@ -13,6 +13,7 @@ import (
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/dag"
 	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 // A repo has:
@@ -327,16 +328,51 @@ func (src *RepoRoot) CombinedSourceImage(ctx context.Context, inputs []*config_j
 		fullImage.Packages = append(fullImage.Packages, img.Packages...)
 	}
 
-	combined, err := combineSourceImages(images)
+	files, sourceFilenames, err := combineSourceImages(images)
 	if err != nil {
 		return nil, err
 	}
 
-	files, sourceFilenames := combined.AllDependencyFiles()
 	fullImage.File = files
 	fullImage.SourceFilenames = sourceFilenames
 
 	return fullImage, nil
+}
+
+func combineSourceImages(images []*source_j5pb.SourceImage) ([]*descriptorpb.FileDescriptorProto, []string, error) {
+
+	files := make([]*descriptorpb.FileDescriptorProto, 0)
+	filenames := make([]string, 0)
+	fileMap := map[string]*descriptorpb.FileDescriptorProto{}
+
+	for _, img := range images {
+		isSource := map[string]bool{}
+		for _, file := range img.SourceFilenames {
+			isSource[file] = true
+		}
+
+		for _, file := range img.File {
+			filename := file.GetName()
+
+			if isSource[filename] {
+				filenames = append(filenames, filename)
+			}
+
+			existing, ok := fileMap[*file.Name]
+			if !ok {
+				files = append(files, file)
+				fileMap[filename] = file
+				continue
+			}
+
+			if !psrc.AssertProtoFilesAreEqual(existing, file) {
+				return nil, nil, fmt.Errorf("file %q has conflicting content", *file.Name)
+			}
+
+		}
+	}
+
+	return files, filenames, nil
 }
 
 func (src *RepoRoot) BundleImageSource(ctx context.Context, name string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {

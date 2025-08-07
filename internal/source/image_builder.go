@@ -3,9 +3,7 @@ package source
 import (
 	"context"
 	"fmt"
-	"os"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 
@@ -14,21 +12,18 @@ import (
 	"github.com/pentops/j5/internal/structure"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 type imageBuilder struct {
 	img               *source_j5pb.SourceImage
 	includedFilenames map[string]struct{}
-	//deps              *imageFiles
 }
 
 func newImageBuilder() *imageBuilder {
 	return &imageBuilder{
 		img:               &source_j5pb.SourceImage{},
 		includedFilenames: make(map[string]struct{}),
-		//deps:              deps,
 	}
 }
 
@@ -36,11 +31,6 @@ func newImageBuilderFromImage(img *source_j5pb.SourceImage) *imageBuilder {
 	return &imageBuilder{
 		img:               img,
 		includedFilenames: make(map[string]struct{}),
-		/*
-			deps: &imageFiles{
-				primary:      make(map[string]*descriptorpb.FileDescriptorProto),
-				dependencies: make(map[string]*descriptorpb.FileDescriptorProto),
-			},*/
 	}
 }
 
@@ -82,7 +72,7 @@ func (ib *imageBuilder) _addFile(file *descriptorpb.FileDescriptorProto) error {
 			if existingFile.GetName() != file.GetName() {
 				continue
 			}
-			if !assertProtoFilesAreEqual(existingFile, file) {
+			if !psrc.AssertProtoFilesAreEqual(existingFile, file) {
 				return fmt.Errorf("file %s already included with different content", file.GetName())
 			}
 			break
@@ -96,7 +86,7 @@ func (ib *imageBuilder) _addFile(file *descriptorpb.FileDescriptorProto) error {
 	return nil
 }
 
-func (ib *imageBuilder) includeDependencies(ctx context.Context, deps *imageFiles) error {
+func (ib *imageBuilder) includeDependencies(ctx context.Context, deps psrc.DescriptorFiles) error {
 
 	var addDependency func(file *descriptorpb.FileDescriptorProto) error
 	var doFile func(file *descriptorpb.FileDescriptorProto) error
@@ -118,14 +108,7 @@ func (ib *imageBuilder) includeDependencies(ctx context.Context, deps *imageFile
 				continue
 			}
 
-			if dep, ok := deps.primary[dependencyFilename]; ok {
-				if err := addDependency(dep); err != nil {
-					return err
-				}
-				continue
-			}
-
-			if dep, ok := deps.dependencies[dependencyFilename]; ok {
+			if dep, ok := deps[dependencyFilename]; ok {
 				if err := addDependency(dep); err != nil {
 					return err
 				}
@@ -179,69 +162,4 @@ func (ib *imageBuilder) include(ctx context.Context, img *source_j5pb.SourceImag
 		ib.addPackage(pkg)
 	}
 	return nil
-}
-
-func combineSourceImages(images []*source_j5pb.SourceImage) (*imageFiles, error) {
-
-	fileMap := map[string]*descriptorpb.FileDescriptorProto{}
-	depMap := map[string]*descriptorpb.FileDescriptorProto{}
-	fileSourceMap := map[string]*source_j5pb.SourceImage{}
-	for _, img := range images {
-		isSource := map[string]bool{}
-		for _, file := range img.SourceFilenames {
-			isSource[file] = true
-		}
-
-		for _, file := range img.File {
-			if !isSource[*file.Name] {
-				depMap[*file.Name] = file
-				continue
-			}
-			existing, ok := fileMap[*file.Name]
-			if !ok {
-				fileMap[*file.Name] = file
-				fileSourceMap[*file.Name] = img
-				continue
-			}
-
-			if !assertProtoFilesAreEqual(existing, file) {
-				added := fileSourceMap[*file.Name]
-				aName := fmt.Sprintf("%s:%s", added.SourceName, strVal(added.Version))
-				bName := fmt.Sprintf("%s:%s", img.SourceName, strVal(img.Version))
-				return nil, fmt.Errorf("file %q has conflicting content in %s and %s", *file.Name, aName, bName)
-			}
-
-		}
-	}
-
-	combined := &imageFiles{
-		primary:      fileMap,
-		dependencies: depMap,
-	}
-
-	return combined, nil
-}
-
-func assertProtoFilesAreEqual(aSrc, bSrc *descriptorpb.FileDescriptorProto) bool {
-
-	if proto.Equal(aSrc, bSrc) {
-		return true
-	}
-
-	a := proto.Clone(aSrc).(*descriptorpb.FileDescriptorProto)
-	b := proto.Clone(bSrc).(*descriptorpb.FileDescriptorProto)
-	// ignore source code info for comparison
-	a.SourceCodeInfo = nil
-	b.SourceCodeInfo = nil
-	proto.ClearExtension(a.Options, ext_j5pb.E_J5Source)
-	proto.ClearExtension(b.Options, ext_j5pb.E_J5Source)
-
-	if proto.Equal(a, b) {
-		return true
-	}
-
-	diff := cmp.Diff(a, b, protocmp.Transform())
-	fmt.Fprintln(os.Stderr, diff)
-
-	return false
 }
