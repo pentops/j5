@@ -279,7 +279,6 @@ func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton,
 
 type BuiltPackage struct {
 	Name         string
-	Source       string
 	Proto        []*psrc.File
 	Prose        []*source_j5pb.ProseFile
 	Dependencies []*BuiltPackage

@@ -17,8 +17,6 @@ import (
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"github.com/pentops/j5/internal/bcl/genlsp"
 	"github.com/pentops/j5/internal/j5s/j5parse"
-	"github.com/pentops/j5/internal/j5s/protobuild"
-	"github.com/pentops/j5/internal/j5s/protobuild/psrc"
 	"github.com/pentops/j5/internal/source"
 	"github.com/pentops/j5/internal/source/resolver"
 	"github.com/pentops/j5/lib/id62"
@@ -127,16 +125,7 @@ func (cc *lspCompiler) updateFile(ctx context.Context, filename string, locs *bc
 		return err
 	}
 
-	deps, err := bundle.GetDependencies(ctx, cc.srcRoot)
-	if err != nil {
-		return err
-	}
-	fileSource, err := bundle.FileSource()
-	if err != nil {
-		return err
-	}
-
-	compiler, err := protobuild.NewPackageSet(psrc.DescriptorFiles(deps), fileSource)
+	compiler, err := bundle.Compiler(ctx, cc.srcRoot)
 	if err != nil {
 		return err
 	}
