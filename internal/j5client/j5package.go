@@ -347,6 +347,7 @@ func collectPackageRefs(api *API) (map[string]*schemaRef, error) {
 				if err := walkRefs(prop.Schema); err != nil {
 					return fmt.Errorf("walk %s: %w", st.FullName(), err)
 				}
+
 			}
 		case *j5schema.OneofSchema:
 			for _, prop := range st.Properties {

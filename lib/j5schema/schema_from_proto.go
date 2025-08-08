@@ -1381,6 +1381,7 @@ func buildMessageFieldSchema(pkg *Package, context fieldContext, src protoreflec
 			fieldContext: context,
 			Ref:          ref,
 		}
+
 		if ext.list != nil {
 			oneofRules, ok := ext.list.Type.(*list_j5pb.FieldConstraint_Oneof)
 			if !ok {

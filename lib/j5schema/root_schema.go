@@ -473,6 +473,8 @@ func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
 
 	propSchema := prop.Schema.ToJ5Field()
 
+	//fmt.Printf("PropSchema: %s %v\n", prop.FullName(), propSchema)
+
 	switch propSchema.Type.(type) {
 	case *schema_j5pb.Field_Key:
 		// add deprecated key fields

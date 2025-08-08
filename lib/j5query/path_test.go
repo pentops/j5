@@ -107,10 +107,11 @@ func TestFindFieldSpec(t *testing.T) {
 	t.Run("Walk", func(t *testing.T) {
 
 		expectedNodes := map[string]struct{}{
-			"$.id":                     {},
-			"$.profile":                {},
-			"$.profile.weight":         {},
-			"$.profile.type":           {},
+			"$.id":             {},
+			"$.profile":        {},
+			"$.profile.weight": {},
+			//"$.profile.type":           {},
+			"$.profile.type.\\!type":   {},
 			"$.profile.type.card":      {},
 			"$.profile.type.card.size": {},
 		}

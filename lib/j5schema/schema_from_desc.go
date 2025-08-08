@@ -154,6 +154,7 @@ func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Fie
 				Ref:          item.AsRef(),
 				Rules:        st.Oneof.Rules,
 				Ext:          st.Oneof.Ext,
+				ListRules:    st.Oneof.ListRules,
 			}, nil
 		case *schema_j5pb.OneofField_Ref:
 			ref, _ := pkg.PackageSet.refTo(inner.Ref.Package, inner.Ref.Schema)
@@ -162,6 +163,7 @@ func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Fie
 				Ref:          ref,
 				Rules:        st.Oneof.Rules,
 				Ext:          st.Oneof.Ext,
+				ListRules:    st.Oneof.ListRules,
 			}, nil
 		default:
 			return nil, fmt.Errorf("unsupported oneof schema type %T", inner)
@@ -356,6 +358,7 @@ func (pkg *Package) objectSchemaFromDesc(sch *schema_j5pb.Object) (*ObjectSchema
 		if err != nil {
 			return nil, err
 		}
+
 	}
 
 	return object, nil

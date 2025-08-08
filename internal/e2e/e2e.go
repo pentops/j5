@@ -199,6 +199,28 @@ func (fb *FileBuilder) Object(name string) *ObjectBuilder {
 	}
 }
 
+type OneofBuilder struct {
+	*sourcedef_j5pb.Oneof
+	file *FileBuilder
+}
+
+func (fb *FileBuilder) Oneof(name string) *OneofBuilder {
+	oneof := &sourcedef_j5pb.Oneof{
+		Def: &schema_j5pb.Oneof{
+			Name: name,
+		},
+	}
+	fb.Elements = append(fb.Elements, &sourcedef_j5pb.RootElement{
+		Type: &sourcedef_j5pb.RootElement_Oneof{
+			Oneof: oneof,
+		},
+	})
+	return &OneofBuilder{
+		Oneof: oneof,
+		file:  fb,
+	}
+}
+
 type SerivceBuilder struct {
 	*sourcedef_j5pb.Service
 }

@@ -200,8 +200,7 @@ func (pp Path) ClientPath() string {
 	}
 
 	if pp.leafOneof != nil {
-		// Can't use quotes, must escape the !
-		elements = append(elements, `\!type`)
+		elements = append(elements, `!type`)
 	}
 
 	return strings.Join(elements, ".")
@@ -228,6 +227,11 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 			path:      fieldPath,
 			leafField: field,
 		}
+		switch ft := field.Schema.(type) {
+
+		case *j5schema.OneofField:
+			fieldPathSpec.leafOneof = ft.OneofSchema()
+		}
 
 		if err := callback(fieldPathSpec); err != nil {
 			return err
@@ -240,6 +244,7 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 			}
 
 		case *j5schema.OneofField:
+
 			if err := fieldPathSpec.walk(ft.OneofSchema().Properties, callback); err != nil {
 				return fmt.Errorf("walking %s: %w", field.JSONName, err)
 			}
