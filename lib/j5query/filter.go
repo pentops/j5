@@ -375,7 +375,7 @@ func buildDefaultFilters(columnName string, message *j5schema.ObjectSchema) ([]f
 	return filters, nil
 }
 
-func (ll *ListReflectionSet) buildDynamicFilter(tableAlias string, filters []*list_j5pb.Filter) ([]sq.Sqlizer, error) {
+func (ll *TableReflectionSet) buildDynamicFilter(tableAlias string, filters []*list_j5pb.Filter) ([]sq.Sqlizer, error) {
 	out := []sq.Sqlizer{}
 
 	for i := range filters {
@@ -437,7 +437,7 @@ func filterQueryValue(spec *NestedField, val string) (any, error) {
 	return val, nil
 
 }
-func (ll *ListReflectionSet) buildDynamicFilterField(tableAlias string, spec *NestedField, filter *list_j5pb.Filter) (sq.Sqlizer, error) {
+func (ll *TableReflectionSet) buildDynamicFilterField(tableAlias string, spec *NestedField, filter *list_j5pb.Filter) (sq.Sqlizer, error) {
 	var out sq.And
 
 	if filter.GetField() == nil {

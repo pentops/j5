@@ -265,7 +265,7 @@ func tsvColumns(message *j5schema.ObjectSchema) ([]*TSVColumn, error) {
 	return out, nil
 }
 
-func (ll *Lister) buildDynamicSearches(tableAlias string, searches []*list_j5pb.Search) ([]sq.Sqlizer, error) {
+func (ll *TableReflectionSet) buildDynamicSearches(tableAlias string, searches []*list_j5pb.Search) ([]sq.Sqlizer, error) {
 	out := []sq.Sqlizer{}
 
 	for i := range searches {

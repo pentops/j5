@@ -17,38 +17,13 @@ func (ss sortSpec) errorName() string {
 	return ss.Path.JSONPathQuery()
 }
 
-func buildTieBreakerFields(dataColumn string, req *j5schema.ObjectSchema, arrayField *j5schema.ObjectSchema, fallback []ProtoField) ([]sortSpec, error) {
-
-	if req.ListRequest != nil && len(req.ListRequest.SortTiebreaker) > 0 {
-		tieBreakerFields := make([]sortSpec, 0, len(req.ListRequest.SortTiebreaker))
-		for _, tieBreaker := range req.ListRequest.SortTiebreaker {
-			spec, err := NewJSONPath(arrayField, tieBreaker)
-			if err != nil {
-				return nil, fmt.Errorf("field %s in annotated sort tiebreaker for %s: %w", tieBreaker, req.FullName(), err)
-			}
-
-			tieBreakerFields = append(tieBreakerFields, sortSpec{
-				NestedField: &NestedField{
-					RootColumn: dataColumn,
-					Path:       *spec,
-				},
-				desc: false,
-			})
-		}
-
-		return tieBreakerFields, nil
-	}
-
-	if len(fallback) == 0 {
-		return []sortSpec{}, nil
-	}
-
+func buildFallbackTieBreakerFields(dataColumn string, rootObject *j5schema.ObjectSchema, fallback []ProtoField) ([]sortSpec, error) {
 	tieBreakerFields := make([]sortSpec, 0, len(fallback))
 	for _, tieBreaker := range fallback {
 
-		path, err := NewJSONPath(arrayField, tieBreaker.pathInRoot)
+		path, err := NewJSONPath(rootObject, tieBreaker.pathInRoot)
 		if err != nil {
-			return nil, fmt.Errorf("field %s in fallback sort tiebreaker for %s: %w", tieBreaker.pathInRoot, req.FullName(), err)
+			return nil, fmt.Errorf("field %s in fallback sort tiebreaker for %s: %w", tieBreaker.pathInRoot, rootObject.FullName(), err)
 		}
 
 		tieBreakerFields = append(tieBreakerFields, sortSpec{
@@ -56,6 +31,26 @@ func buildTieBreakerFields(dataColumn string, req *j5schema.ObjectSchema, arrayF
 				Path:        *path,
 				RootColumn:  dataColumn,
 				ValueColumn: tieBreaker.valueColumn,
+			},
+			desc: false,
+		})
+	}
+
+	return tieBreakerFields, nil
+}
+
+func buildRequestObjectTieBreakerFields(dataColumn string, req *j5schema.ObjectSchema, rootObject *j5schema.ObjectSchema) ([]sortSpec, error) {
+	tieBreakerFields := make([]sortSpec, 0, len(req.ListRequest.SortTiebreaker))
+	for _, tieBreaker := range req.ListRequest.SortTiebreaker {
+		spec, err := NewJSONPath(rootObject, tieBreaker)
+		if err != nil {
+			return nil, fmt.Errorf("field %s in annotated sort tiebreaker for %s: %w", tieBreaker, req.FullName(), err)
+		}
+
+		tieBreakerFields = append(tieBreakerFields, sortSpec{
+			NestedField: &NestedField{
+				RootColumn: dataColumn,
+				Path:       *spec,
 			},
 			desc: false,
 		})
@@ -127,43 +122,6 @@ func buildDefaultSorts(columnName string, message *j5schema.ObjectSchema) ([]sor
 	}
 
 	return defaultSortFields, nil
-}
-
-func (ll *Lister) buildDynamicSortSpec(sorts []*list_j5pb.Sort) ([]sortSpec, error) {
-	results := []sortSpec{}
-	direction := ""
-	for _, sort := range sorts {
-		pathSpec := ParseJSONPathSpec(sort.Field)
-		spec, err := NewJSONPath(ll.arrayObject, pathSpec)
-		if err != nil {
-			return nil, fmt.Errorf("dynamic filter: find field: %w", err)
-		}
-
-		biggerSpec := &NestedField{
-			Path:       *spec,
-			RootColumn: ll.dataColumn,
-		}
-
-		results = append(results, sortSpec{
-			NestedField: biggerSpec,
-			desc:        sort.Descending,
-		})
-
-		// TODO: Remove this constraint, we can sort by different directions once we have the reversal logic in place
-		// validate direction of all the fields is the same
-		if direction == "" {
-			direction = "ASC"
-			if sort.Descending {
-				direction = "DESC"
-			}
-		} else {
-			if (direction == "DESC" && !sort.Descending) || (direction == "ASC" && sort.Descending) {
-				return nil, fmt.Errorf("requested sorts have conflicting directions, they must all be the same")
-			}
-		}
-	}
-
-	return results, nil
 }
 
 func validateQueryRequestSorts(message *j5schema.ObjectSchema, sorts []*list_j5pb.Sort) error {

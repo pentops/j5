@@ -85,14 +85,9 @@ func testListReflection(t testing.TB, input string, spec tableMod) (*ListReflect
 
 	requestDesc := pdf.MessageByName(t, "test.FooListRequest")
 	responseDesc := pdf.MessageByName(t, "test.FooListResponse")
-	table := &TableSpec{
-		DataColumn: "data",
-	}
-	if spec != nil {
-		spec(t, table, requestDesc, responseDesc)
-	}
-
+	fooDesc := pdf.MessageByName(t, "test.Foo")
 	schemaSet := j5schema.NewSchemaCache()
+
 	requestObj, err := schemaSet.Schema(requestDesc)
 	if err != nil {
 		return nil, err
@@ -101,6 +96,20 @@ func testListReflection(t testing.TB, input string, spec tableMod) (*ListReflect
 	if err != nil {
 		return nil, err
 	}
+	fooObj, err := schemaSet.Schema(fooDesc)
+	if err != nil {
+		return nil, err
+	}
+
+	table := &TableSpec{
+		DataColumn: "data",
+		TableName:  "test_foo",
+		RootObject: fooObj.(*j5schema.ObjectSchema),
+	}
+	if spec != nil {
+		spec(t, table, requestDesc, responseDesc)
+	}
+
 	ms := &j5schema.MethodSchema{
 		Request:  requestObj.(*j5schema.ObjectSchema),
 		Response: responseObj.(*j5schema.ObjectSchema),

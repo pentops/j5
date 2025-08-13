@@ -10,7 +10,6 @@ import (
 	"time"
 
 	sq "github.com/elgris/sqrl"
-	"github.com/elgris/sqrl/pg"
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/j5types/date_j5t"
@@ -20,8 +19,6 @@ import (
 	"github.com/pentops/j5/lib/j5validate"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/sqrlx.go/sqrlx"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type ListRequest interface {
@@ -103,32 +100,16 @@ func (ls *ListSpec) Validate() error {
 type QueryLogger func(sqrlx.Sqlizer)
 
 type ListReflectionSet struct {
-	method          *j5schema.MethodSchema
-	defaultPageSize uint64
+	TableReflectionSet
 
-	arrayField  *j5schema.ObjectProperty
-	arrayObject *j5schema.ObjectSchema
+	defaultPageSize     uint64
+	RequestFilterFields []*j5schema.ObjectProperty
+
+	arrayField *j5schema.ObjectProperty
 
 	pageResponseField *j5schema.ObjectProperty
 	pageRequestField  *j5schema.ObjectProperty
 	queryRequestField *j5schema.ObjectProperty
-
-	defaultSortFields []sortSpec
-	tieBreakerFields  []sortSpec
-
-	defaultFilterFields []filterSpec
-	RequestFilterFields []*j5schema.ObjectProperty
-
-	tsvColumnMap map[string]string // map[JSON Path]PGColumName
-
-	// TODO: This should be an array/map of columns to data types, allowing
-	// multiple JSONB values, as well as cached field values direcrly on the
-	// table
-	dataColumn string
-}
-
-func (ll *ListReflectionSet) ArrayObject() *j5schema.ObjectSchema {
-	return ll.arrayObject
 }
 
 func BuildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListReflectionSet, error) {
@@ -137,11 +118,26 @@ func BuildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListR
 
 func buildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListReflectionSet, error) {
 
-	var err error
+	tableSet, err := NewTableReflectionSet(table)
+	if err != nil {
+		return nil, err
+	}
+
 	ll := ListReflectionSet{
-		method:          method,
-		defaultPageSize: uint64(20),
-		dataColumn:      table.DataColumn,
+		TableReflectionSet: *tableSet,
+		defaultPageSize:    uint64(20),
+	}
+
+	if method.Request.ListRequest != nil && len(method.Request.ListRequest.SortTiebreaker) > 0 {
+		requestAnnotatedFields, err := buildRequestObjectTieBreakerFields(ll.dataColumn, method.Request, ll.arrayObject)
+		if err != nil {
+			return nil, err
+		}
+		ll.tieBreakerFields = requestAnnotatedFields
+	}
+
+	if len(ll.defaultSortFields) == 0 && len(ll.tieBreakerFields) == 0 {
+		return nil, fmt.Errorf("no default sort field found, %s must have at least one field annotated as default sort, or specify a tie breaker in %s", ll.arrayObject.FullName(), method.Request.FullName())
 	}
 
 	for _, field := range method.Response.Properties {
@@ -165,7 +161,10 @@ func buildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListR
 			}
 
 			ll.arrayField = field
-			ll.arrayObject = objectField.ObjectSchema()
+			if objectField.ObjectSchema().FullName() != table.RootObject.FullName() {
+				return nil, fmt.Errorf("array field %s must be of type %s, got %s", field.FullName(), table.RootObject.FullName(), objectField.ObjectSchema().FullName())
+			}
+
 			continue
 
 		}
@@ -179,37 +178,6 @@ func buildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListR
 
 	if ll.pageResponseField == nil {
 		return nil, fmt.Errorf("no page field in response, %s must have a j5.list.v1.PageResponse", method.Response.FullName())
-	}
-
-	err = validateListAnnotations(ll.arrayObject)
-	if err != nil {
-		return nil, fmt.Errorf("validate list annotations on %s: %w", ll.arrayField.FullName(), err)
-	}
-
-	ll.defaultSortFields, err = buildDefaultSorts(ll.dataColumn, ll.arrayObject)
-	if err != nil {
-		return nil, fmt.Errorf("default sorts: %w", err)
-	}
-
-	ll.tieBreakerFields, err = buildTieBreakerFields(ll.dataColumn, method.Request, ll.arrayObject, table.FallbackSortColumns)
-	if err != nil {
-		return nil, fmt.Errorf("tie breaker fields: %w", err)
-	}
-
-	if len(ll.defaultSortFields) == 0 && len(ll.tieBreakerFields) == 0 {
-		return nil, fmt.Errorf("no default sort field found, %s must have at least one field annotated as default sort, or specify a tie breaker in %s", ll.arrayField.FullName(), method.Request.FullName())
-	}
-
-	f, err := buildDefaultFilters(ll.dataColumn, ll.arrayObject)
-	if err != nil {
-		return nil, fmt.Errorf("default filters: %w", err)
-	}
-
-	ll.defaultFilterFields = f
-
-	ll.tsvColumnMap, err = buildTsvColumnMap(ll.arrayObject)
-	if err != nil {
-		return nil, fmt.Errorf("build tsv column map: %w", err)
 	}
 
 	for _, field := range method.Request.Properties {
@@ -252,8 +220,7 @@ func buildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListR
 
 type Lister struct {
 	ListReflectionSet
-
-	tableName string
+	method *j5schema.MethodSchema
 
 	queryLogger QueryLogger
 
@@ -267,9 +234,9 @@ type Lister struct {
 
 func NewLister(spec ListSpec) (*Lister, error) {
 	ll := &Lister{
-		tableName: spec.TableName,
-		auth:      spec.Auth,
-		authJoin:  spec.AuthJoin,
+		auth:     spec.Auth,
+		authJoin: spec.AuthJoin,
+		method:   spec.Method,
 	}
 
 	if err := spec.Validate(); err != nil {
@@ -471,27 +438,40 @@ func fieldAs[T any](obj j5reflect.Object, path ...string) (val T, ok bool, err e
 }
 
 type Query struct {
+	aliasSet       *aliasSet
+	rootTableAlias string
+	mainDataColumn string
 	*sq.SelectBuilder
 	sortFields []sortSpec
 }
 
-func (ll *Lister) BuildQuery(ctx context.Context, req j5reflect.Object, res j5reflect.Object) (*Query, error) {
+func (ll *Query) AddRootColumn() {
+	ll.Column(fmt.Sprintf("%s.%s", ll.rootTableAlias, ll.mainDataColumn))
 
+}
+
+func (ll *Query) newAlias(name string) string {
+	return ll.aliasSet.Next(name)
+}
+
+func (ll *Lister) BuildQuery(ctx context.Context, req j5reflect.Object, res j5reflect.Object) (*Query, error) {
 	err := assertObjectsMatch(ll.method, req, res)
 	if err != nil {
 		return nil, err
 	}
 
-	as := newAliasSet()
-	tableAlias := as.Next(ll.tableName)
+	reqQuery, _, err := fieldAs[*list_j5pb.QueryRequest](req, ll.queryRequestField.JSONName)
+	if err != nil {
+		return nil, err
+	}
 
-	selectQuery := sq.Select(fmt.Sprintf("%s.%s", tableAlias, ll.dataColumn)).
-		From(fmt.Sprintf("%s AS %s", ll.tableName, tableAlias))
+	query, err := ll.TableReflectionSet.BuildQuery(ctx, reqQuery)
+	if err != nil {
+		return nil, err
+	}
 
-	sortFields := ll.defaultSortFields
-	sortFields = append(sortFields, ll.tieBreakerFields...)
+	query.AddRootColumn()
 
-	filterFields := []sq.Sqlizer{}
 	if ll.requestFilter != nil {
 		filter, err := ll.requestFilter(req)
 		if err != nil {
@@ -500,89 +480,20 @@ func (ll *Lister) BuildQuery(ctx context.Context, req j5reflect.Object, res j5re
 
 		and := sq.And{}
 		for k := range filter {
-			and = append(and, sq.Expr(fmt.Sprintf("%s.%s = ?", tableAlias, k), filter[k]))
+			and = append(and, sq.Expr(fmt.Sprintf("%s.%s = ?", query.rootTableAlias, k), filter[k]))
 		}
 
 		if len(and) > 0 {
-			selectQuery.Where(and)
+			query.Where(and)
 		}
-	}
-
-	reqQuery, ok, err := fieldAs[*list_j5pb.QueryRequest](req, ll.queryRequestField.JSONName)
-	if err != nil {
-		return nil, err
-	}
-	if ok {
-		if err := ll.validateQueryRequest(reqQuery); err != nil {
-			return nil, status.Errorf(codes.InvalidArgument, "query validation: %s", err)
-		}
-
-		querySorts := reqQuery.GetSorts()
-		if len(querySorts) > 0 {
-			dynSorts, err := ll.buildDynamicSortSpec(querySorts)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "build sorts: %s", err)
-			}
-
-			sortFields = dynSorts
-		}
-
-		queryFilters := reqQuery.GetFilters()
-		if len(queryFilters) > 0 {
-			dynFilters, err := ll.buildDynamicFilter(tableAlias, queryFilters)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "build filters: %s", err)
-			}
-
-			filterFields = append(filterFields, dynFilters...)
-		}
-
-		querySearches := reqQuery.GetSearches()
-		if len(querySearches) > 0 {
-			searchFilters, err := ll.buildDynamicSearches(tableAlias, querySearches)
-			if err != nil {
-				return nil, status.Errorf(codes.InvalidArgument, "build searches: %s", err)
-			}
-
-			filterFields = append(filterFields, searchFilters...)
-		}
-	}
-
-	for i := range filterFields {
-		selectQuery.Where(filterFields[i])
-	}
-
-	// apply default filters if no filters have been requested
-	if ll.defaultFilterFields != nil && len(filterFields) == 0 {
-		and := sq.And{}
-		for _, spec := range ll.defaultFilterFields {
-			or := sq.Or{}
-			for _, val := range spec.filterVals {
-				or = append(or, sq.Expr(fmt.Sprintf("jsonb_path_query_array(%s.%s, '%s') @> ?", tableAlias, ll.dataColumn, spec.Path.JSONPathQuery()), pg.JSONB(val)))
-			}
-
-			and = append(and, or)
-		}
-
-		if len(and) > 0 {
-			selectQuery.Where(and)
-		}
-	}
-
-	for _, sortField := range sortFields {
-		direction := "ASC"
-		if sortField.desc {
-			direction = "DESC"
-		}
-		selectQuery.OrderBy(fmt.Sprintf("%s %s", sortField.Selector(tableAlias), direction))
 	}
 
 	if ll.auth != nil {
-		authAlias := tableAlias
+		authAlias := query.rootTableAlias
 		for _, join := range ll.authJoin {
 			priorAlias := authAlias
-			authAlias = as.Next(join.TableName)
-			selectQuery = selectQuery.LeftJoin(fmt.Sprintf(
+			authAlias = query.newAlias(join.TableName)
+			query.LeftJoin(fmt.Sprintf(
 				"%s AS %s ON %s",
 				join.TableName,
 				authAlias,
@@ -600,7 +511,7 @@ func (ll *Lister) BuildQuery(ctx context.Context, req j5reflect.Object, res j5re
 			for k, v := range authFilter {
 				claimFilter[fmt.Sprintf("%s.%s", authAlias, k)] = v
 			}
-			selectQuery.Where(claimFilter)
+			query.Where(claimFilter)
 		}
 	}
 
@@ -609,7 +520,7 @@ func (ll *Lister) BuildQuery(ctx context.Context, req j5reflect.Object, res j5re
 		return nil, err
 	}
 
-	selectQuery.Limit(pageSize + 1)
+	query.Limit(pageSize + 1)
 
 	reqPage, ok, err := fieldAs[*list_j5pb.PageRequest](req, ll.pageRequestField.JSONName)
 	if err != nil {
@@ -617,18 +528,15 @@ func (ll *Lister) BuildQuery(ctx context.Context, req j5reflect.Object, res j5re
 	}
 	if ok && reqPage.GetToken() != "" {
 
-		filter, err := ll.addPageFilter(reqPage.GetToken(), sortFields, tableAlias)
+		filter, err := ll.addPageFilter(reqPage.GetToken(), query.sortFields, query.rootTableAlias)
 		if err != nil {
 			return nil, err
 		}
-		selectQuery.Where(filter)
+		query.Where(filter)
 
 	}
 
-	return &Query{
-		SelectBuilder: selectQuery,
-		sortFields:    sortFields,
-	}, nil
+	return query, nil
 }
 
 func (ll *Lister) addPageFilter(token string, sortFields []sortSpec, tableAlias string) (sq.Sqlizer, error) {
@@ -851,40 +759,4 @@ func (ll *Lister) getPageSize(req j5reflect.Object) (uint64, error) {
 		return 0, fmt.Errorf("page size %d exceeds maximum of %d", val, ll.defaultPageSize)
 	}
 	return returnVal, nil
-}
-
-func validateListAnnotations(object *j5schema.ObjectSchema) error {
-	/*
-		err := validateSortsAnnotations(object.Properties)
-		if err != nil {
-			return fmt.Errorf("sort: %w", err)
-		}*/
-
-	/*
-		err = validateSearchesAnnotations(object)
-		if err != nil {
-			return fmt.Errorf("search: %w", err)
-		}*/
-
-	return nil
-}
-
-func (ll *Lister) validateQueryRequest(query *list_j5pb.QueryRequest) error {
-	err := validateQueryRequestSorts(ll.arrayObject, query.GetSorts())
-	if err != nil {
-		return fmt.Errorf("sort validation: %w", err)
-	}
-
-	err = validateQueryRequestFilters(ll.arrayObject, query.GetFilters())
-	if err != nil {
-		return fmt.Errorf("filter validation: %w", err)
-	}
-
-	/*
-		err = validateQueryRequestSearches(ll.arrayObject, query.GetSearches())
-		if err != nil {
-			return fmt.Errorf("search validation: %w", err)
-		}*/
-
-	return nil
 }
