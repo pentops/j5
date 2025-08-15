@@ -437,23 +437,6 @@ func fieldAs[T any](obj j5reflect.Object, path ...string) (val T, ok bool, err e
 
 }
 
-type Query struct {
-	aliasSet       *aliasSet
-	rootTableAlias string
-	mainDataColumn string
-	*sq.SelectBuilder
-	sortFields []sortSpec
-}
-
-func (ll *Query) AddRootColumn() {
-	ll.Column(fmt.Sprintf("%s.%s", ll.rootTableAlias, ll.mainDataColumn))
-
-}
-
-func (ll *Query) newAlias(name string) string {
-	return ll.aliasSet.Next(name)
-}
-
 func (ll *Lister) BuildQuery(ctx context.Context, req j5reflect.Object, res j5reflect.Object) (*Query, error) {
 	err := assertObjectsMatch(ll.method, req, res)
 	if err != nil {
