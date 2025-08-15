@@ -52,6 +52,10 @@ func TestDate(t *testing.T) {
 						Filtering: &list_j5pb.FilteringConstraint{
 							Filterable: true,
 						},
+						Sorting: &list_j5pb.SortingConstraint{
+							DefaultSort: true,
+							Sortable:    true,
+						},
 					},
 				},
 			},
@@ -66,9 +70,11 @@ func TestDate(t *testing.T) {
 	fooSchema := pkg.GetObject("Foo").JSONAsserter()
 	fooSchema.AssertEqual("properties.0.name", "date")
 	fooSchema.AssertEqual("properties.0.schema.date.listRules.filtering.filterable", true)
+	fooSchema.AssertEqual("properties.0.schema.date.listRules.sorting.sortable", true)
 
 	method := pkg.GetMethod("ListFoos").JSONAsserter()
 	method.Print()
+	method.AssertEqual("request.list.sortableFields.0.name", "date")
 
 	method.AssertEqual("request.list.filterableFields.0.name", "date")
 
