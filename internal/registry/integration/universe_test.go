@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/pentops/flowtest"
+	"github.com/pentops/j5/gen/j5/registry/v1/registry_tpb"
 	"github.com/pentops/j5/internal/gen/j5/registry/v1/registry_spb"
 	"github.com/pentops/j5/internal/registry/anyfs"
 	"github.com/pentops/j5/internal/registry/gomodproxy"
@@ -16,7 +17,6 @@ import (
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/o5-messaging/outbox/outboxtest"
 	"github.com/pentops/pgtest.go/pgtest"
-	"github.com/pentops/registry/gen/j5/registry/v1/registry_tpb"
 	"github.com/pentops/sqrlx.go/sqrlx"
 )
 

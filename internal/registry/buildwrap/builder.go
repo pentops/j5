@@ -38,7 +38,7 @@ func NewBuilder(regClient RegistryClient) (*Builder, error) {
 	}, nil
 }
 
-// Builder implements pentops/registry/internal/buildwrap/J5Builder
+// Builder implements pentops/j5/internal/registry/buildwrap/J5Builder
 type Builder struct {
 	impl     *builder.Builder
 	resolver source.RemoteResolver
