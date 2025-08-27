@@ -47,4 +47,4 @@ plugins:
 pluginOverrides:
   - name: go-o5-messaging
     local:
-      cmd: protoc-gen-go-o5-messaging 
+      cmd: protoc-gen-go-o5-messaging
