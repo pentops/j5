@@ -5,7 +5,7 @@ J5 is a data schema structure, language and toolkit for defining Event-Driven AP
 
 As with all pentops tools, it is very opinionated. J5 definitions are intended to work within the wider pentops ecosystem, especially for [Messaging](https://github.com/pentops/o5-messaging) and [State Machines](https://github.com/pentops/protostate)
 
-J5 wraps a **subset** of the data types and schemas of [Protocol Buffers](https://protobuf.dev/). The goal of the project is different to Protocol Buffers, and different trade-offs are made. J5 schemas are based on [proto descriptors](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto), 
+J5 wraps a **subset** of the data types and schemas of [Protocol Buffers](https://protobuf.dev/). The goal of the project is different to Protocol Buffers, and different trade-offs are made. J5 schemas are based on [proto descriptors](https://github.com/protocolbuffers/protobuf/blob/main/src/google/protobuf/descriptor.proto),
 and can be fully represented in .proto files, (leaning heavily on annotations), but not all Protocol Buffer structures can be represented in J5.
 
 J5 Tool
@@ -41,7 +41,7 @@ to the end of the definition line:
 field name string {
     | Rather long
     | Description
-    | 
+    |
     | With a newline
 }
 ```
@@ -123,7 +123,7 @@ JSON Codec
 Currently only JSON to Proto encoding is implemented. In the future it should be possible to use any number of wire formats, including
 XML, Avro... and even Proto as a full round-trip.
 
-J5 does NOT follow the protojson rules, focusing on the client-side experience and conventions of JSON driven rest-like APIs. 
+J5 does NOT follow the protojson rules, focusing on the client-side experience and conventions of JSON driven rest-like APIs.
 
 
 Configuration
