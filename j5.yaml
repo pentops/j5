@@ -48,7 +48,7 @@ generate:
       - base: go-j5
     output: .
     mods:
-      - goPackageNames:
+      - goPackageNames: 
           prefix: github.com/pentops/j5/gen
           suffixes:
             "": "_j5pb"
@@ -59,7 +59,7 @@ generate:
       - local: bcltest
     output: .
     mods:
-      - goPackageNames:
+      - goPackageNames: 
           prefix: github.com/pentops/j5/internal/gen
           suffixes:
             "": "_testpb"
@@ -77,7 +77,7 @@ generate:
       - local: querytest
     output: .
     mods:
-      - goPackageNames:
+      - goPackageNames: 
           prefix: github.com/pentops/j5/internal/gen
           suffixes:
             "": "_testpb"
@@ -95,7 +95,7 @@ generate:
       - local: psmtest
     output: .
     mods:
-      - goPackageNames:
+      - goPackageNames: 
           prefix: github.com/pentops/j5/lib/psm/internal/testproto/gen
     opts:
       paths: import

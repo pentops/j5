@@ -343,9 +343,9 @@ func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
 
 	reader, err := dw.client.ImagePull(ctx, img, pullOptions)
 	if err != nil {
-		// The ECS registry seems to return the 'wrong' status code for PrivilegeFunc errors.
+		// The ECS registry & ghcr seems to return the 'wrong' status code for PrivilegeFunc errors.
 		// This is a workaround.
-		if strings.Contains(err.Error(), "no basic auth credentials") {
+		if strings.Contains(err.Error(), "no basic auth credentials") || strings.Contains(err.Error(), "unauthorized") {
 			token, err := pullOptions.PrivilegeFunc(ctx)
 			if err != nil {
 				return fmt.Errorf("image pull: %w", err)

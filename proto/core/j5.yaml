@@ -9,7 +9,7 @@ packages:
   - name: j5.messaging.v1
   - name: j5.plugin.v1
   - name: j5.schema.v1
-  - name: j5.source.v1
+  - name: j5.source.v1 
   - name: j5.state.v1
   # Types contain only Proto
 

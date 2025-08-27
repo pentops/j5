@@ -9,11 +9,11 @@ import (
 
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
-	"github.com/pentops/j5/gen/j5/registry/v1/registry_tpb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
 	"github.com/pentops/j5/internal/registry/github"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/o5-messaging/o5msg"
+	"github.com/pentops/registry/gen/j5/registry/v1/registry_tpb"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 )

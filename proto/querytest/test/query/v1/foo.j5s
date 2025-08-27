@@ -63,7 +63,7 @@ object FooState {
 		field profiles array:object:FooProfile
 	}
 }
-
+	
 enum FooStatus {
 	option ACTIVE
 	option DELETED

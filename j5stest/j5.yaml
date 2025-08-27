@@ -29,6 +29,11 @@ plugins:
     docker:
       image: ghcr.io/pentops/protoc-gen-go:v1.34.2
 
+  - name: go-sugar
+    type: PLUGIN_PROTO
+    docker:
+      image: ghcr.io/pentops/protoc-gen-go-sugar:b1e769eeea97192209ab5a4e8fc560bf72ce5ba7
+
   - name: go-o5-messaging
     base: go
     docker:
@@ -42,4 +47,4 @@ plugins:
 pluginOverrides:
   - name: go-o5-messaging
     local:
-      cmd: protoc-gen-go-o5-messaging
+      cmd: protoc-gen-go-o5-messaging 
