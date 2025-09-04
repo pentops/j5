@@ -171,7 +171,7 @@ func BuildQuerySet(qs QueryServiceGenerateSet) (*PSMQuerySet, error) {
 	// this walks the proto to get some of the same data as the state set,
 	// however it is unlkely to duplicate work, as the states are usually
 	// defined in a separate file from the query service
-	_, err := deriveStateDescriptorFromQueryDescriptor(qs)
+	sd, err := deriveStateDescriptorFromQueryDescriptor(qs)
 	if err != nil {
 		return nil, err
 	}
@@ -198,8 +198,13 @@ func BuildQuerySet(qs QueryServiceGenerateSet) (*PSMQuerySet, error) {
 		return nil, fmt.Errorf("building list method pair for %s: %w", qs.listMethod.Desc.FullName(), err)
 	}
 
-	// Empty table spec, the fields don't matter here.
-	listReflectionSet, err := pquery.BuildListReflection(listMethod, pquery.TableSpec{})
+	listSpec := pquery.TableSpec{
+		TableName:  sd.State.TableName,
+		DataColumn: sd.State.Root.ColumnName,
+		RootObject: sd.StateType,
+	}
+
+	listReflectionSet, err := pquery.BuildListReflection(listMethod, listSpec)
 	if err != nil {
 		return nil, fmt.Errorf("pquery.BuildListReflection for %s: %w", qs.listMethod.Desc.FullName(), err)
 	}
@@ -232,7 +237,13 @@ func BuildQuerySet(qs QueryServiceGenerateSet) (*PSMQuerySet, error) {
 		return nil, fmt.Errorf("building list events method pair for %s: %w", qs.listEventsMethod.Desc.FullName(), err)
 	}
 
-	listEventsReflectionSet, err := pquery.BuildListReflection(listEventsMethod, pquery.TableSpec{})
+	eventsSpec := pquery.TableSpec{
+		TableName:  sd.Event.TableName,
+		DataColumn: sd.Event.Root.ColumnName,
+		RootObject: sd.EventType,
+	}
+
+	listEventsReflectionSet, err := pquery.BuildListReflection(listEventsMethod, eventsSpec)
 	if err != nil {
 		return nil, fmt.Errorf("pquery.BuildListReflection for %s is not compatible with PSM: %w", qs.listEventsMethod.Desc.FullName(), err)
 	}
