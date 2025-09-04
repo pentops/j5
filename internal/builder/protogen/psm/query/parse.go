@@ -289,10 +289,12 @@ func deriveStateDescriptorFromQueryDescriptor(src QueryServiceGenerateSet) (*psm
 		if src.listEventsMethod == nil {
 			return nil, fmt.Errorf("no repeated field in get response, and no list events method, cannot derive event")
 		}
+
 		for _, field := range src.listEventsMethod.Output.Fields {
 			if field.Message == nil {
 				continue
 			}
+
 			if field.Desc.Cardinality() == protoreflect.Repeated {
 				if eventMessage != nil {
 					return nil, fmt.Errorf("state get response %s should have exactly one repeated field", src.getMethod.Desc.FullName())
@@ -301,6 +303,7 @@ func deriveStateDescriptorFromQueryDescriptor(src QueryServiceGenerateSet) (*psm
 				continue
 			}
 		}
+
 		if eventMessage == nil {
 			// No event, can't add fallbacks.
 			return nil, fmt.Errorf("no event message for %s, cannot derive event fields", stateMessage.FullName())
@@ -311,6 +314,7 @@ func deriveStateDescriptorFromQueryDescriptor(src QueryServiceGenerateSet) (*psm
 	if err != nil {
 		return nil, fmt.Errorf("j5schema.ObjectSchema for %s: %w", stateMessage.FullName(), err)
 	}
+
 	eventObject, err := j5schema.Global.ObjectSchema(eventMessage)
 	if err != nil {
 		return nil, fmt.Errorf("j5schema.ObjectSchema for %s: %w", eventMessage.FullName(), err)

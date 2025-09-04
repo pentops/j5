@@ -91,9 +91,11 @@ func (ls *ListSpec) Validate() error {
 	if ls.Method == nil {
 		return fmt.Errorf("list spec must have a method")
 	}
+
 	if err := ls.TableSpec.Validate(); err != nil {
 		return fmt.Errorf("validate table spec: %w", err)
 	}
+
 	return nil
 }
 
@@ -117,7 +119,6 @@ func BuildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListR
 }
 
 func buildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListReflectionSet, error) {
-
 	tableSet, err := NewTableReflectionSet(table)
 	if err != nil {
 		return nil, err
@@ -143,14 +144,12 @@ func buildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListR
 	for _, field := range method.Response.Properties {
 		switch ft := field.Schema.(type) {
 		case *j5schema.ObjectField:
-
 			if ft.ObjectSchema().FullName() == "j5.list.v1.PageResponse" {
 				ll.pageResponseField = field
 				continue
 			}
 
 		case *j5schema.ArrayField:
-
 			objectField, ok := ft.ItemSchema.(*j5schema.ObjectField)
 			if !ok {
 				return nil, fmt.Errorf("array field %s must be an object field, got %s", field.FullName(), ft.ItemSchema.FullName())
