@@ -254,7 +254,7 @@ func BuildQuerySet(qs QueryServiceGenerateSet) (*PSMQuerySet, error) {
 
 // attempts to walk through the query methods to find the descriptors for the
 // state and event messages.
-func deriveStateDescriptorFromQueryDescriptor(src QueryServiceGenerateSet) (*psm.TableMap, error) {
+func deriveStateDescriptorFromQueryDescriptor(src QueryServiceGenerateSet) (*psm.QueryTableSpec, error) {
 	if src.getMethod == nil {
 		return nil, fmt.Errorf("no get nethod, cannot derive state fields")
 	}
@@ -325,7 +325,7 @@ func deriveStateDescriptorFromQueryDescriptor(src QueryServiceGenerateSet) (*psm
 		return nil, err
 	}
 
-	return &spec.TableMap, nil
+	return &spec, nil
 }
 
 func mapGenField(parent *protogen.Message, field protoreflect.FieldDescriptor) *protogen.Field {
