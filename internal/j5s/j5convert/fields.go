@@ -372,14 +372,26 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		desc.TypeName = gl.Ptr(".j5.types.date.v1.Date")
 
 		if st.Date.Rules != nil {
-			opts := &ext_j5pb.DateField{}
-			opts.Rules = &ext_j5pb.DateField_Rules{
-				Minimum:          st.Date.Rules.Minimum,
-				Maximum:          st.Date.Rules.Maximum,
-				ExclusiveMinimum: st.Date.Rules.ExclusiveMinimum,
-				ExclusiveMaximum: st.Date.Rules.ExclusiveMaximum,
+			if st.Date.Rules.ExclusiveMinimum != nil && !(*st.Date.Rules.ExclusiveMinimum) && st.Date.Rules.Minimum == nil {
+				return nil, fmt.Errorf("date rules: exclusive minimum requires minimum to be set")
 			}
-			proto.SetExtension(desc.Options, ext_j5pb.E_Field, opts)
+
+			if st.Date.Rules.ExclusiveMaximum != nil && !(*st.Date.Rules.ExclusiveMaximum) && st.Date.Rules.Maximum == nil {
+				return nil, fmt.Errorf("date rules: exclusive maximum requires maximum to be set")
+			}
+
+			proto.SetExtension(desc.Options, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
+				Type: &ext_j5pb.FieldOptions_Date{
+					Date: &ext_j5pb.DateField{
+						Rules: &ext_j5pb.DateField_Rules{
+							Minimum:          st.Date.Rules.Minimum,
+							Maximum:          st.Date.Rules.Maximum,
+							ExclusiveMinimum: st.Date.Rules.ExclusiveMinimum,
+							ExclusiveMaximum: st.Date.Rules.ExclusiveMaximum,
+						},
+					},
+				},
+			})
 		}
 
 		if st.Date.ListRules != nil {

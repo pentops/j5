@@ -343,6 +343,40 @@ func TestValidate(t *testing.T) {
 		schema.New().SetScalar("bar", "10").AssertInvalid("bar", "minimum")
 		schema.New().SetScalar("bar", "19.9").AssertInvalid("bar", "maximum")
 	})
+
+	t.Run("Date", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! date {
+				rules.minimum = "2025-01-01"
+				rules.maximum = "2026-01-01"
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "2025-01-01").AssertValid()
+		schema.New().SetScalar("bar", "2026-01-01").AssertValid()
+		schema.New().SetScalar("bar", "2024-12-31").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "2026-01-02").AssertInvalid("bar", "maximum")
+	})
+
+	t.Run("Date Exclusive", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! date {
+				rules.minimum = "2025-01-01"
+				rules.maximum = "2026-01-01"
+				rules.exclusiveMinimum = true
+				rules.exclusiveMaximum = true
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "2025-01-02").AssertValid()
+		schema.New().SetScalar("bar", "2025-12-31").AssertValid()
+		schema.New().SetScalar("bar", "2025-01-01").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "2026-01-01").AssertInvalid("bar", "maximum")
+	})
 }
 
 type reflectCase struct {
