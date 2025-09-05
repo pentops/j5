@@ -568,15 +568,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 				return nil, fmt.Errorf("error parsing minimum decimal %q: %w", *st.Decimal.Rules.Minimum, err)
 			}
 			if st.Decimal.Rules.ExclusiveMinimum != nil && *st.Decimal.Rules.ExclusiveMinimum {
-				if gotDecimal.LessThan(mustMin) {
+				if gotDecimal.LessThanOrEqual(mustMin) {
 					return Errors{{
-						Message: fmt.Sprintf("decimal %s is less than exclusive minimum %s", gotDecimal, mustMin),
+						Message: fmt.Sprintf("decimal %s is less than or equal to exclusive minimum %s", gotDecimal, mustMin),
 					}}, nil
 				}
 			} else {
-				if gotDecimal.LessThan(mustMin) || gotDecimal.Equal(mustMin) {
+				if gotDecimal.LessThan(mustMin) {
 					return Errors{{
-						Message: fmt.Sprintf("decimal %s is less than or equal to minimum %s", gotDecimal, mustMin),
+						Message: fmt.Sprintf("decimal %s is less than minimum %s", gotDecimal, mustMin),
 					}}, nil
 				}
 			}
@@ -588,15 +588,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 				return nil, fmt.Errorf("error parsing maximum decimal %q: %w", *st.Decimal.Rules.Maximum, err)
 			}
 			if st.Decimal.Rules.ExclusiveMaximum != nil && *st.Decimal.Rules.ExclusiveMaximum {
-				if gotDecimal.GreaterThan(mustMax) {
+				if gotDecimal.GreaterThanOrEqual(mustMax) {
 					return Errors{{
-						Message: fmt.Sprintf("decimal %s is greater than exclusive maximum %s", gotDecimal, mustMax),
+						Message: fmt.Sprintf("decimal %s is greater than or equal to exclusive maximum %s", gotDecimal, mustMax),
 					}}, nil
 				}
 			} else {
-				if gotDecimal.GreaterThan(mustMax) || gotDecimal.Equal(mustMax) {
+				if gotDecimal.GreaterThan(mustMax) {
 					return Errors{{
-						Message: fmt.Sprintf("decimal %s is greater than or equal to maximum %s", gotDecimal, mustMax),
+						Message: fmt.Sprintf("decimal %s is greater than maximum %s", gotDecimal, mustMax),
 					}}, nil
 				}
 			}

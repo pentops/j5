@@ -310,6 +310,39 @@ func TestValidate(t *testing.T) {
 		schema.New().SetScalar("bar.baz", "value").AssertValid()
 	})
 
+	t.Run("Decimal", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! decimal {
+				rules.minimum = "10"
+				rules.maximum = "19.9"
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "10").AssertValid()
+		schema.New().SetScalar("bar", "19.9").AssertValid()
+		schema.New().SetScalar("bar", "9.9").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "20").AssertInvalid("bar", "maximum")
+	})
+
+	t.Run("Decimal Exclusive", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! decimal {
+				rules.minimum = "10"
+				rules.maximum = "19.9"
+				rules.exclusiveMinimum = true
+				rules.exclusiveMaximum = true
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "10.1").AssertValid()
+		schema.New().SetScalar("bar", "19.8").AssertValid()
+		schema.New().SetScalar("bar", "10").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "19.9").AssertInvalid("bar", "maximum")
+	})
 }
 
 type reflectCase struct {
