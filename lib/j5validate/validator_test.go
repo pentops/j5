@@ -314,8 +314,8 @@ func TestValidate(t *testing.T) {
 		schema := newReflectCase(t, `
 		object Foo {
 			field bar ! decimal {
-				rules.minimum = "10"
-				rules.maximum = "19.9"
+				rules.minimum = 10
+				rules.maximum = 19.9
 			}
 		}`)
 
@@ -330,8 +330,8 @@ func TestValidate(t *testing.T) {
 		schema := newReflectCase(t, `
 		object Foo {
 			field bar ! decimal {
-				rules.minimum = "10"
-				rules.maximum = "19.9"
+				rules.minimum = 10
+				rules.maximum = 19.9
 				rules.exclusiveMinimum = true
 				rules.exclusiveMaximum = true
 			}
