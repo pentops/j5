@@ -829,9 +829,33 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 			rules := &validate.FieldRules{
 				Type: &validate.FieldRules_Timestamp{
 					Timestamp: &validate.TimestampRules{},
-					// None Implemented.
 				},
 			}
+
+			if st.Timestamp.Rules.Maximum != nil {
+				if st.Timestamp.Rules.ExclusiveMaximum != nil {
+					rules.GetTimestamp().LessThan = &validate.TimestampRules_Lt{
+						Lt: st.Timestamp.Rules.Maximum,
+					}
+				} else {
+					rules.GetTimestamp().LessThan = &validate.TimestampRules_Lte{
+						Lte: st.Timestamp.Rules.Maximum,
+					}
+				}
+			}
+
+			if st.Timestamp.Rules.Minimum != nil {
+				if st.Timestamp.Rules.ExclusiveMinimum != nil {
+					rules.GetTimestamp().GreaterThan = &validate.TimestampRules_Gt{
+						Gt: st.Timestamp.Rules.Minimum,
+					}
+				} else {
+					rules.GetTimestamp().GreaterThan = &validate.TimestampRules_Gte{
+						Gte: st.Timestamp.Rules.Minimum,
+					}
+				}
+			}
+
 			proto.SetExtension(desc.Options, validate.E_Field, rules)
 			ww.file.ensureImport(bufValidateImport)
 		}

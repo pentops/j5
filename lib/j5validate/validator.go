@@ -14,7 +14,6 @@ import (
 	"github.com/pentops/j5/lib/j5reflect"
 	"github.com/pentops/j5/lib/j5schema"
 	"github.com/shopspring/decimal"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var Global = NewValidator()
@@ -499,27 +498,25 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			return nil, nil
 		}
 
-		gotTimestamp, ok := gotValue.(*timestamppb.Timestamp)
+		timeVal, ok := gotValue.(time.Time)
+
 		if !ok {
-			if gotValue == nil {
-				gotTimestamp = timestamppb.New(time.Time{}) // default timestamp value
-			} else {
+			if gotValue != nil {
 				return nil, fmt.Errorf("expected timestamp value for scalar field, got %T", gotValue)
 			}
 		}
 
-		timeVal := gotTimestamp.AsTime()
 		if st.Timestamp.Rules.Minimum != nil {
 			if st.Timestamp.Rules.ExclusiveMinimum != nil && *st.Timestamp.Rules.ExclusiveMinimum {
 				if timeVal.Before(st.Timestamp.Rules.Minimum.AsTime()) || timeVal.Equal(st.Timestamp.Rules.Minimum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is before or equal to exclusive minimum %s", gotTimestamp, st.Timestamp.Rules.Minimum),
+						Message: fmt.Sprintf("timestamp %s is before or equal to exclusive minimum %s", timeVal, st.Timestamp.Rules.Minimum),
 					}}, nil
 				}
 			} else {
 				if timeVal.Before(st.Timestamp.Rules.Minimum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is before minimum %s", gotTimestamp, st.Timestamp.Rules.Minimum),
+						Message: fmt.Sprintf("timestamp %s is before minimum %s", timeVal, st.Timestamp.Rules.Minimum),
 					}}, nil
 				}
 			}
@@ -529,13 +526,13 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			if st.Timestamp.Rules.ExclusiveMaximum != nil && *st.Timestamp.Rules.ExclusiveMaximum {
 				if timeVal.After(st.Timestamp.Rules.Maximum.AsTime()) || timeVal.Equal(st.Timestamp.Rules.Maximum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is after or equal to exclusive maximum %s", gotTimestamp, st.Timestamp.Rules.Maximum),
+						Message: fmt.Sprintf("timestamp %s is after or equal to exclusive maximum %s", timeVal, st.Timestamp.Rules.Maximum),
 					}}, nil
 				}
 			} else {
 				if timeVal.After(st.Timestamp.Rules.Maximum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is after maximum %s", gotTimestamp, st.Timestamp.Rules.Maximum),
+						Message: fmt.Sprintf("timestamp %s is after maximum %s", timeVal, st.Timestamp.Rules.Maximum),
 					}}, nil
 				}
 			}
