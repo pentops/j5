@@ -399,14 +399,26 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		desc.TypeName = gl.Ptr(".j5.types.decimal.v1.Decimal")
 
 		if st.Decimal.Rules != nil {
-			opts := &ext_j5pb.DecimalField{}
-			opts.Rules = &ext_j5pb.DecimalField_Rules{
-				Minimum:          st.Decimal.Rules.Minimum,
-				Maximum:          st.Decimal.Rules.Maximum,
-				ExclusiveMinimum: st.Decimal.Rules.ExclusiveMinimum,
-				ExclusiveMaximum: st.Decimal.Rules.ExclusiveMaximum,
+			if st.Decimal.Rules.ExclusiveMinimum != nil && !(*st.Decimal.Rules.ExclusiveMinimum) && st.Decimal.Rules.Minimum == nil {
+				return nil, fmt.Errorf("decimal rules: exclusive minimum requires minimum to be set")
 			}
-			proto.SetExtension(desc.Options, ext_j5pb.E_Field, opts)
+
+			if st.Decimal.Rules.ExclusiveMaximum != nil && !(*st.Decimal.Rules.ExclusiveMaximum) && st.Decimal.Rules.Maximum == nil {
+				return nil, fmt.Errorf("decimal rules: exclusive maximum requires maximum to be set")
+			}
+
+			proto.SetExtension(desc.Options, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
+				Type: &ext_j5pb.FieldOptions_Decimal{
+					Decimal: &ext_j5pb.DecimalField{
+						Rules: &ext_j5pb.DecimalField_Rules{
+							Minimum:          st.Decimal.Rules.Minimum,
+							Maximum:          st.Decimal.Rules.Maximum,
+							ExclusiveMinimum: st.Decimal.Rules.ExclusiveMinimum,
+							ExclusiveMaximum: st.Decimal.Rules.ExclusiveMaximum,
+						},
+					},
+				},
+			})
 		}
 
 		if st.Decimal.ListRules != nil {
