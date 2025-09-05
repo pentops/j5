@@ -457,15 +457,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 				return nil, fmt.Errorf("error parsing minimum date %q: %w", *st.Date.Rules.Minimum, err)
 			}
 			if st.Date.Rules.ExclusiveMinimum != nil && *st.Date.Rules.ExclusiveMinimum {
-				if gotDate.Before(mustMin) {
+				if gotDate.Before(mustMin) || gotDate.Equals(mustMin) {
 					return Errors{{
-						Message: fmt.Sprintf("date %s is before exclusive minimum %s", gotDate, mustMin),
+						Message: fmt.Sprintf("date %s is before or equal to exclusive minimum %s", gotDate, mustMin),
 					}}, nil
 				}
 			} else {
-				if gotDate.Before(mustMin) || gotDate.Equals(mustMin) {
+				if gotDate.Before(mustMin) {
 					return Errors{{
-						Message: fmt.Sprintf("date %s is before or equal to minimum %s", gotDate, mustMin),
+						Message: fmt.Sprintf("date %s is before minimum %s", gotDate, mustMin),
 					}}, nil
 				}
 			}
@@ -477,15 +477,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 				return nil, fmt.Errorf("error parsing maximum date %q: %w", *st.Date.Rules.Maximum, err)
 			}
 			if st.Date.Rules.ExclusiveMaximum != nil && *st.Date.Rules.ExclusiveMaximum {
-				if gotDate.After(mustMax) {
+				if gotDate.After(mustMax) || gotDate.Equals(mustMax) {
 					return Errors{{
-						Message: fmt.Sprintf("date %s is after exclusive maximum %s", gotDate, mustMax),
+						Message: fmt.Sprintf("date %s is after or equal to exclusive maximum %s", gotDate, mustMax),
 					}}, nil
 				}
 			} else {
-				if gotDate.After(mustMax) || gotDate.Equals(mustMax) {
+				if gotDate.After(mustMax) {
 					return Errors{{
-						Message: fmt.Sprintf("date %s is after or equal to maximum %s", gotDate, mustMax),
+						Message: fmt.Sprintf("date %s is after maximum %s", gotDate, mustMax),
 					}}, nil
 				}
 			}
@@ -511,15 +511,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 		timeVal := gotTimestamp.AsTime()
 		if st.Timestamp.Rules.Minimum != nil {
 			if st.Timestamp.Rules.ExclusiveMinimum != nil && *st.Timestamp.Rules.ExclusiveMinimum {
-				if timeVal.Before(st.Timestamp.Rules.Minimum.AsTime()) {
+				if timeVal.Before(st.Timestamp.Rules.Minimum.AsTime()) || timeVal.Equal(st.Timestamp.Rules.Minimum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is before exclusive minimum %s", gotTimestamp, st.Timestamp.Rules.Minimum),
+						Message: fmt.Sprintf("timestamp %s is before or equal to exclusive minimum %s", gotTimestamp, st.Timestamp.Rules.Minimum),
 					}}, nil
 				}
 			} else {
-				if timeVal.Before(st.Timestamp.Rules.Minimum.AsTime()) || timeVal.Equal(st.Timestamp.Rules.Minimum.AsTime()) {
+				if timeVal.Before(st.Timestamp.Rules.Minimum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is before or equal to minimum %s", gotTimestamp, st.Timestamp.Rules.Minimum),
+						Message: fmt.Sprintf("timestamp %s is before minimum %s", gotTimestamp, st.Timestamp.Rules.Minimum),
 					}}, nil
 				}
 			}
@@ -527,15 +527,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 
 		if st.Timestamp.Rules.Maximum != nil {
 			if st.Timestamp.Rules.ExclusiveMaximum != nil && *st.Timestamp.Rules.ExclusiveMaximum {
-				if timeVal.After(st.Timestamp.Rules.Maximum.AsTime()) {
+				if timeVal.After(st.Timestamp.Rules.Maximum.AsTime()) || timeVal.Equal(st.Timestamp.Rules.Maximum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is after exclusive maximum %s", gotTimestamp, st.Timestamp.Rules.Maximum),
+						Message: fmt.Sprintf("timestamp %s is after or equal to exclusive maximum %s", gotTimestamp, st.Timestamp.Rules.Maximum),
 					}}, nil
 				}
 			} else {
-				if timeVal.After(st.Timestamp.Rules.Maximum.AsTime()) || timeVal.Equal(st.Timestamp.Rules.Maximum.AsTime()) {
+				if timeVal.After(st.Timestamp.Rules.Maximum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is after or equal to maximum %s", gotTimestamp, st.Timestamp.Rules.Maximum),
+						Message: fmt.Sprintf("timestamp %s is after maximum %s", gotTimestamp, st.Timestamp.Rules.Maximum),
 					}}, nil
 				}
 			}
@@ -626,7 +626,7 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			if st.Float.Rules.ExclusiveMinimum != nil && *st.Float.Rules.ExclusiveMinimum {
 				if val64 <= *st.Float.Rules.Minimum {
 					return Errors{{
-						Message: fmt.Sprintf("float value %f is less than exclusive minimum %f", val64, *st.Float.Rules.Minimum),
+						Message: fmt.Sprintf("float value %f is less than or equal to exclusive minimum %f", val64, *st.Float.Rules.Minimum),
 					}}, nil
 				}
 			} else {
@@ -642,7 +642,7 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			if st.Float.Rules.ExclusiveMaximum != nil && *st.Float.Rules.ExclusiveMaximum {
 				if val64 >= *st.Float.Rules.Maximum {
 					return Errors{{
-						Message: fmt.Sprintf("float value %f is greater than exclusive maximum %f", val64, *st.Float.Rules.Maximum),
+						Message: fmt.Sprintf("float value %f is greater than or equal to exclusive maximum %f", val64, *st.Float.Rules.Maximum),
 					}}, nil
 				}
 			} else {
@@ -681,7 +681,7 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			if st.Integer.Rules.ExclusiveMinimum != nil && *st.Integer.Rules.ExclusiveMinimum {
 				if val64 <= *st.Integer.Rules.Minimum {
 					return Errors{{
-						Message: fmt.Sprintf("integer value %d is less than exclusive minimum %d", val64, *st.Integer.Rules.Minimum),
+						Message: fmt.Sprintf("integer value %d is less than or equal to exclusive minimum %d", val64, *st.Integer.Rules.Minimum),
 					}}, nil
 				}
 			} else {
@@ -697,7 +697,7 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			if st.Integer.Rules.ExclusiveMaximum != nil && *st.Integer.Rules.ExclusiveMaximum {
 				if val64 >= *st.Integer.Rules.Maximum {
 					return Errors{{
-						Message: fmt.Sprintf("integer value %d is greater than exclusive maximum %d", val64, *st.Integer.Rules.Maximum),
+						Message: fmt.Sprintf("integer value %d is greater than or equal to exclusive maximum %d", val64, *st.Integer.Rules.Maximum),
 					}}, nil
 				}
 			} else {
