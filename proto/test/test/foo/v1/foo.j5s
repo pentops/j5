@@ -70,7 +70,7 @@ object Bar {
 service FooDownload {
 	method DownloadRaw {
 		httpMethod = "GET"
-		httpPath = "/:id/raw"
+		httpPath = "test/foo/v1/foo/:id/raw"
 		httpResponse = true
 
 		request {

@@ -53,7 +53,7 @@ service FooCommandService {
 
 service FooDownloadService {
   rpc DownloadRaw(DownloadRawRequest) returns (google.api.HttpBody) {
-    option (google.api.http) = {get: "/{id}/raw"};
+    option (google.api.http) = {get: "test/foo/v1/foo/{id}/raw"};
   }
 }
 
