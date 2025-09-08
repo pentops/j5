@@ -1,7 +1,12 @@
 package test.foo.v1
 
-
 entity Foo {
+	query {
+		auth {
+			none
+		}
+	}
+
 	key fooId ! key:uuid {
 		primary = true
 	}
