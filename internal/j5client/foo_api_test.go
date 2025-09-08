@@ -4,6 +4,7 @@ import (
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
+	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 )
 
@@ -24,15 +25,15 @@ func wantAPI() *client_j5pb.API {
 
 	getFoo := &client_j5pb.Method{
 		Method: &schema_j5pb.Method{
-			Name:         "GetFoo",
+			Name:         "FooGet",
 			Auth:         authNone,
-			FullGrpcName: "/test.foo.v1.FooQueryService/GetFoo",
+			FullGrpcName: "/test.foo.v1.FooQueryService/FooGet",
 			HttpMethod:   schema_j5pb.HTTPMethod_GET,
-			HttpPath:     "/test/v1/foo/:id",
+			HttpPath:     "/test/foo/v1/foo/q/:fooId",
 			MethodType: &schema_j5pb.MethodType{
 				Type: &schema_j5pb.MethodType_StateQuery_{
 					StateQuery: &schema_j5pb.MethodType_StateQuery{
-						EntityName: "test.foo.v1/foo",
+						EntityName: "foo",
 						QueryPart:  schema_j5pb.StateQueryPart_GET,
 					},
 				},
@@ -40,11 +41,25 @@ func wantAPI() *client_j5pb.API {
 		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
-				Name:     "id",
+				Name:     "fooId",
 				Required: true,
+				EntityKey: &schema_j5pb.EntityKey{
+					Primary: true,
+				},
 				Schema: &schema_j5pb.Field{
-					Type: &schema_j5pb.Field_String_{
-						String_: &schema_j5pb.StringField{},
+					Type: &schema_j5pb.Field_Key{
+						Key: &schema_j5pb.KeyField{
+							Format: &schema_j5pb.KeyFormat{
+								Type: &schema_j5pb.KeyFormat_Uuid{
+									Uuid: &schema_j5pb.KeyFormat_UUID{},
+								},
+							},
+							ListRules: &list_j5pb.KeyRules{
+								Filtering: &list_j5pb.FilteringConstraint{
+									Filterable: true,
+								},
+							},
+						},
 					},
 				},
 			}},
@@ -96,26 +111,27 @@ func wantAPI() *client_j5pb.API {
 			}},
 		},
 		ResponseBody: &schema_j5pb.Object{
-			Name: "GetFooResponse",
+			Name: "FooGetResponse",
 			Properties: []*schema_j5pb.ObjectProperty{{
-				Name:   "foo",
-				Schema: objectRef("test.foo.v1", "FooState"),
+				Name:     "foo",
+				Required: true,
+				Schema:   objectRef("test.foo.v1", "FooState"),
 			}},
 		},
 	}
 
 	listFoos := &client_j5pb.Method{
 		Method: &schema_j5pb.Method{
-			Name:         "ListFoos",
+			Name:         "FooList",
 			Auth:         authJWT,
-			FullGrpcName: "/test.foo.v1.FooQueryService/ListFoos",
+			FullGrpcName: "/test.foo.v1.FooQueryService/FooList",
 			HttpMethod:   schema_j5pb.HTTPMethod_GET,
 
-			HttpPath: "/test/v1/foos",
+			HttpPath: "/test/foo/v1/foo/q",
 			MethodType: &schema_j5pb.MethodType{
 				Type: &schema_j5pb.MethodType_StateQuery_{
 					StateQuery: &schema_j5pb.MethodType_StateQuery{
-						EntityName: "test.foo.v1/foo",
+						EntityName: "foo",
 						QueryPart:  schema_j5pb.StateQueryPart_LIST,
 					},
 				},
@@ -152,7 +168,7 @@ func wantAPI() *client_j5pb.API {
 			},
 		},
 		ResponseBody: &schema_j5pb.Object{
-			Name: "ListFoosResponse",
+			Name: "FooListResponse",
 			Properties: []*schema_j5pb.ObjectProperty{{
 				Name:   "foos",
 				Schema: array(objectRef("test.foo.v1", "FooState")),
@@ -169,7 +185,7 @@ func wantAPI() *client_j5pb.API {
 			Auth:         authNone,
 			FullGrpcName: "/test.foo.v1.FooQueryService/ListFooEvents",
 			HttpMethod:   schema_j5pb.HTTPMethod_GET,
-			HttpPath:     "/test/v1/foo/:id/events",
+			HttpPath:     "/test/foo/v1/foo/:fooId/events",
 			MethodType: &schema_j5pb.MethodType{
 				Type: &schema_j5pb.MethodType_StateQuery_{
 					StateQuery: &schema_j5pb.MethodType_StateQuery{
