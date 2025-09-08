@@ -122,12 +122,14 @@ message FooEventType {
     Updated updated = 2 [(j5.ext.v1.field).object = {}];
   }
 
+  // Comment on Created
   message Created {
     option (j5.ext.v1.message).object = {};
 
     string field = 1 [(j5.ext.v1.field).string = {}];
   }
 
+  // Comment on Updated
   message Updated {
     option (j5.ext.v1.message).object = {};
 

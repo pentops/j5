@@ -28,10 +28,12 @@ entity Foo {
 	}
 
 	event Created {
+		| Comment on Created
 		field field string
 	}
 
 	event Updated {
+		| Comment on Updated
 		field field string
 	}
 

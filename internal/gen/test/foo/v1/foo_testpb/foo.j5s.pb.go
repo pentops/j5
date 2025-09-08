@@ -462,6 +462,7 @@ func (x *Bar) GetField() string {
 	return ""
 }
 
+// Comment on Created
 type FooEventType_Created struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -509,6 +510,7 @@ func (x *FooEventType_Created) GetField() string {
 	return ""
 }
 
+// Comment on Updated
 type FooEventType_Updated struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
