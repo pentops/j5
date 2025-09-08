@@ -14,7 +14,6 @@ import (
 )
 
 func TestTestListRequest(t *testing.T) {
-
 	ss := j5schema.NewSchemaCache()
 
 	fooDesc := (&foo_testspb.ListFoosResponse{}).ProtoReflect().Descriptor()
@@ -35,7 +34,8 @@ func TestTestListRequest(t *testing.T) {
 		SearchableFields: []*client_j5pb.ListRequest_SearchField{
 			{
 				Name: "name",
-			}, {
+			},
+			{
 				Name: "bar.field",
 			},
 		},
@@ -53,12 +53,15 @@ func TestTestListRequest(t *testing.T) {
 			},
 			{
 				Name: "bar.id",
-			}, {
+			},
+			{
 				Name: "createdAt",
+			},
+			{
+				Name: "bazes.id",
 			},
 		},
 	}
 
 	prototest.AssertEqualProto(t, want, listRequest)
-
 }

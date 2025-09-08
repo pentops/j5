@@ -35,7 +35,7 @@ message FooState {
       default_filters: "FOO_STATUS_ACTIVE"
     }
   ];
-  
+
   string name = 3 [(j5.list.v1.field).string.open_text.searching = {searchable: true}];
   Bar bar = 4;
   google.protobuf.Timestamp created_at = 5 [(j5.list.v1.field).timestamp = {
@@ -66,7 +66,7 @@ message FooEvent {
   option (j5.ext.v1.psm).entity_name = "foo";
   FooKeys keys = 1 [(j5.ext.v1.field).object.flatten = true];
   FooEventType event = 2 [(buf.validate.field).required = true];
-  
+
   google.protobuf.Timestamp timestamp = 5 [(j5.list.v1.field).timestamp = {
     filtering: {filterable: true}
     sorting: {
