@@ -1,12 +1,6 @@
 package test.foo.v1
 
 entity Foo {
-	query {
-		auth {
-			none
-		}
-	}
-
 	key fooId ! key:uuid {
 		primary = true
 	}
@@ -43,6 +37,12 @@ entity Foo {
 	}
 
 	command {
+		options {
+			defaultAuth {
+				jwtBearer
+			}
+		}
+
 		method PostFoo {
 			httpMethod = "POST"
 
@@ -70,7 +70,7 @@ object Bar {
 service FooDownload {
 	method DownloadRaw {
 		httpMethod = "GET"
-		httpPath = "test/foo/v1/foo/:id/raw"
+		httpPath = "/test/foo/v1/foo/:id/raw"
 		httpResponse = true
 
 		request {

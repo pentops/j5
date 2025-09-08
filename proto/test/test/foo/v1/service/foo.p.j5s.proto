@@ -14,15 +14,7 @@ import "j5/list/v1/query.proto";
 import "test/foo/v1/foo.j5s.proto";
 
 service FooQueryService {
-  option (j5.ext.v1.service) = {
-    state_query: {
-      entity: "foo"
-    }
-    default_auth: {
-      none: {
-      }
-    }
-  };
+  option (j5.ext.v1.service).state_query.entity = "foo";
 
   rpc FooGet(FooGetRequest) returns (FooGetResponse) {
     option (google.api.http) = {get: "/test/foo/v1/foo/q/{foo_id}"};
@@ -41,7 +33,15 @@ service FooQueryService {
 }
 
 service FooCommandService {
-  option (j5.ext.v1.service).state_command.entity = "foo";
+  option (j5.ext.v1.service) = {
+    state_command: {
+      entity: "foo"
+    }
+    default_auth: {
+      jwt_bearer: {
+      }
+    }
+  };
 
   rpc PostFoo(PostFooRequest) returns (PostFooResponse) {
     option (google.api.http) = {
@@ -53,7 +53,7 @@ service FooCommandService {
 
 service FooDownloadService {
   rpc DownloadRaw(DownloadRawRequest) returns (google.api.HttpBody) {
-    option (google.api.http) = {get: "test/foo/v1/foo/{id}/raw"};
+    option (google.api.http) = {get: "/test/foo/v1/foo/{id}/raw"};
   }
 }
 
