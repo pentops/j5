@@ -1,0 +1,47 @@
+package test.foo.v1
+
+
+entity Foo {
+	key fooId ! key:uuid {
+		primary = true
+	}
+
+	key barId ! key:uuid {
+		foreign = "test.foo.v1.Bar"
+	}
+
+	status ACTIVE
+	status INACTIVE
+
+	data name string {
+		listRules.searching.searchable = true
+	}
+
+	data bar object:Bar
+
+	data createdAt timestamp {
+		listRules {
+			filtering.filterable = true
+			sorting.defaultSort = true
+			sorting.sortable = true
+		}
+	}
+
+	event Created {
+		field field string
+	}
+
+	event Updated {
+		field field string
+	}
+}
+
+object Bar {
+	field id key:uuid {
+		listRules.filtering.filterable = true
+	}
+
+	field field string {
+		listRules.searching.searchable = true
+	}
+}
