@@ -6,6 +6,7 @@ package test.foo.v1.service;
 
 import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
+import "google/api/httpbody.proto";
 import "j5/ext/v1/annotations.proto";
 import "j5/list/v1/annotations.proto";
 import "j5/list/v1/page.proto";
@@ -28,6 +29,14 @@ service FooQueryService {
   rpc FooEvents(FooEventsRequest) returns (FooEventsResponse) {
     option (google.api.http) = {get: "/test/foo/v1/foo/q/{foo_id}/events"};
     option (j5.ext.v1.method).state_query.list_events = true;
+  }
+}
+
+service FooCommandService {
+  option (j5.ext.v1.service).state_command.entity = "foo";
+
+  rpc DownloadRaw(DownloadRawRequest) returns (google.api.HttpBody) {
+    option (google.api.http) = {get: "/test/foo/v1/foo/c/{id}/raw"};
   }
 }
 
@@ -98,4 +107,18 @@ message FooEventsResponse {
   repeated test.foo.v1.FooEvent events = 1 [(j5.ext.v1.field).array = {}];
 
   j5.list.v1.PageResponse page = 2 [(j5.ext.v1.field).object = {}];
+}
+
+message DownloadRawRequest {
+  option (j5.ext.v1.message).object = {};
+
+  string id = 1 [
+    (buf.validate.field) = {
+      required: true
+      string: {
+        uuid: true
+      }
+    },
+    (j5.ext.v1.field).key.format = FORMAT_UUID
+  ];
 }

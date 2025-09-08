@@ -8,6 +8,7 @@ package foo_testspb
 
 import (
 	context "context"
+	httpbody "google.golang.org/genproto/googleapis/api/httpbody"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -179,6 +180,97 @@ var FooQueryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "FooEvents",
 			Handler:    _FooQueryService_FooEvents_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "test/foo/v1/service/foo.p.j5s.proto",
+}
+
+const (
+	FooCommandService_DownloadRaw_FullMethodName = "/test.foo.v1.service.FooCommandService/DownloadRaw"
+)
+
+// FooCommandServiceClient is the client API for FooCommandService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type FooCommandServiceClient interface {
+	DownloadRaw(ctx context.Context, in *DownloadRawRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error)
+}
+
+type fooCommandServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewFooCommandServiceClient(cc grpc.ClientConnInterface) FooCommandServiceClient {
+	return &fooCommandServiceClient{cc}
+}
+
+func (c *fooCommandServiceClient) DownloadRaw(ctx context.Context, in *DownloadRawRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(httpbody.HttpBody)
+	err := c.cc.Invoke(ctx, FooCommandService_DownloadRaw_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// FooCommandServiceServer is the server API for FooCommandService service.
+// All implementations must embed UnimplementedFooCommandServiceServer
+// for forward compatibility
+type FooCommandServiceServer interface {
+	DownloadRaw(context.Context, *DownloadRawRequest) (*httpbody.HttpBody, error)
+	mustEmbedUnimplementedFooCommandServiceServer()
+}
+
+// UnimplementedFooCommandServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedFooCommandServiceServer struct {
+}
+
+func (UnimplementedFooCommandServiceServer) DownloadRaw(context.Context, *DownloadRawRequest) (*httpbody.HttpBody, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadRaw not implemented")
+}
+func (UnimplementedFooCommandServiceServer) mustEmbedUnimplementedFooCommandServiceServer() {}
+
+// UnsafeFooCommandServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to FooCommandServiceServer will
+// result in compilation errors.
+type UnsafeFooCommandServiceServer interface {
+	mustEmbedUnimplementedFooCommandServiceServer()
+}
+
+func RegisterFooCommandServiceServer(s grpc.ServiceRegistrar, srv FooCommandServiceServer) {
+	s.RegisterService(&FooCommandService_ServiceDesc, srv)
+}
+
+func _FooCommandService_DownloadRaw_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DownloadRawRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FooCommandServiceServer).DownloadRaw(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FooCommandService_DownloadRaw_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FooCommandServiceServer).DownloadRaw(ctx, req.(*DownloadRawRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// FooCommandService_ServiceDesc is the grpc.ServiceDesc for FooCommandService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var FooCommandService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "test.foo.v1.service.FooCommandService",
+	HandlerType: (*FooCommandServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "DownloadRaw",
+			Handler:    _FooCommandService_DownloadRaw_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
