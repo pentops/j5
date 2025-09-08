@@ -187,14 +187,14 @@ var FooQueryService_ServiceDesc = grpc.ServiceDesc{
 }
 
 const (
-	FooCommandService_DownloadRaw_FullMethodName = "/test.foo.v1.service.FooCommandService/DownloadRaw"
+	FooCommandService_PostFoo_FullMethodName = "/test.foo.v1.service.FooCommandService/PostFoo"
 )
 
 // FooCommandServiceClient is the client API for FooCommandService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FooCommandServiceClient interface {
-	DownloadRaw(ctx context.Context, in *DownloadRawRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error)
+	PostFoo(ctx context.Context, in *PostFooRequest, opts ...grpc.CallOption) (*PostFooResponse, error)
 }
 
 type fooCommandServiceClient struct {
@@ -205,10 +205,10 @@ func NewFooCommandServiceClient(cc grpc.ClientConnInterface) FooCommandServiceCl
 	return &fooCommandServiceClient{cc}
 }
 
-func (c *fooCommandServiceClient) DownloadRaw(ctx context.Context, in *DownloadRawRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error) {
+func (c *fooCommandServiceClient) PostFoo(ctx context.Context, in *PostFooRequest, opts ...grpc.CallOption) (*PostFooResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(httpbody.HttpBody)
-	err := c.cc.Invoke(ctx, FooCommandService_DownloadRaw_FullMethodName, in, out, cOpts...)
+	out := new(PostFooResponse)
+	err := c.cc.Invoke(ctx, FooCommandService_PostFoo_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +219,7 @@ func (c *fooCommandServiceClient) DownloadRaw(ctx context.Context, in *DownloadR
 // All implementations must embed UnimplementedFooCommandServiceServer
 // for forward compatibility
 type FooCommandServiceServer interface {
-	DownloadRaw(context.Context, *DownloadRawRequest) (*httpbody.HttpBody, error)
+	PostFoo(context.Context, *PostFooRequest) (*PostFooResponse, error)
 	mustEmbedUnimplementedFooCommandServiceServer()
 }
 
@@ -227,8 +227,8 @@ type FooCommandServiceServer interface {
 type UnimplementedFooCommandServiceServer struct {
 }
 
-func (UnimplementedFooCommandServiceServer) DownloadRaw(context.Context, *DownloadRawRequest) (*httpbody.HttpBody, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DownloadRaw not implemented")
+func (UnimplementedFooCommandServiceServer) PostFoo(context.Context, *PostFooRequest) (*PostFooResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method PostFoo not implemented")
 }
 func (UnimplementedFooCommandServiceServer) mustEmbedUnimplementedFooCommandServiceServer() {}
 
@@ -243,20 +243,20 @@ func RegisterFooCommandServiceServer(s grpc.ServiceRegistrar, srv FooCommandServ
 	s.RegisterService(&FooCommandService_ServiceDesc, srv)
 }
 
-func _FooCommandService_DownloadRaw_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DownloadRawRequest)
+func _FooCommandService_PostFoo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PostFooRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FooCommandServiceServer).DownloadRaw(ctx, in)
+		return srv.(FooCommandServiceServer).PostFoo(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FooCommandService_DownloadRaw_FullMethodName,
+		FullMethod: FooCommandService_PostFoo_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FooCommandServiceServer).DownloadRaw(ctx, req.(*DownloadRawRequest))
+		return srv.(FooCommandServiceServer).PostFoo(ctx, req.(*PostFooRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -269,8 +269,99 @@ var FooCommandService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*FooCommandServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
+			MethodName: "PostFoo",
+			Handler:    _FooCommandService_PostFoo_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "test/foo/v1/service/foo.p.j5s.proto",
+}
+
+const (
+	FooDownloadService_DownloadRaw_FullMethodName = "/test.foo.v1.service.FooDownloadService/DownloadRaw"
+)
+
+// FooDownloadServiceClient is the client API for FooDownloadService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type FooDownloadServiceClient interface {
+	DownloadRaw(ctx context.Context, in *DownloadRawRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error)
+}
+
+type fooDownloadServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewFooDownloadServiceClient(cc grpc.ClientConnInterface) FooDownloadServiceClient {
+	return &fooDownloadServiceClient{cc}
+}
+
+func (c *fooDownloadServiceClient) DownloadRaw(ctx context.Context, in *DownloadRawRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(httpbody.HttpBody)
+	err := c.cc.Invoke(ctx, FooDownloadService_DownloadRaw_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// FooDownloadServiceServer is the server API for FooDownloadService service.
+// All implementations must embed UnimplementedFooDownloadServiceServer
+// for forward compatibility
+type FooDownloadServiceServer interface {
+	DownloadRaw(context.Context, *DownloadRawRequest) (*httpbody.HttpBody, error)
+	mustEmbedUnimplementedFooDownloadServiceServer()
+}
+
+// UnimplementedFooDownloadServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedFooDownloadServiceServer struct {
+}
+
+func (UnimplementedFooDownloadServiceServer) DownloadRaw(context.Context, *DownloadRawRequest) (*httpbody.HttpBody, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DownloadRaw not implemented")
+}
+func (UnimplementedFooDownloadServiceServer) mustEmbedUnimplementedFooDownloadServiceServer() {}
+
+// UnsafeFooDownloadServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to FooDownloadServiceServer will
+// result in compilation errors.
+type UnsafeFooDownloadServiceServer interface {
+	mustEmbedUnimplementedFooDownloadServiceServer()
+}
+
+func RegisterFooDownloadServiceServer(s grpc.ServiceRegistrar, srv FooDownloadServiceServer) {
+	s.RegisterService(&FooDownloadService_ServiceDesc, srv)
+}
+
+func _FooDownloadService_DownloadRaw_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DownloadRawRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(FooDownloadServiceServer).DownloadRaw(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: FooDownloadService_DownloadRaw_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(FooDownloadServiceServer).DownloadRaw(ctx, req.(*DownloadRawRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// FooDownloadService_ServiceDesc is the grpc.ServiceDesc for FooDownloadService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var FooDownloadService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "test.foo.v1.service.FooDownloadService",
+	HandlerType: (*FooDownloadServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
 			MethodName: "DownloadRaw",
-			Handler:    _FooCommandService_DownloadRaw_Handler,
+			Handler:    _FooDownloadService_DownloadRaw_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

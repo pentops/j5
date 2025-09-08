@@ -43,13 +43,15 @@ entity Foo {
 	}
 
 	command {
-		method DownloadRaw {
-			httpMethod = "GET"
-			httpPath = "/:id/raw"
-			httpResponse = true
+		method PostFoo {
+			httpMethod = "POST"
 
 			request {
 				field id ! key:uuid
+			}
+
+			response {
+				field foo object:FooState
 			}
 		}
 	}
@@ -62,5 +64,17 @@ object Bar {
 
 	field field string {
 		listRules.searching.searchable = true
+	}
+}
+
+service FooDownload {
+	method DownloadRaw {
+		httpMethod = "GET"
+		httpPath = "/:id/raw"
+		httpResponse = true
+
+		request {
+			field id ! key:uuid
+		}
 	}
 }

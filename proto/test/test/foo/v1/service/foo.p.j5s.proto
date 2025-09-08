@@ -43,8 +43,17 @@ service FooQueryService {
 service FooCommandService {
   option (j5.ext.v1.service).state_command.entity = "foo";
 
+  rpc PostFoo(PostFooRequest) returns (PostFooResponse) {
+    option (google.api.http) = {
+      post: "/test/foo/v1/foo/c"
+      body: "*"
+    };
+  }
+}
+
+service FooDownloadService {
   rpc DownloadRaw(DownloadRawRequest) returns (google.api.HttpBody) {
-    option (google.api.http) = {get: "/test/foo/v1/foo/c/{id}/raw"};
+    option (google.api.http) = {get: "/{id}/raw"};
   }
 }
 
@@ -115,6 +124,26 @@ message FooEventsResponse {
   repeated test.foo.v1.FooEvent events = 1 [(j5.ext.v1.field).array = {}];
 
   j5.list.v1.PageResponse page = 2 [(j5.ext.v1.field).object = {}];
+}
+
+message PostFooRequest {
+  option (j5.ext.v1.message).object = {};
+
+  string id = 1 [
+    (buf.validate.field) = {
+      required: true
+      string: {
+        uuid: true
+      }
+    },
+    (j5.ext.v1.field).key.format = FORMAT_UUID
+  ];
+}
+
+message PostFooResponse {
+  option (j5.ext.v1.message).object = {};
+
+  test.foo.v1.FooState foo = 1 [(j5.ext.v1.field).object = {}];
 }
 
 message DownloadRawRequest {
