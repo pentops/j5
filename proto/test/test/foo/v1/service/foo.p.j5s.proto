@@ -14,7 +14,15 @@ import "j5/list/v1/query.proto";
 import "test/foo/v1/foo.j5s.proto";
 
 service FooQueryService {
-  option (j5.ext.v1.service).state_query.entity = "foo";
+  option (j5.ext.v1.service) = {
+    state_query: {
+      entity: "foo"
+    }
+    default_auth: {
+      jwt_bearer: {
+      }
+    }
+  };
 
   rpc FooGet(FooGetRequest) returns (FooGetResponse) {
     option (google.api.http) = {get: "/test/foo/v1/foo/q/{foo_id}"};

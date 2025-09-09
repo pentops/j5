@@ -1,6 +1,12 @@
 package test.foo.v1
 
 entity Foo {
+	query {
+		auth {
+			jwtBearer
+		}
+	}
+
 	key fooId ! key:uuid {
 		primary = true
 	}
