@@ -255,6 +255,15 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 			if err != nil {
 				return fmt.Errorf("walking %s: %w", field.JSONName, err)
 			}
+
+		case *j5schema.ArrayField:
+			switch at := ft.ItemSchema.(type) {
+			case *j5schema.ObjectField:
+				err := fieldPathSpec.walk(at.ObjectSchema().Properties, callback)
+				if err != nil {
+					return fmt.Errorf("walking %s: %w", field.JSONName, err)
+				}
+			}
 		}
 	}
 
