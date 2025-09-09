@@ -113,6 +113,10 @@ func (tok Token) AsIdent() (Token, bool) {
 		nt := tok.Clone()
 		nt.Type = IDENT
 		return nt, true
+	case STRING:
+		nt := tok.Clone()
+		nt.Type = IDENT
+		return nt, true
 	}
 	return tok, false
 }

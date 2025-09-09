@@ -53,50 +53,6 @@ func (msg *DownloadClientAPIResponse) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
-func (msg *ListPackagesRequest) Clone() any {
-	return proto.Clone(msg).(*ListPackagesRequest)
-}
-func (msg *ListPackagesRequest) J5Reflect() j5reflect.Root {
-	return j5reflect.MustReflect(msg.ProtoReflect())
-}
-
-func (msg *ListPackagesRequest) J5Object() j5reflect.Object {
-	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
-
-func (msg *ListPackagesResponse) Clone() any {
-	return proto.Clone(msg).(*ListPackagesResponse)
-}
-func (msg *ListPackagesResponse) J5Reflect() j5reflect.Root {
-	return j5reflect.MustReflect(msg.ProtoReflect())
-}
-
-func (msg *ListPackagesResponse) J5Object() j5reflect.Object {
-	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
-
-func (msg *DownloadClientAPIPackageRequest) Clone() any {
-	return proto.Clone(msg).(*DownloadClientAPIPackageRequest)
-}
-func (msg *DownloadClientAPIPackageRequest) J5Reflect() j5reflect.Root {
-	return j5reflect.MustReflect(msg.ProtoReflect())
-}
-
-func (msg *DownloadClientAPIPackageRequest) J5Object() j5reflect.Object {
-	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
-
-func (msg *DownloadClientAPIPackageResponse) Clone() any {
-	return proto.Clone(msg).(*DownloadClientAPIPackageResponse)
-}
-func (msg *DownloadClientAPIPackageResponse) J5Reflect() j5reflect.Root {
-	return j5reflect.MustReflect(msg.ProtoReflect())
-}
-
-func (msg *DownloadClientAPIPackageResponse) J5Object() j5reflect.Object {
-	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
-}
-
 // DownloadImage is a J5 method for service DownloadService
 func DownloadImageJ5MethodSchema() *j5schema.MethodSchema {
 	return &j5schema.MethodSchema{
@@ -118,21 +74,5 @@ func DownloadClientAPIJ5MethodSchema() *j5schema.MethodSchema {
 	return &j5schema.MethodSchema{
 		Request:  j5schema.MustObjectSchema((&DownloadClientAPIRequest{}).ProtoReflect().Descriptor()),
 		Response: j5schema.MustObjectSchema((&DownloadClientAPIResponse{}).ProtoReflect().Descriptor()),
-	}
-}
-
-// ListPackages is a J5 method for service DownloadService
-func ListPackagesJ5MethodSchema() *j5schema.MethodSchema {
-	return &j5schema.MethodSchema{
-		Request:  j5schema.MustObjectSchema((&ListPackagesRequest{}).ProtoReflect().Descriptor()),
-		Response: j5schema.MustObjectSchema((&ListPackagesResponse{}).ProtoReflect().Descriptor()),
-	}
-}
-
-// DownloadClientAPIPackage is a J5 method for service DownloadService
-func DownloadClientAPIPackageJ5MethodSchema() *j5schema.MethodSchema {
-	return &j5schema.MethodSchema{
-		Request:  j5schema.MustObjectSchema((&DownloadClientAPIPackageRequest{}).ProtoReflect().Descriptor()),
-		Response: j5schema.MustObjectSchema((&DownloadClientAPIPackageResponse{}).ProtoReflect().Descriptor()),
 	}
 }

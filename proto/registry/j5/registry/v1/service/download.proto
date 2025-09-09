@@ -15,23 +15,11 @@ service DownloadService {
   rpc DownloadImage(DownloadImageRequest) returns (google.api.HttpBody) {
     option (google.api.http) = {get: "/registry/v1/{owner}/{name}/{version}/image.bin"};
   }
-
   rpc DownloadSwagger(DownloadSwaggerRequest) returns (google.api.HttpBody) {
     option (google.api.http) = {get: "/registry/v1/{owner}/{name}/{version}/swagger.json"};
   }
-
   rpc DownloadClientAPI(DownloadClientAPIRequest) returns (DownloadClientAPIResponse) {
     option (google.api.http) = {get: "/registry/v1/{owner}/{name}/{version}/api.json"};
-  }
-
-  // A summary list of packages and labels for further reference
-  rpc ListPackages(ListPackagesRequest) returns (ListPackagesResponse) {
-    option (google.api.http) = {get: "/registry/v1/{owner}/{name}/{version}/api.json/packages"};
-  }
-
-  // A subset of the API client targeting only a specific package
-  rpc DownloadClientAPIPackage(DownloadClientAPIPackageRequest) returns (DownloadClientAPIPackageResponse) {
-    option (google.api.http) = {get: "/registry/v1/{owner}/{name}/{version}/api.json/package/{package}"};
   }
 }
 
@@ -54,29 +42,6 @@ message DownloadClientAPIRequest {
 }
 
 message DownloadClientAPIResponse {
-  string version = 1;
-  j5.client.v1.API api = 2;
-}
-
-message ListPackagesRequest {
-  string version = 1;
-  string owner = 2;
-  string name = 3;
-}
-
-message ListPackagesResponse {
-  string version = 1;
-  j5.client.v1.APISummary packages = 2;
-}
-
-message DownloadClientAPIPackageRequest {
-  string owner = 1;
-  string name = 2;
-  string version = 3;
-  string package = 4;
-}
-
-message DownloadClientAPIPackageResponse {
   string version = 1;
   j5.client.v1.API api = 2;
 }

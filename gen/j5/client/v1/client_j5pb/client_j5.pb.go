@@ -12,17 +12,11 @@ import (
 func (msg *API) Clone() any {
 	return proto.Clone(msg).(*API)
 }
-func (msg *APISummary) Clone() any {
-	return proto.Clone(msg).(*APISummary)
-}
 func (msg *Metadata) Clone() any {
 	return proto.Clone(msg).(*Metadata)
 }
 func (msg *Package) Clone() any {
 	return proto.Clone(msg).(*Package)
-}
-func (msg *PackageSummary) Clone() any {
-	return proto.Clone(msg).(*PackageSummary)
 }
 func (msg *PackageSource) Clone() any {
 	return proto.Clone(msg).(*PackageSource)

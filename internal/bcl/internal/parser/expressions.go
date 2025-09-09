@@ -65,6 +65,18 @@ func (r Reference) AsString() (string, error) {
 	return r.String(), nil
 }
 
+func (r Reference) IsArray() bool {
+	return true
+}
+
+func (r Reference) AsArray() ([]ASTValue, bool) {
+	out := make([]ASTValue, len(r.Idents))
+	for idx, val := range r.Idents {
+		out[idx] = val.AsStringValue()
+	}
+	return out, true
+}
+
 func (r Reference) Strings() []string {
 	out := make([]string, len(r.Idents))
 	for i, part := range r.Idents {

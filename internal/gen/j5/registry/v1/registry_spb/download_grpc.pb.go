@@ -20,11 +20,9 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	DownloadService_DownloadImage_FullMethodName            = "/j5.registry.v1.service.DownloadService/DownloadImage"
-	DownloadService_DownloadSwagger_FullMethodName          = "/j5.registry.v1.service.DownloadService/DownloadSwagger"
-	DownloadService_DownloadClientAPI_FullMethodName        = "/j5.registry.v1.service.DownloadService/DownloadClientAPI"
-	DownloadService_ListPackages_FullMethodName             = "/j5.registry.v1.service.DownloadService/ListPackages"
-	DownloadService_DownloadClientAPIPackage_FullMethodName = "/j5.registry.v1.service.DownloadService/DownloadClientAPIPackage"
+	DownloadService_DownloadImage_FullMethodName     = "/j5.registry.v1.service.DownloadService/DownloadImage"
+	DownloadService_DownloadSwagger_FullMethodName   = "/j5.registry.v1.service.DownloadService/DownloadSwagger"
+	DownloadService_DownloadClientAPI_FullMethodName = "/j5.registry.v1.service.DownloadService/DownloadClientAPI"
 )
 
 // DownloadServiceClient is the client API for DownloadService service.
@@ -34,10 +32,6 @@ type DownloadServiceClient interface {
 	DownloadImage(ctx context.Context, in *DownloadImageRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error)
 	DownloadSwagger(ctx context.Context, in *DownloadSwaggerRequest, opts ...grpc.CallOption) (*httpbody.HttpBody, error)
 	DownloadClientAPI(ctx context.Context, in *DownloadClientAPIRequest, opts ...grpc.CallOption) (*DownloadClientAPIResponse, error)
-	// A summary list of packages and labels for further reference
-	ListPackages(ctx context.Context, in *ListPackagesRequest, opts ...grpc.CallOption) (*ListPackagesResponse, error)
-	// A subset of the API client targeting only a specific package
-	DownloadClientAPIPackage(ctx context.Context, in *DownloadClientAPIPackageRequest, opts ...grpc.CallOption) (*DownloadClientAPIPackageResponse, error)
 }
 
 type downloadServiceClient struct {
@@ -78,26 +72,6 @@ func (c *downloadServiceClient) DownloadClientAPI(ctx context.Context, in *Downl
 	return out, nil
 }
 
-func (c *downloadServiceClient) ListPackages(ctx context.Context, in *ListPackagesRequest, opts ...grpc.CallOption) (*ListPackagesResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListPackagesResponse)
-	err := c.cc.Invoke(ctx, DownloadService_ListPackages_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *downloadServiceClient) DownloadClientAPIPackage(ctx context.Context, in *DownloadClientAPIPackageRequest, opts ...grpc.CallOption) (*DownloadClientAPIPackageResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DownloadClientAPIPackageResponse)
-	err := c.cc.Invoke(ctx, DownloadService_DownloadClientAPIPackage_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // DownloadServiceServer is the server API for DownloadService service.
 // All implementations must embed UnimplementedDownloadServiceServer
 // for forward compatibility
@@ -105,10 +79,6 @@ type DownloadServiceServer interface {
 	DownloadImage(context.Context, *DownloadImageRequest) (*httpbody.HttpBody, error)
 	DownloadSwagger(context.Context, *DownloadSwaggerRequest) (*httpbody.HttpBody, error)
 	DownloadClientAPI(context.Context, *DownloadClientAPIRequest) (*DownloadClientAPIResponse, error)
-	// A summary list of packages and labels for further reference
-	ListPackages(context.Context, *ListPackagesRequest) (*ListPackagesResponse, error)
-	// A subset of the API client targeting only a specific package
-	DownloadClientAPIPackage(context.Context, *DownloadClientAPIPackageRequest) (*DownloadClientAPIPackageResponse, error)
 	mustEmbedUnimplementedDownloadServiceServer()
 }
 
@@ -124,12 +94,6 @@ func (UnimplementedDownloadServiceServer) DownloadSwagger(context.Context, *Down
 }
 func (UnimplementedDownloadServiceServer) DownloadClientAPI(context.Context, *DownloadClientAPIRequest) (*DownloadClientAPIResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DownloadClientAPI not implemented")
-}
-func (UnimplementedDownloadServiceServer) ListPackages(context.Context, *ListPackagesRequest) (*ListPackagesResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListPackages not implemented")
-}
-func (UnimplementedDownloadServiceServer) DownloadClientAPIPackage(context.Context, *DownloadClientAPIPackageRequest) (*DownloadClientAPIPackageResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DownloadClientAPIPackage not implemented")
 }
 func (UnimplementedDownloadServiceServer) mustEmbedUnimplementedDownloadServiceServer() {}
 
@@ -198,42 +162,6 @@ func _DownloadService_DownloadClientAPI_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
-func _DownloadService_ListPackages_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListPackagesRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DownloadServiceServer).ListPackages(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DownloadService_ListPackages_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DownloadServiceServer).ListPackages(ctx, req.(*ListPackagesRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DownloadService_DownloadClientAPIPackage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DownloadClientAPIPackageRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DownloadServiceServer).DownloadClientAPIPackage(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DownloadService_DownloadClientAPIPackage_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DownloadServiceServer).DownloadClientAPIPackage(ctx, req.(*DownloadClientAPIPackageRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // DownloadService_ServiceDesc is the grpc.ServiceDesc for DownloadService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -252,14 +180,6 @@ var DownloadService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DownloadClientAPI",
 			Handler:    _DownloadService_DownloadClientAPI_Handler,
-		},
-		{
-			MethodName: "ListPackages",
-			Handler:    _DownloadService_ListPackages_Handler,
-		},
-		{
-			MethodName: "DownloadClientAPIPackage",
-			Handler:    _DownloadService_DownloadClientAPIPackage_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

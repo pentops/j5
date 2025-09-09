@@ -174,6 +174,48 @@ func TestImportDoubleExternal(t *testing.T) {
 	files.expectFile(t, "local/v1/bar.proto")
 }
 
+func TestImportNestedJ5ToJ5Local(t *testing.T) {
+	tf := newTestFiles()
+
+	tf.tAddJ5SFile("local/v1/foo.j5s", `
+		object Foo {
+		  field bar object:"Bar.Baz"
+		}
+
+		object Bar {
+		  object Baz {
+		    field f1 string
+		  }
+		}
+	`)
+
+	files := testCompile(t, tf, nil, "local.v1")
+	files.expectFile(t, "local/v1/foo.j5s.proto")
+}
+
+func TestImportNestedJ5ToJ5Other(t *testing.T) {
+	tf := newTestFiles()
+
+	tf.tAddJ5SFile("foo/v1/foo.j5s", `
+		import bar.v1
+		
+		object Foo {
+		  field barExplicit object:bar.v1."Bar.Baz"
+		}
+	`)
+
+	tf.tAddJ5SFile("bar/v1/bar.j5s", `
+		object Bar {
+		  object Baz {
+		    field f1 string
+		  }
+		}
+	`)
+
+	files := testCompile(t, tf, nil, "foo.v1")
+	files.expectFile(t, "foo/v1/foo.j5s.proto")
+}
+
 func TestCircularDependency(t *testing.T) {
 
 	ctx := context.Background()

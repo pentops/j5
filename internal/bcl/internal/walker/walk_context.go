@@ -222,11 +222,13 @@ func (sc *walkContext) setAttribute(path ScopePath, val parser.ASTValue, appendV
 		})
 	}
 
-	vals, isArray := val.AsArray()
+	isArray := val.IsArray()
+	vals, _ := val.AsArray()
 	if !isArray && appendValue {
 		vals = []parser.ASTValue{val}
 		isArray = true
 	}
+
 	if isArray {
 		fieldArray, ok := field.AsArrayOfScalar()
 
