@@ -136,6 +136,9 @@ func wantAPI() *client_j5pb.API {
 						Name: "data.createdAt",
 					},
 					{
+						Name: "data.bazes.bazId",
+					},
+					{
 						Name:           "status",
 						DefaultFilters: []string{"ACTIVE"},
 					},
