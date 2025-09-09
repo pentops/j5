@@ -34,6 +34,8 @@ entity Foo {
 		}
 	}
 
+	data bazes array:object:Baz
+
 	event Created {
 		| Comment on Created
 		field field string
@@ -72,6 +74,12 @@ object Bar {
 
 	field field string {
 		listRules.searching.searchable = true
+	}
+}
+
+object Baz {
+	field bazId key:uuid {
+		listRules.filtering.filterable = true
 	}
 }
 
