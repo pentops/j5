@@ -245,12 +245,14 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 
 		switch ft := field.Schema.(type) {
 		case *j5schema.ObjectField:
-			if err := fieldPathSpec.walk(ft.ObjectSchema().Properties, callback); err != nil {
+			err := fieldPathSpec.walk(ft.ObjectSchema().Properties, callback)
+			if err != nil {
 				return fmt.Errorf("walking %s: %w", field.JSONName, err)
 			}
 
 		case *j5schema.OneofField:
-			if err := fieldPathSpec.walk(ft.OneofSchema().Properties, callback); err != nil {
+			err := fieldPathSpec.walk(ft.OneofSchema().Properties, callback)
+			if err != nil {
 				return fmt.Errorf("walking %s: %w", field.JSONName, err)
 			}
 		}
