@@ -42,17 +42,21 @@ func getFieldFiltering(field *j5schema.ObjectProperty) *list_j5pb.FilteringConst
 		if bigType.ListRules == nil {
 			return nil
 		}
+
 		return bigType.ListRules.Filtering
 
 	case *j5schema.ObjectField:
 		// none
 		return nil
+
 	case *j5schema.AnyField:
 		// none
 		return nil
+
 	case *j5schema.MapField:
 		// none
 		return nil
+
 	case *j5schema.ArrayField:
 		// none
 		return nil
@@ -121,7 +125,6 @@ func getFieldFiltering(field *j5schema.ObjectProperty) *list_j5pb.FilteringConst
 	default:
 		panic(fmt.Sprintf("unknown field type for filter rules %T", bigType))
 	}
-
 }
 
 type filterSpec struct {

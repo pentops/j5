@@ -30,6 +30,7 @@ func (nf *NestedField) ProtoChild(name string) (*NestedField, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &NestedField{
 		RootColumn: nf.RootColumn,
 		Path:       *pathChild,
@@ -40,9 +41,11 @@ func (nf *NestedField) Selector(inTable string) string {
 	if nf.ValueColumn != nil {
 		return fmt.Sprintf("%s.%s", inTable, *nf.ValueColumn)
 	}
+
 	if len(nf.Path.path) == 0 {
 		return fmt.Sprintf("%s.%s", inTable, nf.RootColumn)
 	}
+
 	return fmt.Sprintf("%s.%s%s", inTable, nf.RootColumn, nf.Path.JSONBArrowPath())
 }
 
@@ -229,6 +232,7 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 			path:      fieldPath,
 			leafField: field,
 		}
+
 		switch ft := field.Schema.(type) {
 
 		case *j5schema.OneofField:
