@@ -57,9 +57,6 @@ func TestTestListRequest(t *testing.T) {
 			{
 				Name: "createdAt",
 			},
-			{
-				Name: "bazes.id",
-			},
 		},
 	}
 

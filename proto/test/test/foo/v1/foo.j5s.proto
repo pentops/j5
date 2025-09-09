@@ -109,7 +109,10 @@ message FooState {
       }
     },
     (j5.ext.v1.field).enum = {},
-    (j5.list.v1.field).enum.filtering.filterable = true
+    (j5.list.v1.field).enum.filtering = {
+      filterable: true
+      default_filters: ["FOO_STATUS_ACTIVE"]
+    }
   ];
 }
 
