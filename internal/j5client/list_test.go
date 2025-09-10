@@ -16,7 +16,7 @@ import (
 func TestTestListRequest(t *testing.T) {
 	ss := j5schema.NewSchemaCache()
 
-	fooDesc := (&foo_testspb.ListFoosResponse{}).ProtoReflect().Descriptor()
+	fooDesc := (&foo_testspb.FooListResponse{}).ProtoReflect().Descriptor()
 
 	t.Log(prototext.Format(protodesc.ToDescriptorProto(fooDesc)))
 
@@ -33,29 +33,41 @@ func TestTestListRequest(t *testing.T) {
 	want := &client_j5pb.ListRequest{
 		SearchableFields: []*client_j5pb.ListRequest_SearchField{
 			{
-				Name: "name",
+				Name: "data.name",
 			},
 			{
-				Name: "bar.field",
+				Name: "data.bar.field",
 			},
 		},
-		SortableFields: []*client_j5pb.ListRequest_SortField{{
-			Name:        "createdAt",
-			DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
-		}},
+		SortableFields: []*client_j5pb.ListRequest_SortField{
+			{
+				Name:        "metadata.createdAt",
+				DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
+			},
+			{
+				Name: "metadata.updatedAt",
+			},
+			{
+				Name:        "data.createdAt",
+				DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
+			},
+		},
 		FilterableFields: []*client_j5pb.ListRequest_FilterField{
 			{
 				Name: "fooId",
 			},
 			{
+				Name: "barId",
+			},
+			{
+				Name: "data.bar.id",
+			},
+			{
+				Name: "data.createdAt",
+			},
+			{
 				Name:           "status",
 				DefaultFilters: []string{"ACTIVE"},
-			},
-			{
-				Name: "bar.id",
-			},
-			{
-				Name: "createdAt",
 			},
 		},
 	}
