@@ -34,6 +34,13 @@ entity Foo {
 		}
 	}
 
+	data bazDate date {
+    listRules {
+      filtering.filterable = true
+      sorting.sortable = true
+    }
+  }
+
 	data bazes array:object:Baz
 
 	event Created {
@@ -101,7 +108,7 @@ service HandlerTest {
 			none
 		}
 	}
-		
+
 	method HandlerGet {
 		httpMethod = "GET"
 		httpPath = "/test/v1/foo/:id"

@@ -51,6 +51,9 @@ func TestTestListRequest(t *testing.T) {
 				Name:        "data.createdAt",
 				DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
 			},
+			{
+				Name: "data.bazDate",
+			},
 		},
 		FilterableFields: []*client_j5pb.ListRequest_FilterField{
 			{
@@ -64,6 +67,9 @@ func TestTestListRequest(t *testing.T) {
 			},
 			{
 				Name: "data.createdAt",
+			},
+			{
+				Name: "data.bazDate",
 			},
 			{
 				Name: "data.bazes.bazId",
