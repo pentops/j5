@@ -121,6 +121,9 @@ func wantAPI() *client_j5pb.API {
 						Name:        "data.createdAt",
 						DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
 					},
+					{
+						Name: "data.bazDate",
+					},
 				},
 				FilterableFields: []*client_j5pb.ListRequest_FilterField{
 					{
@@ -134,6 +137,9 @@ func wantAPI() *client_j5pb.API {
 					},
 					{
 						Name: "data.createdAt",
+					},
+					{
+						Name: "data.bazDate",
 					},
 					{
 						Name: "data.bazes.bazId",
