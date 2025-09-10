@@ -66,6 +66,9 @@ func TestTestListRequest(t *testing.T) {
 				Name: "data.createdAt",
 			},
 			{
+				Name: "data.bazes.bazId",
+			},
+			{
 				Name:           "status",
 				DefaultFilters: []string{"ACTIVE"},
 			},
