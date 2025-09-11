@@ -356,8 +356,12 @@ func (ww *Walker) popValue() (Value, *unexpectedTokenError) {
 }
 
 func (ww *Walker) popIdent() (Ident, *unexpectedTokenError) {
-	tok, ok := ww.popToken().AsIdent()
-	if !ok {
+	tok := ww.popToken()
+
+	switch tok.Type {
+	case IDENT, BOOL, STRING:
+		// all valid types for an ident
+	default:
 		return Ident{}, unexpectedToken(tok, IDENT)
 	}
 

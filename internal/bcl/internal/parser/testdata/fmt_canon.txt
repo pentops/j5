@@ -22,7 +22,7 @@ block foo { // comment
 	key1 = "value"
 }
 
-block foo bar baz:q1:q2 { // comment
+block foo "bar" baz:q1:q2 { // comment
 	| inner description
 
 	key1 = "value"
