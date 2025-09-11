@@ -58,7 +58,7 @@ func getFieldFiltering(field *j5schema.ObjectProperty) *list_j5pb.FilteringConst
 		return nil
 
 	case *j5schema.ArrayField:
-		// none, but the item schema should be checked when walking paths
+		// none
 		return nil
 
 	case *j5schema.PolymorphField:

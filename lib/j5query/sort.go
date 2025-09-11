@@ -83,11 +83,6 @@ func getFieldSorting(field *j5schema.ObjectProperty) *list_j5pb.SortingConstrain
 			return nil
 		}
 		return st.Timestamp.ListRules.Sorting
-	case *schema_j5pb.Field_Date:
-		if st.Date.ListRules == nil {
-			return nil
-		}
-		return st.Date.ListRules.Sorting
 	case *schema_j5pb.Field_Decimal:
 		if st.Decimal.ListRules == nil {
 			return nil

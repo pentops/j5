@@ -23,25 +23,31 @@ import (
 )
 
 func TestGetHandlerMapping(t *testing.T) {
-	serviceDesc := foo_testspb.File_test_foo_v1_service_foo_p_j5s_proto.
-		Services().ByName("HandlerTestService")
+
+	serviceDesc := foo_testspb.File_test_foo_v1_service_foo_service_proto.
+		Services().ByName("FooQueryService")
 
 	rr := NewRouter()
 	rr.globalAuth = AuthHeadersFunc(func(ctx context.Context, req *http.Request) (map[string]string, error) {
 		return map[string]string{}, nil
 	})
 
-	method, err := rr.buildMethod(serviceDesc.Methods().ByName("HandlerGet"), nil, &auth_j5pb.MethodAuthType_None{})
+	method, err := rr.buildMethod(serviceDesc.Methods().ByName("GetFoo"), nil, &auth_j5pb.MethodAuthType_None{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Equal(t, "/test/v1/foo/{id}", method.HTTPPath)
 	assert.Equal(t, "GET", method.HTTPMethod)
 
+	listMethod, err := rr.buildMethod(serviceDesc.Methods().ByName("ListFoos"), nil, &auth_j5pb.MethodAuthType_None{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	t.Run("Basic", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal", nil)
-		reqToService := &foo_testspb.HandlerGetRequest{}
-		rw := roundTrip(method, req, reqToService, &foo_testspb.HandlerGetResponse{})
+		reqToService := &foo_testspb.GetFooRequest{}
+		rw := roundTrip(method, req, reqToService, &foo_testspb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d", rw.Code)
 		}
@@ -50,8 +56,8 @@ func TestGetHandlerMapping(t *testing.T) {
 
 	t.Run("QueryString", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?number=55", nil)
-		reqToService := &foo_testspb.HandlerGetRequest{}
-		rw := roundTrip(method, req, reqToService, &foo_testspb.HandlerGetResponse{})
+		reqToService := &foo_testspb.GetFooRequest{}
+		rw := roundTrip(method, req, reqToService, &foo_testspb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d", rw.Code)
 		}
@@ -61,8 +67,8 @@ func TestGetHandlerMapping(t *testing.T) {
 
 	t.Run("RepeatedQueryString", func(t *testing.T) {
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?numbers=55&numbers=56", nil)
-		reqToService := &foo_testspb.HandlerGetRequest{}
-		rw := roundTrip(method, req, reqToService, &foo_testspb.HandlerGetResponse{})
+		reqToService := &foo_testspb.GetFooRequest{}
+		rw := roundTrip(method, req, reqToService, &foo_testspb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d", rw.Code)
 		}
@@ -76,8 +82,8 @@ func TestGetHandlerMapping(t *testing.T) {
 		qs := url.Values{}
 		qs.Set("ab", `{"a":"aval","b":"bval"}`)
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?"+qs.Encode(), nil)
-		reqToService := &foo_testspb.HandlerGetRequest{}
-		rw := roundTrip(method, req, reqToService, &foo_testspb.HandlerGetResponse{})
+		reqToService := &foo_testspb.GetFooRequest{}
+		rw := roundTrip(method, req, reqToService, &foo_testspb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
 		}
@@ -90,8 +96,8 @@ func TestGetHandlerMapping(t *testing.T) {
 		qs.Set("ab.a", "aval")
 		qs.Set("ab.b", "bval")
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?"+qs.Encode(), nil)
-		reqToService := &foo_testspb.HandlerGetRequest{}
-		rw := roundTrip(method, req, reqToService, &foo_testspb.HandlerGetResponse{})
+		reqToService := &foo_testspb.GetFooRequest{}
+		rw := roundTrip(method, req, reqToService, &foo_testspb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
 		}
@@ -103,8 +109,8 @@ func TestGetHandlerMapping(t *testing.T) {
 		qs := url.Values{}
 		qs.Set("multiple_word", "aval")
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?"+qs.Encode(), nil)
-		reqToService := &foo_testspb.HandlerGetRequest{}
-		rw := roundTrip(method, req, reqToService, &foo_testspb.HandlerGetResponse{})
+		reqToService := &foo_testspb.GetFooRequest{}
+		rw := roundTrip(method, req, reqToService, &foo_testspb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
 		}
@@ -115,37 +121,20 @@ func TestGetHandlerMapping(t *testing.T) {
 		qs := url.Values{}
 		qs.Set("multipleWord", "aval")
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal?"+qs.Encode(), nil)
-		reqToService := &foo_testspb.HandlerGetRequest{}
-		rw := roundTrip(method, req, reqToService, &foo_testspb.HandlerGetResponse{})
+		reqToService := &foo_testspb.GetFooRequest{}
+		rw := roundTrip(method, req, reqToService, &foo_testspb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
 		}
 		assert.Equal(t, "aval", reqToService.MultipleWord)
 	})
-}
-
-func TestListHandlerMapping(t *testing.T) {
-	serviceDesc := foo_testspb.File_test_foo_v1_service_foo_p_j5s_proto.
-		Services().ByName("FooQueryService")
-
-	rr := NewRouter()
-	rr.globalAuth = AuthHeadersFunc(func(ctx context.Context, req *http.Request) (map[string]string, error) {
-		return map[string]string{}, nil
-	})
-
-	listMethod, err := rr.buildMethod(serviceDesc.Methods().ByName("FooList"), nil, &auth_j5pb.MethodAuthType_None{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	assert.Equal(t, "/test/foo/v1/foo/q", listMethod.HTTPPath)
-	assert.Equal(t, "GET", listMethod.HTTPMethod)
 
 	t.Run("Protostate Query Message query string", func(t *testing.T) {
 		qs := url.Values{}
 		qs.Set("query", `{"filters":[{"field":{"name":"idVal","type":{"value":"f481d62c-72ff-487b-ba03-50a4a6da83b7"}}}]}`)
-		req := httptest.NewRequest("GET", "/test/foo/v1/foo/q?"+qs.Encode(), nil)
-		reqToService := &foo_testspb.FooListRequest{}
-		rw := roundTrip(listMethod, req, reqToService, &foo_testspb.FooListResponse{})
+		req := httptest.NewRequest("GET", "/test/v1/foos?"+qs.Encode(), nil)
+		reqToService := &foo_testspb.ListFoosRequest{}
+		rw := roundTrip(listMethod, req, reqToService, &foo_testspb.GetFooResponse{})
 		if rw.Code != 200 {
 			t.Fatalf("expected status code 200, got %d: %s", rw.Code, rw.Body.String())
 		}
@@ -157,7 +146,8 @@ func TestListHandlerMapping(t *testing.T) {
 }
 
 func TestBodyHandlerMapping(t *testing.T) {
-	fd := foo_testspb.File_test_foo_v1_service_foo_p_j5s_proto.
+
+	fd := foo_testspb.File_test_foo_v1_service_foo_service_proto.
 		Services().ByName("FooCommandService").
 		Methods().ByName("PostFoo")
 
@@ -166,11 +156,11 @@ func TestBodyHandlerMapping(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Equal(t, "/test/foo/v1/foo/c", method.HTTPPath)
+	assert.Equal(t, "/test/v1/foo", method.HTTPPath)
 	assert.Equal(t, "POST", method.HTTPMethod)
 
 	t.Run("Basic", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/test/foo/v1/foo/c", strings.NewReader(`{"id":"nameVal"}`))
+		req := httptest.NewRequest("POST", "/test/v1/foo", strings.NewReader(`{"id":"nameVal"}`))
 		reqToService := &foo_testspb.PostFooRequest{}
 		rw := roundTrip(method, req, reqToService, &foo_testspb.PostFooResponse{})
 		if rw.Code != 200 {
@@ -180,7 +170,7 @@ func TestBodyHandlerMapping(t *testing.T) {
 	})
 
 	t.Run("BadJSON", func(t *testing.T) {
-		req := httptest.NewRequest("POST", "/test/foo/v1/foo/c", strings.NewReader(`foobar`))
+		req := httptest.NewRequest("POST", "/test/v1/foo", strings.NewReader(`foobar`))
 		reqToService := &foo_testspb.PostFooRequest{}
 		rw := roundTrip(method, req, reqToService, &foo_testspb.PostFooResponse{})
 		if rw.Code != http.StatusBadRequest {
@@ -326,7 +316,7 @@ func (m *MockInvoker) Invoke(ctx context.Context, method string, req, res any, o
 }
 
 func TestRawBodyHandler(t *testing.T) {
-	fd := foo_testspb.File_test_foo_v1_service_foo_p_j5s_proto.
+	fd := foo_testspb.File_test_foo_v1_service_foo_service_proto.
 		Services().ByName("FooDownloadService")
 
 	rr := NewRouter()
@@ -347,7 +337,7 @@ func TestRawBodyHandler(t *testing.T) {
 	}
 
 	rec := httptest.NewRecorder()
-	rr.ServeHTTP(rec, httptest.NewRequest("GET", "/test/foo/v1/foo/id/raw", nil))
+	rr.ServeHTTP(rec, httptest.NewRequest("GET", "/test/v1/foo/id/raw", nil))
 
 	if rec.Code != 200 {
 		t.Fatalf("expected status code 200, got %d", rec.Code)
@@ -356,7 +346,8 @@ func TestRawBodyHandler(t *testing.T) {
 }
 
 func TestAuthMethods(t *testing.T) {
-	services := foo_testspb.File_test_foo_v1_service_foo_p_j5s_proto.
+
+	services := foo_testspb.File_test_foo_v1_service_foo_service_proto.
 		Services()
 
 	authHeaders := map[string]string{}
@@ -386,9 +377,9 @@ func TestAuthMethods(t *testing.T) {
 		}
 	}
 
-	t.Run("HandlerGet No Auth OK", func(t *testing.T) {
+	t.Run("Basic No Auth OK", func(t *testing.T) {
 		called = false
-		invoker.SetResponse(t, &foo_testspb.HandlerGetResponse{})
+		invoker.SetResponse(t, &foo_testspb.GetFooResponse{})
 		rec := httptest.NewRecorder()
 		req := httptest.NewRequest("GET", "/test/v1/foo/idVal", nil)
 		rr.ServeHTTP(rec, req)
@@ -396,21 +387,21 @@ func TestAuthMethods(t *testing.T) {
 			t.Fatalf("expected status code 200, got %d", rec.Code)
 		}
 		if called {
-			t.Fatal("expected no auth headers call for HandlerGet")
+			t.Fatal("get foo called auth headers func")
 		}
 	})
 
-	t.Run("FooList Auth Required", func(t *testing.T) {
+	t.Run("Basic No Auth OK", func(t *testing.T) {
 		called = false
-		invoker.SetResponse(t, &foo_testspb.FooListResponse{})
+		invoker.SetResponse(t, &foo_testspb.GetFooResponse{})
 		rec := httptest.NewRecorder()
-		req := httptest.NewRequest("GET", "/test/foo/v1/foo/q", nil)
+		req := httptest.NewRequest("GET", "/test/v1/foos", nil)
 		rr.ServeHTTP(rec, req)
 		if rec.Code != 200 {
 			t.Fatalf("expected status code 200, got %d", rec.Code)
 		}
 		if !called {
-			t.Fatal("expected auth headers call for FooList")
+			t.Fatal("expected auth headers call")
 		}
 
 	})

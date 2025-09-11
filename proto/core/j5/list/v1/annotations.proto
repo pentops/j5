@@ -101,7 +101,6 @@ message OpenTextRules {
 
 message DateRules {
   FilteringConstraint filtering = 10;
-  SortingConstraint sorting = 11;
 }
 
 message ForeignKeyRules {

@@ -121,9 +121,6 @@ func wantAPI() *client_j5pb.API {
 						Name:        "data.createdAt",
 						DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
 					},
-					{
-						Name: "data.bazDate",
-					},
 				},
 				FilterableFields: []*client_j5pb.ListRequest_FilterField{
 					{
@@ -137,12 +134,6 @@ func wantAPI() *client_j5pb.API {
 					},
 					{
 						Name: "data.createdAt",
-					},
-					{
-						Name: "data.bazDate",
-					},
-					{
-						Name: "data.bazes.bazId",
 					},
 					{
 						Name:           "status",
@@ -354,134 +345,12 @@ func wantAPI() *client_j5pb.API {
 		},
 	}
 
-	handlerGet := &client_j5pb.Method{
-		Method: &schema_j5pb.Method{
-			Name:         "HandlerGet",
-			FullGrpcName: "/test.foo.v1.HandlerTestService/HandlerGet",
-			HttpMethod:   schema_j5pb.HTTPMethod_GET,
-			HttpPath:     "/test/v1/foo/:id",
-			Auth: &auth_j5pb.MethodAuthType{
-				Type: &auth_j5pb.MethodAuthType_None_{
-					None: &auth_j5pb.MethodAuthType_None{},
-				},
-			},
-		},
-		Request: &client_j5pb.Method_Request{
-			PathParameters: []*schema_j5pb.ObjectProperty{{
-				Name:     "id",
-				Required: true,
-				Schema: &schema_j5pb.Field{
-					Type: &schema_j5pb.Field_Key{
-						Key: &schema_j5pb.KeyField{
-							Format: &schema_j5pb.KeyFormat{
-								Type: &schema_j5pb.KeyFormat_Uuid{
-									Uuid: &schema_j5pb.KeyFormat_UUID{},
-								},
-							},
-						},
-					},
-				},
-			}},
-			QueryParameters: []*schema_j5pb.ObjectProperty{
-				{
-					Name:     "number",
-					Required: true,
-					Schema: &schema_j5pb.Field{
-						Type: &schema_j5pb.Field_Integer{
-							Integer: &schema_j5pb.IntegerField{
-								Format: schema_j5pb.IntegerField_Format_INT64,
-							},
-						},
-					},
-				},
-				{
-					Name:     "numbers",
-					Required: false,
-					Schema: &schema_j5pb.Field{
-						Type: &schema_j5pb.Field_Array{
-							Array: &schema_j5pb.ArrayField{
-								Items: &schema_j5pb.Field{
-									Type: &schema_j5pb.Field_Float{
-										Float: &schema_j5pb.FloatField{
-											Format: schema_j5pb.FloatField_Format_FLOAT32,
-										},
-									},
-								},
-								Ext: &schema_j5pb.ArrayField_Ext{},
-							},
-						},
-					},
-				},
-				{
-					Name:     "multipleWord",
-					Required: true,
-					Schema: &schema_j5pb.Field{
-						Type: &schema_j5pb.Field_String_{
-							String_: &schema_j5pb.StringField{},
-						},
-					},
-				},
-				{
-					Name:     "ab",
-					Required: true,
-					Schema: &schema_j5pb.Field{
-						Type: &schema_j5pb.Field_Object{
-							Object: &schema_j5pb.ObjectField{
-								Schema: &schema_j5pb.ObjectField_Ref{
-									Ref: &schema_j5pb.Ref{
-										Package: "test.foo.v1.service",
-										Schema:  "HandlerGetRequest_Ab",
-									},
-									// Object: &schema_j5pb.Object{
-									// 	Name: "HandlerGetRequest_Ab",
-									// 	Properties: []*schema_j5pb.ObjectProperty{
-									// 		{
-									// 			Name:     "a",
-									// 			Required: true,
-									// 			Schema: &schema_j5pb.Field{
-									// 				Type: &schema_j5pb.Field_String_{
-									// 					String_: &schema_j5pb.StringField{},
-									// 				},
-									// 			},
-									// 		},
-									// 		{
-									// 			Name:     "b",
-									// 			Required: true,
-									// 			Schema: &schema_j5pb.Field{
-									// 				Type: &schema_j5pb.Field_String_{
-									// 					String_: &schema_j5pb.StringField{},
-									// 				},
-									// 			},
-									// 		},
-									// 	},
-									// },
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		ResponseBody: &schema_j5pb.Object{
-			Name:       "HandlerGetResponse",
-			Properties: []*schema_j5pb.ObjectProperty{},
-		},
-	}
-
-	handlerTestService := &client_j5pb.Service{
-		Name: "HandlerTestService",
-		Methods: []*client_j5pb.Method{
-			handlerGet,
-		},
-	}
-
 	return &client_j5pb.API{
 		Packages: []*client_j5pb.Package{{
 			Name: "test.foo.v1",
 
 			Services: []*client_j5pb.Service{
 				fooDownloadService,
-				handlerTestService,
 			},
 			StateEntities: []*client_j5pb.StateEntity{{
 				Name:         "foo",

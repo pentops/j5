@@ -76,8 +76,6 @@ message FooData {
       }
     }
   ];
-
-  repeated Baz bazes = 4 [(j5.ext.v1.field).array = {}];
 }
 
 message FooState {
@@ -179,16 +177,6 @@ message Bar {
   string field = 2 [
     (j5.ext.v1.field).string = {},
     (j5.list.v1.field).string.open_text.searching.searchable = true
-  ];
-}
-
-message Baz {
-  option (j5.ext.v1.message).object = {};
-
-  string baz_id = 1 [
-    (buf.validate.field).string.uuid = true,
-    (j5.ext.v1.field).key.format = FORMAT_UUID,
-    (j5.list.v1.field).string.foreign_key.uuid.filtering.filterable = true
   ];
 }
 
