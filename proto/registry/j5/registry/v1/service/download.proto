@@ -15,11 +15,17 @@ service DownloadService {
   rpc DownloadImage(DownloadImageRequest) returns (google.api.HttpBody) {
     option (google.api.http) = {get: "/registry/v1/{owner}/{name}/{version}/image.bin"};
   }
+
   rpc DownloadSwagger(DownloadSwaggerRequest) returns (google.api.HttpBody) {
     option (google.api.http) = {get: "/registry/v1/{owner}/{name}/{version}/swagger.json"};
   }
+
   rpc DownloadClientAPI(DownloadClientAPIRequest) returns (DownloadClientAPIResponse) {
     option (google.api.http) = {get: "/registry/v1/{owner}/{name}/{version}/api.json"};
+  }
+
+  rpc ListPackages(ListPackagesRequest) returns (ListPackagesResponse) {
+    option (google.api.http) = {get: "/registry/v1/{owner}/{name}/{version}/api.json/packages"};
   }
 }
 
@@ -44,4 +50,15 @@ message DownloadClientAPIRequest {
 message DownloadClientAPIResponse {
   string version = 1;
   j5.client.v1.API api = 2;
+}
+
+message ListPackagesRequest {
+  string version = 1;
+  string owner = 2;
+  string name = 3;
+}
+
+message ListPackagesResponse {
+  string version = 1;
+  j5.client.v1.APISummary packages = 2;
 }
