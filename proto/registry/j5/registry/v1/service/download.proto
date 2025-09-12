@@ -32,6 +32,7 @@ service DownloadService {
   // A subset of the API client targeting only a specific package
   rpc DownloadClientAPIPackage(DownloadClientAPIPackageRequest) returns (DownloadClientAPIPackageResponse) {
     option (google.api.http) = {get: "/registry/v1/{owner}/{name}/{version}/api.json/package/{package}"};
+  }
 }
 
 message DownloadImageRequest {
