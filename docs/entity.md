@@ -336,3 +336,22 @@ message FooEventMessage {
 }
 ```
 
+## Singleton Entities
+
+There are times when an entity is used to represent something that there will
+only ever be one of. In this case it is inconvenient to have to make an API
+call to list the entities to determine the ID that was assigned to it. In this
+situation we recommend defining the entity's key as a string with the name
+`global`, which indicates that this is a different type of entity, and using a
+well-known string for that key's value.
+
+```j5s
+key global string {
+  | Primary identifier, well-known
+
+  primary = true
+}
+```
+
+The create and update APIs, if there are any exposed, should not accept
+an ID value, and the create should fail if the entity already exists.
