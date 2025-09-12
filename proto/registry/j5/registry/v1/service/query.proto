@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package j5.registry.v1.service;
+
+import "google/api/annotations.proto";
+import "j5/client/v1/client.proto";
+
+service QueryService {
+  rpc ListPackages(ListPackagesRequest) returns (ListPackagesResponse) {
+    option (google.api.http) = {get: "/registry/v1/{owner}/{name}/packages"};
+  }
+}
+
+message ListPackagesRequest {
+  string version = 1;
+  string owner = 2;
+  string name = 3;
+}
+
+message ListPackagesResponse {
+  string version = 1;
+  j5.client.v1.APISummary packages = 2;
+}

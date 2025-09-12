@@ -16,6 +16,11 @@ message API {
   Metadata metadata = 3;
 }
 
+message APISummary {
+  repeated PackageSummary packages = 1;
+  Metadata metadata = 2;
+}
+
 message Metadata {
   google.protobuf.Timestamp built_at = 1;
 }
@@ -38,6 +43,11 @@ message Package {
   map<string, j5.schema.v1.RootSchema> schemas = 8;
 
   PackageSource source = 7;
+}
+
+message PackageSummary {
+  string label = 1;
+  string name = 2 [(buf.validate.field).string.pattern = "^([a-z0-9_]+\\.)v[0-9]+$"];
 }
 
 message PackageSource {
