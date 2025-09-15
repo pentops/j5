@@ -6,8 +6,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 
-var Global = NewSchemaCache()
-
 // SchemaCache acts like PackageSet, but builds schemas on demand from reflection.
 type SchemaCache struct {
 	*packageSet
@@ -62,8 +60,10 @@ func (sc *SchemaCache) ObjectSchema(src protoreflect.MessageDescriptor) (*Object
 	return nil, fmt.Errorf("expected object schema for %s/%s, got %T", src.Parent().FullName(), src.Name(), schema)
 }
 
+// MustObjectSchema is like ObjectSchema but skips the cache and panics if the schema cannot be found.
+// This should only be used in tests and generated code
 func MustObjectSchema(src protoreflect.MessageDescriptor) *ObjectSchema {
-	schema, err := Global.ObjectSchema(src)
+	schema, err := NewSchemaCache().ObjectSchema(src)
 	if err != nil {
 		panic(fmt.Sprintf("j5schema: %v", err))
 	}

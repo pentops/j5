@@ -29,7 +29,7 @@ type Reflector struct {
 
 func New() *Reflector {
 	return &Reflector{
-		schemaSet: j5schema.Global,
+		schemaSet: j5schema.NewSchemaCache(),
 	}
 }
 

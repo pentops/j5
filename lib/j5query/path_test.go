@@ -39,7 +39,7 @@ func TestFindFieldSpec(t *testing.T) {
 	`})
 
 	fooDesc := descFiles.MessageByName(t, "test.Foo")
-	fooSchema, err := j5schema.Global.Schema(fooDesc)
+	fooSchema, err := j5schema.NewSchemaCache().Schema(fooDesc)
 	if err != nil {
 		t.Fatal(err)
 	}

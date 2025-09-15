@@ -32,7 +32,7 @@ type sourceSet struct {
 	inOrder       []*StateEntityGenerateSet
 }
 
-func WalkFile(file *protogen.File) ([]*PSMEntity, error) {
+func WalkFile(sc *j5schema.SchemaCache, file *protogen.File) ([]*PSMEntity, error) {
 	se := &sourceSet{
 		stateMachines: make(map[string]*StateEntityGenerateSet),
 	}
@@ -44,7 +44,7 @@ func WalkFile(file *protogen.File) ([]*PSMEntity, error) {
 
 	stateMachines := make([]*PSMEntity, 0, len(se.stateMachines))
 	for _, stateSet := range se.inOrder {
-		converted, err := BuildStateSet(*stateSet)
+		converted, err := BuildStateSet(sc, *stateSet)
 		if err != nil {
 			return nil, err
 		}
@@ -257,7 +257,7 @@ func (src StateEntityGenerateSet) validate() error {
 	return nil
 }
 
-func BuildStateSet(src StateEntityGenerateSet) (*PSMEntity, error) {
+func BuildStateSet(sc *j5schema.SchemaCache, src StateEntityGenerateSet) (*PSMEntity, error) {
 
 	if err := src.validate(); err != nil {
 		return nil, fmt.Errorf("state object %s: %w", src.options.EntityName, err)
@@ -275,11 +275,11 @@ func BuildStateSet(src StateEntityGenerateSet) (*PSMEntity, error) {
 		keyMessage:    src.keyMessage,
 	}
 
-	state, err := j5schema.Global.ObjectSchema(src.state.message.Desc)
+	state, err := sc.ObjectSchema(src.state.message.Desc)
 	if err != nil {
 		return nil, fmt.Errorf("state object %s: %w", src.options.EntityName, err)
 	}
-	event, err := j5schema.Global.ObjectSchema(src.event.message.Desc)
+	event, err := sc.ObjectSchema(src.event.message.Desc)
 	if err != nil {
 		return nil, fmt.Errorf("event object %s: %w", src.options.EntityName, err)
 	}
