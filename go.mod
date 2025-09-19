@@ -27,9 +27,9 @@ require (
 	github.com/pentops/sqrlx.go v0.0.0-20250520210217-2f46de329c7a
 	github.com/pressly/goose v2.7.0+incompatible
 	github.com/shopspring/decimal v1.4.0
-	github.com/stretchr/testify v1.10.0
-	golang.org/x/oauth2 v0.30.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20250707201910-8d1bb00bc6a7
+	github.com/stretchr/testify v1.11.1
+	golang.org/x/oauth2 v0.31.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20250908214217-97024824d090
 	google.golang.org/grpc v1.75.1
 	google.golang.org/protobuf v1.36.9
 	gopkg.in/yaml.v3 v3.0.1
@@ -136,7 +136,7 @@ require (
 	golang.org/x/sys v0.33.0 // indirect
 	golang.org/x/text v0.26.0 // indirect
 	golang.org/x/time v0.12.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250707201910-8d1bb00bc6a7 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250826171959-ef028d996bc1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gotest.tools/v3 v3.5.2 // indirect
 )
