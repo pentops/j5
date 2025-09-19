@@ -274,7 +274,7 @@ func (ll *TableReflectionSet) buildDynamicSearches(tableAlias string, searches [
 			return nil, fmt.Errorf("unknown search field %q", searches[i].GetField())
 		}
 
-		out = append(out, sq.And{sq.Expr(fmt.Sprintf("%s.%s @@ phraseto_tsquery(?)", tableAlias, col), searches[i].GetValue())})
+		out = append(out, sq.And{sq.Expr(fmt.Sprintf("%s.%s @@ phraseto_tsquery('english', ?)", tableAlias, col), searches[i].GetValue())})
 	}
 
 	return out, nil

@@ -16,7 +16,6 @@ func TestDynamicSearching(t *testing.T) {
 	queryer := uu.FooLister(t)
 
 	uu.SetupFoo(t, 30, func(ii int, foo *TestObject) {
-
 		weight := (10 + int64(ii))
 
 		foo.SetScalar(pquery.JSONPath("data", "characteristics", "weight"), weight)
