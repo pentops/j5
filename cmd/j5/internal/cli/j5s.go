@@ -17,6 +17,7 @@ import (
 	"github.com/pentops/j5/internal/source/resolver"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner/commander"
+	"github.com/pmezard/go-difflib/difflib"
 	"google.golang.org/protobuf/reflect/protodesc"
 )
 
@@ -140,28 +141,53 @@ func runJ5sFmt(ctx context.Context, cfg struct {
 	Dir   string `flag:"dir" required:"false" description:"Source / working directory containing j5.yaml and buf.lock.yaml"`
 	File  string `flag:"file" required:"false" description:"Single file to format"`
 	Write bool   `flag:"write" default:"false" desc:"Write fixes to files"`
+	Check bool   `flag:"check" default:"false" desc:"Return a non-zero exit code if files need formatting"`
 }) error {
-
 	var outWriter *fileWriter
 
+	if cfg.Check && cfg.Write {
+		return fmt.Errorf("cannot specify both check and write")
+	}
+
+	checkFailed := false
 	doFile := func(ctx context.Context, pathname string, data []byte) error {
 		fixed, err := bcl.Fmt(pathname, string(data))
 		if err != nil {
 			return err
 		}
-		if !cfg.Write {
-			fmt.Printf("Fixed: %s\n", pathname)
-			fmt.Println(fixed)
-			return nil
-		} else {
+
+		if cfg.Write {
 			return outWriter.PutFile(ctx, pathname, []byte(fixed))
 		}
+
+		diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+			A:        difflib.SplitLines(string(data)),
+			FromFile: pathname,
+			B:        difflib.SplitLines(fixed),
+			ToFile:   pathname,
+			Context:  3,
+		})
+
+		if err != nil {
+			return err
+		}
+
+		if diff != "" {
+			fmt.Println(diff)
+
+			if cfg.Check {
+				checkFailed = true
+			}
+		}
+
+		return nil
 	}
 
 	if cfg.File != "" {
 		if cfg.Dir != "" {
 			return fmt.Errorf("cannot specify both dir and file")
 		}
+
 		dir, pathname := path.Split(cfg.File)
 		outWriter = &fileWriter{dir: dir}
 
@@ -169,10 +195,12 @@ func runJ5sFmt(ctx context.Context, cfg struct {
 		if err != nil {
 			return err
 		}
+
 		err = doFile(ctx, pathname, data)
 		if err != nil {
 			return err
 		}
+
 		return nil
 	}
 
@@ -186,7 +214,16 @@ func runJ5sFmt(ctx context.Context, cfg struct {
 	outWriter = &fileWriter{dir: cfg.Dir}
 	fsRoot := os.DirFS(cfg.Dir)
 
-	return runForJ5Files(ctx, fsRoot, doFile)
+	err = runForJ5Files(ctx, fsRoot, doFile)
+	if err != nil {
+		return err
+	}
+
+	if checkFailed {
+		return fmt.Errorf("one or more files need formatting")
+	}
+
+	return nil
 }
 
 func runForJ5Files(ctx context.Context, root fs.FS, doFile func(ctx context.Context, pathname string, data []byte) error) error {
@@ -194,6 +231,7 @@ func runForJ5Files(ctx context.Context, root fs.FS, doFile func(ctx context.Cont
 		if err != nil {
 			return err
 		}
+
 		if d.IsDir() {
 			return nil
 		}
@@ -212,6 +250,7 @@ func runForJ5Files(ctx context.Context, root fs.FS, doFile func(ctx context.Cont
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 

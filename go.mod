@@ -47,7 +47,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/jhump/protoreflect v1.17.0 // indirect
-	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/match v1.1.1 // indirect
