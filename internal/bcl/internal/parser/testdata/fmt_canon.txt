@@ -34,6 +34,12 @@ block foo "bar" baz:q1:q2 { // comment
 	| column 80
 	|
 	| Including Empty
+	| - Bullets
+	| - Get to stay the same unless they are also long, in which case they should
+	| be split at column 80
+	| - But multiple bullets should not be combined
+	| 1. Numbers are also
+	| 2. Bullets
 
 	| Different Description
 }

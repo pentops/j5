@@ -171,7 +171,6 @@ func (p *fmter) singleLineTokens(src SourceNode, parts ...Token) {
 }
 
 func (p *fmter) multiLineToken(src SourceNode, prefix string, lines []string) {
-
 	fullPrefix := strings.Repeat("\t", p.indent) + prefix
 	for idx, part := range lines {
 		// remove trailing space INCLUDING anything after the prefix,

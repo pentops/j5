@@ -260,5 +260,4 @@ func TestFmt(t *testing.T) {
 			testdata.FmtBad1,
 		},
 	})
-
 }
