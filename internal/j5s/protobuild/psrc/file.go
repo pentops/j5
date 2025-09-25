@@ -39,8 +39,9 @@ type File struct {
 
 	SourceType SourceType
 
-	Linked       linker.File
-	Dependencies []*File
+	Linked        linker.File
+	LinkerVisited bool
+	Dependencies  []*File
 
 	// Oneof
 	Refl        protoreflect.FileDescriptor

@@ -197,7 +197,6 @@ func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, na
 }
 
 func (ps *PackageSet) buildLocalPackage(ctx context.Context, pkg *Package) error {
-
 	err := pkg.buildSearchResults()
 	if err != nil {
 		return fmt.Errorf("buildSearchResults for %s: %w", pkg.Name, err)

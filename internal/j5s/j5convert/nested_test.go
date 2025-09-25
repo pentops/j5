@@ -12,7 +12,6 @@ import (
 )
 
 func TestMessageNesting(t *testing.T) {
-
 	wantFile := &descriptorpb.FileDescriptorProto{
 		Syntax:  proto.String("proto3"),
 		Options: &descriptorpb.FileOptions{
@@ -98,5 +97,4 @@ func TestMessageNesting(t *testing.T) {
 	gotFile.SourceCodeInfo = nil
 	t.Log(prototext.Format(gotFile))
 	prototest.AssertEqualProto(t, wantFile, gotFile)
-
 }

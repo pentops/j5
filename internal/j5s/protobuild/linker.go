@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 
 	"github.com/bufbuild/protocompile/linker"
 	"github.com/bufbuild/protocompile/options"
@@ -33,10 +34,14 @@ func newLinker(src psrc.Resolver, symbols *linker.Symbols) *searchLinker {
 	}
 }
 
-func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) ([]*psrc.File, error) {
+func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string, chain ...string) ([]*psrc.File, error) {
 	files := make([]*psrc.File, 0, len(filenames))
 	for _, filename := range filenames {
-		file, err := ll._resolveFile(ctx, filename)
+		if slices.Contains(chain, filename) {
+			return nil, NewCircularDependencyError(chain, filename)
+		}
+
+		file, err := ll.resolveFile(ctx, filename, append(slices.Clone(chain), filename)...)
 		if err != nil {
 			return nil, err
 		}
@@ -47,21 +52,21 @@ func (ll *searchLinker) resolveAll(ctx context.Context, filenames []string) ([]*
 	return files, nil
 }
 
-func (ll *searchLinker) _resolveFile(ctx context.Context, filename string) (*psrc.File, error) {
+func (ll *searchLinker) resolveFile(ctx context.Context, filename string, chain ...string) (*psrc.File, error) {
 	ctx = log.WithField(ctx, "askFilename", filename)
 	result, err := ll.resolver.FindFileByPath(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	err = ll.linkResult(ctx, result)
+	err = ll.linkResult(ctx, result, chain...)
 	if err != nil {
 		return nil, fmt.Errorf("linkResult: %w", err)
 	}
 	return result, nil
 }
 
-func (ll *searchLinker) linkResult(ctx context.Context, result *psrc.File) error {
+func (ll *searchLinker) linkResult(ctx context.Context, result *psrc.File, chain ...string) error {
 	if result.Linked != nil {
 		// result already linked
 		return nil
@@ -77,7 +82,7 @@ func (ll *searchLinker) linkResult(ctx context.Context, result *psrc.File) error
 		return fmt.Errorf("listing dependencies: %w", err)
 	}
 
-	dependencies, err := ll.resolveAll(ctx, dependencyFilenames)
+	dependencies, err := ll.resolveAll(ctx, dependencyFilenames, chain...)
 	if err != nil {
 		return fmt.Errorf("loading dependencies for %s: %w", result.Filename, err)
 	}
@@ -117,7 +122,6 @@ func (info *linkInfo) linkerDeps() linker.Files {
 }
 
 func resultsToLinkerFiles(results []*psrc.File) linker.Files {
-
 	deps := make(linker.Files, 0, len(results))
 	for _, dep := range results {
 		if dep.Linked != nil {
@@ -195,7 +199,6 @@ func _linkReflection(ll linkInfo, refl protoreflect.FileDescriptor) (linker.File
 }
 
 func _linkDescriptorProto(ll linkInfo, desc *descriptorpb.FileDescriptorProto) (linker.File, error) {
-
 	result := parser.ResultWithoutAST(desc)
 
 	linked, err := linker.Link(result, ll.linkerDeps(), ll.symbols, ll.errs)

@@ -16,7 +16,6 @@ type WalkProperty struct {
 type WalkCallback func(schema WalkProperty) error
 
 func WalkSchemaFields(root RootSchema, asClient bool, callback WalkCallback) error {
-
 	err := walkSchemaFields(root, asClient, callback, nil, map[string]struct{}{})
 	if err != nil {
 		return fmt.Errorf("walk from schema %s: %w", root.FullName(), err)
@@ -25,7 +24,6 @@ func WalkSchemaFields(root RootSchema, asClient bool, callback WalkCallback) err
 }
 
 func walkSchemaFields(root RootSchema, asClient bool, callback WalkCallback, path []string, seen map[string]struct{}) error {
-
 	subSeen := maps.Clone(seen)
 	fullName := root.FullName()
 	if _, ok := subSeen[fullName]; ok {
@@ -51,7 +49,6 @@ func walkSchemaFields(root RootSchema, asClient bool, callback WalkCallback, pat
 	}
 
 	for _, prop := range properties {
-
 		propPath := append(path, prop.JSONName)
 		if err := callback(WalkProperty{
 			ObjectProperty: prop,
