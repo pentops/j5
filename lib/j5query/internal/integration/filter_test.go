@@ -182,7 +182,7 @@ func TestDynamicFiltering(t *testing.T) {
 		isActive := ii == 0
 
 		foo.SetScalar(pquery.JSONPath("tenantId"), tenantID)
-		foo.SetScalar(pquery.JSONPath("isActive"), isActive)
+		foo.SetScalar(pquery.JSONPath("data", "isActive"), isActive)
 		foo.SetScalar(pquery.JSONPath("data", "characteristics", "weight"), weight)
 		foo.SetScalar(pquery.JSONPath("data", "characteristics", "height"), height)
 		foo.SetScalar(pquery.JSONPath("data", "characteristics", "length"), length)
