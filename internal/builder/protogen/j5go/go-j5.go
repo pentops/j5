@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/iancoleman/strcase"
+	"github.com/pentops/j5/gen/j5/ext/v1/ext_j5pb"
 	"github.com/pentops/j5/lib/j5schema"
 	"google.golang.org/protobuf/compiler/protogen"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -12,6 +14,7 @@ import (
 	"github.com/pentops/j5/internal/builder/protogen/psm/publish"
 	"github.com/pentops/j5/internal/builder/protogen/psm/query"
 	"github.com/pentops/j5/internal/builder/protogen/psm/state"
+	"github.com/pentops/j5/internal/protosrc"
 )
 
 const (
@@ -118,7 +121,6 @@ func generateBaseFile(sc *j5schema.SchemaCache, gen *protogen.Plugin, file *prot
 
 	var doMsg func(msg *protogen.Message) error
 	doMsg = func(msg *protogen.Message) error {
-
 		if msg.Desc.IsMapEntry() {
 			// map entry is a virtual message type used by protobuf to represent
 			// map fields
@@ -393,6 +395,29 @@ func genEnum(g *protogen.GeneratedFile, enum *protogen.Enum) error {
 	}
 	g.P("}") // end map
 
+	// Define maps for the enum info annotations
+	infos := map[protoreflect.EnumNumber]map[string]string{}
+	for _, val := range enum.Values {
+		info := protosrc.GetExtension[*ext_j5pb.EnumValueOptions](val.Desc.Options(), ext_j5pb.E_EnumValue)
+		if info != nil {
+			infos[val.Desc.Number()] = info.Info
+		}
+	}
+
+	infoKeys := map[string]bool{}
+	if len(infos) > 0 {
+		g.P(enum.GoIdent.GoName, "_info = map[int32]map[string]string{")
+		for num, info := range infos {
+			g.P(num, ": map[string]string{")
+			for k, v := range info {
+				g.P("\"", k, "\": \"", v, "\",")
+				infoKeys[k] = true
+			}
+			g.P("},") // end map
+		}
+		g.P("}") // end map
+	}
+
 	g.P(")") // end var
 
 	g.P("// ShortString returns the un-prefixed string representation of the enum value")
@@ -418,6 +443,12 @@ func genEnum(g *protogen.GeneratedFile, enum *protogen.Enum) error {
 	g.P("	*x = ", enum.GoIdent, "(val)")
 	g.P("	return nil")
 	g.P("}")
+
+	for key := range infoKeys {
+		g.P("func (x ", enum.GoIdent, ") Info", strcase.ToCamel(key), "() string {")
+		g.P("	return ", enum.GoIdent.GoName, "_info[int32(x)][\"", key, "\"]")
+		g.P("}")
+	}
 
 	return nil
 }

@@ -57,6 +57,14 @@ var (
 		"B":                2,
 		"TYPE_B":           2,
 	}
+	FooData_Type_info = map[int32]map[string]string{
+		1: map[string]string{
+			"special": "true",
+		},
+		2: map[string]string{
+			"special": "false",
+		},
+	}
 )
 
 // ShortString returns the un-prefixed string representation of the enum value
@@ -79,6 +87,9 @@ func (x *FooData_Type) Scan(value interface{}) error {
 	val := FooData_Type_value_either[strVal]
 	*x = FooData_Type(val)
 	return nil
+}
+func (x FooData_Type) InfoSpecial() string {
+	return FooData_Type_info[int32(x)]["special"]
 }
 func (msg *FooState) Clone() any {
 	return proto.Clone(msg).(*FooState)
