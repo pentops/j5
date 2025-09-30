@@ -31,6 +31,55 @@ func (msg *FooData) J5Object() j5reflect.Object {
 	return j5reflect.MustReflect(msg.ProtoReflect()).(j5reflect.Object)
 }
 
+// FooData_Type
+const (
+	FooData_Type_UNSPECIFIED FooData_Type = 0
+	FooData_Type_A           FooData_Type = 1
+	FooData_Type_B           FooData_Type = 2
+)
+
+var (
+	FooData_Type_name_short = map[int32]string{
+		0: "UNSPECIFIED",
+		1: "A",
+		2: "B",
+	}
+	FooData_Type_value_short = map[string]int32{
+		"UNSPECIFIED": 0,
+		"A":           1,
+		"B":           2,
+	}
+	FooData_Type_value_either = map[string]int32{
+		"UNSPECIFIED":      0,
+		"TYPE_UNSPECIFIED": 0,
+		"A":                1,
+		"TYPE_A":           1,
+		"B":                2,
+		"TYPE_B":           2,
+	}
+)
+
+// ShortString returns the un-prefixed string representation of the enum value
+func (x FooData_Type) ShortString() string {
+	return FooData_Type_name_short[int32(x)]
+}
+func (x FooData_Type) Value() (driver.Value, error) {
+	return []uint8(x.ShortString()), nil
+}
+func (x *FooData_Type) Scan(value interface{}) error {
+	var strVal string
+	switch vt := value.(type) {
+	case []uint8:
+		strVal = string(vt)
+	case string:
+		strVal = vt
+	default:
+		return fmt.Errorf("invalid type %T", value)
+	}
+	val := FooData_Type_value_either[strVal]
+	*x = FooData_Type(val)
+	return nil
+}
 func (msg *FooState) Clone() any {
 	return proto.Clone(msg).(*FooState)
 }

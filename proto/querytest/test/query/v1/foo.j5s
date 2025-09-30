@@ -59,6 +59,10 @@ object FooState {
 			}
 		}
 
+		field isActive bool {
+      listRules.filtering.filterable = true
+    }
+
 		field characteristics object:FooCharacteristics
 		field profiles array:object:FooProfile
 	}

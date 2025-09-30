@@ -14,6 +14,18 @@ entity Foo {
 
 	data name string
 
+	data type enum {
+		enum Type {
+			option TYPE_A {
+				info.special = "true"
+			}
+
+			option TYPE_B {
+				info.special = "false"
+			}
+		}
+	}
+
 	status ACTIVE
 	status INACTIVE
 
