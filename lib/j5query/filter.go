@@ -450,21 +450,8 @@ func filterQueryValue(spec *NestedField, val string) (any, error) {
 		if option == nil {
 			return nil, fmt.Errorf("enum value '%s' not found in field '%s'", val, spec.Path.LeafField().JSONName)
 		}
-		return option.Name(), nil // Use the name of the option, not the value
-	case *j5schema.ScalarSchema:
-		j5Field := schema.ToJ5Field()
-
-		switch j5Field.Type.(type) {
-		case *schema_j5pb.Field_Bool:
-			v, err := strconv.ParseBool(val)
-			if err != nil {
-				return nil, fmt.Errorf("parsing bool value '%s' for field '%s': %w", val, spec.Path.LeafField().JSONName, err)
-			}
-
-			return v, nil
-		}
+		val = option.Name() // Use the name of the option, not the value
 	}
-
 	return val, nil
 
 }

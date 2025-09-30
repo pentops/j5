@@ -24,7 +24,7 @@ entity Foo {
 	event Archive {
 	}
 
-	summary {
+	summary Summary {
 		field name string
 	}
 }
