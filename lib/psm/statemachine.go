@@ -425,7 +425,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) store(
 }
 
 func (sm *StateMachine[K, S, ST, SD, E, IE]) eventQuery(eventID string) *sq.SelectBuilder {
-
 	selectQuery := sq.
 		Select(sm.tableMap.Event.Root.ColumnName).
 		From(sm.tableMap.Event.TableName).
@@ -439,6 +438,7 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) eventQuery(eventID string) *sq.Sele
 // handle consumer idempotency.
 func (sm *StateMachine[K, S, ST, SD, E, IE]) followEventDeduplicate(ctx context.Context, tx sqrlx.Transaction, event E) (bool, error) {
 	selectQuery := sm.eventQuery(event.PSMMetadata().EventId)
+	selectQuery.Column(sm.tableMap.Event.StateSnapshot.ColumnName)
 
 	var eventData, stateData []byte
 	err := tx.SelectRow(ctx, selectQuery).Scan(&eventData, &stateData)
@@ -633,8 +633,8 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) runTx(ctx context.Context, tx sqrlx
 // transition.
 func (sm *StateMachine[K, S, ST, SD, E, IE]) firstEventUniqueCheck(ctx context.Context, tx sqrlx.Transaction, eventID string, data IE) (S, bool, error) {
 	var s S
-	selectQuery := sm.eventQuery(eventID)
 
+	selectQuery := sm.eventQuery(eventID)
 	selectQuery.Column(sm.tableMap.Event.StateSnapshot.ColumnName)
 
 	var eventData, stateData []byte
@@ -642,6 +642,7 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) firstEventUniqueCheck(ctx context.C
 	if errors.Is(err, sql.ErrNoRows) {
 		return s, false, nil
 	}
+
 	if err != nil {
 		return s, false, fmt.Errorf("selecting event: %w", err)
 	}
@@ -672,6 +673,7 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) eventsMustBeUnique(ctx context.Cont
 		if event.EventID == "" {
 			continue // UUID Gen Later
 		}
+
 		selectQuery := sm.eventQuery(event.EventID)
 
 		var data []byte
@@ -679,13 +681,15 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) eventsMustBeUnique(ctx context.Cont
 		if errors.Is(err, sql.ErrNoRows) {
 			continue
 		}
+
 		if err != nil {
 			return fmt.Errorf("selecting event: %w", err)
 		}
+
 		return ErrDuplicateEventID
 	}
-	return nil
 
+	return nil
 }
 
 func (sm *StateMachine[K, S, ST, SD, E, IE]) validateEvent(event E) error {
