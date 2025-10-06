@@ -85,7 +85,7 @@ type EnumOption struct {
 	name        string
 	number      int32
 	description string
-	Info        map[string]string
+	info        map[string]string
 }
 
 func (eo *EnumOption) Name() string {
@@ -105,7 +105,7 @@ func (eo *EnumOption) ToJ5EnumValue() *schema_j5pb.Enum_Option {
 		Name:        eo.name,
 		Number:      eo.number,
 		Description: eo.description,
-		Info:        eo.Info,
+		Info:        eo.info,
 	}
 
 }

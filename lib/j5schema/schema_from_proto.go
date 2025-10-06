@@ -1151,7 +1151,7 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 			name:        string(option.Name()),
 			number:      number,
 			description: commentDescription(option),
-			Info:        info,
+			info:        info,
 		})
 	}
 

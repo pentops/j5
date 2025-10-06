@@ -393,6 +393,7 @@ func (pkg *Package) enumSchemaFromDesc(sch *schema_j5pb.Enum) *EnumSchema {
 			name:        src.Name,
 			description: src.Description,
 			number:      src.Number,
+			info:        src.Info,
 		}
 	}
 	return &EnumSchema{
