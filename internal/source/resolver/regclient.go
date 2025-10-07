@@ -65,7 +65,7 @@ func (rc *registryClient) GetImage(ctx context.Context, owner, repoName, version
 	log.Debug(ctx, "cache miss")
 
 	imageURL := fmt.Sprintf("%s/%s/%s/image.bin", rc.remote, fullName, version)
-	req, err := http.NewRequest("GET", imageURL, nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", imageURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating registry input request: %w", err)
 	}
