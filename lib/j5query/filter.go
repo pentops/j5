@@ -364,15 +364,15 @@ func filtersForField(field *j5schema.ObjectProperty) ([]any, error) {
 func buildDefaultFilters(columnName string, message *j5schema.ObjectSchema) ([]filterSpec, error) {
 	var filters []filterSpec
 
-	err := WalkPathNodes(message, func(path Path) (bool, error) {
+	err := WalkPathNodes(message, func(path Path) error {
 		field := path.LeafField()
 		if field == nil {
-			return true, nil
+			return nil
 		}
 
 		vals, err := filtersForField(field)
 		if err != nil {
-			return false, fmt.Errorf("filters for field: %w", err)
+			return fmt.Errorf("filters for field: %w", err)
 		}
 
 		if len(vals) > 0 {
@@ -384,7 +384,7 @@ func buildDefaultFilters(columnName string, message *j5schema.ObjectSchema) ([]f
 				filterVals: vals,
 			})
 		}
-		return true, nil
+		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("walk path nodes: %w", err)

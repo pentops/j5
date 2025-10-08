@@ -222,7 +222,7 @@ func tsvColumns(message *j5schema.ObjectSchema) ([]*TSVColumn, error) {
 	usedColNames := make(map[string]struct{})
 	out := []*TSVColumn{}
 
-	err := WalkPathNodes(message, func(path Path) (bool, error) {
+	err := WalkPathNodes(message, func(path Path) error {
 		field := path.LeafField()
 		switch bigSchema := field.Schema.(type) {
 
@@ -231,7 +231,7 @@ func tsvColumns(message *j5schema.ObjectSchema) ([]*TSVColumn, error) {
 			switch ist := innerSchema.Type.(type) {
 			case *schema_j5pb.Field_String_:
 				if ist.String_.ListRules == nil || ist.String_.ListRules.Searching == nil || !ist.String_.ListRules.Searching.Searchable {
-					return false, nil // not searchable
+					return nil // not searchable
 				}
 
 				idPath := path.IDPath()
@@ -244,7 +244,7 @@ func tsvColumns(message *j5schema.ObjectSchema) ([]*TSVColumn, error) {
 					// could also be valid.
 					// It's unlikely to come up, but better throw here than
 					// behave unexpectedly later.
-					return false, fmt.Errorf("duplicate tsv column name %q for path %q", columnName, idPath)
+					return fmt.Errorf("duplicate tsv column name %q for path %q", columnName, idPath)
 				}
 				usedColNames[columnName] = struct{}{}
 
@@ -255,7 +255,7 @@ func tsvColumns(message *j5schema.ObjectSchema) ([]*TSVColumn, error) {
 			}
 		}
 
-		return true, nil
+		return nil
 	})
 	if err != nil {
 		return nil, err

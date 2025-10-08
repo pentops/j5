@@ -86,19 +86,17 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 		})
 	}
 
-	err := j5query.WalkPathNodes(rootSchema.ObjectSchema(), func(path j5query.Path) (bool, error) {
-		field := path.LeafField()
-
-		rules := j5query.FieldListRules(field)
+	err := j5query.WalkPathNodes(rootSchema.ObjectSchema(), func(path j5query.Path) error {
+		rules := j5query.FieldListRules(&path)
 		if rules == nil {
-			return true, nil
+			return nil
 		}
 
 		addFilter(path, rules.Filter)
 		addSort(path, rules.Sort)
 		addSearch(path, rules.Search)
 
-		return true, nil
+		return nil
 	})
 
 	if err != nil {

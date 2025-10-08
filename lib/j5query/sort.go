@@ -59,7 +59,30 @@ func buildRequestObjectTieBreakerFields(dataColumn string, req *j5schema.ObjectS
 	return tieBreakerFields, nil
 }
 
-func getFieldSorting(field *j5schema.ObjectProperty) *list_j5pb.SortingConstraint {
+func IsPathSortable(path *Path) bool {
+	var isPathSortable = true
+	path.WalkPathNodes(func(prop *j5schema.ObjectProperty) bool {
+		switch prop.Schema.(type) {
+		case *j5schema.MapField, *j5schema.ArrayField:
+			isPathSortable = false
+		}
+
+		return isPathSortable
+	})
+
+	return isPathSortable
+}
+
+func getFieldSorting(path *Path) *list_j5pb.SortingConstraint {
+	field := path.LeafField()
+	if field == nil {
+		return nil // oneof or something
+	}
+
+	if !IsPathSortable(path) {
+		return nil
+	}
+
 	scalar, ok := field.Schema.(*j5schema.ScalarSchema)
 	if !ok {
 		return nil // only scalars are sortable
@@ -101,21 +124,10 @@ func getFieldSorting(field *j5schema.ObjectProperty) *list_j5pb.SortingConstrain
 func buildDefaultSorts(columnName string, message *j5schema.ObjectSchema) ([]sortSpec, error) {
 	var defaultSortFields []sortSpec
 
-	err := WalkPathNodes(message, func(path Path) (bool, error) {
-		field := path.LeafField()
-		if field == nil {
-			return true, nil // oneof or something
-		}
-
-		switch field.Schema.(type) {
-		case *j5schema.MapField:
-		case *j5schema.ArrayField:
-			return false, nil // children of these are not sortable
-		}
-
-		sortConstraint := getFieldSorting(field)
+	err := WalkPathNodes(message, func(path Path) error {
+		sortConstraint := getFieldSorting(&path)
 		if sortConstraint == nil {
-			return true, nil // not a sortable field
+			return nil // not a sortable field
 		}
 
 		if sortConstraint.DefaultSort {
@@ -128,7 +140,7 @@ func buildDefaultSorts(columnName string, message *j5schema.ObjectSchema) ([]sor
 			})
 		}
 
-		return true, nil
+		return nil
 	})
 	if err != nil {
 		return nil, err
@@ -140,17 +152,17 @@ func buildDefaultSorts(columnName string, message *j5schema.ObjectSchema) ([]sor
 func validateQueryRequestSorts(message *j5schema.ObjectSchema, sorts []*list_j5pb.Sort) error {
 	for _, sort := range sorts {
 		pathSpec := ParseJSONPathSpec(sort.Field)
-		spec, err := NewJSONPath(message, pathSpec)
+		path, err := NewJSONPath(message, pathSpec)
 		if err != nil {
 			return fmt.Errorf("find field %s: %w", sort.Field, err)
 		}
 
-		field := spec.LeafField()
+		field := path.LeafField()
 		if field == nil {
-			return fmt.Errorf("node %s is not a field", spec.DebugName())
+			return fmt.Errorf("node %s is not a field", path.DebugName())
 		}
 
-		sortAnnotation := getFieldSorting(field)
+		sortAnnotation := getFieldSorting(path)
 		if sortAnnotation == nil || !sortAnnotation.Sortable {
 			return fmt.Errorf("requested sort field '%s' is not sortable", sort.Field)
 		}

@@ -209,9 +209,19 @@ func (pp Path) ClientPath() string {
 	return strings.Join(elements, ".")
 }
 
+// WalkPathNodes visits every field in the path other than the leaf field
+// itself, calling the callback for each. Walking stops if the callback returns false.
+func (pp Path) WalkPathNodes(callback func(*j5schema.ObjectProperty) bool) {
+	for _, part := range pp.path {
+		if !callback(part.field) {
+			break
+		}
+	}
+}
+
 // WalkPathNodes visits every field in the message tree other than the root
 // message itself, calling the callback for each.
-func WalkPathNodes(rootMessage *j5schema.ObjectSchema, callback func(Path) (bool, error)) error {
+func WalkPathNodes(rootMessage *j5schema.ObjectSchema, callback func(Path) error) error {
 	root := &Path{
 		root: rootMessage,
 	}
@@ -219,7 +229,7 @@ func WalkPathNodes(rootMessage *j5schema.ObjectSchema, callback func(Path) (bool
 	return root.walk(rootMessage.Properties, callback)
 }
 
-func (pp Path) walk(props j5schema.PropertySet, callback func(Path) (bool, error)) error {
+func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error {
 	// walks only fields, not oneofs.
 	for _, field := range props {
 		fieldPath := append(pp.path, pathNode{
@@ -239,10 +249,8 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) (bool, error
 			fieldPathSpec.leafOneof = ft.OneofSchema()
 		}
 
-		if keepGoing, err := callback(fieldPathSpec); err != nil {
+		if err := callback(fieldPathSpec); err != nil {
 			return err
-		} else if !keepGoing {
-			continue
 		}
 
 		switch ft := field.Schema.(type) {
@@ -335,7 +343,6 @@ func objectProperty(obj hasPropertySet, pathElem string, pt pathType) (*j5schema
 }
 
 func newPath(rootMessage *j5schema.ObjectSchema, fieldPath []string, pathType pathType) (*Path, error) {
-
 	if len(fieldPath) == 0 {
 		return nil, fmt.Errorf("fieldPath must have at least one element")
 	}
