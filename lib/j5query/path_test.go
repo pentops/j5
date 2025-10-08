@@ -116,7 +116,7 @@ func TestFindFieldSpec(t *testing.T) {
 			"$.profile.type.card.size": {},
 		}
 
-		err := WalkPathNodes(fooObject, func(node Path) error {
+		err := WalkPathNodes(fooObject, func(node Path) (bool, error) {
 			pathQuery := node.JSONPathQuery()
 			t.Log(pathQuery)
 			_, ok := expectedNodes[pathQuery]
@@ -125,7 +125,7 @@ func TestFindFieldSpec(t *testing.T) {
 			}
 			delete(expectedNodes, pathQuery)
 
-			return nil
+			return true, nil
 		})
 		if err != nil {
 			t.Fatal(err)

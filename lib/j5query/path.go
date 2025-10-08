@@ -168,7 +168,7 @@ func (pp *Path) JSONPathQuery() string {
 		elements = append(elements, fmt.Sprintf(".%s", part.field.JSONName))
 		switch part.field.Schema.(type) {
 		case *j5schema.MapField:
-			panic("map fields not supported by JSONBArrowPath()")
+			panic("map fields not supported by JSONPathQuery()")
 		case *j5schema.ArrayField:
 			elements = append(elements, "[*]")
 		}
@@ -211,7 +211,7 @@ func (pp Path) ClientPath() string {
 
 // WalkPathNodes visits every field in the message tree other than the root
 // message itself, calling the callback for each.
-func WalkPathNodes(rootMessage *j5schema.ObjectSchema, callback func(Path) error) error {
+func WalkPathNodes(rootMessage *j5schema.ObjectSchema, callback func(Path) (bool, error)) error {
 	root := &Path{
 		root: rootMessage,
 	}
@@ -219,7 +219,7 @@ func WalkPathNodes(rootMessage *j5schema.ObjectSchema, callback func(Path) error
 	return root.walk(rootMessage.Properties, callback)
 }
 
-func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error {
+func (pp Path) walk(props j5schema.PropertySet, callback func(Path) (bool, error)) error {
 	// walks only fields, not oneofs.
 	for _, field := range props {
 		fieldPath := append(pp.path, pathNode{
@@ -239,8 +239,10 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 			fieldPathSpec.leafOneof = ft.OneofSchema()
 		}
 
-		if err := callback(fieldPathSpec); err != nil {
+		if keepGoing, err := callback(fieldPathSpec); err != nil {
 			return err
+		} else if !keepGoing {
+			continue
 		}
 
 		switch ft := field.Schema.(type) {

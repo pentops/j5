@@ -101,16 +101,23 @@ func getFieldSorting(field *j5schema.ObjectProperty) *list_j5pb.SortingConstrain
 func buildDefaultSorts(columnName string, message *j5schema.ObjectSchema) ([]sortSpec, error) {
 	var defaultSortFields []sortSpec
 
-	err := WalkPathNodes(message, func(path Path) error {
+	err := WalkPathNodes(message, func(path Path) (bool, error) {
 		field := path.LeafField()
 		if field == nil {
-			return nil // oneof or something
+			return true, nil // oneof or something
+		}
+
+		switch field.Schema.(type) {
+		case *j5schema.MapField:
+		case *j5schema.ArrayField:
+			return false, nil // children of these are not sortable
 		}
 
 		sortConstraint := getFieldSorting(field)
 		if sortConstraint == nil {
-			return nil // not a sortable field
+			return true, nil // not a sortable field
 		}
+
 		if sortConstraint.DefaultSort {
 			defaultSortFields = append(defaultSortFields, sortSpec{
 				NestedField: &NestedField{
@@ -120,7 +127,8 @@ func buildDefaultSorts(columnName string, message *j5schema.ObjectSchema) ([]sor
 				desc: true,
 			})
 		}
-		return nil
+
+		return true, nil
 	})
 	if err != nil {
 		return nil, err
