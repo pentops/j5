@@ -237,9 +237,12 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 			field: field,
 		})
 
+		copiedFieldPath := make([]pathNode, len(fieldPath))
+		copy(copiedFieldPath, fieldPath)
+
 		fieldPathSpec := Path{
 			root:      pp.root,
-			path:      fieldPath,
+			path:      copiedFieldPath,
 			leafField: field,
 		}
 

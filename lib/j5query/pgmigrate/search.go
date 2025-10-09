@@ -53,9 +53,7 @@ func buildIndexes(tableName string, columnName string, rootType *j5schema.Object
 
 	specs := []searchSpec{}
 
-	for i := range cols {
-		col := cols[i]
-
+	for _, col := range cols {
 		specs = append(specs, searchSpec{
 			tsvColumn:  col.ColumnName,
 			tableName:  tableName,
@@ -117,8 +115,8 @@ func writeIndexes(ctx context.Context, conn sqrlx.Connection, specs []searchSpec
 			if err != nil {
 				return err
 			}
-
 		}
+
 		return nil
 	})
 }
