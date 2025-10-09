@@ -46,7 +46,6 @@ type searchSpec struct {
 }
 
 func buildIndexes(tableName string, columnName string, rootType *j5schema.ObjectSchema) ([]searchSpec, error) {
-
 	cols, err := j5query.TSVColumns(rootType)
 	if err != nil {
 		return nil, err
@@ -54,7 +53,9 @@ func buildIndexes(tableName string, columnName string, rootType *j5schema.Object
 
 	specs := []searchSpec{}
 
-	for _, col := range cols {
+	for i := range cols {
+		col := cols[i]
+
 		specs = append(specs, searchSpec{
 			tsvColumn:  col.ColumnName,
 			tableName:  tableName,
@@ -65,7 +66,6 @@ func buildIndexes(tableName string, columnName string, rootType *j5schema.Object
 	}
 
 	return specs, nil
-
 }
 
 func (ss searchSpec) ToSQL() (string, error) {
@@ -73,10 +73,10 @@ func (ss searchSpec) ToSQL() (string, error) {
 
 	lines := []string{}
 
-	lines = append(lines, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s tsvector GENERATED ALWAYS", ss.tableName, ss.tsvColumn))
+	lines = append(lines, fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s tsvector GENERATED ALWAYS", ss.tableName, ss.tsvColumn))
 	lines = append(lines, fmt.Sprintf("  AS (%s) STORED;", statement))
 	lines = append(lines, "")
-	lines = append(lines, fmt.Sprintf("CREATE INDEX %s_%s_idx ON %s USING GIN (%s);", ss.tableName, ss.tsvColumn, ss.tableName, ss.tsvColumn))
+	lines = append(lines, fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s_%s_idx ON %s USING GIN (%s);", ss.tableName, ss.tsvColumn, ss.tableName, ss.tsvColumn))
 	return strings.Join(lines, "\n"), nil
 
 }
@@ -86,7 +86,6 @@ func (ss searchSpec) DownSQL() (string, error) {
 }
 
 func writeIndexes(ctx context.Context, conn sqrlx.Connection, specs []searchSpec) error {
-
 	db, err := sqrlx.New(conn, sq.Dollar)
 	if err != nil {
 		return err
@@ -110,12 +109,12 @@ func writeIndexes(ctx context.Context, conn sqrlx.Connection, specs []searchSpec
 
 			statement := fmt.Sprintf("to_tsvector('english', jsonb_path_query_array(%s, '%s'))", spec.columnName, spec.path.JSONPathQuery())
 
-			_, err = tx.ExecRaw(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN %s tsvector GENERATED ALWAYS AS (%s) STORED;", spec.tableName, spec.tsvColumn, statement))
+			_, err = tx.ExecRaw(ctx, fmt.Sprintf("ALTER TABLE %s ADD COLUMN IF NOT EXISTS %s tsvector GENERATED ALWAYS AS (%s) STORED;", spec.tableName, spec.tsvColumn, statement))
 			if err != nil {
 				return err
 			}
 
-			_, err = tx.ExecRaw(ctx, fmt.Sprintf("CREATE INDEX %s_%s_idx ON %s USING GIN (%s);", spec.tableName, spec.tsvColumn, spec.tableName, spec.tsvColumn))
+			_, err = tx.ExecRaw(ctx, fmt.Sprintf("CREATE INDEX IF NOT EXISTS %s_%s_idx ON %s USING GIN (%s);", spec.tableName, spec.tsvColumn, spec.tableName, spec.tsvColumn))
 			if err != nil {
 				return err
 			}
