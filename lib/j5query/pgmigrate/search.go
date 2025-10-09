@@ -62,7 +62,6 @@ func buildIndexes(tableName string, columnName string, rootType *j5schema.Object
 			columnName: columnName,
 			path:       col.Path,
 		})
-
 	}
 
 	return specs, nil
@@ -122,5 +121,4 @@ func writeIndexes(ctx context.Context, conn sqrlx.Connection, specs []searchSpec
 		}
 		return nil
 	})
-
 }
