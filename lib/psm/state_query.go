@@ -61,6 +61,7 @@ func (qs *QuerySpec) Validate() error {
 	if qs.ListEventsMethod == nil {
 		return fmt.Errorf("missing ListEventsMethod in QuerySpec")
 	}
+
 	return nil
 }
 

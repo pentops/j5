@@ -96,6 +96,5 @@ func TestStateMachineShadow(t *testing.T) {
 		t.NoError(err)
 		t.Equal(test_pb.FooStatus_ACTIVE, res2.Foo.Status)
 		t.Equal("foo2", res2.Foo.Data.Name)
-
 	})
 }

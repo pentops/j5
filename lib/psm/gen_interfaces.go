@@ -179,7 +179,6 @@ type TransitionHook[
 }
 
 func (hook TransitionHook[K, S, ST, SD, E, IE]) runTransition(ctx context.Context, tx sqrlx.Transaction, baton CallbackBaton[K, S, ST, SD, E, IE], state S, event E) error { // nolint:unused // Used by genereted code.
-
 	return hook.Callback(ctx, tx, baton, state, event)
 }
 
