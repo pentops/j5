@@ -8,7 +8,6 @@ import (
 )
 
 func (fb *fileBuilder) printSection(typeName string, wrapper protoreflect.Descriptor, elements sourceElements) error {
-
 	sort.Sort(elements)
 
 	sourceLocation := wrapper.ParentFile().SourceLocations().ByDescriptor(wrapper)
@@ -129,7 +128,6 @@ func (fb *fileBuilder) printEnum(enum protoreflect.EnumDescriptor) error {
 }
 
 func (fb *fileBuilder) printService(svc protoreflect.ServiceDescriptor) error {
-
 	elements := newElements()
 	methods := svc.Methods()
 	for idx := range methods.Len() {
@@ -140,7 +138,6 @@ func (fb *fileBuilder) printService(svc protoreflect.ServiceDescriptor) error {
 }
 
 func (fb *fileBuilder) printMessage(msg protoreflect.MessageDescriptor) error {
-
 	elements := newElements()
 
 	fields := msg.Fields()
@@ -219,7 +216,6 @@ func (ind *fileBuilder) printMethod(method protoreflect.MethodDescriptor) error 
 }
 
 func (fb *fileBuilder) printEnumValue(field protoreflect.EnumValueDescriptor) error {
-
 	return fb.printFieldStyle(string(field.Name()), int32(field.Number()), field)
 }
 
@@ -243,7 +239,6 @@ func (ind *fileBuilder) printExtension(block extBlock) error {
 }
 
 func (ind *fileBuilder) printField(field protoreflect.FieldDescriptor) error {
-
 	var err error
 	var typeName string
 	var label string

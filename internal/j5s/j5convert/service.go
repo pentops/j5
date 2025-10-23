@@ -55,7 +55,6 @@ func (ww *conversionVisitor) visitServiceFileNode(sn *sourcewalk.ServiceFileNode
 }
 
 func (ww *conversionVisitor) visitServiceNode(node *sourcewalk.ServiceNode) {
-
 	serviceWalker := ww.subPackageFile("service")
 
 	service := blankService(node.Name)
@@ -73,7 +72,6 @@ func (ww *conversionVisitor) visitServiceNode(node *sourcewalk.ServiceNode) {
 }
 
 func (ww *conversionVisitor) visitServiceMethodNode(service *serviceBuilder, node *sourcewalk.ServiceMethodNode) {
-
 	method := node.Schema
 	methodBuilder := blankMethod(method.Name)
 	methodBuilder.comment([]int32{}, method.Description)

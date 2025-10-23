@@ -109,7 +109,6 @@ func (dc *testSchemaWithOutput) InputJSON(jsonInput string) *testSchemaWithOutpu
 }
 
 func TestDynamic(t *testing.T) {
-
 	t.Run("string", func(t *testing.T) {
 		schema := NewTestSchema(t, `
 			object Foo {
@@ -256,7 +255,6 @@ func TestDynamic(t *testing.T) {
 }
 
 func TestUnmarshal(t *testing.T) {
-
 	cache := j5schema.NewSchemaCache()
 	reflector := j5reflect.NewWithCache(cache)
 	codec := NewCodec(WithProtoToAny(), WithReflector(reflector))

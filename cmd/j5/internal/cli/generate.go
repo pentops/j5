@@ -68,7 +68,6 @@ func runGenerate(ctx context.Context, cfg struct {
 }
 
 func runGeneratePlugin(ctx context.Context, bb *builder.Builder, src *source.RepoRoot, generator *config_j5pb.GenerateConfig, out Dest) error {
-
 	img, err := src.CombinedSourceImage(ctx, generator.Inputs)
 	if err != nil {
 		if ep, ok := errpos.AsErrorsWithSource(err); ok {

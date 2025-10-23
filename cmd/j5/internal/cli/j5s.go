@@ -67,7 +67,6 @@ func runJ5sLint(ctx context.Context, cfg struct {
 }
 
 func runJ5sLintFile(ctx context.Context, srcRoot *source.RepoRoot, fileRel string) error {
-
 	bundle, relToBundle, err := srcRoot.BundleForFile(fileRel)
 	if err != nil {
 		return err
@@ -102,7 +101,6 @@ func runJ5sLintFile(ctx context.Context, srcRoot *source.RepoRoot, fileRel strin
 }
 
 func runJ5sLintAll(ctx context.Context, srcRoot *source.RepoRoot) error {
-
 	bundles, externalDeps, err := srcRoot.LocalBundlesSorted(ctx)
 	if err != nil {
 		return err

@@ -176,7 +176,6 @@ func (sc *walkContext) SetAttribute(path ScopePath, val parser.ASTValue) error {
 }
 
 func (sc *walkContext) setAttribute(path ScopePath, val parser.ASTValue, appendValue bool) error {
-
 	fullPath := path.combined()
 	if len(fullPath) == 0 {
 		return newSchemaError(fmt.Errorf("empty path for SetAttribute"))

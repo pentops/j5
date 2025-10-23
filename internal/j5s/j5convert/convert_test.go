@@ -17,7 +17,6 @@ import (
 )
 
 func TestPackageParse(t *testing.T) {
-
 	for _, tc := range []struct {
 		input   string
 		wantPkg string
@@ -140,7 +139,6 @@ var emptyObjectOption = withOption(&descriptorpb.MessageOptions{}, ext_j5pb.E_Me
 })
 
 func TestSchemaToProto(t *testing.T) {
-
 	deps := &testDeps{
 		pkg: "test.v1",
 		types: map[string]*TypeRef{
@@ -359,7 +357,6 @@ func TestEnumConvert(t *testing.T) {
 }
 
 func TestPolymorphConvert(t *testing.T) {
-
 	polymorphSchema := &sourcedef_j5pb.RootElement{
 		Type: &sourcedef_j5pb.RootElement_Polymorph{
 			Polymorph: &sourcedef_j5pb.Polymorph{
@@ -478,7 +475,6 @@ func (tc *tConversion) convert(t testing.TB) *descriptorpb.FileDescriptorProto {
 // Copies the J5 extension object to the equivalent protoreflect extension type
 // by field names.
 func tEmptyTypeExt(t testing.TB, fieldType protoreflect.Name) *descriptorpb.FieldOptions {
-
 	// Options in the *proto* representation.
 	extOptions := &ext_j5pb.FieldOptions{}
 	extOptionsRefl := extOptions.ProtoReflect()

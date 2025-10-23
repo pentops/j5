@@ -90,7 +90,6 @@ func (b *bundleSource) SourceImage(ctx context.Context, resolver InputSource) (*
 }
 
 func (bundle *bundleSource) Compiler(ctx context.Context, resolver InputSource) (*protobuild.PackageSet, error) {
-
 	j5Config, err := bundle.J5Config()
 	if err != nil {
 		return nil, err

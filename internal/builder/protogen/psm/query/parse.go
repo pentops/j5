@@ -20,7 +20,6 @@ type QueryServiceSourceSet struct {
 }
 
 func WalkFile(sc *j5schema.SchemaCache, file *protogen.File) ([]*PSMQuerySet, error) {
-
 	sets := make([]*PSMQuerySet, 0)
 	for _, service := range file.Services {
 		stateQueryAnnotation := protosrc.GetExtension[*ext_j5pb.ServiceOptions](service.Desc.Options(), ext_j5pb.E_Service)
@@ -101,7 +100,6 @@ func NewQueryServiceGenerateSet(name string, service *protogen.Service) *QuerySe
 }
 
 func (qs *QueryServiceGenerateSet) AddMethod(method *protogen.Method, methodOpt *ext_j5pb.StateQueryMethodOptions) error {
-
 	if methodOpt.Get {
 		if qs.getMethod != nil {
 			return fmt.Errorf("service %s already has a get method (%s)", qs.name, qs.getMethod.Desc.Name())

@@ -45,7 +45,6 @@ type Commit struct {
 }
 
 func NewEnvClient(ctx context.Context) (*Client, error) {
-
 	config := struct {
 		// Method 1
 		GithubToken string `env:"GITHUB_TOKEN" default:""`
@@ -109,7 +108,6 @@ func NewClient(tc *http.Client) (*Client, error) {
 	return cl, nil
 }
 func (cl Client) PullConfig(ctx context.Context, ref *Commit, into proto.Message, tryPaths []string) error {
-
 	opts := &github.RepositoryContentGetOptions{
 		Ref: ref.Sha,
 	}
@@ -141,7 +139,6 @@ func (cl Client) PullConfig(ctx context.Context, ref *Commit, into proto.Message
 }
 
 func (cl Client) GetCommit(ctx context.Context, ref *Commit) (*source_j5pb.CommitInfo, error) {
-
 	commit, _, err := cl.repositories.GetCommit(ctx, ref.Owner, ref.Repo, ref.Sha, &github.ListOptions{})
 	if err != nil {
 		return nil, err

@@ -24,7 +24,6 @@ type parsedOption struct {
 }
 
 func optionFullName(opt *optionreflect.OptionDefinition) string {
-
 	name, err := contextRefName(opt.Context, opt.RootType)
 	if err != nil {
 		panic(err.Error())
@@ -37,7 +36,6 @@ func optionFullName(opt *optionreflect.OptionDefinition) string {
 	return fmt.Sprintf("(%s).%s", name, strings.Join(opt.SubPath, "."))
 }
 func parseOption(opt *optionreflect.OptionDefinition) parsedOption {
-
 	maxDepth, ok := maxExtDepth[opt.Desc.FullName()]
 	if !ok {
 		maxDepth = 5
@@ -100,7 +98,6 @@ func parseOption(opt *optionreflect.OptionDefinition) parsedOption {
 }
 
 func (fb *fileBuilder) optionsFor(thing protoreflect.Descriptor) ([]parsedOption, error) {
-
 	options, err := fb.out.extensions.OptionsFor(thing)
 	if err != nil {
 		return nil, err
@@ -125,7 +122,6 @@ func (fb *fileBuilder) optionsFor(thing protoreflect.Descriptor) ([]parsedOption
 }
 
 func (extInd *fileBuilder) printOption(opt *optionreflect.OptionDefinition) {
-
 	parsed := parseOption(opt)
 
 	typeName := parsed.qualifiedName
@@ -204,7 +200,6 @@ func (ind *fileBuilder) printOptionMessageFields(children []optionreflect.Option
 }
 
 func (fb *fileBuilder) printFieldStyle(name string, number int32, elem protoreflect.Descriptor) error {
-
 	srcLoc := elem.ParentFile().SourceLocations().ByDescriptor(elem)
 
 	options, err := fb.optionsFor(elem)

@@ -51,7 +51,6 @@ type polymorphFieldFactory struct {
 }
 
 func (factory *polymorphFieldFactory) buildField(context fieldContext, valueGen protoval.Value) Field {
-
 	msgValue, ok := valueGen.(protoval.MessageValue)
 	if !ok {
 		panic("polymorph field factory expected a MessageValue")

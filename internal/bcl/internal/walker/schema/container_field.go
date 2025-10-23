@@ -245,7 +245,6 @@ func unexpectedPathError(field string, err error) *WalkPathError {
 }
 
 func (container *containerField) allFields() map[string]*schema_j5pb.Field {
-
 	children := map[string]*schema_j5pb.Field{}
 	_ = container.container.RangePropertySchemas(func(name string, required bool, schema *schema_j5pb.Field) error {
 		if _, ok := children[name]; !ok {

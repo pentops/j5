@@ -64,7 +64,6 @@ type EnumOption struct {
 }
 
 func newEnumNode(source SourceNode, parent parentNode, schema *schema_j5pb.Enum) (*EnumNode, error) {
-
 	prefix := schema.Prefix
 	if prefix == "" {
 		prefix = strcase.ToScreamingSnake(schema.Name) + "_"
@@ -127,7 +126,6 @@ func newVirtualObjectNode(
 	properties []*schema_j5pb.ObjectProperty,
 	virtual ...*schema_j5pb.ObjectProperty,
 ) (*ObjectNode, error) {
-
 	root := newRoot(source, parent, name)
 	return &ObjectNode{
 		Name:     name,
@@ -213,7 +211,6 @@ func newPolymorphNode(source SourceNode, parent parentNode, schema *schema_j5pb.
 }
 
 func typeNameToRef(typeName string) (*schema_j5pb.Ref, error) {
-
 	parts := strings.Split(typeName, ".")
 	if len(parts) < 2 {
 		return nil, fmt.Errorf("invalid type name %q", typeName)
@@ -327,7 +324,6 @@ func (on *nestedSet) HasNestedSchemas() bool {
 }
 
 func (node *nestedSet) RangeNestedSchemas(visitor SchemaVisitor) error {
-
 	for _, nested := range node.children {
 		switch element := nested.schema.(type) {
 		case *sourcedef_j5pb.NestedSchema_Object:

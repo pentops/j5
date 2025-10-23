@@ -443,7 +443,6 @@ func dateFromString(val string) (protoreflect.Value, error) {
 }
 
 func byteValueFromString(val string) (protoreflect.Value, error) {
-
 	// is base64, could be url or standard
 	// Luck would have it, they are the same bar those two characters, so even if
 	// it doesn't contain either it should work.

@@ -139,7 +139,6 @@ func (v *Validator) validatePropSet(ps j5reflect.PropertySet) (Errors, int, erro
 }
 
 func (v *Validator) validateField(field j5reflect.Field, schema j5schema.FieldSchema) (Errors, error) {
-
 	switch st := schema.(type) {
 	case *j5schema.ObjectField:
 

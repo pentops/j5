@@ -8,7 +8,6 @@ import (
 )
 
 func TestInt(t *testing.T) {
-
 	fb := NewFileBuilder("test/v1/test.j5s")
 	foo := fb.Object("Foo")
 	foo.Def.Properties = append(foo.Def.Properties, &schema_j5pb.ObjectProperty{
@@ -39,7 +38,6 @@ func TestInt(t *testing.T) {
 }
 
 func TestDate(t *testing.T) {
-
 	fb := NewFileBuilder("test/v1/test.j5s")
 	foo := fb.Object("Foo")
 	foo.Def.Properties = append(foo.Def.Properties, &schema_j5pb.ObjectProperty{
@@ -75,7 +73,6 @@ func TestDate(t *testing.T) {
 }
 
 func TestOneof(t *testing.T) {
-
 	fb := NewFileBuilder("test/v1/test.j5s")
 	foo := fb.Object("Foo")
 	foo.Def.Properties = append(foo.Def.Properties, &schema_j5pb.ObjectProperty{

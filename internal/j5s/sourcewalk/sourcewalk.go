@@ -94,7 +94,6 @@ func (sn SourceNode) GetPos() errpos.Position {
 }
 
 func NewRoot(file *sourcedef_j5pb.SourceFile) *FileNode {
-
 	root := SourceNode{
 		Path:   []string{},
 		Source: file.SourceLocations,

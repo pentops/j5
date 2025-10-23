@@ -175,7 +175,6 @@ type ObjectProperty struct {
 }
 
 func (op *ObjectProperty) MarshalJSON() ([]byte, error) {
-
 	base := map[string]any{}
 
 	if op.Ref == nil {

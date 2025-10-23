@@ -31,7 +31,6 @@ func ExpandGitAliases(gitConfig *config_j5pb.GitConfig, commitInfo *source_j5pb.
 }
 
 func ExtractGitMetadata(ctx context.Context, dir string) (*source_j5pb.CommitInfo, error) {
-
 	repo, err := git.PlainOpen(dir)
 	if err != nil {
 		if errors.Is(err, git.ErrRepositoryNotExists) {

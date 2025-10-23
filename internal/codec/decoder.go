@@ -52,7 +52,6 @@ func (d *decoder) Token() (json.Token, error) {
 }
 
 func (dec *decoder) expectDelimOrNull(delim rune) (isNull bool, err error) {
-
 	tok, err := dec.Token()
 	if err != nil {
 		return false, err
@@ -292,7 +291,6 @@ func (dec *decoder) decodeOneofProperty(prop j5reflect.Property) error {
 }
 
 func (dec *decoder) decodeOneofInner(oneof j5reflect.Oneof) error {
-
 	foundKeys := []string{}
 	var constrainType *string
 
@@ -422,7 +420,6 @@ func (dec *decoder) decodeEnum(prop j5reflect.Property) error {
 }
 
 func (dec *decoder) decodePolymorphProperty(prop j5reflect.Property) error {
-
 	wasNull, err := dec.expectDelimOrNull('{')
 	if err != nil {
 		return err
@@ -457,7 +454,6 @@ func (dec *decoder) decodePolymorphProperty(prop j5reflect.Property) error {
 }
 
 func (dec *decoder) decodeAny(prop j5reflect.Property) error {
-
 	wasNull, err := dec.expectDelimOrNull('{')
 	if err != nil {
 		return err
@@ -486,7 +482,6 @@ func (dec *decoder) decodeAny(prop j5reflect.Property) error {
 }
 
 func (dec *decoder) decodeAnyInner(field j5reflect.AnyField) error {
-
 	var valueBytes []byte
 	var constrainType *string
 
@@ -567,7 +562,6 @@ func (dec *decoder) decodeAnyInner(field j5reflect.AnyField) error {
 }
 
 func (dec *decoder) decodeMapProperty(prop j5reflect.Property) error {
-
 	wasNull, err := dec.expectDelimOrNull('{')
 	if err != nil {
 		return err
@@ -595,7 +589,6 @@ func (dec *decoder) decodeMapProperty(prop j5reflect.Property) error {
 }
 
 func (dec *decoder) decodeMapField(field j5reflect.MapField) error {
-
 	switch field := field.(type) {
 	case j5reflect.MapOfScalarField:
 		return dec.jsonObjectBody(func(keyTokenStr string) error {
@@ -651,7 +644,6 @@ func (dec *decoder) decodeMapField(field j5reflect.MapField) error {
 }
 
 func (dec *decoder) decodeArrayProperty(prop j5reflect.Property) error {
-
 	wasNull, err := dec.expectDelimOrNull('[')
 	if err != nil {
 		return err
@@ -683,7 +675,6 @@ func (dec *decoder) decodeArrayProperty(prop j5reflect.Property) error {
 }
 
 func (dec *decoder) decodeArrayFieldValue(field j5reflect.ArrayField) error {
-
 	if field, ok := field.AsArrayOfScalar(); ok {
 		tok, err := dec.Token()
 		if err != nil {

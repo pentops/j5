@@ -412,7 +412,6 @@ func decodePageToken(token string, sortFields []sortSpec) (map[string]any, error
 }
 
 func fieldAs[T any](obj j5reflect.Object, path ...string) (val T, ok bool, err error) {
-
 	endField, ok, err := obj.GetField(path...)
 	if err != nil || !ok {
 		return val, ok, err
@@ -522,7 +521,6 @@ func (ll *Lister) BuildQuery(ctx context.Context, req j5reflect.Object, res j5re
 }
 
 func (ll *Lister) addPageFilter(token string, sortFields []sortSpec, tableAlias string) (sq.Sqlizer, error) {
-
 	lhsFields := make([]string, 0, len(sortFields))
 	rhsValues := make([]any, 0, len(sortFields))
 	rhsPlaceholders := make([]string, 0, len(sortFields))

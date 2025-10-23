@@ -66,7 +66,6 @@ func Walk(tokens []Token, failFast bool) (*File, error) {
 }
 
 func fragmentsToFile(fragments []Fragment) (*File, error) {
-
 	type walkingBlock struct {
 		parent *walkingBlock
 		body   *Body
@@ -218,7 +217,6 @@ func (ww *Walker) recoverError(err *unexpectedTokenError) error {
 }
 
 func (ww *Walker) nextFragment() (Fragment, *unexpectedTokenError) {
-
 	switch ww.nextType() {
 
 	case EOF:
@@ -423,7 +421,6 @@ func (ww *Walker) popDescription() (Description, *unexpectedTokenError) {
 }
 
 func (ww *Walker) popTag() (TagValue, *unexpectedTokenError) {
-
 	var mark = TagMarkNone
 	var markToken Token
 	switch ww.nextType() {
@@ -463,7 +460,6 @@ func (ww *Walker) popTag() (TagValue, *unexpectedTokenError) {
 }
 
 func (ww *Walker) walkStatement() (Fragment, *unexpectedTokenError) {
-
 	// Read all dot separated idents continuing from the first token
 	// a.b.c.d
 	ref, err := ww.popReference()
@@ -603,7 +599,6 @@ func (ww *Walker) endStatement() (*Comment, *unexpectedTokenError) {
 }
 
 func (ww *Walker) walkValueAssign(ref Reference) (Assignment, *unexpectedTokenError) {
-
 	assign := Assignment{
 		Key: ref,
 		SourceNode: SourceNode{

@@ -112,7 +112,6 @@ type fmter struct {
 }
 
 func (p *fmter) diffFile(ff []Fragment) {
-
 	for idx := range ff {
 		stmt := ff[idx]
 		switch stmt := stmt.(type) {
@@ -202,7 +201,6 @@ func newToken(ty TokenType, value string) Token {
 }
 
 func (p *fmter) doBlockHeader(block BlockHeader) {
-
 	nameParts := referenceTokens(block.Type)
 	for _, val := range block.Tags {
 		nameParts = append(nameParts, newToken(SPACE, " "))

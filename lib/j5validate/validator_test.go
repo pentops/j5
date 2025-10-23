@@ -13,7 +13,6 @@ import (
 )
 
 func TestValidate(t *testing.T) {
-
 	t.Run("SimpleString", func(t *testing.T) {
 		schema := newReflectCase(t, `
 		object Foo {

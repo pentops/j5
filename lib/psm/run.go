@@ -25,7 +25,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) runEvent(
 	event E,
 	captureState captureStateType,
 ) (*S, error) {
-
 	if err := sm.validateEvent(event); err != nil {
 		return nil, err
 	}

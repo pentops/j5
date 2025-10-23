@@ -74,7 +74,6 @@ func (bw *BuildWorker) replyStatus(ctx context.Context, request *messaging_j5pb.
 }
 
 func (bw *BuildWorker) Publish(ctx context.Context, req *registry_tpb.PublishMessage) (*emptypb.Empty, error) {
-
 	if req.Request != nil {
 		if err := bw.replyStatus(ctx, req.Request, registry_tpb.BuildStatus_IN_PROGRESS, nil); err != nil {
 			return nil, fmt.Errorf("reply status: %w", err)
@@ -120,7 +119,6 @@ func (bw *BuildWorker) Publish(ctx context.Context, req *registry_tpb.PublishMes
 }
 
 func (bw *BuildWorker) runPublish(ctx context.Context, req *registry_tpb.PublishMessage, logBuffer io.Writer) error {
-
 	img, cfg, err := bw.BundleImageFromCommit(ctx, req.Commit, req.Bundle)
 	if err != nil {
 		return fmt.Errorf("new fs input: %w", err)
@@ -176,7 +174,6 @@ func (bw *BuildWorker) runPublish(ctx context.Context, req *registry_tpb.Publish
 }
 
 func (bw *BuildWorker) BuildAPI(ctx context.Context, req *registry_tpb.BuildAPIMessage) (*emptypb.Empty, error) {
-
 	if req.Request != nil {
 		if err := bw.replyStatus(ctx, req.Request, registry_tpb.BuildStatus_IN_PROGRESS, nil); err != nil {
 			return nil, fmt.Errorf("reply status: %w", err)
@@ -213,7 +210,6 @@ func (bw *BuildWorker) BuildAPI(ctx context.Context, req *registry_tpb.BuildAPIM
 }
 
 func (bw *BuildWorker) buildAPI(ctx context.Context, commit *source_j5pb.CommitInfo, req *registry_tpb.BuildAPIMessage) error {
-
 	img, bundleConfig, err := bw.BundleImageFromCommit(ctx, commit, req.Bundle)
 	if err != nil {
 		return fmt.Errorf("new fs input: %w", err)

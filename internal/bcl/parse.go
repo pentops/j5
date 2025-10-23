@@ -51,7 +51,6 @@ func isTruthy(s string) bool {
 }
 
 func (p *Parser) ParseFile(filename string, data string, msg protoreflect.Message) (*bcl_j5pb.SourceLocation, error) {
-
 	tree, err := parser.ParseFile(filename, data, p.FailFast)
 	if err != nil {
 		return nil, err
@@ -192,7 +191,6 @@ func (ss sourceSet) err(err error) {
 }
 
 func validateFile(pv protovalidate.Validator, msg protoreflect.ProtoMessage, source *bcl_j5pb.SourceLocation) error {
-
 	sources := newSourceSet(source)
 
 	validationErr := pv.Validate(msg)

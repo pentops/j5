@@ -375,7 +375,6 @@ func findPSMOptions(srcMsg protoreflect.MessageDescriptor) (*schema_j5pb.EntityO
 }
 
 func (ss *Package) messageProperties(parent RootSchema, src protoreflect.MessageDescriptor) ([]*ObjectProperty, error) {
-
 	properties := make([]*ObjectProperty, 0, src.Fields().Len())
 
 	for ii := range src.Fields().Len() {
@@ -822,7 +821,6 @@ func ScalarSchemaFromProto(src protoreflect.FieldDescriptor) (schema_j5pb.IsFiel
 }
 
 func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
-
 	switch src.Kind() {
 
 	case protoreflect.StringKind:
@@ -1131,7 +1129,6 @@ func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions)
 }
 
 func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*EnumSchema, error) {
-
 	ext := protosrc.GetExtension[*ext_j5pb.EnumOptions](enumDescriptor.Options(), ext_j5pb.E_Enum)
 
 	sourceValues := enumDescriptor.Values()
@@ -1469,7 +1466,6 @@ const (
 )
 
 func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
-
 	stringItem := &schema_j5pb.StringField{}
 	looksLikeKey := false
 

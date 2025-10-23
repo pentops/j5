@@ -346,7 +346,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) store(
 	state S,
 	event E,
 ) error {
-
 	stateDBValue, err := sm.marshalJ5(state.J5Reflect())
 	if err != nil {
 		return fmt.Errorf("state field: %w", err)

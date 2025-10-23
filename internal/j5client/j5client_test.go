@@ -98,7 +98,6 @@ func tArrayOf(of *schema_j5pb.Field) *schema_j5pb.Field {
 }
 
 func wantFooState() *schema_j5pb.RootSchema {
-
 	object := &schema_j5pb.Object{
 		Name: "FooState",
 		Entity: &schema_j5pb.EntityObject{

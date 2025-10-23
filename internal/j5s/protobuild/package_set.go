@@ -146,7 +146,6 @@ func (ps *PackageSet) resolveDependencies(ctx context.Context, rb *resolveBaton,
 }
 
 func (ps *PackageSet) localPackageIO(ctx context.Context, name string) (*Package, error) {
-
 	pkg := ps.newPackage(name)
 
 	files, err := ps.sourceResolver.PackageSourceFiles(ctx, name)
@@ -178,7 +177,6 @@ func (pkg *Package) buildSearchResults() error {
 }
 
 func (ps *PackageSet) loadLocalPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {
-
 	pkg, err := ps.localPackageIO(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("localPackageIO %s: %w", name, err)
@@ -239,7 +237,6 @@ func (ps *PackageSet) buildLocalPackage(ctx context.Context, pkg *Package) error
 }
 
 func (ps *PackageSet) loadExternalPackage(ctx context.Context, rb *resolveBaton, name string) (*Package, error) {
-
 	pkg := ps.newPackage(name)
 
 	filenames, err := ps.dependencyResolver.ListPackageFiles(name)
@@ -274,7 +271,6 @@ type BuiltPackage struct {
 }
 
 func (ps *PackageSet) CompilePackage(ctx context.Context, packageName string) (*BuiltPackage, error) {
-
 	ctx = log.WithField(ctx, "CompilePackage", packageName)
 	log.Debug(ctx, "Compiler: Load")
 	rb := newResolveBaton()

@@ -24,7 +24,6 @@ func (ts *tmpSource) close() error {
 }
 
 func (bw *BuildWorker) BundleImageFromCommit(ctx context.Context, commit *source_j5pb.CommitInfo, bundleName string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {
-
 	repoRoot, err := bw.tmpClone(ctx, commit)
 	if err != nil {
 		return nil, nil, err

@@ -7,7 +7,6 @@ import (
 )
 
 func TestCommentBuilder(t *testing.T) {
-
 	for _, tc := range []struct {
 		name     string
 		leading  string

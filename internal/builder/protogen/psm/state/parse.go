@@ -55,7 +55,6 @@ func WalkFile(sc *j5schema.SchemaCache, file *protogen.File) ([]*PSMEntity, erro
 }
 
 func (se *sourceSet) checkMessage(message *protogen.Message) error {
-
 	ww := walkingMessage{
 		message: message,
 	}
@@ -258,7 +257,6 @@ func (src StateEntityGenerateSet) validate() error {
 }
 
 func BuildStateSet(sc *j5schema.SchemaCache, src StateEntityGenerateSet) (*PSMEntity, error) {
-
 	if err := src.validate(); err != nil {
 		return nil, fmt.Errorf("state object %s: %w", src.options.EntityName, err)
 	}

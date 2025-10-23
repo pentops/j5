@@ -114,7 +114,6 @@ func newLspCompiler(ctx context.Context, dir string) (*lspCompiler, error) {
 }
 
 func (cc *lspCompiler) updateFile(ctx context.Context, filename string, locs *bcl_j5pb.SourceLocation, msg protoreflect.Message) error {
-
 	fileRel, err := filepath.Rel(cc.rootDir, filename)
 	if err != nil {
 		return err

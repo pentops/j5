@@ -22,7 +22,6 @@ func walkLoc(walk *bcl_j5pb.SourceLocation, path ...string) *bcl_j5pb.SourceLoca
 	return walk
 }
 func TestSourceNode(t *testing.T) {
-
 	root := &bcl_j5pb.SourceLocation{
 		StartLine: 1,
 	}
