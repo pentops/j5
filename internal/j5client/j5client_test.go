@@ -16,7 +16,6 @@ import (
 )
 
 func TestFooSchema(t *testing.T) {
-
 	ctx := context.Background()
 	rootFS := os.DirFS("../../")
 

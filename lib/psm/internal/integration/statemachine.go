@@ -11,7 +11,6 @@ type StateMachines struct {
 }
 
 func BuildStateMachines(db *sqrlx.Wrapper) (*StateMachines, error) {
-
 	foo, err := NewFooStateMachine()
 	if err != nil {
 		return nil, err
@@ -76,7 +75,6 @@ func NewFooStateMachine() (*test_pb.FooPSM, error) {
 		SetStatus(test_pb.FooStatus_DELETED)
 
 	return sm, nil
-
 }
 
 func NewBarStateMachine() (*test_pb.BarPSM, error) {

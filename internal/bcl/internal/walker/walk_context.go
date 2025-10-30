@@ -176,7 +176,6 @@ func (sc *walkContext) SetAttribute(path ScopePath, val parser.ASTValue) error {
 }
 
 func (sc *walkContext) setAttribute(path ScopePath, val parser.ASTValue, appendValue bool) error {
-
 	fullPath := path.combined()
 	if len(fullPath) == 0 {
 		return newSchemaError(fmt.Errorf("empty path for SetAttribute"))
@@ -294,7 +293,6 @@ func (sc *walkContext) setContainerFromScalar(bs schema.BlockSpec, val parser.AS
 		setVals = vals
 
 	} else {
-
 		vals, isArray := val.AsArray()
 		if !isArray {
 			return fmt.Errorf("container %s requires an array when setting from value, got a scalar", bs.ErrName())

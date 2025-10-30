@@ -37,7 +37,6 @@ func (rc *registryClient) LatestImage(ctx context.Context, owner, repoName strin
 }
 
 func (rc *registryClient) GetImage(ctx context.Context, owner, repoName, version string) (*source_j5pb.SourceImage, error) {
-
 	fullName := fmt.Sprintf("registry/v1/%s/%s", owner, repoName)
 	ctx = log.WithField(ctx, "bundle", fullName)
 

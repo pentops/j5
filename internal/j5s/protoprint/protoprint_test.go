@@ -16,7 +16,6 @@ import (
 )
 
 func TestSimplePrint(t *testing.T) {
-
 	input := &descriptorpb.FileDescriptorProto{
 		Name:    proto.String("test.proto"),
 		Syntax:  proto.String("proto3"),
@@ -194,7 +193,6 @@ func TestSimplePrint(t *testing.T) {
 }
 
 func assertEqualLines(t *testing.T, wantLines, gotLines []string) {
-
 	for idx, line := range gotLines {
 		t.Logf("got %03d: '%s'", idx, line)
 		if idx >= len(wantLines) {

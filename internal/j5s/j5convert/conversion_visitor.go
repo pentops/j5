@@ -162,7 +162,6 @@ func (ww *conversionVisitor) visitTopicNode(tn *sourcewalk.TopicNode) {
 }
 
 func (ww *conversionVisitor) visitObjectNode(node *sourcewalk.ObjectNode) {
-
 	message := newMessageContext(node.Name, ww.parentContext)
 
 	if !node.SourceAnonymous {
@@ -379,7 +378,6 @@ func (ww *conversionVisitor) visitPolymorphNode(node *sourcewalk.PolymorphNode) 
 }
 
 func (ww *conversionVisitor) visitEnumNode(node *sourcewalk.EnumNode) {
-
 	desc := &descriptorpb.EnumDescriptorProto{
 		Name: gl.Ptr(node.Schema.Name),
 		Value: []*descriptorpb.EnumValueDescriptorProto{{

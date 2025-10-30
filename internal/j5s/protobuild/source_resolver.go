@@ -31,7 +31,6 @@ type SourceFile struct {
 // produces. Proto files are 1:1 with Search Results, but one J5S file can
 // produce multiple Search Results
 func (sf *SourceFile) toSearchResults(typeResolver j5convert.TypeResolver) ([]*psrc.File, error) {
-
 	if sf.ProtoFile != nil {
 		return []*psrc.File{{
 			SourceType:  psrc.LocalProtoSource,
@@ -174,7 +173,6 @@ func (sr *sourceResolver) getFile(ctx context.Context, sourceFilename string) (*
 }
 
 func (sr *sourceResolver) PackageSourceFiles(ctx context.Context, packageName string) ([]*SourceFile, error) {
-
 	fileNames, err := sr.listPackageFiles(ctx, packageName)
 	if err != nil {
 		return nil, fmt.Errorf("package files for (local) %s: %w", packageName, err)
@@ -193,7 +191,6 @@ func (sr *sourceResolver) PackageSourceFiles(ctx context.Context, packageName st
 }
 
 func (sr *sourceResolver) parseJ5s(sourceFilename string, data []byte) (*SourceFile, error) {
-
 	sourceFile, err := sr.j5Parser.ParseFile(sourceFilename, string(data))
 	if err != nil {
 		if ep, ok := errpos.AsErrors(err); ok {
@@ -219,7 +216,6 @@ func (sr *sourceResolver) parseJ5s(sourceFilename string, data []byte) (*SourceF
 }
 
 func (sr *sourceResolver) parseProto(filename string, data []byte) (*SourceFile, error) {
-
 	errs := errset.NewCollector()
 	fileNode, err := parser.Parse(filename, bytes.NewReader(data), errs.Handler())
 	if err != nil {

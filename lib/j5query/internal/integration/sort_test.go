@@ -17,7 +17,6 @@ import (
 )
 
 func TestSortingWithAuthScope(t *testing.T) {
-
 	uu := NewSchemaUniverse(t)
 	ss := NewStepper(t)
 	defer ss.RunSteps(t)

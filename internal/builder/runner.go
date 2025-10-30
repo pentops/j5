@@ -25,7 +25,6 @@ type Runner struct {
 }
 
 func NewRunner(registryAuth []*config_j5pb.DockerRegistryAuth) (*Runner, error) {
-
 	cli, err := client.NewClientWithOpts(
 		client.FromEnv,
 		client.WithAPIVersionNegotiation(),
@@ -55,7 +54,6 @@ type RunContext struct {
 }
 
 func (rr *Runner) Run(ctx context.Context, rc RunContext) error {
-
 	switch rt := rc.Command.RunType.Type.(type) {
 	case *config_j5pb.PluginRunType_Local:
 		envVars, err := mapEnvVars(rt.Local.Env, rc.Vars)

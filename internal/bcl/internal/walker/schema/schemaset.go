@@ -71,7 +71,6 @@ func convertBlock(src *bcl_j5pb.Block) (*BlockSpec, error) {
 }
 
 func NewSchemaSet() (*SchemaSet, error) {
-
 	return &SchemaSet{
 		cachedSpecs: map[string]*BlockSpec{},
 	}, nil
@@ -221,7 +220,6 @@ func (ss *SchemaSet) blockSpec(node j5PropSet) (*BlockSpec, error) {
 }
 
 func arrayName(obj *schema_j5pb.ObjectField) string {
-
 	var name string
 	if ref := obj.GetRef(); ref != nil {
 		name = ref.Schema

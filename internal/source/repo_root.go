@@ -123,7 +123,6 @@ func (rr *repo) bundleByName(name string) *bundleSource {
 }
 
 func (src *RepoRoot) newRepo(debugName string, repoRoot fs.FS) (*repo, error) {
-
 	config, err := readDirConfigs(repoRoot)
 	if err != nil {
 		return nil, err
@@ -340,7 +339,6 @@ func (src *RepoRoot) CombinedSourceImage(ctx context.Context, inputs []*config_j
 }
 
 func combineSourceImages(images []*source_j5pb.SourceImage) ([]*descriptorpb.FileDescriptorProto, []string, error) {
-
 	files := make([]*descriptorpb.FileDescriptorProto, 0)
 	filenames := make([]string, 0)
 	fileMap := map[string]*descriptorpb.FileDescriptorProto{}

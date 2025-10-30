@@ -12,7 +12,6 @@ import (
 )
 
 type TableMap struct {
-
 	// KeyColumns are stored in both state and event tables.
 	// Keys marked primary combine to form the primary key of the State table,
 	// and therefore a foreign key from the event table.
@@ -24,7 +23,6 @@ type TableMap struct {
 }
 
 func (tm *TableMap) Validate() error {
-
 	if tm.State.TableName == "" {
 		return fmt.Errorf("missing State.TableName in TableMap")
 	}
@@ -49,6 +47,7 @@ func (tm *TableMap) Validate() error {
 	if tm.Event.StateSnapshot == nil {
 		return fmt.Errorf("missing Event.StateSnapshot in TableMap")
 	}
+
 	return nil
 }
 
@@ -170,7 +169,6 @@ func buildDefaultTableMap(stateKeyField *j5schema.ObjectProperty, keyMessage *j5
 	}
 
 	for _, field := range keyMessage.Properties {
-
 		keyColumn, err := keyFieldColumn(field)
 		if err != nil {
 			return nil, fmt.Errorf("field %s: %w", field.FullName(), err)
@@ -183,7 +181,6 @@ func buildDefaultTableMap(stateKeyField *j5schema.ObjectProperty, keyMessage *j5
 }
 
 func keyFieldColumn(field *j5schema.ObjectProperty) (*KeyColumn, error) {
-
 	isPrimary := field.Entity != nil && field.Entity.Primary
 
 	kc := &KeyColumn{
@@ -201,7 +198,6 @@ func keyFieldColumn(field *j5schema.ObjectProperty) (*KeyColumn, error) {
 }
 
 func tableMapFromStateAndEvent(stateMessage, eventMessage *j5schema.ObjectSchema) (*TableMap, error) {
-
 	var stateKeyField *j5schema.ObjectProperty
 	var keyMessage *j5schema.ObjectSchema
 

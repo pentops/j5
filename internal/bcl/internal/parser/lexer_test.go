@@ -144,7 +144,6 @@ func (a *positionAsserter) next(r rune) {
 }
 
 func TestPositionWalk(t *testing.T) {
-
 	a := newPosAsserter(t, "01\n01")
 
 	// first positions are invalid, as nothing has been read.
@@ -167,7 +166,6 @@ func TestPositionWalk(t *testing.T) {
 }
 
 func TestSimple(t *testing.T) {
-
 	for _, tc := range []struct {
 		name              string
 		input             []string
@@ -504,7 +502,6 @@ func (t Token) tEnd(line, col int) Token {
 }
 
 func assertTokensEqual(t *testing.T, tokens, expected []Token) {
-
 	for idx, tok := range tokens {
 		if len(expected) <= idx {
 			t.Errorf("BAD % 3d: %s (extra)", idx, tok)

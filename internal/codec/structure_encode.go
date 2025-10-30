@@ -53,7 +53,6 @@ func (enc *encoder) encodeObjectBody(fieldSet j5reflect.PropertySet) error {
 }
 
 func (enc *encoder) encodeOneofBody(fieldSet j5reflect.Oneof) error {
-
 	prop, isSet, err := fieldSet.GetOne()
 	if err != nil {
 		return err
@@ -168,7 +167,6 @@ func (enc *encoder) encodeAny(anyField j5reflect.AnyField) error {
 }
 
 func (enc *encoder) encodeValue(field j5reflect.Field) error {
-
 	switch ft := field.(type) {
 	case j5reflect.ObjectField:
 		if !field.IsSet() {

@@ -99,7 +99,6 @@ func (src *PackageStore) GoModZip(ctx context.Context, packageName, version stri
 }
 
 func (s *PackageStore) UploadGoModule(ctx context.Context, commitInfo *source_j5pb.CommitInfo, root fs.FS) error {
-
 	gomodBytes, err := fs.ReadFile(root, "go.mod")
 	if err != nil {
 		return err

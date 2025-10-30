@@ -176,7 +176,6 @@ func testImage() *source_j5pb.SourceImage {
 }
 
 func testAPI() *schema_j5pb.API {
-
 	return &schema_j5pb.API{
 		Packages: []*schema_j5pb.Package{{
 			Label: "Test",
@@ -310,7 +309,6 @@ func testAPI() *schema_j5pb.API {
 }
 
 func TestBuildPath(t *testing.T) {
-
 	sourceImage := testImage()
 
 	apiSource, err := APIFromImage(sourceImage)

@@ -8,7 +8,6 @@ import (
 )
 
 func TestBuildStateMachineOneKey(t *testing.T) {
-
 	fooSpec, err := psm.BuildQueryTableSpec(
 		(&test_pb.FooState{}).J5Object().ObjectSchema(),
 		(&test_pb.FooEvent{}).J5Object().ObjectSchema(),

@@ -67,7 +67,6 @@ func (*testIE1) PSMEventKey() string {
 }
 
 func TestTransitionBuilder(t *testing.T) {
-
 	hs := &transitionSet[*testK, *testS, testST, *testSD, *testE, testIE]{}
 
 	gotTransitions := []string{}
@@ -157,5 +156,4 @@ func TestTransitionBuilder(t *testing.T) {
 
 	t.Logf("transitions: %v", gotTransitions)
 	assert.Equal(t, []string{"A1", "A2", "B", "C"}, gotTransitions)
-
 }

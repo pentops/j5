@@ -264,7 +264,6 @@ func (fs *propSet) GetOrCreateValue(nameParts ...string) (Field, error) {
 }
 
 func (fs *propSet) SetScalar(value any, nameParts ...string) error {
-
 	reflectField, err := fs.GetOrCreateValue(nameParts...)
 	if err != nil {
 		return patherr.Wrap(err, nameParts...)
@@ -296,7 +295,6 @@ func (fs *propSet) SetNull() error {
 }
 
 func (fs *propSet) GetField(nameParts ...string) (Field, bool, error) {
-
 	next, err := fs.getValue(nameParts[0])
 	if err != nil {
 		return nil, false, err

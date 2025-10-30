@@ -49,7 +49,6 @@ func (sw *Scope) RootBlock() Container {
 }
 
 func NewRootSchemaWalker(ss *SchemaSet, root j5reflect.Object, sourceLoc *bcl_j5pb.SourceLocation) (*Scope, error) {
-
 	if sourceLoc == nil {
 		return nil, fmt.Errorf("source location required")
 	}

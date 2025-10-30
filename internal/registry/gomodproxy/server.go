@@ -168,7 +168,6 @@ func ParseRequestPath(requestPath string) (ParsedRequest, error) {
 }
 
 func Handler(mods ModProvider) http.Handler {
-
 	sendJSON := func(w http.ResponseWriter, code int, data any) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		dataJSON, err := json.Marshal(data)
@@ -282,7 +281,6 @@ func Handler(mods ModProvider) http.Handler {
 }
 
 func Serve(ctx context.Context, port int, mods ModProvider) error {
-
 	mux := http.NewServeMux()
 
 	mux.Handle("/gopkg/", http.StripPrefix("/gopkg", Handler(mods)))

@@ -6,7 +6,6 @@ import (
 )
 
 func TestDescriptionFormat(t *testing.T) {
-
 	s := func(s ...string) string { return strings.Join(s, "\n") }
 
 	run := func(input string, want string, maxWidth int) {

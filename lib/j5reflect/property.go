@@ -198,7 +198,6 @@ func schemaIsMutable(schema j5schema.FieldSchema) (bool, error) {
 }
 
 func buildProperty(context fieldContext, schema *j5schema.ObjectProperty, value protoval.Value) (Field, error) {
-
 	switch st := schema.Schema.(type) {
 
 	case *j5schema.ArrayField:
@@ -314,7 +313,6 @@ type fieldFactory interface {
 }
 
 func newMessageFieldFactory(schema j5schema.FieldSchema, desc protoreflect.MessageDescriptor) (fieldFactory, error) {
-
 	switch st := schema.(type) {
 	case *j5schema.ObjectField:
 		propSetFactory, err := newPropSetFactory(st.ObjectSchema(), desc)

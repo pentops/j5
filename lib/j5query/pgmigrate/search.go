@@ -46,7 +46,6 @@ type searchSpec struct {
 }
 
 func buildIndexes(tableName string, columnName string, rootType *j5schema.ObjectSchema) ([]searchSpec, error) {
-
 	cols, err := j5query.TSVColumns(rootType)
 	if err != nil {
 		return nil, err
@@ -61,11 +60,9 @@ func buildIndexes(tableName string, columnName string, rootType *j5schema.Object
 			columnName: columnName,
 			path:       col.Path,
 		})
-
 	}
 
 	return specs, nil
-
 }
 
 func (ss searchSpec) ToSQL() (string, error) {
@@ -86,7 +83,6 @@ func (ss searchSpec) DownSQL() (string, error) {
 }
 
 func writeIndexes(ctx context.Context, conn sqrlx.Connection, specs []searchSpec) error {
-
 	db, err := sqrlx.New(conn, sq.Dollar)
 	if err != nil {
 		return err

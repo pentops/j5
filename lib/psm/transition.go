@@ -162,7 +162,6 @@ func (hs *transition[K, S, ST, SD, E, IE]) runMutations(
 	state S,
 	event E,
 ) error {
-
 	log.Debug(ctx, "running transition mutations")
 	log.WithFields(ctx, map[string]any{
 		"mutationsCount": len(hs.mutations),

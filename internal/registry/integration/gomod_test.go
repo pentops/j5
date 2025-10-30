@@ -13,7 +13,6 @@ import (
 )
 
 func TestGomodStore(t *testing.T) {
-
 	flow, uu := NewUniverse(t)
 	defer flow.RunSteps(t)
 

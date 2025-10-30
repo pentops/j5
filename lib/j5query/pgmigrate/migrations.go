@@ -15,7 +15,6 @@ type MigrationItem interface {
 }
 
 func RunMigrations(ctx context.Context, db sqrlx.Transactor, migrations []MigrationItem) error {
-
 	return db.Transact(ctx, nil, func(ctx context.Context, tx sqrlx.Transaction) error {
 		for _, migration := range migrations {
 			statement, err := migration.ToSQL()

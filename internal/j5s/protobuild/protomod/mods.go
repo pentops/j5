@@ -110,7 +110,6 @@ func newGoPackageNames(mod *config_j5pb.ProtoMod_GoPackageNames) *goPackageNames
 }
 
 func (mod goPackageNames) MutateFile(file *descriptorpb.FileDescriptorProto) error {
-
 	if file.Options == nil {
 		file.Options = &descriptorpb.FileOptions{}
 	} else if file.Options.GoPackage != nil {

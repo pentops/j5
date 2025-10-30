@@ -186,7 +186,6 @@ func (fb *fileContext) File() *descriptorpb.FileDescriptorProto {
 }
 
 func (fb *fileContext) ensureImport(importPath string) {
-
 	if importPath == "" {
 		panic("empty import path")
 	}

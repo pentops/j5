@@ -17,7 +17,6 @@ type Builder struct {
 }
 
 func NewBuilder(exts []protoreflect.ExtensionDescriptor) *Builder {
-
 	extMap := map[protoreflect.FullName]map[protoreflect.FieldNumber]protoreflect.ExtensionDescriptor{}
 
 	for _, ext := range exts {
@@ -79,7 +78,6 @@ func isPrefix(prefix, path []int32) bool {
 }
 
 func (fb *Builder) OptionsFor(parent protoreflect.Descriptor) ([]*OptionDefinition, error) {
-
 	srcReflect := parent.Options().ProtoReflect()
 	options := make([]*OptionDefinition, 0)
 

@@ -11,7 +11,6 @@ type Node struct {
 }
 
 func SortDAG(nodes []Node) ([]string, error) {
-
 	// https://en.wikipedia.org/wiki/Topological_sorting#Kahn's_algorithm
 	// Kahn's algorithm
 	// L ← Empty list that will contain the sorted elements

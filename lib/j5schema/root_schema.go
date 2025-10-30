@@ -200,7 +200,6 @@ func findMethodOutput(msg protoreflect.MessageDescriptor) protoreflect.MessageDe
 }
 
 func convertListRequest(requestMessage protoreflect.MessageDescriptor, listRequestAnnotation *list_j5pb.ListRequestMessage) (*ListRequestDefaults, error) {
-
 	output := findMethodOutput(requestMessage)
 	if output == nil {
 		return nil, fmt.Errorf("message %s has list annotations, but does not contain a matching RPC in file %s", requestMessage.FullName(), requestMessage.ParentFile().Path())
@@ -470,7 +469,6 @@ func (prop *ObjectProperty) FullName() string {
 }
 
 func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
-
 	propSchema := prop.Schema.ToJ5Field()
 
 	//fmt.Printf("PropSchema: %s %v\n", prop.FullName(), propSchema)

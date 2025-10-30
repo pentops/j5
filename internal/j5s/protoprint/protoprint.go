@@ -22,7 +22,6 @@ type FileWriter interface {
 }
 
 func PrintFile(ctx context.Context, file protoreflect.FileDescriptor, genComment string) (string, error) {
-
 	fileData, err := printFile(file, genComment)
 	if err != nil {
 		return "", fmt.Errorf("in file %s: %w", file.Path(), err)
@@ -147,7 +146,6 @@ func (fb fileBuilder) indent() fileBuilder {
 }
 
 func (fb *fileBuilder) printFile(ff protoreflect.FileDescriptor) ([]byte, error) {
-
 	if ff.Syntax() != protoreflect.Proto3 {
 		return nil, errors.New("only proto3 syntax is supported")
 	}
@@ -283,7 +281,6 @@ func fieldTypeName(field protoreflect.FieldDescriptor) (string, error) {
 }
 
 func contextRefName(contextOfCall protoreflect.Descriptor, refElement protoreflect.Descriptor) (string, error) {
-
 	if contextOfCall.ParentFile().Package() != refElement.ParentFile().Package() {
 		// if the thing the field references is in a different package, then the
 		// full reference is used
@@ -304,7 +301,6 @@ func contextRefName(contextOfCall protoreflect.Descriptor, refElement protorefle
 }
 
 func pathToPackage(refElement protoreflect.Descriptor) []string {
-
 	refPath := make([]string, 0)
 	parentFileName := refElement.ParentFile().FullName()
 	parent := refElement

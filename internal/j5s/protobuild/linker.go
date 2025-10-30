@@ -117,7 +117,6 @@ func (info *linkInfo) linkerDeps() linker.Files {
 }
 
 func resultsToLinkerFiles(results []*psrc.File) linker.Files {
-
 	deps := make(linker.Files, 0, len(results))
 	for _, dep := range results {
 		if dep.Linked != nil {
@@ -195,7 +194,6 @@ func _linkReflection(ll linkInfo, refl protoreflect.FileDescriptor) (linker.File
 }
 
 func _linkDescriptorProto(ll linkInfo, desc *descriptorpb.FileDescriptorProto) (linker.File, error) {
-
 	result := parser.ResultWithoutAST(desc)
 
 	linked, err := linker.Link(result, ll.linkerDeps(), ll.symbols, ll.errs)

@@ -92,7 +92,6 @@ func (qs PSMQuerySet) writeQuerySpec(g *protogen.GeneratedFile) {
 }
 
 func (qs PSMQuerySet) writeDefaultService(g *protogen.GeneratedFile) {
-
 	serviceName := qs.GoName + "QueryServiceImpl"
 	g.P("type ", serviceName, " struct {")
 	g.P("db ", sqrlxPkg.Ident("Transactor"))

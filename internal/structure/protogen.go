@@ -77,7 +77,6 @@ func SortByDependency(files []*descriptorpb.FileDescriptorProto, resolveMissing 
 }
 
 func CodeGeneratorRequestFromImage(img *source_j5pb.SourceImage) (*pluginpb.CodeGeneratorRequest, error) {
-
 	out := &pluginpb.CodeGeneratorRequest{
 		CompilerVersion: nil,
 		FileToGenerate:  img.SourceFilenames,

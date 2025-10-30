@@ -19,7 +19,6 @@ type RegistryClient interface {
 }
 
 func NewBuilder(regClient RegistryClient) (*Builder, error) {
-
 	resolver, err := resolver.NewResolver(regClient)
 	if err != nil {
 		return nil, err

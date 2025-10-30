@@ -8,7 +8,6 @@ import (
 )
 
 func TestConvertSchema(t *testing.T) {
-
 	for _, tc := range []struct {
 		name  string
 		input *schema_j5pb.Field
@@ -501,7 +500,6 @@ func TestConvertSchema(t *testing.T) {
 }
 
 func TestSchemaJSONMarshal(t *testing.T) {
-
 	object := &Schema{
 		SchemaItem: &SchemaItem{
 			Type: &ObjectItem{

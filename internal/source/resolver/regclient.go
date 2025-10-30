@@ -19,7 +19,6 @@ type registryClient struct {
 }
 
 func NewRegistryClient(remote string, authToken string) (*registryClient, error) {
-
 	auth := ""
 	if authToken != "" {
 		auth = fmt.Sprintf("Bearer %s", authToken)
