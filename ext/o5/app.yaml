@@ -21,6 +21,7 @@ databases:
       migrateContainer:
         image:
           name: registry
+          registry: ghcr.io/pentops
         command: [migrate]
         envVars:
           - name: "POSTGRES_URL"
@@ -51,6 +52,7 @@ runtimes:
         demand: DEMAND_LIGHT
         image:
             name: registry
+            registry: ghcr.io/pentops
         mountDockerSocket: true
         command: [serve]
         envVars:
