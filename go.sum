@@ -218,6 +218,8 @@ github.com/pentops/pgtest.go v0.0.0-20241223222214-7638cc50e15b h1:UfL+A9/Nwi0QW
 github.com/pentops/pgtest.go v0.0.0-20241223222214-7638cc50e15b/go.mod h1:U4AOJK8uL3IkJx1t5MBsOXudjZ111il31WE9UxL8Wz8=
 github.com/pentops/realms v0.0.0-20250803154340-aacc1b26be5d h1:W9XdW+XWL+RTD6g/BjCQkwGgsK5V4xMq+pYXJC3hZkI=
 github.com/pentops/realms v0.0.0-20250803154340-aacc1b26be5d/go.mod h1:DC2zbhQA2q+uYye2X4AONVEetw+UKgLvHUcswyKEjUg=
+github.com/pentops/registry v0.0.0-20250709220846-a938303964fc h1:F/W4hhRN/97C/WnFEf/rSRAnHvrcaZZq8+SeHHkzLW0=
+github.com/pentops/registry v0.0.0-20250709220846-a938303964fc/go.mod h1:lkvmdFw0JoKhGGy/zZZIE77yC3eSpJVQhH7+HfNZ1Nw=
 github.com/pentops/runner v0.0.0-20250619010747-2bb7a5385324 h1:8XpxeCwt2P9qeoxZKmPOb5+dPkMVpI6RHe25IP5ObIo=
 github.com/pentops/runner v0.0.0-20250619010747-2bb7a5385324/go.mod h1:shToz/PSOjLpxWHDUQdY9TzawzHGTDJ69o+fHokrJ+4=
 github.com/pentops/sqrlx.go v0.0.0-20250520210217-2f46de329c7a h1:v80copaLBILLt0Bozh6ZKNk8GeCNsblhB14d+ZIJUtc=

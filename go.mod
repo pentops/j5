@@ -23,6 +23,7 @@ require (
 	github.com/pentops/o5-messaging v0.0.0-20250815175230-aa8a41a5ba43
 	github.com/pentops/pgtest.go v0.0.0-20241223222214-7638cc50e15b
 	github.com/pentops/realms v0.0.0-20250803154340-aacc1b26be5d
+	github.com/pentops/registry v0.0.0-20250709220846-a938303964fc
 	github.com/pentops/runner v0.0.0-20250619010747-2bb7a5385324
 	github.com/pentops/sqrlx.go v0.0.0-20250520210217-2f46de329c7a
 	github.com/pressly/goose v2.7.0+incompatible
@@ -47,7 +48,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
 	github.com/jhump/protoreflect v1.17.0 // indirect
-	github.com/pmezard/go-difflib v1.0.0
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/ryanuber/go-glob v1.0.0
 	github.com/tidwall/gjson v1.18.0
 	github.com/tidwall/match v1.1.1 // indirect
