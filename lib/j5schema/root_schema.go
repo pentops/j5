@@ -85,7 +85,7 @@ type EnumOption struct {
 	name        string
 	number      int32
 	description string
-	Info        map[string]string
+	info        map[string]string
 }
 
 func (eo *EnumOption) Name() string {
@@ -105,7 +105,7 @@ func (eo *EnumOption) ToJ5EnumValue() *schema_j5pb.Enum_Option {
 		Name:        eo.name,
 		Number:      eo.number,
 		Description: eo.description,
-		Info:        eo.Info,
+		Info:        eo.info,
 	}
 
 }
@@ -200,7 +200,6 @@ func findMethodOutput(msg protoreflect.MessageDescriptor) protoreflect.MessageDe
 }
 
 func convertListRequest(requestMessage protoreflect.MessageDescriptor, listRequestAnnotation *list_j5pb.ListRequestMessage) (*ListRequestDefaults, error) {
-
 	output := findMethodOutput(requestMessage)
 	if output == nil {
 		return nil, fmt.Errorf("message %s has list annotations, but does not contain a matching RPC in file %s", requestMessage.FullName(), requestMessage.ParentFile().Path())
@@ -470,7 +469,6 @@ func (prop *ObjectProperty) FullName() string {
 }
 
 func (prop *ObjectProperty) ToJ5Proto() *schema_j5pb.ObjectProperty {
-
 	propSchema := prop.Schema.ToJ5Field()
 
 	//fmt.Printf("PropSchema: %s %v\n", prop.FullName(), propSchema)

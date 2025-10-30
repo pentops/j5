@@ -12,7 +12,6 @@ import (
 )
 
 func ConvertJ5File(deps TypeResolver, source *sourcedef_j5pb.SourceFile) ([]*descriptorpb.FileDescriptorProto, error) {
-
 	importMap, err := j5Imports(source)
 	if err != nil {
 		return nil, err

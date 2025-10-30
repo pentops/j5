@@ -74,7 +74,6 @@ type cacheSpec struct {
 }
 
 func (rr *Resolver) cacheDance(ctx context.Context, spec cacheSpec, source RegistryClient, locks *config_j5pb.LockFile) (*source_j5pb.SourceImage, error) {
-
 	fullName := fmt.Sprintf("%s/%s/%s", spec.repoType, spec.owner, spec.repoName)
 	ctx = log.WithField(ctx, "bundle", fullName)
 	var version *string
@@ -123,7 +122,6 @@ func (rr *Resolver) cacheDance(ctx context.Context, spec cacheSpec, source Regis
 }
 
 func (src *Resolver) LatestLocks(ctx context.Context, deps []*config_j5pb.Input) (*config_j5pb.LockFile, error) {
-
 	lockFile := &config_j5pb.LockFile{}
 	seen := map[string]struct{}{}
 	for _, dep := range deps {

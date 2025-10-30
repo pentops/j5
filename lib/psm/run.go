@@ -25,7 +25,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) runEvent(
 	event E,
 	captureState captureStateType,
 ) (*S, error) {
-
 	if err := sm.validateEvent(event); err != nil {
 		return nil, err
 	}
@@ -138,7 +137,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) runEvent(
 }
 
 func (sm *StateMachine[K, S, ST, SD, E, IE]) followEvent(ctx context.Context, tx sqrlx.Transaction, state S, event E) error {
-
 	typeKey := event.UnwrapPSMEvent().PSMEventKey()
 	statusBefore := state.GetStatus()
 
@@ -181,7 +179,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) storeAfterMutation(
 	state S,
 	event E,
 ) error {
-
 	if state.GetStatus() == 0 {
 		return fmt.Errorf("state machine transitioned to zero status")
 	}
@@ -196,5 +193,4 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) storeAfterMutation(
 	}
 
 	return nil
-
 }

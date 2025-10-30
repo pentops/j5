@@ -84,7 +84,6 @@ func (tf *testFiles) tAddJ5SFile(filename string, body ...string) {
 }
 
 func ObjectReflect(t testing.TB, file string) protoreflect.MessageDescriptor {
-
 	pkgName := "pkg" + strings.ToLower(strings.ReplaceAll(uuid.New().String(), "-", ""))
 
 	locals := newTestFiles()

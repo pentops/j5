@@ -83,7 +83,6 @@ func TestEnumSummary(t *testing.T) {
 }
 
 func TestPolymorphSummary(t *testing.T) {
-
 	polymorphSchema := &sourcedef_j5pb.RootElement{
 		Type: &sourcedef_j5pb.RootElement_Polymorph{
 			Polymorph: &sourcedef_j5pb.Polymorph{

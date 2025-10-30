@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -20,6 +21,8 @@ import (
 	"github.com/docker/docker/api/types/image"
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
+
+	dockerConfig "github.com/docker/cli/cli/config"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/log.go/log"
 
@@ -153,7 +156,6 @@ func (dr *dockerRun) wait(ctx context.Context) error {
 }
 
 func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
-
 	rcDocker := rc.Command.RunType.GetDocker()
 	if rcDocker == nil {
 		return fmt.Errorf("run type is not docker")
@@ -230,8 +232,51 @@ func (dw *Runner) markPull(img string) bool {
 	dw.pulledImages[img] = true
 	return false
 }
-func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
 
+// dockerCliAuth uses the docker CLI config to get auth for a registry
+func dockerCliAuth(img string) (string, error) {
+	cfg := dockerConfig.LoadDefaultConfigFile(os.Stderr)
+	registryEnd := strings.Index(img, "/")
+	if registryEnd == -1 {
+		return "", fmt.Errorf("invalid image: %s", img)
+	}
+
+	registry := img[:registryEnd]
+	auth, err := cfg.GetAuthConfig(registry)
+	if err != nil || auth.Password == "" {
+		return "", fmt.Errorf("get auth config: %w", err)
+	}
+
+	return basicAuth(auth.Username, auth.Password)
+}
+
+// ghCliAuth uses the GitHub CLI to get auth for ghcr.io
+func ghCliAuth(img string) (string, error) {
+	output, err := exec.Command("gh", "auth", "token").Output()
+	if err != nil {
+		return "", fmt.Errorf("gh auth token: %w", err)
+	}
+
+	return basicAuth("GITHUB", string(output))
+}
+
+// basicAuth returns base64 encoded credentials for a docker registry
+func basicAuth(username, password string) (string, error) {
+	cred, err := json.Marshal(struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}{
+		Username: username,
+		Password: password,
+	})
+	if err != nil {
+		return "", fmt.Errorf("marshal auth: %w", err)
+	}
+
+	return base64.StdEncoding.EncodeToString(cred), nil
+}
+
+func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
 	alreadyPulled := dw.markPull(img)
 	if alreadyPulled {
 		log.Debug(ctx, "image already pulled")
@@ -247,11 +292,6 @@ func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
 	if len(images) > 0 {
 		log.Debug(ctx, "found images")
 		return nil
-	}
-
-	type basicAuth struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
 	}
 
 	pullOptions := image.PullOptions{}
@@ -271,8 +311,6 @@ func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
 
 	if registryAuth != nil {
 		pullOptions.PrivilegeFunc = func(ctx context.Context) (string, error) {
-			var authConfig *basicAuth
-
 			switch authType := registryAuth.Auth.(type) {
 			case *config_j5pb.DockerRegistryAuth_Basic_:
 				val := os.Getenv(authType.Basic.PasswordEnvVar)
@@ -280,28 +318,36 @@ func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
 					return "", fmt.Errorf("basic auth password (%s) not set", authType.Basic.PasswordEnvVar)
 				}
 
-				authConfig = &basicAuth{
-					Username: authType.Basic.Username,
-					Password: val,
-				}
+				return basicAuth(authType.Basic.Username, val)
 
 			case *config_j5pb.DockerRegistryAuth_Github_:
 				envVar := authType.Github.TokenEnvVar
 				if envVar == "" {
 					envVar = "GITHUB_TOKEN"
 				}
+
+				// Prefer env var over docker config
 				val := os.Getenv(envVar)
-				if val == "" {
-					return "", fmt.Errorf("github token (%s) not set", envVar)
+				if val != "" {
+					log.Debug(ctx, "using token from env")
+					return basicAuth("GITHUB", val)
 				}
 
-				authConfig = &basicAuth{
-					Username: "GITHUB",
-					Password: val,
+				val, _ = dockerCliAuth(img)
+				if val != "" {
+					log.Debug(ctx, "using token from docker cli")
+					return val, nil
 				}
+
+				val, _ = ghCliAuth(img)
+				if val != "" {
+					log.Debug(ctx, "using token from gh cli")
+					return val, nil
+				}
+
+				return "", fmt.Errorf("github token (%s) not set, or docker/gh not logged in to github", envVar)
 
 			case *config_j5pb.DockerRegistryAuth_AwsEcs:
-
 				// TODO: This is a little too magic.
 				awsConfig, err := config.LoadDefaultConfig(ctx)
 				if err != nil {
@@ -328,24 +374,19 @@ func (dw *Runner) pullIfNeeded(ctx context.Context, img string) error {
 					return "", fmt.Errorf("invalid authorization token")
 				}
 
-				authConfig = &basicAuth{
-					Username: parts[0],
-					Password: parts[1],
-				}
+				return basicAuth(parts[0], parts[1])
 
 			default:
 				return "", fmt.Errorf("unknown auth type: %T", authType)
 			}
-			cred, _ := json.Marshal(authConfig)
-			return base64.StdEncoding.EncodeToString(cred), nil
 		}
 	}
 
 	reader, err := dw.client.ImagePull(ctx, img, pullOptions)
 	if err != nil {
-		// The ECS registry seems to return the 'wrong' status code for PrivilegeFunc errors.
+		// The ECS registry & ghcr seems to return the 'wrong' status code for PrivilegeFunc errors.
 		// This is a workaround.
-		if strings.Contains(err.Error(), "no basic auth credentials") {
+		if strings.Contains(err.Error(), "no basic auth credentials") || strings.Contains(err.Error(), "unauthorized") {
 			token, err := pullOptions.PrivilegeFunc(ctx)
 			if err != nil {
 				return fmt.Errorf("image pull: %w", err)

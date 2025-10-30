@@ -123,7 +123,6 @@ type getJoin struct {
 }
 
 func NewGetter(spec GetSpec) (*Getter, error) {
-
 	if spec.Method == nil {
 		return nil, fmt.Errorf("missing Method")
 	}
@@ -188,7 +187,6 @@ func (gc *Getter) SetQueryLogger(logger QueryLogger) {
 }
 
 func (gc *Getter) Get(ctx context.Context, db Transactor, reqMsg, resMsg j5reflect.Object) error {
-
 	err := assertObjectsMatch(gc.method, reqMsg, resMsg)
 	if err != nil {
 		return err

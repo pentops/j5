@@ -86,7 +86,6 @@ type MiniFooController struct {
 }
 
 func NewMiniFooController(db *sqrlx.Wrapper, query *test_spb.FooPSMQuerySet) *MiniFooController {
-
 	return &MiniFooController{
 		db:                  db,
 		FooQueryServiceImpl: test_spb.NewFooQueryServiceImpl(db, query),
@@ -94,7 +93,6 @@ func NewMiniFooController(db *sqrlx.Wrapper, query *test_spb.FooPSMQuerySet) *Mi
 }
 
 func (c *MiniFooController) FooSummary(ctx context.Context, req *test_spb.FooSummaryRequest) (*test_spb.FooSummaryResponse, error) {
-
 	res := &test_spb.FooSummaryResponse{}
 
 	query := sq.Select("count(id)", "sum(weight)", "sum(height)", "sum(length)").From("foo_cache")
@@ -104,6 +102,7 @@ func (c *MiniFooController) FooSummary(ctx context.Context, req *test_spb.FooSum
 	if err != nil {
 		return nil, err
 	}
+
 	return res, nil
 }
 

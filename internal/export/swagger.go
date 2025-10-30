@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
@@ -33,6 +34,7 @@ type OperationHeader struct {
 	Path   string `json:"-"`
 
 	OperationID  string             `json:"operationId,omitempty"`
+	Tags         []string           `json:"tags,omitempty"`
 	Summary      string             `json:"summary,omitempty"`
 	Description  string             `json:"description,omitempty"`
 	DisplayOrder int                `json:"x-display-order"`
@@ -90,9 +92,9 @@ type SwaggerParameter struct {
 	Schema      *Schema `json:"schema"`
 }
 
-func (dd *Document) addService(service *client_j5pb.Service) error {
+func (dd *Document) addService(service *client_j5pb.Service, packageName string) error {
 	for _, method := range service.Methods {
-		err := dd.addMethod(service, method)
+		err := dd.addMethod(service, method, packageName)
 		if err != nil {
 			return fmt.Errorf("method %s: %w", method.Method.FullGrpcName, err)
 		}
@@ -135,15 +137,35 @@ func formatPathParameters(path string, pathParameters []*schema_j5pb.ObjectPrope
 	return strings.Join(pathParts, "/"), nil
 }
 
-func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.Method) error {
+// friendlyMethodName delimits a CamelCase method name with spaces to make it more readable
+func friendlyMethodName(name string) string {
+	var result strings.Builder
+	result.Grow(len(name))
+
+	for i, r := range name {
+		if unicode.IsUpper(r) && i > 0 {
+			result.WriteRune(' ')
+		}
+		result.WriteRune(r)
+	}
+	return result.String()
+}
+
+func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.Method, packageName string) error {
+	operationPath, err := formatPathParameters(method.Method.HttpPath, method.Request.PathParameters)
+	if err != nil {
+		return err
+	}
 
 	operation := &Operation{
 		OperationHeader: OperationHeader{
 			Method:          methodShortString[method.Method.HttpMethod],
-			Path:            method.Method.HttpPath,
+			Path:            operationPath,
+			Tags:            []string{packageName},
 			OperationID:     method.Method.FullGrpcName,
 			GrpcMethodName:  method.Method.Name,
 			GrpcServiceName: service.Name,
+			Summary:         friendlyMethodName(method.Method.Name),
 
 			Parameters: make([]SwaggerParameter, 0, len(method.Request.PathParameters)+len(method.Request.QueryParameters)),
 		},
@@ -164,7 +186,20 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 	}
 
 	for _, property := range method.Request.QueryParameters {
-		schema, err := convertSchema(property.Schema)
+		field := property.Schema
+
+		// Objects aren't handled well in query parameters by swagger/postman,
+		// so treat them as strings instead
+		_, ok := property.Schema.Type.(*schema_j5pb.Field_Object)
+		if ok {
+			field = &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_String_{
+					String_: &schema_j5pb.StringField{},
+				},
+			}
+		}
+
+		schema, err := convertSchema(field)
 		if err != nil {
 			return fmt.Errorf("query param %s: %w", property.Name, err)
 		}
@@ -177,7 +212,7 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 		})
 	}
 
-	if method.Request.Body != nil {
+	if method.Request.Body != nil && len(method.Request.Body.Properties) != 0 {
 		requestSchema, err := convertObjectItem(method.Request.Body)
 		if err != nil {
 			return err
@@ -192,32 +227,31 @@ func (dd *Document) addMethod(service *client_j5pb.Service, method *client_j5pb.
 		}
 	}
 
-	responseSchema, err := convertObjectItem(method.ResponseBody)
-	if err != nil {
-		return fmt.Errorf("response body: %w", err)
-	}
 	operation.Responses = &ResponseSet{{
 		Code:        200,
 		Description: "OK",
-		Content: OperationContent{
+	}}
+
+	// The response body is nil if the method returns httpBody
+	if method.ResponseBody != nil {
+		responseSchema, err := convertObjectItem(method.ResponseBody)
+		if err != nil {
+			return fmt.Errorf("response body: %w", err)
+		}
+		(*operation.Responses)[0].Content = OperationContent{
 			JSON: &OperationSchema{
 				Schema: responseSchema,
 			},
-		},
-	}}
+		}
+	}
 
 	found := false
 	for _, pathItem := range dd.Paths {
-		if pathItem.MapKey() == method.Method.HttpPath {
+		if pathItem.MapKey() == operationPath {
 			pathItem.AddOperation(operation)
 			found = true
 			break
 		}
-	}
-
-	operation.Path, err = formatPathParameters(operation.Path, method.Request.PathParameters)
-	if err != nil {
-		return err
 	}
 
 	if !found {

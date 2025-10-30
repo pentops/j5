@@ -11,7 +11,6 @@ var _ encoding.TextMarshaler = NewDate(2019, 1, 20)
 var _ encoding.TextUnmarshaler = NewDate(2019, 1, 20)
 
 func TestDate(t *testing.T) {
-
 	dv := NewDate(2019, 1, 20)
 	dvt := dv.AsTime(time.UTC)
 	if y, m, d := dvt.Date(); y != 2019 || m != time.January || d != 20 {

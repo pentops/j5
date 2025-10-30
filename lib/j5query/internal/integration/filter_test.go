@@ -179,8 +179,10 @@ func TestDynamicFiltering(t *testing.T) {
 		weight := (10 + int64(ii))
 		height := (50 - int64(ii))
 		length := (int64(ii % 2))
+		isActive := ii == 0
 
 		foo.SetScalar(pquery.JSONPath("tenantId"), tenantID)
+		foo.SetScalar(pquery.JSONPath("data", "isActive"), isActive)
 		foo.SetScalar(pquery.JSONPath("data", "characteristics", "weight"), weight)
 		foo.SetScalar(pquery.JSONPath("data", "characteristics", "height"), height)
 		foo.SetScalar(pquery.JSONPath("data", "characteristics", "length"), length)
@@ -930,6 +932,74 @@ func TestDynamicFiltering(t *testing.T) {
 								Type: &list_j5pb.FieldType{
 									Type: &list_j5pb.FieldType_Value{
 										Value: "damaged",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		res := &query_testspb.FooListResponse{}
+
+		err := queryer.List(t.Context(), uu.DB, req.J5Object(), res.J5Object())
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("Bool filter - happy", func(t *testing.T) {
+		req := &query_testspb.FooListRequest{
+			Page: &list_j5pb.PageRequest{PageSize: proto.Int64(5)},
+			Query: &list_j5pb.QueryRequest{
+				Filters: []*list_j5pb.Filter{
+					{
+						Type: &list_j5pb.Filter_Field{
+							Field: &list_j5pb.Field{
+								Name: "data.isActive",
+								Type: &list_j5pb.FieldType{
+									Type: &list_j5pb.FieldType_Value{
+										Value: "true",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+		res := &query_testspb.FooListResponse{}
+
+		err := queryer.List(t.Context(), uu.DB, req.J5Object(), res.J5Object())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(res.Foo) != 1 {
+			t.Fatalf("expected %d states, got %d", 1, len(res.Foo))
+		}
+
+		for _, event := range res.Foo {
+			switch event.Data.IsActive {
+			case true:
+			default:
+				t.Fatalf("expected event to be of type %T, got %T", &query_testpb.FooState_Data_Shape_Circle_{}, event.Data.Shape.Type)
+			}
+		}
+	})
+
+	t.Run("Bool filter - bad value", func(t *testing.T) {
+		req := &query_testspb.FooListRequest{
+			Page: &list_j5pb.PageRequest{PageSize: proto.Int64(5)},
+			Query: &list_j5pb.QueryRequest{
+				Filters: []*list_j5pb.Filter{
+					{
+						Type: &list_j5pb.Filter_Field{
+							Field: &list_j5pb.Field{
+								Name: "data.isActive",
+								Type: &list_j5pb.FieldType{
+									Type: &list_j5pb.FieldType_Value{
+										Value: "INVALID_VALUE",
 									},
 								},
 							},

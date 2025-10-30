@@ -219,7 +219,6 @@ func getFieldSearching(field *j5schema.ObjectProperty) *list_j5pb.SearchingConst
 }
 
 func tsvColumns(message *j5schema.ObjectSchema) ([]*TSVColumn, error) {
-
 	usedColNames := make(map[string]struct{})
 	out := []*TSVColumn{}
 
@@ -274,7 +273,7 @@ func (ll *TableReflectionSet) buildDynamicSearches(tableAlias string, searches [
 			return nil, fmt.Errorf("unknown search field %q", searches[i].GetField())
 		}
 
-		out = append(out, sq.And{sq.Expr(fmt.Sprintf("%s.%s @@ phraseto_tsquery(?)", tableAlias, col), searches[i].GetValue())})
+		out = append(out, sq.And{sq.Expr(fmt.Sprintf("%s.%s @@ phraseto_tsquery('english', ?)", tableAlias, col), searches[i].GetValue())})
 	}
 
 	return out, nil

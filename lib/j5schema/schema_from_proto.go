@@ -375,7 +375,6 @@ func findPSMOptions(srcMsg protoreflect.MessageDescriptor) (*schema_j5pb.EntityO
 }
 
 func (ss *Package) messageProperties(parent RootSchema, src protoreflect.MessageDescriptor) ([]*ObjectProperty, error) {
-
 	properties := make([]*ObjectProperty, 0, src.Fields().Len())
 
 	for ii := range src.Fields().Len() {
@@ -822,7 +821,6 @@ func ScalarSchemaFromProto(src protoreflect.FieldDescriptor) (schema_j5pb.IsFiel
 }
 
 func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
-
 	switch src.Kind() {
 
 	case protoreflect.StringKind:
@@ -1131,7 +1129,6 @@ func buildScalarType(src protoreflect.FieldDescriptor, ext protoFieldExtensions)
 }
 
 func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*EnumSchema, error) {
-
 	ext := protosrc.GetExtension[*ext_j5pb.EnumOptions](enumDescriptor.Options(), ext_j5pb.E_Enum)
 
 	sourceValues := enumDescriptor.Values()
@@ -1151,7 +1148,7 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 			name:        string(option.Name()),
 			number:      number,
 			description: commentDescription(option),
-			Info:        info,
+			info:        info,
 		})
 	}
 
@@ -1288,16 +1285,17 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 	case "j5.types.decimal.v1.Decimal":
 		var rules *schema_j5pb.DecimalField_Rules
 
-		if dateExt := ext.j5.GetDate(); dateExt != nil {
-			if dateExt.Rules != nil {
+		if decimalExt := ext.j5.GetDecimal(); decimalExt != nil {
+			if decimalExt.Rules != nil {
 				rules = &schema_j5pb.DecimalField_Rules{
-					Minimum:          dateExt.Rules.Minimum,
-					Maximum:          dateExt.Rules.Maximum,
-					ExclusiveMinimum: dateExt.Rules.ExclusiveMinimum,
-					ExclusiveMaximum: dateExt.Rules.ExclusiveMaximum,
+					Minimum:          decimalExt.Rules.Minimum,
+					Maximum:          decimalExt.Rules.Maximum,
+					ExclusiveMinimum: decimalExt.Rules.ExclusiveMinimum,
+					ExclusiveMaximum: decimalExt.Rules.ExclusiveMaximum,
 				}
 			}
 		}
+
 		return &ScalarSchema{
 			Kind:              protoreflect.MessageKind,
 			WellKnownTypeName: fullName,
@@ -1468,7 +1466,6 @@ const (
 )
 
 func buildFromStringProto(src protoreflect.FieldDescriptor, ext protoFieldExtensions) (schema_j5pb.IsField_Type, error) {
-
 	stringItem := &schema_j5pb.StringField{}
 	looksLikeKey := false
 

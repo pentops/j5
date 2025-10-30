@@ -11,7 +11,6 @@ import (
 )
 
 func APIFromSource(api *schema_j5pb.API) (*client_j5pb.API, error) {
-
 	schemaSet, err := j5schema.PackageSetFromSourceAPI(api.Packages)
 	if err != nil {
 		return nil, fmt.Errorf("package set from source api: %w", err)
@@ -46,6 +45,7 @@ func (sb *sourceBuilder) apiBaseFromSource(api *schema_j5pb.API) (*API, error) {
 			Indirect:      pkgSource.Indirect,
 			StateEntities: []*StateEntity{},
 		}
+
 		apiPkg.Packages = append(apiPkg.Packages, pkg)
 
 		schemaPackage, ok := sb.schemas.GetPackage(pkg.Name)
@@ -61,6 +61,7 @@ func (sb *sourceBuilder) apiBaseFromSource(api *schema_j5pb.API) (*API, error) {
 				Package: pkg,
 				Name:    subPkg.Name,
 			}
+
 			for _, serviceSrc := range subPkg.Services {
 				service, err := sb.serviceFromSource(sub, serviceSrc)
 				if err != nil {
@@ -76,15 +77,19 @@ func (sb *sourceBuilder) apiBaseFromSource(api *schema_j5pb.API) (*API, error) {
 						}
 
 						entity.Commands = append(entity.Commands, service)
+
 						continue
+
 					case *schema_j5pb.ServiceType_StateEntityQuery_:
 						entity, err := getEntity(sub, st.StateEntityQuery.Entity)
 						if err != nil {
 							return nil, fmt.Errorf("state entity command: %w", err)
 						}
+
 						if entity.Query != nil {
 							return nil, fmt.Errorf("duplicate query service for entity %q", entity.Name)
 						}
+
 						entity.Query = service
 
 						continue
@@ -93,9 +98,7 @@ func (sb *sourceBuilder) apiBaseFromSource(api *schema_j5pb.API) (*API, error) {
 
 				pkg.Services = append(pkg.Services, service)
 			}
-
 		}
-
 	}
 
 	return apiPkg, nil
@@ -107,6 +110,7 @@ func getEntity(inPackage *subPackage, name string) (*StateEntity, error) {
 		if parts[0] != inPackage.Package.Name {
 			return nil, fmt.Errorf("state entity %q not in package %q", name, inPackage.Package.Name)
 		}
+
 		name = parts[1]
 	} else if len(parts) != 1 {
 		return nil, fmt.Errorf("invalid state entity name %q", name)
@@ -133,7 +137,6 @@ func (sp *subPackage) FullName() string {
 // walkSourceSchemas checks for special-case schemas to include in the client
 // package even when not referenced by any service or topic.
 func (sb *sourceBuilder) walkSourceSchemas(pkg *Package, schemaPackage *j5schema.Package) error {
-
 	for _, schema := range schemaPackage.IterateSchemas {
 		if schema.To == nil {
 			continue
@@ -163,8 +166,8 @@ func (sb *sourceBuilder) walkSourceSchemas(pkg *Package, schemaPackage *j5schema
 				schemaDescForEntity(entity.StateSchema),
 			)
 		}
-
 	}
+
 	return nil
 }
 
@@ -183,21 +186,27 @@ func includeEntity(pkg *Package, obj *j5schema.ObjectSchema) error {
 			Package: pkg,
 			Name:    obj.Entity.Entity,
 		}
+
 		pkg.StateEntities = append(pkg.StateEntities, entity)
 	}
 
 	switch obj.Entity.Part {
 	case schema_j5pb.EntityPart_KEYS:
 		entity.KeysSchema = obj
+
 	case schema_j5pb.EntityPart_STATE:
 		entity.StateSchema = obj
+
 	case schema_j5pb.EntityPart_EVENT:
 		entity.EventSchema = obj
+
 	case schema_j5pb.EntityPart_DATA:
 		// ignore
+
 	default:
 		return fmt.Errorf("unknown entity part %q", obj.Entity.Part)
 	}
+
 	return nil
 }
 
@@ -205,11 +214,11 @@ func schemaDescForEntity(schema *j5schema.ObjectSchema) string {
 	if schema == nil {
 		return "<missing>"
 	}
+
 	return schema.FullName()
 }
 
 func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *schema_j5pb.Service) (*Service, error) {
-
 	service := &Service{
 		Package:     pkg.Package,
 		Name:        src.Name,
@@ -222,6 +231,7 @@ func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *schema_j5pb.Ser
 		if err != nil {
 			return nil, patherr.Wrap(err, src.Name)
 		}
+
 		service.Methods[idx] = method
 	}
 
@@ -229,7 +239,6 @@ func (sb *sourceBuilder) serviceFromSource(pkg *subPackage, src *schema_j5pb.Ser
 }
 
 func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src *schema_j5pb.Method) (*Method, error) {
-
 	method := &Method{
 		Service:        service,
 		GRPCMethodName: src.Name,
@@ -280,13 +289,14 @@ func (sb *sourceBuilder) methodFromSource(pkg *subPackage, service *Service, src
 }
 
 func (mm *Method) fillRequest(requestObject *j5schema.ObjectSchema) error {
-
 	pathParameterNames := map[string]struct{}{}
 	pathParts := strings.SplitSeq(mm.HTTPPath, "/")
+
 	for part := range pathParts {
 		if !strings.HasPrefix(part, ":") {
 			continue
 		}
+
 		fieldName := strings.TrimPrefix(part, ":")
 		pathParameterNames[fieldName] = struct{}{}
 	}
@@ -305,6 +315,7 @@ func (mm *Method) fillRequest(requestObject *j5schema.ObjectSchema) error {
 				}
 			}
 		}
+
 		_, isPath := pathParameterNames[prop.JSONName]
 		if isPath {
 			prop.Required = true
@@ -331,10 +342,12 @@ func (mm *Method) fillRequest(requestObject *j5schema.ObjectSchema) error {
 		if responseSchema == nil {
 			return fmt.Errorf("query request requires a response schema")
 		}
+
 		listRequest, err := buildListRequest(responseSchema)
 		if err != nil {
 			return fmt.Errorf("build list request: %w", err)
 		}
+
 		request.List = listRequest
 	}
 

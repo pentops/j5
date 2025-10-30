@@ -44,7 +44,6 @@ func (s *PackageStore) LatestLocks(ctx context.Context, deps []*config_j5pb.Inpu
 }
 
 func (s *PackageStore) GetJ5Image(ctx context.Context, orgName, imageName, version string) (*source_j5pb.SourceImage, error) {
-
 	ctx = log.WithFields(ctx, map[string]any{
 		"org":     orgName,
 		"image":   imageName,
@@ -90,7 +89,6 @@ func (s *PackageStore) GetJ5Image(ctx context.Context, orgName, imageName, versi
 }
 
 func (s *PackageStore) UploadJ5Image(ctx context.Context, commitInfo *source_j5pb.CommitInfo, img *source_j5pb.SourceImage, registry *config_j5pb.RegistryConfig) error {
-
 	packageName := path.Join(registry.Owner, registry.Name)
 
 	log.WithFields(ctx, map[string]any{

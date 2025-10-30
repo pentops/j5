@@ -4,11 +4,11 @@ import (
 	"github.com/pentops/golib/gl"
 	"github.com/pentops/j5/gen/j5/auth/v1/auth_j5pb"
 	"github.com/pentops/j5/gen/j5/client/v1/client_j5pb"
+	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 )
 
 func wantAPI() *client_j5pb.API {
-
 	objectRef := tObjectRef
 	array := tArrayOf
 
@@ -17,23 +17,18 @@ func wantAPI() *client_j5pb.API {
 			JwtBearer: &auth_j5pb.MethodAuthType_JWTBearer{},
 		},
 	}
-	authNone := &auth_j5pb.MethodAuthType{
-		Type: &auth_j5pb.MethodAuthType_None_{
-			None: &auth_j5pb.MethodAuthType_None{},
-		},
-	}
 
 	getFoo := &client_j5pb.Method{
 		Method: &schema_j5pb.Method{
-			Name:         "GetFoo",
-			Auth:         authNone,
-			FullGrpcName: "/test.foo.v1.FooQueryService/GetFoo",
+			Name:         "FooGet",
+			Auth:         authJWT,
+			FullGrpcName: "/test.foo.v1.FooQueryService/FooGet",
 			HttpMethod:   schema_j5pb.HTTPMethod_GET,
-			HttpPath:     "/test/v1/foo/:id",
+			HttpPath:     "/test/foo/v1/foo/q/:fooId",
 			MethodType: &schema_j5pb.MethodType{
 				Type: &schema_j5pb.MethodType_StateQuery_{
 					StateQuery: &schema_j5pb.MethodType_StateQuery{
-						EntityName: "test.foo.v1/foo",
+						EntityName: "foo",
 						QueryPart:  schema_j5pb.StateQueryPart_GET,
 					},
 				},
@@ -41,82 +36,57 @@ func wantAPI() *client_j5pb.API {
 		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
-				Name:     "id",
+				Name:     "fooId",
 				Required: true,
-				Schema: &schema_j5pb.Field{
-					Type: &schema_j5pb.Field_String_{
-						String_: &schema_j5pb.StringField{},
-					},
+				EntityKey: &schema_j5pb.EntityKey{
+					Primary: true,
 				},
-			}},
-			QueryParameters: []*schema_j5pb.ObjectProperty{{
-				Name: "number",
 				Schema: &schema_j5pb.Field{
-					Type: &schema_j5pb.Field_Integer{
-						Integer: &schema_j5pb.IntegerField{
-							Format: schema_j5pb.IntegerField_FORMAT_INT64,
-						},
-					},
-				},
-			}, {
-				Name: "numbers",
-				Schema: &schema_j5pb.Field{
-					Type: &schema_j5pb.Field_Array{
-						Array: &schema_j5pb.ArrayField{
-							Items: &schema_j5pb.Field{
-								Type: &schema_j5pb.Field_Float{
-									Float: &schema_j5pb.FloatField{
-										Format: schema_j5pb.FloatField_FORMAT_FLOAT32,
-									},
+					Type: &schema_j5pb.Field_Key{
+						Key: &schema_j5pb.KeyField{
+							Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
+								Type: &schema_j5pb.KeyField_DeprecatedEntityKey_PrimaryKey{
+									PrimaryKey: true,
+								},
+							},
+							Format: &schema_j5pb.KeyFormat{
+								Type: &schema_j5pb.KeyFormat_Uuid{
+									Uuid: &schema_j5pb.KeyFormat_UUID{},
+								},
+							},
+							ListRules: &list_j5pb.KeyRules{
+								Filtering: &list_j5pb.FilteringConstraint{
+									Filterable: true,
 								},
 							},
 						},
 					},
 				},
-			}, {
-				Name: "ab",
-				Schema: &schema_j5pb.Field{
-					Type: &schema_j5pb.Field_Object{
-						Object: &schema_j5pb.ObjectField{
-							Schema: &schema_j5pb.ObjectField_Ref{
-								Ref: &schema_j5pb.Ref{
-									Package: "test.foo.v1.service",
-									Schema:  "ABMessage",
-								},
-							},
-						},
-					},
-				},
-			}, {
-				Name: "multipleWord",
-				Schema: &schema_j5pb.Field{
-					Type: &schema_j5pb.Field_String_{
-						String_: &schema_j5pb.StringField{},
-					},
-				},
 			}},
+			QueryParameters: []*schema_j5pb.ObjectProperty{},
 		},
 		ResponseBody: &schema_j5pb.Object{
-			Name: "GetFooResponse",
+			Name: "FooGetResponse",
 			Properties: []*schema_j5pb.ObjectProperty{{
-				Name:   "foo",
-				Schema: objectRef("test.foo.v1", "FooState"),
+				Name:     "foo",
+				Required: true,
+				Schema:   objectRef("test.foo.v1", "FooState"),
 			}},
 		},
 	}
 
 	listFoos := &client_j5pb.Method{
 		Method: &schema_j5pb.Method{
-			Name:         "ListFoos",
+			Name:         "FooList",
 			Auth:         authJWT,
-			FullGrpcName: "/test.foo.v1.FooQueryService/ListFoos",
+			FullGrpcName: "/test.foo.v1.FooQueryService/FooList",
 			HttpMethod:   schema_j5pb.HTTPMethod_GET,
 
-			HttpPath: "/test/v1/foos",
+			HttpPath: "/test/foo/v1/foo/q",
 			MethodType: &schema_j5pb.MethodType{
 				Type: &schema_j5pb.MethodType_StateQuery_{
 					StateQuery: &schema_j5pb.MethodType_StateQuery{
-						EntityName: "test.foo.v1/foo",
+						EntityName: "foo",
 						QueryPart:  schema_j5pb.StateQueryPart_LIST,
 					},
 				},
@@ -131,50 +101,82 @@ func wantAPI() *client_j5pb.API {
 				Schema: objectRef("j5.list.v1", "QueryRequest"),
 			}},
 			List: &client_j5pb.ListRequest{
-				SearchableFields: []*client_j5pb.ListRequest_SearchField{{
-					Name: "name",
-				}, {
-					Name: "bar.field",
-				}},
-				SortableFields: []*client_j5pb.ListRequest_SortField{{
-					Name:        "createdAt",
-					DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
-				}},
-				FilterableFields: []*client_j5pb.ListRequest_FilterField{{
-					Name: "fooId",
-				}, {
-					Name:           "status",
-					DefaultFilters: []string{"ACTIVE"},
-				}, {
-					Name: "bar.id",
-				}, {
-					Name: "createdAt",
-				}},
+				SearchableFields: []*client_j5pb.ListRequest_SearchField{
+					{
+						Name: "data.name",
+					},
+					{
+						Name: "data.bar.field",
+					},
+				},
+				SortableFields: []*client_j5pb.ListRequest_SortField{
+					{
+						Name:        "metadata.createdAt",
+						DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
+					},
+					{
+						Name: "metadata.updatedAt",
+					},
+					{
+						Name:        "data.createdAt",
+						DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
+					},
+					{
+						Name: "data.bazDate",
+					},
+				},
+				FilterableFields: []*client_j5pb.ListRequest_FilterField{
+					{
+						Name: "fooId",
+					},
+					{
+						Name: "barId",
+					},
+					{
+						Name: "data.bar.id",
+					},
+					{
+						Name: "data.createdAt",
+					},
+					{
+						Name: "data.bazDate",
+					},
+					{
+						Name: "data.bazes.bazId",
+					},
+					{
+						Name:           "status",
+						DefaultFilters: []string{"ACTIVE"},
+					},
+				},
 			},
 		},
 		ResponseBody: &schema_j5pb.Object{
-			Name: "ListFoosResponse",
-			Properties: []*schema_j5pb.ObjectProperty{{
-				Name:   "foos",
-				Schema: array(objectRef("test.foo.v1", "FooState")),
-			}, {
-				Name:   "page",
-				Schema: objectRef("j5.list.v1", "PageResponse"),
-			}},
+			Name: "FooListResponse",
+			Properties: []*schema_j5pb.ObjectProperty{
+				{
+					Name:   "foo",
+					Schema: array(objectRef("test.foo.v1", "FooState")),
+				},
+				{
+					Name:   "page",
+					Schema: objectRef("j5.list.v1", "PageResponse"),
+				},
+			},
 		},
 	}
 
 	listFooEvents := &client_j5pb.Method{
 		Method: &schema_j5pb.Method{
-			Name:         "ListFooEvents",
-			Auth:         authNone,
-			FullGrpcName: "/test.foo.v1.FooQueryService/ListFooEvents",
+			Name:         "FooEvents",
+			Auth:         authJWT,
+			FullGrpcName: "/test.foo.v1.FooQueryService/FooEvents",
 			HttpMethod:   schema_j5pb.HTTPMethod_GET,
-			HttpPath:     "/test/v1/foo/:id/events",
+			HttpPath:     "/test/foo/v1/foo/q/:fooId/events",
 			MethodType: &schema_j5pb.MethodType{
 				Type: &schema_j5pb.MethodType_StateQuery_{
 					StateQuery: &schema_j5pb.MethodType_StateQuery{
-						EntityName: "test.foo.v1/foo",
+						EntityName: "foo",
 						QueryPart:  schema_j5pb.StateQueryPart_LIST_EVENTS,
 					},
 				},
@@ -182,7 +184,10 @@ func wantAPI() *client_j5pb.API {
 		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
-				Name:     "id",
+				Name: "fooId",
+				EntityKey: &schema_j5pb.EntityKey{
+					Primary: true,
+				},
 				Required: true,
 				Schema: &schema_j5pb.Field{
 					Type: &schema_j5pb.Field_Key{
@@ -192,42 +197,66 @@ func wantAPI() *client_j5pb.API {
 									Uuid: &schema_j5pb.KeyFormat_UUID{},
 								},
 							},
-						},
-					},
-				},
-			}},
-			QueryParameters: []*schema_j5pb.ObjectProperty{{
-				Name:   "page",
-				Schema: objectRef("j5.list.v1", "PageRequest"),
-			}, {
-				Name: "query",
-				Schema: &schema_j5pb.Field{
-					Type: &schema_j5pb.Field_Object{
-						Object: &schema_j5pb.ObjectField{
-							Schema: &schema_j5pb.ObjectField_Ref{
-								Ref: &schema_j5pb.Ref{
-									Package: "j5.list.v1",
-									Schema:  "QueryRequest",
+							Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
+								Type: &schema_j5pb.KeyField_DeprecatedEntityKey_PrimaryKey{
+									PrimaryKey: true,
+								},
+							},
+							ListRules: &list_j5pb.KeyRules{
+								Filtering: &list_j5pb.FilteringConstraint{
+									Filterable: true,
 								},
 							},
 						},
 					},
 				},
 			}},
+			QueryParameters: []*schema_j5pb.ObjectProperty{
+				{
+					Name:   "page",
+					Schema: objectRef("j5.list.v1", "PageRequest"),
+				},
+				{
+					Name: "query",
+					Schema: &schema_j5pb.Field{
+						Type: &schema_j5pb.Field_Object{
+							Object: &schema_j5pb.ObjectField{
+								Schema: &schema_j5pb.ObjectField_Ref{
+									Ref: &schema_j5pb.Ref{
+										Package: "j5.list.v1",
+										Schema:  "QueryRequest",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 			List: &client_j5pb.ListRequest{
-				FilterableFields: []*client_j5pb.ListRequest_FilterField{{
-					Name: "fooId",
-				}, {
-					Name: "timestamp",
-				}},
-				SortableFields: []*client_j5pb.ListRequest_SortField{{
-					Name:        "timestamp",
-					DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
-				}},
+				FilterableFields: []*client_j5pb.ListRequest_FilterField{
+					{
+						Name: "metadata.timestamp",
+					},
+					{
+						Name: "fooId",
+					},
+					{
+						Name: "barId",
+					},
+					{
+						Name: "event.!type",
+					},
+				},
+				SortableFields: []*client_j5pb.ListRequest_SortField{
+					{
+						Name:        "metadata.timestamp",
+						DefaultSort: gl.Ptr(client_j5pb.ListRequest_SortField_DIRECTION_DESC),
+					},
+				},
 			},
 		},
 		ResponseBody: &schema_j5pb.Object{
-			Name: "ListFooEventsResponse",
+			Name: "FooEventsResponse",
 			Properties: []*schema_j5pb.ObjectProperty{{
 				Name:   "events",
 				Schema: array(objectRef("test.foo.v1", "FooEvent")),
@@ -253,16 +282,23 @@ func wantAPI() *client_j5pb.API {
 			Auth:         authJWT,
 			FullGrpcName: "/test.foo.v1.FooCommandService/PostFoo",
 			HttpMethod:   schema_j5pb.HTTPMethod_POST,
-			HttpPath:     "/test/v1/foo",
+			HttpPath:     "/test/foo/v1/foo/c",
 		},
 		Request: &client_j5pb.Method_Request{
 			Body: &schema_j5pb.Object{
 				Name: "PostFooRequest",
 				Properties: []*schema_j5pb.ObjectProperty{{
-					Name: "id",
+					Name:     "id",
+					Required: true,
 					Schema: &schema_j5pb.Field{
-						Type: &schema_j5pb.Field_String_{
-							String_: &schema_j5pb.StringField{},
+						Type: &schema_j5pb.Field_Key{
+							Key: &schema_j5pb.KeyField{
+								Format: &schema_j5pb.KeyFormat{
+									Type: &schema_j5pb.KeyFormat_Uuid{
+										Uuid: &schema_j5pb.KeyFormat_UUID{},
+									},
+								},
+							},
 						},
 					},
 				}},
@@ -289,15 +325,21 @@ func wantAPI() *client_j5pb.API {
 			Name:         "DownloadRaw",
 			FullGrpcName: "/test.foo.v1.FooDownloadService/DownloadRaw",
 			HttpMethod:   schema_j5pb.HTTPMethod_GET,
-			HttpPath:     "/test/v1/foo/:id/raw",
+			HttpPath:     "/test/foo/v1/foo/:id/raw",
 		},
 		Request: &client_j5pb.Method_Request{
 			PathParameters: []*schema_j5pb.ObjectProperty{{
 				Name:     "id",
 				Required: true,
 				Schema: &schema_j5pb.Field{
-					Type: &schema_j5pb.Field_String_{
-						String_: &schema_j5pb.StringField{},
+					Type: &schema_j5pb.Field_Key{
+						Key: &schema_j5pb.KeyField{
+							Format: &schema_j5pb.KeyFormat{
+								Type: &schema_j5pb.KeyFormat_Uuid{
+									Uuid: &schema_j5pb.KeyFormat_UUID{},
+								},
+							},
+						},
 					},
 				},
 			}},
@@ -312,12 +354,134 @@ func wantAPI() *client_j5pb.API {
 		},
 	}
 
+	handlerGet := &client_j5pb.Method{
+		Method: &schema_j5pb.Method{
+			Name:         "HandlerGet",
+			FullGrpcName: "/test.foo.v1.HandlerTestService/HandlerGet",
+			HttpMethod:   schema_j5pb.HTTPMethod_GET,
+			HttpPath:     "/test/v1/foo/:id",
+			Auth: &auth_j5pb.MethodAuthType{
+				Type: &auth_j5pb.MethodAuthType_None_{
+					None: &auth_j5pb.MethodAuthType_None{},
+				},
+			},
+		},
+		Request: &client_j5pb.Method_Request{
+			PathParameters: []*schema_j5pb.ObjectProperty{{
+				Name:     "id",
+				Required: true,
+				Schema: &schema_j5pb.Field{
+					Type: &schema_j5pb.Field_Key{
+						Key: &schema_j5pb.KeyField{
+							Format: &schema_j5pb.KeyFormat{
+								Type: &schema_j5pb.KeyFormat_Uuid{
+									Uuid: &schema_j5pb.KeyFormat_UUID{},
+								},
+							},
+						},
+					},
+				},
+			}},
+			QueryParameters: []*schema_j5pb.ObjectProperty{
+				{
+					Name:     "number",
+					Required: true,
+					Schema: &schema_j5pb.Field{
+						Type: &schema_j5pb.Field_Integer{
+							Integer: &schema_j5pb.IntegerField{
+								Format: schema_j5pb.IntegerField_Format_INT64,
+							},
+						},
+					},
+				},
+				{
+					Name:     "numbers",
+					Required: false,
+					Schema: &schema_j5pb.Field{
+						Type: &schema_j5pb.Field_Array{
+							Array: &schema_j5pb.ArrayField{
+								Items: &schema_j5pb.Field{
+									Type: &schema_j5pb.Field_Float{
+										Float: &schema_j5pb.FloatField{
+											Format: schema_j5pb.FloatField_Format_FLOAT32,
+										},
+									},
+								},
+								Ext: &schema_j5pb.ArrayField_Ext{},
+							},
+						},
+					},
+				},
+				{
+					Name:     "multipleWord",
+					Required: true,
+					Schema: &schema_j5pb.Field{
+						Type: &schema_j5pb.Field_String_{
+							String_: &schema_j5pb.StringField{},
+						},
+					},
+				},
+				{
+					Name:     "ab",
+					Required: true,
+					Schema: &schema_j5pb.Field{
+						Type: &schema_j5pb.Field_Object{
+							Object: &schema_j5pb.ObjectField{
+								Schema: &schema_j5pb.ObjectField_Ref{
+									Ref: &schema_j5pb.Ref{
+										Package: "test.foo.v1.service",
+										Schema:  "HandlerGetRequest_Ab",
+									},
+									// Object: &schema_j5pb.Object{
+									// 	Name: "HandlerGetRequest_Ab",
+									// 	Properties: []*schema_j5pb.ObjectProperty{
+									// 		{
+									// 			Name:     "a",
+									// 			Required: true,
+									// 			Schema: &schema_j5pb.Field{
+									// 				Type: &schema_j5pb.Field_String_{
+									// 					String_: &schema_j5pb.StringField{},
+									// 				},
+									// 			},
+									// 		},
+									// 		{
+									// 			Name:     "b",
+									// 			Required: true,
+									// 			Schema: &schema_j5pb.Field{
+									// 				Type: &schema_j5pb.Field_String_{
+									// 					String_: &schema_j5pb.StringField{},
+									// 				},
+									// 			},
+									// 		},
+									// 	},
+									// },
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		ResponseBody: &schema_j5pb.Object{
+			Name:       "HandlerGetResponse",
+			Properties: []*schema_j5pb.ObjectProperty{},
+		},
+	}
+
+	handlerTestService := &client_j5pb.Service{
+		Name: "HandlerTestService",
+		Methods: []*client_j5pb.Method{
+			handlerGet,
+		},
+	}
+
 	return &client_j5pb.API{
 		Packages: []*client_j5pb.Package{{
 			Name: "test.foo.v1",
 
 			Services: []*client_j5pb.Service{
 				fooDownloadService,
+				handlerTestService,
 			},
 			StateEntities: []*client_j5pb.StateEntity{{
 				Name:         "foo",
@@ -328,15 +492,18 @@ func wantAPI() *client_j5pb.API {
 				CommandServices: []*client_j5pb.Service{
 					fooCommandService,
 				},
-				Events: []*client_j5pb.StateEvent{{
-					Name:        "created",
-					FullName:    "test.foo.v1/foo.created",
-					Description: "Comment on Created",
-				}, {
-					Name:        "updated",
-					FullName:    "test.foo.v1/foo.updated",
-					Description: "Comment on Updated",
-				}},
+				Events: []*client_j5pb.StateEvent{
+					{
+						Name:        "created",
+						FullName:    "test.foo.v1/foo.created",
+						Description: "Comment on Created",
+					},
+					{
+						Name:        "updated",
+						FullName:    "test.foo.v1/foo.updated",
+						Description: "Comment on Updated",
+					},
+				},
 			}},
 		}},
 	}

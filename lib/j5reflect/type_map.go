@@ -104,7 +104,6 @@ func (mapField *baseMapField) NewElement(key string) (Field, error) {
 }
 
 func newMessageMapField(context fieldContext, schema *j5schema.MapField, value protoval.MapValue, factory fieldFactory) (MutableMapField, error) {
-
 	base := baseMapField{
 		fieldContext: context,
 		value:        value,
@@ -132,7 +131,6 @@ func newMessageMapField(context fieldContext, schema *j5schema.MapField, value p
 }
 
 func newLeafMapField(context fieldContext, schema *j5schema.MapField, value protoval.MapValue, factory fieldFactory) (LeafMapField, error) {
-
 	base := baseMapField{
 		fieldContext: context,
 		value:        value,

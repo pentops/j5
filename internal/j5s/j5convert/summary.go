@@ -108,7 +108,6 @@ type ErrCollector interface {
 
 // SourceSummary collects the exports and imports for a j5 source file
 func SourceSummary(sourceFile *sourcedef_j5pb.SourceFile, ec ErrCollector) (*FileSummary, error) {
-
 	cc := &summaryWalker{}
 	err := cc.collectFileRefs(sourceFile)
 	if err != nil {

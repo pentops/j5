@@ -24,7 +24,6 @@ func TestPagination(t *testing.T) {
 		tenantID := uuid.NewString()
 
 		uu.SetupFoo(t, 30, func(ii int, foo *TestObject) {
-
 			foo.SetScalar(j5query.JSONPath("tenantId"), tenantID)
 
 			weight := (10 + int64(ii))
@@ -34,8 +33,8 @@ func TestPagination(t *testing.T) {
 			foo.SetScalar(j5query.JSONPath("createdAt"), createdAt)
 			foo.SetScalar(j5query.JSONPath("data", "field"), fmt.Sprintf("foo %d at %s", ii, createdAt.Format(time.RFC3339Nano)))
 		})
-		return nil
 
+		return nil
 	})
 
 	var pageResp *list_j5pb.PageResponse

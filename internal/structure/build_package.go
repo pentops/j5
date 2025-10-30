@@ -44,7 +44,6 @@ func (cr chainResolver) FindDescriptorByName(name protoreflect.FullName) (protor
 }
 
 func APIFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
-
 	if len(image.Includes) > 0 {
 		return nil, fmt.Errorf("source image: includes must be resolved prior to building an API")
 	}
@@ -79,13 +78,15 @@ func APIFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		err = descFiles.RegisterFile(file)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := bb.addStructure(descFiles); err != nil {
+	err = bb.addStructure(descFiles)
+	if err != nil {
 		return nil, err
 	}
 
@@ -96,10 +97,12 @@ func APIFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 				return true
 			}
 		}
+
 		return false
 	}
 
-	if err := bb.addSchemas(descFiles, selector); err != nil {
+	err = bb.addSchemas(descFiles, selector)
+	if err != nil {
 		return nil, err
 	}
 
@@ -123,15 +126,17 @@ func (bb *packageSet) addSchemas(descFiles *protoregistry.Files, selector func(f
 		if err != nil {
 			return fmt.Errorf("get schema set: %w", err)
 		}
+
 		for name, schema := range schemaPkg.IterateSchemas {
 			ss[name] = schema.To.ToJ5Root()
 		}
 
 	}
+
 	return nil
 }
-func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 
+func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 	services := make([]protoreflect.ServiceDescriptor, 0)
 
 	descFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {
@@ -149,6 +154,7 @@ func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 		if err != nil {
 			return err
 		}
+
 		if !b.wantPackages[packageID.packageName] {
 			continue
 		}
@@ -164,21 +170,26 @@ func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 			if err != nil {
 				return patherr.Wrap(err, "service", name)
 			}
+
 			pkg.Services = append(pkg.Services, built)
+
 		} else if strings.HasSuffix(name, "Events") {
 			// ignore for now.
+
 		} else if strings.HasSuffix(name, "Topic") {
 			built, err := buildTopic(service)
 			if err != nil {
 				return patherr.Wrap(err, string(service.FullName()))
 			}
+
 			pkg.Topics = append(pkg.Topics, built)
+
 		} else {
 			return fmt.Errorf("unsupported service name %q", name)
 		}
 	}
-	return nil
 
+	return nil
 }
 
 type packageSet struct {
@@ -220,6 +231,7 @@ func (bb *packageSet) getPackage(name string) *schema_j5pb.Package {
 			Schemas:  make(map[string]*schema_j5pb.RootSchema),
 			Indirect: true,
 		}
+
 		bb.packages = append(bb.packages, pkg)
 	}
 
@@ -227,7 +239,6 @@ func (bb *packageSet) getPackage(name string) *schema_j5pb.Package {
 }
 
 func (bb *packageSet) getSubPackage(packageID *packageID) (*schema_j5pb.SubPackage, error) {
-
 	if packageID.subPackage == nil {
 		return nil, fmt.Errorf("missing sub-package name")
 	}
@@ -244,6 +255,7 @@ func (bb *packageSet) getSubPackage(packageID *packageID) (*schema_j5pb.SubPacka
 		Name:    *packageID.subPackage,
 		Schemas: make(map[string]*schema_j5pb.RootSchema),
 	}
+
 	parentPkg.SubPackages = append(parentPkg.SubPackages, pkg)
 
 	return pkg, nil
@@ -261,6 +273,7 @@ func SplitPackageParts(packageName string) (string, *string, error) {
 	if err != nil {
 		return "", nil, err
 	}
+
 	return id.packageName, id.subPackage, nil
 }
 func splitPackageParts(packageName string) (*packageID, error) {
@@ -275,6 +288,7 @@ func splitPackageParts(packageName string) (*packageID, error) {
 			idxOfVersion = idx
 		}
 	}
+
 	if idxOfVersion == -1 {
 		return nil, fmt.Errorf("package %q: no version part found", packageName)
 	}
@@ -296,7 +310,6 @@ func splitPackageParts(packageName string) (*packageID, error) {
 }
 
 func buildService(src protoreflect.ServiceDescriptor) (*schema_j5pb.Service, error) {
-
 	methods := src.Methods()
 	service := &schema_j5pb.Service{
 		Name:    string(src.Name()),
@@ -328,7 +341,6 @@ func buildService(src protoreflect.ServiceDescriptor) (*schema_j5pb.Service, err
 
 			default:
 				return nil, fmt.Errorf("unsupported state service type %T", set)
-
 			}
 
 		}
@@ -343,13 +355,14 @@ func buildService(src protoreflect.ServiceDescriptor) (*schema_j5pb.Service, err
 		if err != nil {
 			return nil, fmt.Errorf("build method %s: %w", method.FullName(), err)
 		}
+
 		service.Methods = append(service.Methods, builtMethod)
 	}
+
 	return service, nil
 }
 
 func buildMethod(service *schema_j5pb.Service, method protoreflect.MethodDescriptor) (*schema_j5pb.Method, error) {
-
 	input := method.Input()
 	rawInput := false
 	expectedInputName := method.Name() + "Request"
@@ -357,8 +370,10 @@ func buildMethod(service *schema_j5pb.Service, method protoreflect.MethodDescrip
 		if input.FullName() != "google.api.HttpBody" {
 			return nil, fmt.Errorf("j5 service input message must be %q, got %q", expectedInputName, input.Name())
 		}
+
 		rawInput = true
 	}
+
 	output := method.Output()
 	expectedOutputName := method.Name() + "Response"
 	if output.Name() != expectedOutputName {
@@ -410,24 +425,26 @@ func buildMethod(service *schema_j5pb.Service, method protoreflect.MethodDescrip
 		if part == "" {
 			continue
 		}
+
 		if part[0] == '{' && part[len(part)-1] == '}' {
 			if rawInput {
 				return nil, fmt.Errorf("path part %q cannot be used with HttpBody input", part)
 			}
+
 			fieldName := part[1 : len(part)-1]
 
 			inputField := input.Fields().ByName(protoreflect.Name(fieldName))
 			if inputField == nil {
 				return nil, fmt.Errorf("path field %q not found in input", fieldName)
 			}
+
 			jsonName := inputField.JSONName()
 			pathParts[idx] = ":" + jsonName
-
 		} else if strings.ContainsAny(part, "{}*:") {
 			return nil, fmt.Errorf("invalid path part %q", part)
 		}
-
 	}
+
 	builtMethod.HttpPath = strings.Join(pathParts, "/")
 
 	ext := protosrc.GetExtension[*ext_j5pb.MethodOptions](method.Options(), ext_j5pb.E_Method)
@@ -469,14 +486,17 @@ func buildTopic(src protoreflect.ServiceDescriptor) (*schema_j5pb.Topic, error) 
 		Name:     string(src.Name()),
 		Messages: make([]*schema_j5pb.TopicMessage, 0, methods.Len()),
 	}
+
 	for ii := range methods.Len() {
 		method := methods.Get(ii)
 		builtMethod, err := buildTopicMethod(method)
 		if err != nil {
 			return nil, patherr.Wrap(err, "method", string(method.Name()))
 		}
+
 		topic.Messages = append(topic.Messages, builtMethod)
 	}
+
 	return topic, nil
 }
 
@@ -486,10 +506,12 @@ func buildTopicMethod(method protoreflect.MethodDescriptor) (*schema_j5pb.TopicM
 	if input.ParentFile().Package() != method.ParentFile().Package() || input.Name() != expectedName {
 		return nil, fmt.Errorf("j5 topic input message must be %s in the same package", expectedName)
 	}
+
 	output := method.Output()
 	if output.FullName() != "google.protobuf.Empty" {
 		return nil, fmt.Errorf("j5 topic output message must be google.protobuf.Empty, got %q", output.FullName())
 	}
+
 	return &schema_j5pb.TopicMessage{
 		Name:         string(method.Name()),
 		Schema:       string(method.Input().Name()),

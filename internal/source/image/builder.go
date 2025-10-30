@@ -66,7 +66,6 @@ func (ib *Builder) AddBuilt(built *protobuild.BuiltPackage, source *ext_j5pb.J5S
 }
 
 func (ib *Builder) _addFile(file *descriptorpb.FileDescriptorProto) error {
-
 	if _, ok := ib.includedFilenames[file.GetName()]; ok {
 		for _, existingFile := range ib.img.File {
 			if existingFile.GetName() != file.GetName() {
@@ -87,7 +86,6 @@ func (ib *Builder) _addFile(file *descriptorpb.FileDescriptorProto) error {
 }
 
 func (ib *Builder) IncludeDependencies(ctx context.Context, deps psrc.DescriptorFiles) error {
-
 	var addDependency func(file *descriptorpb.FileDescriptorProto) error
 	var doFile func(file *descriptorpb.FileDescriptorProto) error
 

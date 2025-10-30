@@ -105,18 +105,6 @@ type Token struct {
 	Start, End Position
 }
 
-func (tok Token) AsIdent() (Token, bool) {
-	switch tok.Type {
-	case IDENT:
-		return tok, true
-	case BOOL:
-		nt := tok.Clone()
-		nt.Type = IDENT
-		return nt, true
-	}
-	return tok, false
-}
-
 func (tok Token) Clone() Token {
 	return Token{
 		Type:  tok.Type,

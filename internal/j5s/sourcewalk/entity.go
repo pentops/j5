@@ -58,7 +58,6 @@ func schemaRefField(pkg, desc string) *schema_j5pb.Field {
 // run converts the entity into lower level schema elements and calls the
 // visitors on those.
 func (ent *entityNode) run(visitor FileVisitor) error {
-
 	if ent.Schema.BaseUrlPath == "" {
 		pkgParts := strings.Split(ent.packageName, ".")
 		pkgParts = append(pkgParts, strcase.ToSnake(ent.Schema.Name))
@@ -107,7 +106,6 @@ func (ent *entityNode) run(visitor FileVisitor) error {
 }
 
 func (ent *entityNode) acceptKeys(visitor FileVisitor) error {
-
 	keyProps := make([]*schema_j5pb.ObjectProperty, 0, len(ent.Schema.Keys))
 	for _, key := range ent.Schema.Keys {
 		if key.Key == nil {
@@ -148,7 +146,6 @@ func (ent *entityNode) acceptKeys(visitor FileVisitor) error {
 }
 
 func (ent *entityNode) acceptData(visitor FileVisitor) error {
-
 	node, err := newVirtualObjectNode(
 		ent.Source.child("data"),
 		nil,
@@ -276,7 +273,6 @@ func (ent *entityNode) acceptState(visitor FileVisitor) error {
 }
 
 func (ent *entityNode) acceptEventOneof(visitor FileVisitor) error {
-
 	if len(ent.Schema.Events) == 0 {
 		return wrapErr(ent.Source, errors.New("entity has no events"))
 	}
@@ -462,7 +458,6 @@ func (ent *entityNode) acceptCommands(visitor FileVisitor) error {
 }
 
 func (ent *entityNode) acceptSummaryTopics(visitor FileVisitor) error {
-
 	topics := make([]*topicRef, 0)
 
 	names := make(map[string]bool)
@@ -510,7 +505,6 @@ func (ent *entityNode) acceptSummaryTopics(visitor FileVisitor) error {
 }
 
 func (ent *entityNode) acceptPublishTopic(visitor FileVisitor) error {
-
 	source := ent.Source.child(virtualPathNode, "publish")
 
 	properties := []*schema_j5pb.ObjectProperty{{
@@ -585,7 +579,6 @@ func (ent *entityNode) acceptPublishTopic(visitor FileVisitor) error {
 }
 
 func (ent *entityNode) acceptQuery(visitor FileVisitor) error {
-
 	entity := ent.Schema
 	name := ent.name
 

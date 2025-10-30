@@ -2,7 +2,6 @@ package j5query
 
 import (
 	"github.com/pentops/j5/gen/j5/list/v1/list_j5pb"
-	"github.com/pentops/j5/lib/j5schema"
 )
 
 type ListRules struct {
@@ -11,9 +10,14 @@ type ListRules struct {
 	Search *list_j5pb.SearchingConstraint
 }
 
-func FieldListRules(field *j5schema.ObjectProperty) *ListRules {
+func FieldListRules(path *Path) *ListRules {
+	field := path.LeafField()
+	if field == nil {
+		return nil
+	}
+
 	out := &ListRules{}
-	out.Sort = getFieldSorting(field)
+	out.Sort = getFieldSorting(path)
 	out.Filter = getFieldFiltering(field)
 	out.Search = getFieldSearching(field)
 

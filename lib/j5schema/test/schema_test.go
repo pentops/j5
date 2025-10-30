@@ -208,7 +208,6 @@ func TestSchemaTypesSimple(t *testing.T) {
 }
 
 func TestTestProtoSchemaTypes(t *testing.T) {
-
 	ss := j5schema.NewSchemaCache()
 
 	fooDesc := (&schema_testpb.FullSchema{}).ProtoReflect().Descriptor()
@@ -264,7 +263,6 @@ func TestTestProtoSchemaTypes(t *testing.T) {
 }
 
 func TestSchemaTypesComplex(t *testing.T) {
-
 	type testCase struct {
 		proto        *descriptorpb.FileDescriptorProto
 		expected     map[string]any

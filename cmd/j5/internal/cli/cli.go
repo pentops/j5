@@ -36,7 +36,6 @@ var Commit = func() string {
 }()
 
 func CommandSet() *commander.CommandSet {
-
 	cmdGroup := commander.NewCommandSet()
 	cmdGroup.Add("version", commander.NewCommand(runVersion))
 
@@ -158,7 +157,6 @@ func (cfg SourceConfig) EachBundle(ctx context.Context, fn func(source.Bundle) e
 }
 
 func (cfg SourceConfig) EachBundleImage(ctx context.Context, fn func(*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile) error) error {
-
 	resolver, err := cfg.resolver()
 	if err != nil {
 		return err

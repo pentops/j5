@@ -183,7 +183,6 @@ func (ss PSMEntity) addGeneralHook(g *protogen.GeneratedFile, spec generalType) 
 }
 
 func (ss PSMEntity) transitionFuncTypes(g *protogen.GeneratedFile) {
-
 	// FooMutation
 	mutationName := fmt.Sprintf("%sMutation", ss.machineName)
 	g.P(doc(mutationName, docMutation))

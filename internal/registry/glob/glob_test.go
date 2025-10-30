@@ -6,7 +6,6 @@ import (
 )
 
 func TestWildcardMatcher(t *testing.T) {
-
 	for _, spec := range []struct {
 		input    string
 		pattern  string

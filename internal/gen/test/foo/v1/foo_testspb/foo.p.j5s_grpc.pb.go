@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.4.0
 // - protoc             (unknown)
-// source: test/foo/v1/service/foo_service.proto
+// source: test/foo/v1/service/foo.p.j5s.proto
 
 package foo_testspb
 
@@ -20,18 +20,18 @@ import (
 const _ = grpc.SupportPackageIsVersion8
 
 const (
-	FooQueryService_GetFoo_FullMethodName        = "/test.foo.v1.service.FooQueryService/GetFoo"
-	FooQueryService_ListFoos_FullMethodName      = "/test.foo.v1.service.FooQueryService/ListFoos"
-	FooQueryService_ListFooEvents_FullMethodName = "/test.foo.v1.service.FooQueryService/ListFooEvents"
+	FooQueryService_FooGet_FullMethodName    = "/test.foo.v1.service.FooQueryService/FooGet"
+	FooQueryService_FooList_FullMethodName   = "/test.foo.v1.service.FooQueryService/FooList"
+	FooQueryService_FooEvents_FullMethodName = "/test.foo.v1.service.FooQueryService/FooEvents"
 )
 
 // FooQueryServiceClient is the client API for FooQueryService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type FooQueryServiceClient interface {
-	GetFoo(ctx context.Context, in *GetFooRequest, opts ...grpc.CallOption) (*GetFooResponse, error)
-	ListFoos(ctx context.Context, in *ListFoosRequest, opts ...grpc.CallOption) (*ListFoosResponse, error)
-	ListFooEvents(ctx context.Context, in *ListFooEventsRequest, opts ...grpc.CallOption) (*ListFooEventsResponse, error)
+	FooGet(ctx context.Context, in *FooGetRequest, opts ...grpc.CallOption) (*FooGetResponse, error)
+	FooList(ctx context.Context, in *FooListRequest, opts ...grpc.CallOption) (*FooListResponse, error)
+	FooEvents(ctx context.Context, in *FooEventsRequest, opts ...grpc.CallOption) (*FooEventsResponse, error)
 }
 
 type fooQueryServiceClient struct {
@@ -42,30 +42,30 @@ func NewFooQueryServiceClient(cc grpc.ClientConnInterface) FooQueryServiceClient
 	return &fooQueryServiceClient{cc}
 }
 
-func (c *fooQueryServiceClient) GetFoo(ctx context.Context, in *GetFooRequest, opts ...grpc.CallOption) (*GetFooResponse, error) {
+func (c *fooQueryServiceClient) FooGet(ctx context.Context, in *FooGetRequest, opts ...grpc.CallOption) (*FooGetResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetFooResponse)
-	err := c.cc.Invoke(ctx, FooQueryService_GetFoo_FullMethodName, in, out, cOpts...)
+	out := new(FooGetResponse)
+	err := c.cc.Invoke(ctx, FooQueryService_FooGet_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fooQueryServiceClient) ListFoos(ctx context.Context, in *ListFoosRequest, opts ...grpc.CallOption) (*ListFoosResponse, error) {
+func (c *fooQueryServiceClient) FooList(ctx context.Context, in *FooListRequest, opts ...grpc.CallOption) (*FooListResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListFoosResponse)
-	err := c.cc.Invoke(ctx, FooQueryService_ListFoos_FullMethodName, in, out, cOpts...)
+	out := new(FooListResponse)
+	err := c.cc.Invoke(ctx, FooQueryService_FooList_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *fooQueryServiceClient) ListFooEvents(ctx context.Context, in *ListFooEventsRequest, opts ...grpc.CallOption) (*ListFooEventsResponse, error) {
+func (c *fooQueryServiceClient) FooEvents(ctx context.Context, in *FooEventsRequest, opts ...grpc.CallOption) (*FooEventsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListFooEventsResponse)
-	err := c.cc.Invoke(ctx, FooQueryService_ListFooEvents_FullMethodName, in, out, cOpts...)
+	out := new(FooEventsResponse)
+	err := c.cc.Invoke(ctx, FooQueryService_FooEvents_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -76,9 +76,9 @@ func (c *fooQueryServiceClient) ListFooEvents(ctx context.Context, in *ListFooEv
 // All implementations must embed UnimplementedFooQueryServiceServer
 // for forward compatibility
 type FooQueryServiceServer interface {
-	GetFoo(context.Context, *GetFooRequest) (*GetFooResponse, error)
-	ListFoos(context.Context, *ListFoosRequest) (*ListFoosResponse, error)
-	ListFooEvents(context.Context, *ListFooEventsRequest) (*ListFooEventsResponse, error)
+	FooGet(context.Context, *FooGetRequest) (*FooGetResponse, error)
+	FooList(context.Context, *FooListRequest) (*FooListResponse, error)
+	FooEvents(context.Context, *FooEventsRequest) (*FooEventsResponse, error)
 	mustEmbedUnimplementedFooQueryServiceServer()
 }
 
@@ -86,14 +86,14 @@ type FooQueryServiceServer interface {
 type UnimplementedFooQueryServiceServer struct {
 }
 
-func (UnimplementedFooQueryServiceServer) GetFoo(context.Context, *GetFooRequest) (*GetFooResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetFoo not implemented")
+func (UnimplementedFooQueryServiceServer) FooGet(context.Context, *FooGetRequest) (*FooGetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FooGet not implemented")
 }
-func (UnimplementedFooQueryServiceServer) ListFoos(context.Context, *ListFoosRequest) (*ListFoosResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListFoos not implemented")
+func (UnimplementedFooQueryServiceServer) FooList(context.Context, *FooListRequest) (*FooListResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FooList not implemented")
 }
-func (UnimplementedFooQueryServiceServer) ListFooEvents(context.Context, *ListFooEventsRequest) (*ListFooEventsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListFooEvents not implemented")
+func (UnimplementedFooQueryServiceServer) FooEvents(context.Context, *FooEventsRequest) (*FooEventsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method FooEvents not implemented")
 }
 func (UnimplementedFooQueryServiceServer) mustEmbedUnimplementedFooQueryServiceServer() {}
 
@@ -108,56 +108,56 @@ func RegisterFooQueryServiceServer(s grpc.ServiceRegistrar, srv FooQueryServiceS
 	s.RegisterService(&FooQueryService_ServiceDesc, srv)
 }
 
-func _FooQueryService_GetFoo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetFooRequest)
+func _FooQueryService_FooGet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FooGetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FooQueryServiceServer).GetFoo(ctx, in)
+		return srv.(FooQueryServiceServer).FooGet(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FooQueryService_GetFoo_FullMethodName,
+		FullMethod: FooQueryService_FooGet_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FooQueryServiceServer).GetFoo(ctx, req.(*GetFooRequest))
+		return srv.(FooQueryServiceServer).FooGet(ctx, req.(*FooGetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FooQueryService_ListFoos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListFoosRequest)
+func _FooQueryService_FooList_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FooListRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FooQueryServiceServer).ListFoos(ctx, in)
+		return srv.(FooQueryServiceServer).FooList(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FooQueryService_ListFoos_FullMethodName,
+		FullMethod: FooQueryService_FooList_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FooQueryServiceServer).ListFoos(ctx, req.(*ListFoosRequest))
+		return srv.(FooQueryServiceServer).FooList(ctx, req.(*FooListRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _FooQueryService_ListFooEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListFooEventsRequest)
+func _FooQueryService_FooEvents_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(FooEventsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(FooQueryServiceServer).ListFooEvents(ctx, in)
+		return srv.(FooQueryServiceServer).FooEvents(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: FooQueryService_ListFooEvents_FullMethodName,
+		FullMethod: FooQueryService_FooEvents_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(FooQueryServiceServer).ListFooEvents(ctx, req.(*ListFooEventsRequest))
+		return srv.(FooQueryServiceServer).FooEvents(ctx, req.(*FooEventsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -170,20 +170,20 @@ var FooQueryService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*FooQueryServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "GetFoo",
-			Handler:    _FooQueryService_GetFoo_Handler,
+			MethodName: "FooGet",
+			Handler:    _FooQueryService_FooGet_Handler,
 		},
 		{
-			MethodName: "ListFoos",
-			Handler:    _FooQueryService_ListFoos_Handler,
+			MethodName: "FooList",
+			Handler:    _FooQueryService_FooList_Handler,
 		},
 		{
-			MethodName: "ListFooEvents",
-			Handler:    _FooQueryService_ListFooEvents_Handler,
+			MethodName: "FooEvents",
+			Handler:    _FooQueryService_FooEvents_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "test/foo/v1/service/foo_service.proto",
+	Metadata: "test/foo/v1/service/foo.p.j5s.proto",
 }
 
 const (
@@ -274,7 +274,7 @@ var FooCommandService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "test/foo/v1/service/foo_service.proto",
+	Metadata: "test/foo/v1/service/foo.p.j5s.proto",
 }
 
 const (
@@ -365,5 +365,96 @@ var FooDownloadService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "test/foo/v1/service/foo_service.proto",
+	Metadata: "test/foo/v1/service/foo.p.j5s.proto",
+}
+
+const (
+	HandlerTestService_HandlerGet_FullMethodName = "/test.foo.v1.service.HandlerTestService/HandlerGet"
+)
+
+// HandlerTestServiceClient is the client API for HandlerTestService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type HandlerTestServiceClient interface {
+	HandlerGet(ctx context.Context, in *HandlerGetRequest, opts ...grpc.CallOption) (*HandlerGetResponse, error)
+}
+
+type handlerTestServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewHandlerTestServiceClient(cc grpc.ClientConnInterface) HandlerTestServiceClient {
+	return &handlerTestServiceClient{cc}
+}
+
+func (c *handlerTestServiceClient) HandlerGet(ctx context.Context, in *HandlerGetRequest, opts ...grpc.CallOption) (*HandlerGetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HandlerGetResponse)
+	err := c.cc.Invoke(ctx, HandlerTestService_HandlerGet_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// HandlerTestServiceServer is the server API for HandlerTestService service.
+// All implementations must embed UnimplementedHandlerTestServiceServer
+// for forward compatibility
+type HandlerTestServiceServer interface {
+	HandlerGet(context.Context, *HandlerGetRequest) (*HandlerGetResponse, error)
+	mustEmbedUnimplementedHandlerTestServiceServer()
+}
+
+// UnimplementedHandlerTestServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedHandlerTestServiceServer struct {
+}
+
+func (UnimplementedHandlerTestServiceServer) HandlerGet(context.Context, *HandlerGetRequest) (*HandlerGetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HandlerGet not implemented")
+}
+func (UnimplementedHandlerTestServiceServer) mustEmbedUnimplementedHandlerTestServiceServer() {}
+
+// UnsafeHandlerTestServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to HandlerTestServiceServer will
+// result in compilation errors.
+type UnsafeHandlerTestServiceServer interface {
+	mustEmbedUnimplementedHandlerTestServiceServer()
+}
+
+func RegisterHandlerTestServiceServer(s grpc.ServiceRegistrar, srv HandlerTestServiceServer) {
+	s.RegisterService(&HandlerTestService_ServiceDesc, srv)
+}
+
+func _HandlerTestService_HandlerGet_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HandlerGetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(HandlerTestServiceServer).HandlerGet(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: HandlerTestService_HandlerGet_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(HandlerTestServiceServer).HandlerGet(ctx, req.(*HandlerGetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// HandlerTestService_ServiceDesc is the grpc.ServiceDesc for HandlerTestService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var HandlerTestService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "test.foo.v1.service.HandlerTestService",
+	HandlerType: (*HandlerTestServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "HandlerGet",
+			Handler:    _HandlerTestService_HandlerGet_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "test/foo/v1/service/foo.p.j5s.proto",
 }

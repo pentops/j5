@@ -93,6 +93,7 @@ func NewStateMachine[
 	}
 
 	codec := j5codec.NewCodec(j5codec.WithIncludeEmpty())
+
 	return &StateMachine[K, S, ST, SD, E, IE]{
 		keyValueFunc:     cb.keyValues,
 		initialStateFunc: cb.initialStateFunc,
@@ -133,6 +134,7 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) TransitionInTx(ctx context.Context,
 	if err != nil {
 		return state, err
 	}
+
 	return state, nil
 }
 
@@ -211,6 +213,7 @@ func (sm *DBStateMachine[K, S, ST, SD, E, IE]) FollowEvent(ctx context.Context, 
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -227,6 +230,7 @@ func (sm *DBStateMachine[K, S, ST, SD, E, IE]) FollowEvents(ctx context.Context,
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -334,7 +338,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) keyValues(keysMessage K) (*keyValue
 		values:          values,
 		missingRequired: missingRequired,
 	}, nil
-
 }
 
 func (sm *StateMachine[K, S, ST, SD, E, IE]) store(
@@ -343,7 +346,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) store(
 	state S,
 	event E,
 ) error {
-
 	stateDBValue, err := sm.marshalJ5(state.J5Reflect())
 	if err != nil {
 		return fmt.Errorf("state field: %w", err)
@@ -463,9 +465,7 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) followEventDeduplicate(ctx context.
 }
 
 func (sm *StateMachine[K, S, ST, SD, E, IE]) followEvents(ctx context.Context, tx sqrlx.Transaction, events []E) error {
-
 	for _, event := range events {
-
 		if err := sm.validateEvent(event); err != nil {
 			return fmt.Errorf("validating event: %w", err)
 		}
@@ -535,8 +535,8 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) runInitialEvent(ctx context.Context
 	if err != nil {
 		return state, fmt.Errorf("run event %s: %w", eventSpec.Event.PSMEventKey(), err)
 	}
-	return *returnState, nil
 
+	return *returnState, nil
 }
 
 func assertPresentKeysMatch[K IKeyset](existing, event K) error {
@@ -568,11 +568,9 @@ func assertPresentKeysMatch[K IKeyset](existing, event K) error {
 	}
 
 	return nil
-
 }
 
 func (sm *StateMachine[K, S, ST, SD, E, IE]) runTx(ctx context.Context, tx sqrlx.Transaction, outerEvent *EventSpec[K, S, ST, SD, E, IE]) (S, error) {
-
 	if err := outerEvent.validateAndPrepare(); err != nil {
 		return *new(S), err
 	}
@@ -698,11 +696,11 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) validateEvent(event E) error {
 	if err != nil {
 		return fmt.Errorf("validate event: %w", err)
 	}
+
 	return nil
 }
 
 func (sm *StateMachine[K, S, ST, SD, E, IE]) prepareEvent(state S, spec *EventSpec[K, S, ST, SD, E, IE]) (built E, err error) {
-
 	built = newJ5Message[E]()
 	if err := built.SetPSMEvent(spec.Event); err != nil {
 		return built, fmt.Errorf("set event: %w", err)
@@ -717,7 +715,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) prepareEvent(state S, spec *EventSp
 	sm.nextStateEvent(state, eventMeta)
 
 	return
-
 }
 
 func (sm *StateMachine[K, S, ST, SD, E, IE]) nextStateEvent(state S, eventMeta *psm_j5pb.EventMetadata) {
@@ -753,7 +750,6 @@ func (sm *StateMachine[K, S, ST, SD, E, IE]) transitionFromLink(ctx context.Cont
 }
 
 func (sm *StateMachine[K, S, ST, SD, E, IE]) deriveEvent(cause E, chained IE) (evt *EventSpec[K, S, ST, SD, E, IE], err error) {
-
 	causeMetadata := cause.PSMMetadata()
 	eventID := uuid.NewString()
 	psmKeys := cause.PSMKeys()

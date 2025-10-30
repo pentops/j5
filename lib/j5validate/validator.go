@@ -14,7 +14,6 @@ import (
 	"github.com/pentops/j5/lib/j5reflect"
 	"github.com/pentops/j5/lib/j5schema"
 	"github.com/shopspring/decimal"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 var Global = NewValidator()
@@ -140,7 +139,6 @@ func (v *Validator) validatePropSet(ps j5reflect.PropertySet) (Errors, int, erro
 }
 
 func (v *Validator) validateField(field j5reflect.Field, schema j5schema.FieldSchema) (Errors, error) {
-
 	switch st := schema.(type) {
 	case *j5schema.ObjectField:
 
@@ -457,15 +455,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 				return nil, fmt.Errorf("error parsing minimum date %q: %w", *st.Date.Rules.Minimum, err)
 			}
 			if st.Date.Rules.ExclusiveMinimum != nil && *st.Date.Rules.ExclusiveMinimum {
-				if gotDate.Before(mustMin) {
+				if gotDate.Before(mustMin) || gotDate.Equals(mustMin) {
 					return Errors{{
-						Message: fmt.Sprintf("date %s is before exclusive minimum %s", gotDate, mustMin),
+						Message: fmt.Sprintf("date %s is before or equal to exclusive minimum %s", gotDate, mustMin),
 					}}, nil
 				}
 			} else {
-				if gotDate.Before(mustMin) || gotDate.Equals(mustMin) {
+				if gotDate.Before(mustMin) {
 					return Errors{{
-						Message: fmt.Sprintf("date %s is before or equal to minimum %s", gotDate, mustMin),
+						Message: fmt.Sprintf("date %s is before minimum %s", gotDate, mustMin),
 					}}, nil
 				}
 			}
@@ -477,15 +475,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 				return nil, fmt.Errorf("error parsing maximum date %q: %w", *st.Date.Rules.Maximum, err)
 			}
 			if st.Date.Rules.ExclusiveMaximum != nil && *st.Date.Rules.ExclusiveMaximum {
-				if gotDate.After(mustMax) {
+				if gotDate.After(mustMax) || gotDate.Equals(mustMax) {
 					return Errors{{
-						Message: fmt.Sprintf("date %s is after exclusive maximum %s", gotDate, mustMax),
+						Message: fmt.Sprintf("date %s is after or equal to exclusive maximum %s", gotDate, mustMax),
 					}}, nil
 				}
 			} else {
-				if gotDate.After(mustMax) || gotDate.Equals(mustMax) {
+				if gotDate.After(mustMax) {
 					return Errors{{
-						Message: fmt.Sprintf("date %s is after or equal to maximum %s", gotDate, mustMax),
+						Message: fmt.Sprintf("date %s is after maximum %s", gotDate, mustMax),
 					}}, nil
 				}
 			}
@@ -499,27 +497,25 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			return nil, nil
 		}
 
-		gotTimestamp, ok := gotValue.(*timestamppb.Timestamp)
+		timeVal, ok := gotValue.(time.Time)
+
 		if !ok {
-			if gotValue == nil {
-				gotTimestamp = timestamppb.New(time.Time{}) // default timestamp value
-			} else {
+			if gotValue != nil {
 				return nil, fmt.Errorf("expected timestamp value for scalar field, got %T", gotValue)
 			}
 		}
 
-		timeVal := gotTimestamp.AsTime()
 		if st.Timestamp.Rules.Minimum != nil {
 			if st.Timestamp.Rules.ExclusiveMinimum != nil && *st.Timestamp.Rules.ExclusiveMinimum {
-				if timeVal.Before(st.Timestamp.Rules.Minimum.AsTime()) {
+				if timeVal.Before(st.Timestamp.Rules.Minimum.AsTime()) || timeVal.Equal(st.Timestamp.Rules.Minimum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is before exclusive minimum %s", gotTimestamp, st.Timestamp.Rules.Minimum),
+						Message: fmt.Sprintf("timestamp %s is before or equal to exclusive minimum %s", timeVal, st.Timestamp.Rules.Minimum),
 					}}, nil
 				}
 			} else {
-				if timeVal.Before(st.Timestamp.Rules.Minimum.AsTime()) || timeVal.Equal(st.Timestamp.Rules.Minimum.AsTime()) {
+				if timeVal.Before(st.Timestamp.Rules.Minimum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is before or equal to minimum %s", gotTimestamp, st.Timestamp.Rules.Minimum),
+						Message: fmt.Sprintf("timestamp %s is before minimum %s", timeVal, st.Timestamp.Rules.Minimum),
 					}}, nil
 				}
 			}
@@ -527,15 +523,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 
 		if st.Timestamp.Rules.Maximum != nil {
 			if st.Timestamp.Rules.ExclusiveMaximum != nil && *st.Timestamp.Rules.ExclusiveMaximum {
-				if timeVal.After(st.Timestamp.Rules.Maximum.AsTime()) {
+				if timeVal.After(st.Timestamp.Rules.Maximum.AsTime()) || timeVal.Equal(st.Timestamp.Rules.Maximum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is after exclusive maximum %s", gotTimestamp, st.Timestamp.Rules.Maximum),
+						Message: fmt.Sprintf("timestamp %s is after or equal to exclusive maximum %s", timeVal, st.Timestamp.Rules.Maximum),
 					}}, nil
 				}
 			} else {
-				if timeVal.After(st.Timestamp.Rules.Maximum.AsTime()) || timeVal.Equal(st.Timestamp.Rules.Maximum.AsTime()) {
+				if timeVal.After(st.Timestamp.Rules.Maximum.AsTime()) {
 					return Errors{{
-						Message: fmt.Sprintf("timestamp %s is after or equal to maximum %s", gotTimestamp, st.Timestamp.Rules.Maximum),
+						Message: fmt.Sprintf("timestamp %s is after maximum %s", timeVal, st.Timestamp.Rules.Maximum),
 					}}, nil
 				}
 			}
@@ -568,15 +564,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 				return nil, fmt.Errorf("error parsing minimum decimal %q: %w", *st.Decimal.Rules.Minimum, err)
 			}
 			if st.Decimal.Rules.ExclusiveMinimum != nil && *st.Decimal.Rules.ExclusiveMinimum {
-				if gotDecimal.LessThan(mustMin) {
+				if gotDecimal.LessThanOrEqual(mustMin) {
 					return Errors{{
-						Message: fmt.Sprintf("decimal %s is less than exclusive minimum %s", gotDecimal, mustMin),
+						Message: fmt.Sprintf("decimal %s is less than or equal to exclusive minimum %s", gotDecimal, mustMin),
 					}}, nil
 				}
 			} else {
-				if gotDecimal.LessThan(mustMin) || gotDecimal.Equal(mustMin) {
+				if gotDecimal.LessThan(mustMin) {
 					return Errors{{
-						Message: fmt.Sprintf("decimal %s is less than or equal to minimum %s", gotDecimal, mustMin),
+						Message: fmt.Sprintf("decimal %s is less than minimum %s", gotDecimal, mustMin),
 					}}, nil
 				}
 			}
@@ -588,15 +584,15 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 				return nil, fmt.Errorf("error parsing maximum decimal %q: %w", *st.Decimal.Rules.Maximum, err)
 			}
 			if st.Decimal.Rules.ExclusiveMaximum != nil && *st.Decimal.Rules.ExclusiveMaximum {
-				if gotDecimal.GreaterThan(mustMax) {
+				if gotDecimal.GreaterThanOrEqual(mustMax) {
 					return Errors{{
-						Message: fmt.Sprintf("decimal %s is greater than exclusive maximum %s", gotDecimal, mustMax),
+						Message: fmt.Sprintf("decimal %s is greater than or equal to exclusive maximum %s", gotDecimal, mustMax),
 					}}, nil
 				}
 			} else {
-				if gotDecimal.GreaterThan(mustMax) || gotDecimal.Equal(mustMax) {
+				if gotDecimal.GreaterThan(mustMax) {
 					return Errors{{
-						Message: fmt.Sprintf("decimal %s is greater than or equal to maximum %s", gotDecimal, mustMax),
+						Message: fmt.Sprintf("decimal %s is greater than maximum %s", gotDecimal, mustMax),
 					}}, nil
 				}
 			}
@@ -626,7 +622,7 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			if st.Float.Rules.ExclusiveMinimum != nil && *st.Float.Rules.ExclusiveMinimum {
 				if val64 <= *st.Float.Rules.Minimum {
 					return Errors{{
-						Message: fmt.Sprintf("float value %f is less than exclusive minimum %f", val64, *st.Float.Rules.Minimum),
+						Message: fmt.Sprintf("float value %f is less than or equal to exclusive minimum %f", val64, *st.Float.Rules.Minimum),
 					}}, nil
 				}
 			} else {
@@ -642,7 +638,7 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			if st.Float.Rules.ExclusiveMaximum != nil && *st.Float.Rules.ExclusiveMaximum {
 				if val64 >= *st.Float.Rules.Maximum {
 					return Errors{{
-						Message: fmt.Sprintf("float value %f is greater than exclusive maximum %f", val64, *st.Float.Rules.Maximum),
+						Message: fmt.Sprintf("float value %f is greater than or equal to exclusive maximum %f", val64, *st.Float.Rules.Maximum),
 					}}, nil
 				}
 			} else {
@@ -681,7 +677,7 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			if st.Integer.Rules.ExclusiveMinimum != nil && *st.Integer.Rules.ExclusiveMinimum {
 				if val64 <= *st.Integer.Rules.Minimum {
 					return Errors{{
-						Message: fmt.Sprintf("integer value %d is less than exclusive minimum %d", val64, *st.Integer.Rules.Minimum),
+						Message: fmt.Sprintf("integer value %d is less than or equal to exclusive minimum %d", val64, *st.Integer.Rules.Minimum),
 					}}, nil
 				}
 			} else {
@@ -697,7 +693,7 @@ func validateScalar(gotValue any, schema *j5schema.ScalarSchema) (Errors, error)
 			if st.Integer.Rules.ExclusiveMaximum != nil && *st.Integer.Rules.ExclusiveMaximum {
 				if val64 >= *st.Integer.Rules.Maximum {
 					return Errors{{
-						Message: fmt.Sprintf("integer value %d is greater than exclusive maximum %d", val64, *st.Integer.Rules.Maximum),
+						Message: fmt.Sprintf("integer value %d is greater than or equal to exclusive maximum %d", val64, *st.Integer.Rules.Maximum),
 					}}, nil
 				}
 			} else {

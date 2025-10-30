@@ -17,7 +17,6 @@ func newElements() sourceElements {
 }
 
 func (se *sourceElements) add(d protoreflect.Descriptor) {
-
 	typeOrder := 0
 	switch d.(type) {
 	case protoreflect.MessageDescriptor:

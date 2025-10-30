@@ -66,7 +66,6 @@ func Walk(tokens []Token, failFast bool) (*File, error) {
 }
 
 func fragmentsToFile(fragments []Fragment) (*File, error) {
-
 	type walkingBlock struct {
 		parent *walkingBlock
 		body   *Body
@@ -218,7 +217,6 @@ func (ww *Walker) recoverError(err *unexpectedTokenError) error {
 }
 
 func (ww *Walker) nextFragment() (Fragment, *unexpectedTokenError) {
-
 	switch ww.nextType() {
 
 	case EOF:
@@ -356,8 +354,12 @@ func (ww *Walker) popValue() (Value, *unexpectedTokenError) {
 }
 
 func (ww *Walker) popIdent() (Ident, *unexpectedTokenError) {
-	tok, ok := ww.popToken().AsIdent()
-	if !ok {
+	tok := ww.popToken()
+
+	switch tok.Type {
+	case IDENT, BOOL, STRING:
+		// all valid types for an ident
+	default:
 		return Ident{}, unexpectedToken(tok, IDENT)
 	}
 
@@ -419,7 +421,6 @@ func (ww *Walker) popDescription() (Description, *unexpectedTokenError) {
 }
 
 func (ww *Walker) popTag() (TagValue, *unexpectedTokenError) {
-
 	var mark = TagMarkNone
 	var markToken Token
 	switch ww.nextType() {
@@ -434,8 +435,7 @@ func (ww *Walker) popTag() (TagValue, *unexpectedTokenError) {
 	}
 
 	switch ww.nextType() {
-	case IDENT, BOOL:
-
+	case IDENT, BOOL, STRING:
 		// Build the name parts
 		// <reference> <ident>
 		ref, err := ww.popReference()
@@ -452,21 +452,6 @@ func (ww *Walker) popTag() (TagValue, *unexpectedTokenError) {
 			},
 		}, nil
 
-	case STRING:
-		refStr, err := ww.popValue()
-		if err != nil {
-			return TagValue{}, err
-		}
-		return TagValue{
-			Mark:      mark,
-			MarkToken: markToken,
-			Value:     &refStr,
-			SourceNode: SourceNode{
-				Start: refStr.Start,
-				End:   refStr.End,
-			},
-		}, nil
-
 	default:
 
 		return TagValue{}, unexpectedToken(ww.popToken(), IDENT, BOOL, STRING)
@@ -475,7 +460,6 @@ func (ww *Walker) popTag() (TagValue, *unexpectedTokenError) {
 }
 
 func (ww *Walker) walkStatement() (Fragment, *unexpectedTokenError) {
-
 	// Read all dot separated idents continuing from the first token
 	// a.b.c.d
 	ref, err := ww.popReference()
@@ -615,7 +599,6 @@ func (ww *Walker) endStatement() (*Comment, *unexpectedTokenError) {
 }
 
 func (ww *Walker) walkValueAssign(ref Reference) (Assignment, *unexpectedTokenError) {
-
 	assign := Assignment{
 		Key: ref,
 		SourceNode: SourceNode{

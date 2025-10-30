@@ -13,7 +13,6 @@ import (
 )
 
 func TestParse(t *testing.T) {
-
 	_ = &emptypb.Empty{}
 	_ = &annotations.HttpRule{}
 	// forces import, the parser assumes this exists.

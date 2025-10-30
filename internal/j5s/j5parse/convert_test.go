@@ -93,7 +93,6 @@ func TestArrayObjectField(t *testing.T) {
 }
 
 func TestEmptyOneofBody(t *testing.T) {
-
 	file := build()
 	obj := file.addObject("Foo")
 	obj.addField("barId").setSchema(basicString())
@@ -287,7 +286,6 @@ func TestArrayOfObject(t *testing.T) {
 }
 
 func TestConvert(t *testing.T) {
-
 	file := build()
 	obj := file.addObject("Foo")
 	obj.obj.Description = "Foo Object Description"

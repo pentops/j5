@@ -1,0 +1,131 @@
+package test.foo.v1
+
+entity Foo {
+	query {
+		defaultStatusFilter = ["ACTIVE"]
+
+		auth {
+			jwtBearer
+		}
+	}
+
+	key fooId ! key:uuid {
+		primary = true
+	}
+
+	key barId ! key:uuid {
+		foreign = "test.foo.v1.Bar"
+	}
+
+	status ACTIVE
+	status INACTIVE
+
+	data name string {
+		listRules.searching.searchable = true
+	}
+
+	data bar object:Bar
+
+	data createdAt timestamp {
+		listRules {
+			filtering.filterable = true
+			sorting.defaultSort = true
+			sorting.sortable = true
+		}
+	}
+
+	data bazDate date {
+    listRules {
+      filtering.filterable = true
+      sorting.sortable = true
+    }
+  }
+
+	data bazes array:object:Baz
+
+	event Created {
+		| Comment on Created
+		field field string
+	}
+
+	event Updated {
+		| Comment on Updated
+		field field string
+	}
+
+	command {
+		options {
+			defaultAuth {
+				jwtBearer
+			}
+		}
+
+		method PostFoo {
+			httpMethod = "POST"
+
+			request {
+				field id ! key:uuid
+			}
+
+			response {
+				field foo object:FooState
+			}
+		}
+	}
+}
+
+object Bar {
+	field id key:uuid {
+		listRules.filtering.filterable = true
+	}
+
+	field field string {
+		listRules.searching.searchable = true
+	}
+}
+
+object Baz {
+	field bazId key:uuid {
+		listRules.filtering.filterable = true
+	}
+}
+
+service FooDownload {
+	method DownloadRaw {
+		httpMethod = "GET"
+		httpPath = "/test/foo/v1/foo/:id/raw"
+		httpResponse = true
+
+		request {
+			field id ! key:uuid
+		}
+	}
+}
+
+service HandlerTest {
+	options {
+		defaultAuth {
+			none
+		}
+	}
+
+	method HandlerGet {
+		httpMethod = "GET"
+		httpPath = "/test/v1/foo/:id"
+
+		request {
+			field id ! key:uuid
+			field number ! integer:INT64
+			field numbers ! array:float:FLOAT32
+			field multipleWord ! string
+
+			field ab ! object {
+				field a string
+				field b string
+			}
+		}
+
+		response {
+		}
+	}
+}

@@ -9,7 +9,6 @@ import (
 )
 
 func TestPathMap(t *testing.T) {
-
 	dd := Document{
 		Paths: PathSet{
 			&PathItem{

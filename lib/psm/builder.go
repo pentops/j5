@@ -63,6 +63,7 @@ func (smc *StateMachineConfig[K, S, ST, SD, E, IE]) DeriveKeyValues(cbFunc func(
 // it when it changes.
 func (smc *StateMachineConfig[K, S, ST, SD, E, IE]) InitialStateFunc(cbFunc func(context.Context, sqrlx.Transaction, K) (IE, error)) *StateMachineConfig[K, S, ST, SD, E, IE] {
 	smc.initialStateFunc = cbFunc
+
 	return smc
 }
 
@@ -83,8 +84,8 @@ func (smc *StateMachineConfig[K, S, ST, SD, E, IE]) schemas() (*j5schema.ObjectS
 	if !ok {
 		return nil, nil, fmt.Errorf("invalid event type %T, must be a j5 object schema", event)
 	}
-	return stateObject, eventObject, nil
 
+	return stateObject, eventObject, nil
 }
 
 func (smc *StateMachineConfig[K, S, ST, SD, E, IE]) apply() error {
@@ -104,6 +105,7 @@ func (smc *StateMachineConfig[K, S, ST, SD, E, IE]) apply() error {
 		smc.tableMap.State.TableName = *smc.tableName
 		smc.tableMap.Event.TableName = *smc.tableName + "_event"
 	}
+
 	return nil
 }
 
@@ -111,6 +113,7 @@ func (smc *StateMachineConfig[K, S, ST, SD, E, IE]) BuildStateMachine() (*StateM
 	if err := smc.apply(); err != nil {
 		return nil, err
 	}
+
 	return NewStateMachine(smc)
 }
 

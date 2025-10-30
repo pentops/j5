@@ -11,7 +11,6 @@ import (
 )
 
 func BuildStateMachineMigrations(specs ...psm.QueryTableSpec) ([]byte, error) {
-
 	allMigrations := make([]pgmigrate.MigrationItem, 0, len(specs)*4)
 
 	for _, spec := range specs {
@@ -45,6 +44,7 @@ func BuildStateMachineMigrations(specs ...psm.QueryTableSpec) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return fileData, nil
 }
 
@@ -88,6 +88,7 @@ func AddIndexes(ctx context.Context, conn sqrlx.Transactor, specs ...psm.QueryTa
 	if err != nil {
 		return fmt.Errorf("build indexes: %w", err)
 	}
+
 	return pgmigrate.RunMigrations(ctx, conn, indexes)
 }
 
@@ -116,7 +117,6 @@ func BuildIndexes(specs ...psm.QueryTableSpec) ([]pgmigrate.MigrationItem, error
 }
 
 func BuildPSMTables(spec psm.QueryTableSpec) (*pgmigrate.Table, *pgmigrate.Table, error) {
-
 	stateTable := pgmigrate.CreateTable(spec.State.TableName)
 
 	eventTable := pgmigrate.CreateTable(spec.Event.TableName).

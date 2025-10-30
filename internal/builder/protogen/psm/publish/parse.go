@@ -10,7 +10,6 @@ import (
 )
 
 func WalkFile(file *protogen.File) ([]*PSMPublishSet, error) {
-
 	sets := make([]*PSMPublishSet, 0)
 	for _, service := range file.Services {
 		annotation := protosrc.GetExtension[*messaging_j5pb.ServiceConfig](service.Desc.Options(), messaging_j5pb.E_Service)

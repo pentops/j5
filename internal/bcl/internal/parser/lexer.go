@@ -30,7 +30,6 @@ func NewLexer(data string) *Lexer {
 const lexerEofChr = -1
 
 func (l *Lexer) next() {
-
 	if l.isEOL {
 		l.line++
 		l.column = 0

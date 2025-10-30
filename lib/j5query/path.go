@@ -30,6 +30,7 @@ func (nf *NestedField) ProtoChild(name string) (*NestedField, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &NestedField{
 		RootColumn: nf.RootColumn,
 		Path:       *pathChild,
@@ -40,9 +41,11 @@ func (nf *NestedField) Selector(inTable string) string {
 	if nf.ValueColumn != nil {
 		return fmt.Sprintf("%s.%s", inTable, *nf.ValueColumn)
 	}
+
 	if len(nf.Path.path) == 0 {
 		return fmt.Sprintf("%s.%s", inTable, nf.RootColumn)
 	}
+
 	return fmt.Sprintf("%s.%s%s", inTable, nf.RootColumn, nf.Path.JSONBArrowPath())
 }
 
@@ -165,7 +168,7 @@ func (pp *Path) JSONPathQuery() string {
 		elements = append(elements, fmt.Sprintf(".%s", part.field.JSONName))
 		switch part.field.Schema.(type) {
 		case *j5schema.MapField:
-			panic("map fields not supported by JSONBArrowPath()")
+			panic("map fields not supported by JSONPathQuery()")
 		case *j5schema.ArrayField:
 			elements = append(elements, "[*]")
 		}
@@ -206,12 +209,23 @@ func (pp Path) ClientPath() string {
 	return strings.Join(elements, ".")
 }
 
+// WalkPathNodes visits every field in the path other than the leaf field
+// itself, calling the callback for each. Walking stops if the callback returns false.
+func (pp Path) WalkPathNodes(callback func(*j5schema.ObjectProperty) bool) {
+	for _, part := range pp.path {
+		if !callback(part.field) {
+			break
+		}
+	}
+}
+
 // WalkPathNodes visits every field in the message tree other than the root
 // message itself, calling the callback for each.
 func WalkPathNodes(rootMessage *j5schema.ObjectSchema, callback func(Path) error) error {
 	root := &Path{
 		root: rootMessage,
 	}
+
 	return root.walk(rootMessage.Properties, callback)
 }
 
@@ -222,11 +236,16 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 			name:  field.JSONName,
 			field: field,
 		})
+
+		copiedFieldPath := make([]pathNode, len(fieldPath))
+		copy(copiedFieldPath, fieldPath)
+
 		fieldPathSpec := Path{
 			root:      pp.root,
-			path:      fieldPath,
+			path:      copiedFieldPath,
 			leafField: field,
 		}
+
 		switch ft := field.Schema.(type) {
 
 		case *j5schema.OneofField:
@@ -239,20 +258,29 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 
 		switch ft := field.Schema.(type) {
 		case *j5schema.ObjectField:
-			if err := fieldPathSpec.walk(ft.ObjectSchema().Properties, callback); err != nil {
+			err := fieldPathSpec.walk(ft.ObjectSchema().Properties, callback)
+			if err != nil {
 				return fmt.Errorf("walking %s: %w", field.JSONName, err)
 			}
 
 		case *j5schema.OneofField:
-
-			if err := fieldPathSpec.walk(ft.OneofSchema().Properties, callback); err != nil {
+			err := fieldPathSpec.walk(ft.OneofSchema().Properties, callback)
+			if err != nil {
 				return fmt.Errorf("walking %s: %w", field.JSONName, err)
+			}
+
+		case *j5schema.ArrayField:
+			switch at := ft.ItemSchema.(type) {
+			case *j5schema.ObjectField:
+				err := fieldPathSpec.walk(at.ObjectSchema().Properties, callback)
+				if err != nil {
+					return fmt.Errorf("walking %s: %w", field.JSONName, err)
+				}
 			}
 		}
 	}
 
 	return nil
-
 }
 
 // Like ProtoPathSpec but uses JSON field names
@@ -300,12 +328,15 @@ func objectProperty(obj hasPropertySet, pathElem string, pt pathType) (*j5schema
 		if prop == nil {
 			return nil, fmt.Errorf("client property %q not found in %s", pathElem, obj.FullName())
 		}
+
 		return prop, nil
+
 	case outerPath:
 		prop := obj.AllProperties().ByJSONName(pathElem)
 		if prop == nil {
 			return nil, fmt.Errorf("property %q not found in %s", pathElem, obj.FullName())
 		}
+
 		return prop, nil
 
 	default:
@@ -315,7 +346,6 @@ func objectProperty(obj hasPropertySet, pathElem string, pt pathType) (*j5schema
 }
 
 func newPath(rootMessage *j5schema.ObjectSchema, fieldPath []string, pathType pathType) (*Path, error) {
-
 	if len(fieldPath) == 0 {
 		return nil, fmt.Errorf("fieldPath must have at least one element")
 	}
@@ -339,13 +369,13 @@ func newPath(rootMessage *j5schema.ObjectSchema, fieldPath []string, pathType pa
 			if err != nil {
 				return nil, err
 			}
+
 			node = pathNode{
 				name:  pathElem,
 				field: field,
 			}
 
 		case *j5schema.OneofSchema:
-
 			if len(walkPath) == 0 && pathElem == "!type" {
 				// Very Special Edge Case: Oneof wrapper types allow the client to
 				// filter based on the type of the oneof. So the oneof can be at the
@@ -377,20 +407,26 @@ func newPath(rootMessage *j5schema.ObjectSchema, fieldPath []string, pathType pa
 		switch nextType := node.field.Schema.(type) {
 		case *j5schema.ObjectField:
 			walkMessage = nextType.ObjectSchema()
+
 		case *j5schema.OneofField:
 			walkMessage = nextType.OneofSchema()
+
 		case j5schema.RootSchema:
 			walkMessage = nextType
+
 		case *j5schema.ArrayField:
 			items := nextType.ItemSchema
 			switch items := items.(type) {
 			case *j5schema.ObjectField:
 				walkMessage = items.ObjectSchema()
+
 			case *j5schema.OneofField:
 				walkMessage = items.OneofSchema()
+
 			default:
 				return nil, fmt.Errorf("array field %q in %s.%s is an array, but not of an object or oneof, no such field %q", pathElem, rootMessage.FullName(), strings.Join(fieldPath, "."), strings.Join(walkPath, "."))
 			}
+
 		case *j5schema.MapField:
 			return nil, fmt.Errorf("map fields not supported in path %q", strings.Join(fieldPath, "."))
 		default:

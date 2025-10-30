@@ -9,7 +9,6 @@ import (
 )
 
 func TestEntity(t *testing.T) {
-
 	entitySrc := &sourcedef_j5pb.Entity{
 		Name: "foo",
 		Keys: []*sourcedef_j5pb.EntityKey{{

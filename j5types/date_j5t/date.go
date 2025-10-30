@@ -27,11 +27,12 @@ func (dd *Date) AsTime(location *time.Location) time.Time {
 
 // DateString returns an ISO 8601 / RFC3339 date string.
 func (dd *Date) DateString() string {
-	return fmt.Sprintf("%4d-%02d-%02d", dd.Year, dd.Month, dd.Day)
+	return fmt.Sprintf("%04d-%02d-%02d", dd.Year, dd.Month, dd.Day)
 }
 
 func (dd *Date) MarshalText() ([]byte, error) {
 	str := dd.DateString()
+
 	return []byte(str), nil
 }
 
@@ -40,9 +41,11 @@ func (dd *Date) UnmarshalText(data []byte) error {
 	if err != nil {
 		return err
 	}
+
 	dd.Year = got.Year
 	dd.Month = got.Month
 	dd.Day = got.Day
+
 	return nil
 }
 
@@ -50,24 +53,30 @@ func (dd *Date) Value() (driver.Value, error) {
 	if dd == nil {
 		return nil, nil
 	}
+
 	return dd.DateString(), nil
 }
 
 func (dd *Date) Scan(src any) error {
 	if src == nil {
 		dd.Year, dd.Month, dd.Day = 0, 0, 0
+
 		return nil
 	}
+
 	if str, ok := src.(string); ok {
 		got, err := DateFromString(str)
 		if err != nil {
 			return fmt.Errorf("failed to parse date from string: %w", err)
 		}
+
 		dd.Year = got.Year
 		dd.Month = got.Month
 		dd.Day = got.Day
+
 		return nil
 	}
+
 	return fmt.Errorf("cannot scan type %T into Date", src)
 }
 
@@ -110,6 +119,7 @@ func (dd *Date) Equals(other *Date) bool {
 // time.Time
 func DateFromTime(tt time.Time) *Date {
 	y, m, d := tt.Date()
+
 	return &Date{
 		Year:  int32(y),
 		Month: int32(m),
@@ -127,6 +137,7 @@ func (dd *Date) AddDate(years, months, days int32) *Date {
 	// The go implementation of this is fairly efficient, even if we are wasting
 	// the time parts. Still, this could be improved.
 	tt := dd.AsTime(time.UTC).AddDate(int(years), int(months), int(days))
+
 	return DateFromTime(tt)
 }
 

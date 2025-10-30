@@ -11,13 +11,54 @@ import (
 	"github.com/pentops/j5/gen/j5/schema/v1/schema_j5pb"
 	"github.com/pentops/j5/gen/j5/sourcedef/v1/sourcedef_j5pb"
 	"github.com/pentops/j5/internal/bcl/errpos"
+	"github.com/pentops/j5/internal/protosrc"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-func TestPackageParse(t *testing.T) {
+func TestPrimaryKeyValidation(t *testing.T) {
+	deps := &testDeps{
+		pkg:   "test.v1",
+		types: map[string]*TypeRef{},
+	}
+	t.Run("primary key implicitly treated as required", func(t *testing.T) {
+		// GIVEN: A entity with a primary key field not explicitly marked as required
+		inputProp := &schema_j5pb.ObjectProperty{
+			Name:     "entityId",
+			Required: false,
+			EntityKey: &schema_j5pb.EntityKey{
+				Primary: true,
+			},
+			Schema: &schema_j5pb.Field{
+				Type: &schema_j5pb.Field_Key{
+					Key: &schema_j5pb.KeyField{},
+				},
+			},
+		}
 
+		// WHEN: Converting that entity primary key
+		obj := tSimpleObject(inputProp)
+		file := &sourcedef_j5pb.SourceFile{
+			Path:     "test/v1/test.j5s",
+			Package:  &sourcedef_j5pb.Package{Name: "test.v1"},
+			Elements: []*sourcedef_j5pb.RootElement{obj},
+		}
+
+		// THEN: The resulting proto field has Required=true validation rule
+		j5File, err := ConvertJ5File(deps, file)
+		if err != nil {
+			t.Fatalf("ConvertJ5File failed: %v", err)
+		}
+		entityPrimaryKey := j5File[0].MessageType[0].Field[0]
+		validateRules := protosrc.GetExtension[*validate.FieldRules](entityPrimaryKey.Options, validate.E_Field)
+		if validateRules == nil || validateRules.Required == nil || !*validateRules.Required {
+			t.Errorf("Expected Required=true for primary key field")
+		}
+	})
+}
+
+func TestPackageParse(t *testing.T) {
 	for _, tc := range []struct {
 		input   string
 		wantPkg string
@@ -140,7 +181,6 @@ var emptyObjectOption = withOption(&descriptorpb.MessageOptions{}, ext_j5pb.E_Me
 })
 
 func TestSchemaToProto(t *testing.T) {
-
 	deps := &testDeps{
 		pkg: "test.v1",
 		types: map[string]*TypeRef{
@@ -359,7 +399,6 @@ func TestEnumConvert(t *testing.T) {
 }
 
 func TestPolymorphConvert(t *testing.T) {
-
 	polymorphSchema := &sourcedef_j5pb.RootElement{
 		Type: &sourcedef_j5pb.RootElement_Polymorph{
 			Polymorph: &sourcedef_j5pb.Polymorph{
@@ -478,7 +517,6 @@ func (tc *tConversion) convert(t testing.TB) *descriptorpb.FileDescriptorProto {
 // Copies the J5 extension object to the equivalent protoreflect extension type
 // by field names.
 func tEmptyTypeExt(t testing.TB, fieldType protoreflect.Name) *descriptorpb.FieldOptions {
-
 	// Options in the *proto* representation.
 	extOptions := &ext_j5pb.FieldOptions{}
 	extOptionsRefl := extOptions.ProtoReflect()

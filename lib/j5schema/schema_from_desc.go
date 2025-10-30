@@ -112,7 +112,6 @@ func (pkg *Package) buildRoot(schema *schema_j5pb.RootSchema) (RootSchema, error
 }
 
 func (pkg *Package) schemaFromDesc(context fieldContext, schema *schema_j5pb.Field) (FieldSchema, error) {
-
 	switch st := schema.Type.(type) {
 
 	case *schema_j5pb.Field_Object:
@@ -365,7 +364,6 @@ func (pkg *Package) objectSchemaFromDesc(sch *schema_j5pb.Object) (*ObjectSchema
 }
 
 func (pkg *Package) oneofSchemaFromDesc(sch *schema_j5pb.Oneof) (*OneofSchema, error) {
-
 	oneof := &OneofSchema{
 		Properties: make([]*ObjectProperty, len(sch.Properties)),
 		BCL:        sch.Bcl,
@@ -393,6 +391,7 @@ func (pkg *Package) enumSchemaFromDesc(sch *schema_j5pb.Enum) *EnumSchema {
 			name:        src.Name,
 			description: src.Description,
 			number:      src.Number,
+			info:        src.Info,
 		}
 	}
 	return &EnumSchema{
