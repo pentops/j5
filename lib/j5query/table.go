@@ -30,7 +30,6 @@ type TableReflectionSet struct {
 }
 
 func NewTableReflectionSet(table TableSpec) (*TableReflectionSet, error) {
-
 	err := table.Validate()
 	if err != nil {
 		return nil, fmt.Errorf("validate table spec: %w", err)

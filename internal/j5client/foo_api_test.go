@@ -8,7 +8,6 @@ import (
 )
 
 func wantAPI() *client_j5pb.API {
-
 	objectRef := tObjectRef
 	array := tArrayOf
 

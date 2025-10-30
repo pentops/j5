@@ -1295,6 +1295,7 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 				}
 			}
 		}
+
 		return &ScalarSchema{
 			Kind:              protoreflect.MessageKind,
 			WellKnownTypeName: fullName,
