@@ -27,7 +27,7 @@ func (dd *Date) AsTime(location *time.Location) time.Time {
 
 // DateString returns an ISO 8601 / RFC3339 date string.
 func (dd *Date) DateString() string {
-	return fmt.Sprintf("%4d-%02d-%02d", dd.Year, dd.Month, dd.Day)
+	return fmt.Sprintf("%04d-%02d-%02d", dd.Year, dd.Month, dd.Day)
 }
 
 func (dd *Date) MarshalText() ([]byte, error) {

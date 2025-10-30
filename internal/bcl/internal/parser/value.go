@@ -242,7 +242,36 @@ func (tv TagValue) GoString() string {
 }
 
 func (tv TagValue) IsScalar() bool {
+	if tv.Reference != nil {
+		return tv.Reference.IsScalar()
+	}
+	if tv.Value != nil {
+		return tv.Value.IsScalar()
+	}
+
 	return true
+}
+
+func (tv TagValue) IsArray() bool {
+	if tv.Reference != nil {
+		return tv.Reference.IsArray()
+	}
+	if tv.Value != nil {
+		return tv.Value.IsArray()
+	}
+
+	return true
+}
+
+func (tv TagValue) AsArray() ([]ASTValue, bool) {
+	if tv.Reference != nil {
+		return tv.Reference.AsArray()
+	}
+	if tv.Value != nil {
+		return tv.Value.AsArray()
+	}
+
+	return nil, false
 }
 
 func (tv TagValue) AsString() (string, error) {

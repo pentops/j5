@@ -309,6 +309,141 @@ func TestValidate(t *testing.T) {
 		schema.New().SetScalar("bar.baz", "value").AssertValid()
 	})
 
+	t.Run("Decimal", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! decimal {
+				rules.minimum = 10
+				rules.maximum = 19.9
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "10").AssertValid()
+		schema.New().SetScalar("bar", "19.9").AssertValid()
+		schema.New().SetScalar("bar", "9.9").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "20").AssertInvalid("bar", "maximum")
+	})
+
+	t.Run("Decimal Exclusive", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! decimal {
+				rules.minimum = 10
+				rules.maximum = 19.9
+				rules.exclusiveMinimum = true
+				rules.exclusiveMaximum = true
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "10.1").AssertValid()
+		schema.New().SetScalar("bar", "19.8").AssertValid()
+		schema.New().SetScalar("bar", "10").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "19.9").AssertInvalid("bar", "maximum")
+	})
+
+	t.Run("Float", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! float:FLOAT32 {
+				rules.minimum = 10
+				rules.maximum = 19.9
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "10").AssertValid()
+		schema.New().SetScalar("bar", "19.9").AssertValid()
+		schema.New().SetScalar("bar", "9.9").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "20").AssertInvalid("bar", "maximum")
+	})
+
+	t.Run("Float Exclusive", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! float:FLOAT64 {
+				rules.minimum = 10
+				rules.maximum = 19.9
+				rules.exclusiveMinimum = true
+				rules.exclusiveMaximum = true
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "10.1").AssertValid()
+		schema.New().SetScalar("bar", "19.8").AssertValid()
+		schema.New().SetScalar("bar", "10").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "19.9").AssertInvalid("bar", "maximum")
+	})
+
+	t.Run("Date", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! date {
+				rules.minimum = "2025-01-01"
+				rules.maximum = "2026-01-01"
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "2025-01-01").AssertValid()
+		schema.New().SetScalar("bar", "2026-01-01").AssertValid()
+		schema.New().SetScalar("bar", "2024-12-31").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "2026-01-02").AssertInvalid("bar", "maximum")
+	})
+
+	t.Run("Date Exclusive", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! date {
+				rules.minimum = "2025-01-01"
+				rules.maximum = "2026-01-01"
+				rules.exclusiveMinimum = true
+				rules.exclusiveMaximum = true
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "2025-01-02").AssertValid()
+		schema.New().SetScalar("bar", "2025-12-31").AssertValid()
+		schema.New().SetScalar("bar", "2025-01-01").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "2026-01-01").AssertInvalid("bar", "maximum")
+	})
+
+	t.Run("Timestamp", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! timestamp {
+				rules.minimum = "2025-01-01T00:00:00Z"
+				rules.maximum = "2026-01-01T00:00:00Z"
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "2025-01-01T00:00:00Z").AssertValid()
+		schema.New().SetScalar("bar", "2026-01-01T00:00:00Z").AssertValid()
+		schema.New().SetScalar("bar", "2024-12-31T23:59:59Z").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "2026-01-02T00:00:01Z").AssertInvalid("bar", "maximum")
+	})
+
+	t.Run("Timestamp Exclusive", func(t *testing.T) {
+		schema := newReflectCase(t, `
+		object Foo {
+			field bar ! timestamp {
+				rules.minimum = "2025-01-01T00:00:00Z"
+				rules.maximum = "2026-01-01T00:00:00Z"
+				rules.exclusiveMinimum = true
+				rules.exclusiveMaximum = true
+			}
+		}`)
+
+		schema.New().AssertInvalid("bar", "required")
+		schema.New().SetScalar("bar", "2025-01-01T00:00:01Z").AssertValid()
+		schema.New().SetScalar("bar", "2025-12-31T23:59:59Z").AssertValid()
+		schema.New().SetScalar("bar", "2025-01-01T00:00:00Z").AssertInvalid("bar", "minimum")
+		schema.New().SetScalar("bar", "2026-01-01T00:00:00Z").AssertInvalid("bar", "maximum")
+	})
 }
 
 type reflectCase struct {

@@ -58,7 +58,7 @@ func getFieldFiltering(field *j5schema.ObjectProperty) *list_j5pb.FilteringConst
 		return nil
 
 	case *j5schema.ArrayField:
-		// none
+		// none, but the item schema should be checked when walking paths
 		return nil
 
 	case *j5schema.PolymorphField:
@@ -66,66 +66,80 @@ func getFieldFiltering(field *j5schema.ObjectProperty) *list_j5pb.FilteringConst
 		return nil
 
 	case *j5schema.ScalarSchema:
-		j5Field := field.Schema.ToJ5Field()
-
-		switch st := j5Field.Type.(type) {
-		case *schema_j5pb.Field_Float:
-
-			if st.Float.ListRules == nil {
-				return nil
-			}
-			return st.Float.ListRules.Filtering
-
-		case *schema_j5pb.Field_Integer:
-			if st.Integer.ListRules == nil {
-				return nil
-			}
-			return st.Integer.ListRules.Filtering
-
-		case *schema_j5pb.Field_Bool:
-			if st.Bool.ListRules == nil {
-				return nil
-			}
-			return st.Bool.ListRules.Filtering
-
-		case *schema_j5pb.Field_Key:
-			if st.Key.ListRules == nil {
-				return nil
-			}
-			return st.Key.ListRules.Filtering
-
-		case *schema_j5pb.Field_Timestamp:
-			if st.Timestamp.ListRules == nil {
-				return nil
-			}
-			return st.Timestamp.ListRules.Filtering
-
-		case *schema_j5pb.Field_Date:
-			if st.Date.ListRules == nil {
-				return nil
-			}
-			return st.Date.ListRules.Filtering
-
-		case *schema_j5pb.Field_Decimal:
-			if st.Decimal.ListRules == nil {
-				return nil
-			}
-			return st.Decimal.ListRules.Filtering
-
-		case *schema_j5pb.Field_String_:
-			// no filters definable
-			return nil
-		case *schema_j5pb.Field_Bytes:
-			return nil
-
-		default:
-			panic(fmt.Sprintf("unknown scalar type for default filter (%s): %T", field.JSONName, st))
+		c, err := getScalarFiltering(field.Schema.ToJ5Field())
+		if err != nil {
+			panic(fmt.Sprintf("default filter (%s): %s", field.JSONName, err))
 		}
+
+		return c
 
 	default:
 		panic(fmt.Sprintf("unknown field type for filter rules %T", bigType))
 	}
+}
 
+func getScalarFiltering(j5Field *schema_j5pb.Field) (*list_j5pb.FilteringConstraint, error) {
+	switch st := j5Field.Type.(type) {
+	case *schema_j5pb.Field_Float:
+
+		if st.Float.ListRules == nil {
+			return nil, nil
+		}
+
+		return st.Float.ListRules.Filtering, nil
+
+	case *schema_j5pb.Field_Integer:
+		if st.Integer.ListRules == nil {
+			return nil, nil
+		}
+
+		return st.Integer.ListRules.Filtering, nil
+
+	case *schema_j5pb.Field_Bool:
+		if st.Bool.ListRules == nil {
+			return nil, nil
+		}
+
+		return st.Bool.ListRules.Filtering, nil
+
+	case *schema_j5pb.Field_Key:
+		if st.Key.ListRules == nil {
+			return nil, nil
+		}
+
+		return st.Key.ListRules.Filtering, nil
+
+	case *schema_j5pb.Field_Timestamp:
+		if st.Timestamp.ListRules == nil {
+			return nil, nil
+		}
+
+		return st.Timestamp.ListRules.Filtering, nil
+
+	case *schema_j5pb.Field_Date:
+		if st.Date.ListRules == nil {
+			return nil, nil
+		}
+
+		return st.Date.ListRules.Filtering, nil
+
+	case *schema_j5pb.Field_Decimal:
+		if st.Decimal.ListRules == nil {
+			return nil, nil
+		}
+
+		return st.Decimal.ListRules.Filtering, nil
+
+	case *schema_j5pb.Field_String_:
+		// no filters definable
+		return nil, nil
+
+	case *schema_j5pb.Field_Bytes:
+		return nil, nil
+
+	default:
+		return nil, fmt.Errorf("unknown scalar type for filtering: %T", st)
+	}
 }
 
 type filterSpec struct {
@@ -435,8 +449,21 @@ func filterQueryValue(spec *NestedField, val string) (any, error) {
 		if option == nil {
 			return nil, fmt.Errorf("enum value '%s' not found in field '%s'", val, spec.Path.LeafField().JSONName)
 		}
-		val = option.Name() // Use the name of the option, not the value
+		return option.Name(), nil // Use the name of the option, not the value
+	case *j5schema.ScalarSchema:
+		j5Field := schema.ToJ5Field()
+
+		switch j5Field.Type.(type) {
+		case *schema_j5pb.Field_Bool:
+			v, err := strconv.ParseBool(val)
+			if err != nil {
+				return nil, fmt.Errorf("parsing bool value '%s' for field '%s': %w", val, spec.Path.LeafField().JSONName, err)
+			}
+
+			return v, nil
+		}
 	}
+
 	return val, nil
 
 }

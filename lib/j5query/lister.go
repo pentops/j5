@@ -239,12 +239,12 @@ func NewLister(spec ListSpec) (*Lister, error) {
 	}
 
 	if err := spec.Validate(); err != nil {
-		return nil, fmt.Errorf("validate list spec: %w", err)
+		return nil, fmt.Errorf("new lister: validate list spec: %w", err)
 	}
 
 	listFields, err := buildListReflection(spec.Method, spec.TableSpec)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("new lister: %w", err)
 	}
 	ll.ListReflectionSet = *listFields
 

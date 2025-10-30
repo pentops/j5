@@ -138,9 +138,14 @@ message FooState {
       (j5.list.v1.field).oneof.filtering.filterable = true
     ];
 
-    FooCharacteristics characteristics = 5 [(j5.ext.v1.field).object = {}];
+    bool is_active = 5 [
+      (j5.ext.v1.field).bool = {},
+      (j5.list.v1.field).bool.filtering.filterable = true
+    ];
 
-    repeated FooProfile profiles = 6 [(j5.ext.v1.field).array = {}];
+    FooCharacteristics characteristics = 6 [(j5.ext.v1.field).object = {}];
+
+    repeated FooProfile profiles = 7 [(j5.ext.v1.field).array = {}];
   }
 
   Data data = 4 [(j5.ext.v1.field).object = {}];

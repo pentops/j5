@@ -19,8 +19,7 @@ type QueryServiceSourceSet struct {
 	QuerySets []*QueryServiceGenerateSet
 }
 
-func WalkFile(file *protogen.File) ([]*PSMQuerySet, error) {
-
+func WalkFile(sc *j5schema.SchemaCache, file *protogen.File) ([]*PSMQuerySet, error) {
 	sets := make([]*PSMQuerySet, 0)
 	for _, service := range file.Services {
 		stateQueryAnnotation := protosrc.GetExtension[*ext_j5pb.ServiceOptions](service.Desc.Options(), ext_j5pb.E_Service)
@@ -66,7 +65,7 @@ func WalkFile(file *protogen.File) ([]*PSMQuerySet, error) {
 			}
 		}
 
-		converted, err := BuildQuerySet(*methodSet)
+		converted, err := BuildQuerySet(sc, *methodSet)
 		if err != nil {
 			return nil, err
 		}
@@ -147,12 +146,12 @@ func fieldByDesc(fields []*protogen.Field, jsonName string) *protogen.Field {
 	return nil
 }
 
-func methodPair(method *protogen.Method) (*j5schema.MethodSchema, error) {
-	reqObj, err := j5schema.Global.ObjectSchema(method.Input.Desc)
+func methodPair(sc *j5schema.SchemaCache, method *protogen.Method) (*j5schema.MethodSchema, error) {
+	reqObj, err := sc.ObjectSchema(method.Input.Desc)
 	if err != nil {
 		return nil, fmt.Errorf("j5schema.ObjectSchema for %s: %w", method.Desc.FullName(), err)
 	}
-	resObj, err := j5schema.Global.ObjectSchema(method.Output.Desc)
+	resObj, err := sc.ObjectSchema(method.Output.Desc)
 	if err != nil {
 		return nil, fmt.Errorf("j5schema.ObjectSchema for %s: %w", method.Desc.FullName(), err)
 	}
@@ -162,7 +161,7 @@ func methodPair(method *protogen.Method) (*j5schema.MethodSchema, error) {
 	}, nil
 }
 
-func BuildQuerySet(qs QueryServiceGenerateSet) (*PSMQuerySet, error) {
+func BuildQuerySet(sc *j5schema.SchemaCache, qs QueryServiceGenerateSet) (*PSMQuerySet, error) {
 	if err := qs.validate(); err != nil {
 		return nil, err
 	}
@@ -170,7 +169,7 @@ func BuildQuerySet(qs QueryServiceGenerateSet) (*PSMQuerySet, error) {
 	// this walks the proto to get some of the same data as the state set,
 	// however it is unlkely to duplicate work, as the states are usually
 	// defined in a separate file from the query service
-	_, err := deriveStateDescriptorFromQueryDescriptor(qs)
+	sd, err := deriveStateDescriptorFromQueryDescriptor(sc, qs)
 	if err != nil {
 		return nil, err
 	}
@@ -192,13 +191,18 @@ func BuildQuerySet(qs QueryServiceGenerateSet) (*PSMQuerySet, error) {
 		return nil, errors.Join(errs...)
 	}
 
-	listMethod, err := methodPair(qs.listMethod)
+	listMethod, err := methodPair(sc, qs.listMethod)
 	if err != nil {
 		return nil, fmt.Errorf("building list method pair for %s: %w", qs.listMethod.Desc.FullName(), err)
 	}
 
-	// Empty table spec, the fields don't matter here.
-	listReflectionSet, err := pquery.BuildListReflection(listMethod, pquery.TableSpec{})
+	listSpec := pquery.TableSpec{
+		TableName:  sd.State.TableName,
+		DataColumn: sd.State.Root.ColumnName,
+		RootObject: sd.StateType,
+	}
+
+	listReflectionSet, err := pquery.BuildListReflection(listMethod, listSpec)
 	if err != nil {
 		return nil, fmt.Errorf("pquery.BuildListReflection for %s: %w", qs.listMethod.Desc.FullName(), err)
 	}
@@ -226,12 +230,18 @@ func BuildQuerySet(qs QueryServiceGenerateSet) (*PSMQuerySet, error) {
 		})
 	}
 
-	listEventsMethod, err := methodPair(qs.listEventsMethod)
+	listEventsMethod, err := methodPair(sc, qs.listEventsMethod)
 	if err != nil {
 		return nil, fmt.Errorf("building list events method pair for %s: %w", qs.listEventsMethod.Desc.FullName(), err)
 	}
 
-	listEventsReflectionSet, err := pquery.BuildListReflection(listEventsMethod, pquery.TableSpec{})
+	eventsSpec := pquery.TableSpec{
+		TableName:  sd.Event.TableName,
+		DataColumn: sd.Event.Root.ColumnName,
+		RootObject: sd.EventType,
+	}
+
+	listEventsReflectionSet, err := pquery.BuildListReflection(listEventsMethod, eventsSpec)
 	if err != nil {
 		return nil, fmt.Errorf("pquery.BuildListReflection for %s is not compatible with PSM: %w", qs.listEventsMethod.Desc.FullName(), err)
 	}
@@ -253,9 +263,9 @@ func BuildQuerySet(qs QueryServiceGenerateSet) (*PSMQuerySet, error) {
 
 // attempts to walk through the query methods to find the descriptors for the
 // state and event messages.
-func deriveStateDescriptorFromQueryDescriptor(src QueryServiceGenerateSet) (*psm.TableMap, error) {
+func deriveStateDescriptorFromQueryDescriptor(sc *j5schema.SchemaCache, src QueryServiceGenerateSet) (*psm.QueryTableSpec, error) {
 	if src.getMethod == nil {
-		return nil, fmt.Errorf("no get nethod, cannot derive state fields")
+		return nil, fmt.Errorf("no get method, cannot derive state fields")
 	}
 
 	var eventMessage protoreflect.MessageDescriptor
@@ -302,17 +312,19 @@ func deriveStateDescriptorFromQueryDescriptor(src QueryServiceGenerateSet) (*psm
 				continue
 			}
 		}
+
 		if eventMessage == nil {
 			// No event, can't add fallbacks.
 			return nil, fmt.Errorf("no event message for %s, cannot derive event fields", stateMessage.FullName())
 		}
 	}
 
-	stateObject, err := j5schema.Global.ObjectSchema(stateMessage)
+	stateObject, err := sc.ObjectSchema(stateMessage)
 	if err != nil {
 		return nil, fmt.Errorf("j5schema.ObjectSchema for %s: %w", stateMessage.FullName(), err)
 	}
-	eventObject, err := j5schema.Global.ObjectSchema(eventMessage)
+
+	eventObject, err := sc.ObjectSchema(eventMessage)
 	if err != nil {
 		return nil, fmt.Errorf("j5schema.ObjectSchema for %s: %w", eventMessage.FullName(), err)
 	}
@@ -322,7 +334,7 @@ func deriveStateDescriptorFromQueryDescriptor(src QueryServiceGenerateSet) (*psm
 		return nil, err
 	}
 
-	return &spec.TableMap, nil
+	return &spec, nil
 }
 
 func mapGenField(parent *protogen.Message, field protoreflect.FieldDescriptor) *protogen.Field {

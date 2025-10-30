@@ -7,6 +7,7 @@ require (
 	buf.build/go/protovalidate v0.12.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.83.0
 	github.com/bradleyfalzon/ghinstallation v1.1.1
+	github.com/docker/cli v28.4.0+incompatible
 	github.com/elgris/sqrl v0.0.0-20210727210741-7e0198b30236
 	github.com/go-git/go-git/v5 v5.16.3
 	github.com/google/go-github/v58 v58.0.0
@@ -86,6 +87,7 @@ require (
 	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/distribution/reference v0.6.0 // indirect
+	github.com/docker/docker-credential-helpers v0.9.3 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
@@ -115,6 +117,7 @@ require (
 	github.com/segmentio/asm v1.2.0 // indirect
 	github.com/segmentio/encoding v0.4.1 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
+	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect

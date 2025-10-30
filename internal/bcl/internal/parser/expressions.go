@@ -33,7 +33,7 @@ func (i Ident) AsStringValue() Value {
 	}
 }
 
-// Reference is a dot separates set of Idents
+// Reference is a dot separated set of Idents
 type Reference struct {
 	Idents []Ident
 	SourceNode
@@ -63,6 +63,23 @@ func (r Reference) String() string {
 
 func (r Reference) AsString() (string, error) {
 	return r.String(), nil
+}
+
+// A reference can be treated as both a scalar and an array
+func (r Reference) IsScalar() bool {
+	return true
+}
+
+func (r Reference) IsArray() bool {
+	return true
+}
+
+func (r Reference) AsArray() ([]ASTValue, bool) {
+	out := make([]ASTValue, len(r.Idents))
+	for idx, val := range r.Idents {
+		out[idx] = val.AsStringValue()
+	}
+	return out, true
 }
 
 func (r Reference) Strings() []string {

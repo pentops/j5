@@ -1148,7 +1148,7 @@ func (pkg *Package) buildEnum(enumDescriptor protoreflect.EnumDescriptor) (*Enum
 			name:        string(option.Name()),
 			number:      number,
 			description: commentDescription(option),
-			Info:        info,
+			info:        info,
 		})
 	}
 
@@ -1285,13 +1285,13 @@ func wktSchema(src protoreflect.MessageDescriptor, ext protoFieldExtensions) (Fi
 	case "j5.types.decimal.v1.Decimal":
 		var rules *schema_j5pb.DecimalField_Rules
 
-		if dateExt := ext.j5.GetDate(); dateExt != nil {
-			if dateExt.Rules != nil {
+		if decimalExt := ext.j5.GetDecimal(); decimalExt != nil {
+			if decimalExt.Rules != nil {
 				rules = &schema_j5pb.DecimalField_Rules{
-					Minimum:          dateExt.Rules.Minimum,
-					Maximum:          dateExt.Rules.Maximum,
-					ExclusiveMinimum: dateExt.Rules.ExclusiveMinimum,
-					ExclusiveMaximum: dateExt.Rules.ExclusiveMaximum,
+					Minimum:          decimalExt.Rules.Minimum,
+					Maximum:          decimalExt.Rules.Maximum,
+					ExclusiveMinimum: decimalExt.Rules.ExclusiveMinimum,
+					ExclusiveMaximum: decimalExt.Rules.ExclusiveMaximum,
 				}
 			}
 		}

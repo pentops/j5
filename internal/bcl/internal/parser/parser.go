@@ -354,8 +354,12 @@ func (ww *Walker) popValue() (Value, *unexpectedTokenError) {
 }
 
 func (ww *Walker) popIdent() (Ident, *unexpectedTokenError) {
-	tok, ok := ww.popToken().AsIdent()
-	if !ok {
+	tok := ww.popToken()
+
+	switch tok.Type {
+	case IDENT, BOOL, STRING:
+		// all valid types for an ident
+	default:
 		return Ident{}, unexpectedToken(tok, IDENT)
 	}
 
@@ -431,8 +435,7 @@ func (ww *Walker) popTag() (TagValue, *unexpectedTokenError) {
 	}
 
 	switch ww.nextType() {
-	case IDENT, BOOL:
-
+	case IDENT, BOOL, STRING:
 		// Build the name parts
 		// <reference> <ident>
 		ref, err := ww.popReference()
@@ -446,21 +449,6 @@ func (ww *Walker) popTag() (TagValue, *unexpectedTokenError) {
 			SourceNode: SourceNode{
 				Start: ref.Start,
 				End:   ref.End,
-			},
-		}, nil
-
-	case STRING:
-		refStr, err := ww.popValue()
-		if err != nil {
-			return TagValue{}, err
-		}
-		return TagValue{
-			Mark:      mark,
-			MarkToken: markToken,
-			Value:     &refStr,
-			SourceNode: SourceNode{
-				Start: refStr.Start,
-				End:   refStr.End,
 			},
 		}, nil
 

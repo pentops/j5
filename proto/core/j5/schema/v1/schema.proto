@@ -55,9 +55,8 @@ message Field {
 message Ref {
   string package = 1; // Dot notation, 'j5.schema.v1'
   string schema = 2; // Schema name, 'Ref'
-  
+
   option (j5.bcl.v1.block).scalar_split = {
-    delimiter: "."
     right_to_left: true
     required_fields: [{path: "schema"}]
     remainder_field: {path: "package"}

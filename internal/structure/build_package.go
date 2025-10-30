@@ -78,13 +78,15 @@ func APIFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		err = descFiles.RegisterFile(file)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if err := bb.addStructure(descFiles); err != nil {
+	err = bb.addStructure(descFiles)
+	if err != nil {
 		return nil, err
 	}
 
@@ -95,10 +97,12 @@ func APIFromImage(image *source_j5pb.SourceImage) (*schema_j5pb.API, error) {
 				return true
 			}
 		}
+
 		return false
 	}
 
-	if err := bb.addSchemas(descFiles, selector); err != nil {
+	err = bb.addSchemas(descFiles, selector)
+	if err != nil {
 		return nil, err
 	}
 
@@ -122,15 +126,17 @@ func (bb *packageSet) addSchemas(descFiles *protoregistry.Files, selector func(f
 		if err != nil {
 			return fmt.Errorf("get schema set: %w", err)
 		}
+
 		for name, schema := range schemaPkg.IterateSchemas {
 			ss[name] = schema.To.ToJ5Root()
 		}
 
 	}
+
 	return nil
 }
-func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 
+func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 	services := make([]protoreflect.ServiceDescriptor, 0)
 
 	descFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {
@@ -164,21 +170,26 @@ func (b packageSet) addStructure(descFiles *protoregistry.Files) error {
 			if err != nil {
 				return patherr.Wrap(err, "service", name)
 			}
+
 			pkg.Services = append(pkg.Services, built)
+
 		} else if strings.HasSuffix(name, "Events") {
 			// ignore for now.
+
 		} else if strings.HasSuffix(name, "Topic") {
 			built, err := buildTopic(service)
 			if err != nil {
 				return patherr.Wrap(err, string(service.FullName()))
 			}
+
 			pkg.Topics = append(pkg.Topics, built)
+
 		} else {
 			return fmt.Errorf("unsupported service name %q", name)
 		}
 	}
-	return nil
 
+	return nil
 }
 
 type packageSet struct {

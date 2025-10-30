@@ -87,8 +87,7 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 	}
 
 	err := j5query.WalkPathNodes(rootSchema.ObjectSchema(), func(path j5query.Path) error {
-		field := path.LeafField()
-		rules := j5query.FieldListRules(field)
+		rules := j5query.FieldListRules(&path)
 		if rules == nil {
 			return nil
 		}

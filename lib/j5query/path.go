@@ -168,7 +168,7 @@ func (pp *Path) JSONPathQuery() string {
 		elements = append(elements, fmt.Sprintf(".%s", part.field.JSONName))
 		switch part.field.Schema.(type) {
 		case *j5schema.MapField:
-			panic("map fields not supported by JSONBArrowPath()")
+			panic("map fields not supported by JSONPathQuery()")
 		case *j5schema.ArrayField:
 			elements = append(elements, "[*]")
 		}
@@ -209,12 +209,23 @@ func (pp Path) ClientPath() string {
 	return strings.Join(elements, ".")
 }
 
+// WalkPathNodes visits every field in the path other than the leaf field
+// itself, calling the callback for each. Walking stops if the callback returns false.
+func (pp Path) WalkPathNodes(callback func(*j5schema.ObjectProperty) bool) {
+	for _, part := range pp.path {
+		if !callback(part.field) {
+			break
+		}
+	}
+}
+
 // WalkPathNodes visits every field in the message tree other than the root
 // message itself, calling the callback for each.
 func WalkPathNodes(rootMessage *j5schema.ObjectSchema, callback func(Path) error) error {
 	root := &Path{
 		root: rootMessage,
 	}
+
 	return root.walk(rootMessage.Properties, callback)
 }
 
@@ -225,11 +236,16 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 			name:  field.JSONName,
 			field: field,
 		})
+
+		copiedFieldPath := make([]pathNode, len(fieldPath))
+		copy(copiedFieldPath, fieldPath)
+
 		fieldPathSpec := Path{
 			root:      pp.root,
-			path:      fieldPath,
+			path:      copiedFieldPath,
 			leafField: field,
 		}
+
 		switch ft := field.Schema.(type) {
 
 		case *j5schema.OneofField:
@@ -242,20 +258,29 @@ func (pp Path) walk(props j5schema.PropertySet, callback func(Path) error) error
 
 		switch ft := field.Schema.(type) {
 		case *j5schema.ObjectField:
-			if err := fieldPathSpec.walk(ft.ObjectSchema().Properties, callback); err != nil {
+			err := fieldPathSpec.walk(ft.ObjectSchema().Properties, callback)
+			if err != nil {
 				return fmt.Errorf("walking %s: %w", field.JSONName, err)
 			}
 
 		case *j5schema.OneofField:
-
-			if err := fieldPathSpec.walk(ft.OneofSchema().Properties, callback); err != nil {
+			err := fieldPathSpec.walk(ft.OneofSchema().Properties, callback)
+			if err != nil {
 				return fmt.Errorf("walking %s: %w", field.JSONName, err)
+			}
+
+		case *j5schema.ArrayField:
+			switch at := ft.ItemSchema.(type) {
+			case *j5schema.ObjectField:
+				err := fieldPathSpec.walk(at.ObjectSchema().Properties, callback)
+				if err != nil {
+					return fmt.Errorf("walking %s: %w", field.JSONName, err)
+				}
 			}
 		}
 	}
 
 	return nil
-
 }
 
 // Like ProtoPathSpec but uses JSON field names

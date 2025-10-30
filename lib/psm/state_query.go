@@ -110,11 +110,7 @@ func (f TenantFilterProviderFunc) GetRequiredTenantKeys(ctx context.Context) (ma
 	return f(ctx)
 }
 
-func BuildStateQuerySet(
-	smSpec QuerySpec,
-	options StateQueryOptions,
-) (*StateQuerySet, error) {
-
+func BuildStateQuerySet(smSpec QuerySpec, options StateQueryOptions) (*StateQuerySet, error) {
 	if err := smSpec.Validate(); err != nil {
 		return nil, fmt.Errorf("validate state machine spec: %w", err)
 	}

@@ -90,6 +90,7 @@ func tArrayOf(of *schema_j5pb.Field) *schema_j5pb.Field {
 	return &schema_j5pb.Field{
 		Type: &schema_j5pb.Field_Array{
 			Array: &schema_j5pb.ArrayField{
+				Ext:   &schema_j5pb.ArrayField_Ext{},
 				Items: of,
 			},
 		},
@@ -97,124 +98,134 @@ func tArrayOf(of *schema_j5pb.Field) *schema_j5pb.Field {
 }
 
 func wantFooState() *schema_j5pb.RootSchema {
-
 	object := &schema_j5pb.Object{
 		Name: "FooState",
 		Entity: &schema_j5pb.EntityObject{
 			Entity: "foo",
 			Part:   schema_j5pb.EntityPart_STATE,
 		},
-		Properties: []*schema_j5pb.ObjectProperty{{
-			Name:     "fooId",
-			Required: true,
-			EntityKey: &schema_j5pb.EntityKey{
-				Primary: true,
-			},
-			Schema: &schema_j5pb.Field{
-				Type: &schema_j5pb.Field_Key{
-					Key: &schema_j5pb.KeyField{
-						Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
-							Type: &schema_j5pb.KeyField_DeprecatedEntityKey_PrimaryKey{
-								PrimaryKey: true,
-							},
-						},
-						ListRules: &list_j5pb.KeyRules{
-							Filtering: &list_j5pb.FilteringConstraint{
-								Filterable: true,
-							},
-						},
-						Format: &schema_j5pb.KeyFormat{
-							Type: &schema_j5pb.KeyFormat_Uuid{
-								Uuid: &schema_j5pb.KeyFormat_UUID{},
+		Properties: []*schema_j5pb.ObjectProperty{
+			{
+				Name:     "metadata",
+				Required: true,
+				Schema: &schema_j5pb.Field{
+					Type: &schema_j5pb.Field_Object{
+						Object: &schema_j5pb.ObjectField{
+							Schema: &schema_j5pb.ObjectField_Ref{
+								Ref: &schema_j5pb.Ref{
+									Package: "j5.state.v1",
+									Schema:  "StateMetadata",
+								},
 							},
 						},
 					},
 				},
 			},
-		}, {
-			Name: "barId",
-			Schema: &schema_j5pb.Field{
-				Type: &schema_j5pb.Field_Key{
-					Key: &schema_j5pb.KeyField{
-						Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
-							Type: &schema_j5pb.KeyField_DeprecatedEntityKey_ForeignKey{
-								ForeignKey: &schema_j5pb.EntityRef{
+			{
+				Name:     "fooId",
+				Required: true,
+				EntityKey: &schema_j5pb.EntityKey{
+					Primary: true,
+				},
+				Schema: &schema_j5pb.Field{
+					Type: &schema_j5pb.Field_Key{
+						Key: &schema_j5pb.KeyField{
+							Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
+								Type: &schema_j5pb.KeyField_DeprecatedEntityKey_PrimaryKey{
+									PrimaryKey: true,
+								},
+							},
+							ListRules: &list_j5pb.KeyRules{
+								Filtering: &list_j5pb.FilteringConstraint{
+									Filterable: true,
+								},
+							},
+							Format: &schema_j5pb.KeyFormat{
+								Type: &schema_j5pb.KeyFormat_Uuid{
+									Uuid: &schema_j5pb.KeyFormat_UUID{},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				Name:      "barId",
+				EntityKey: &schema_j5pb.EntityKey{},
+				Required:  true,
+				Schema: &schema_j5pb.Field{
+					Type: &schema_j5pb.Field_Key{
+						Key: &schema_j5pb.KeyField{
+							Entity: &schema_j5pb.KeyField_DeprecatedEntityKey{
+								Type: &schema_j5pb.KeyField_DeprecatedEntityKey_ForeignKey{
+									ForeignKey: &schema_j5pb.EntityRef{
+										Package: "test.foo.v1",
+										Entity:  "Bar",
+									},
+								},
+							},
+							ListRules: &list_j5pb.KeyRules{
+								Filtering: &list_j5pb.FilteringConstraint{
+									Filterable: true,
+								},
+							},
+							Format: &schema_j5pb.KeyFormat{
+								Type: &schema_j5pb.KeyFormat_Uuid{
+									Uuid: &schema_j5pb.KeyFormat_UUID{},
+								},
+							},
+							Ext: &schema_j5pb.KeyField_Ext{
+								Foreign: &schema_j5pb.EntityRef{
 									Package: "test.foo.v1",
-									Entity:  "bar",
-								},
-							},
-						},
-						Format: &schema_j5pb.KeyFormat{
-							Type: &schema_j5pb.KeyFormat_Uuid{
-								Uuid: &schema_j5pb.KeyFormat_UUID{},
-							},
-						},
-						Ext: &schema_j5pb.KeyField_Ext{
-							Foreign: &schema_j5pb.EntityRef{
-								Package: "test.foo.v1",
-								Entity:  "bar",
-							},
-						},
-					},
-				},
-			},
-		}, {
-			Name:     "status",
-			Required: true,
-			Schema: &schema_j5pb.Field{
-				Type: &schema_j5pb.Field_Enum{
-					Enum: &schema_j5pb.EnumField{
-						Schema: &schema_j5pb.EnumField_Ref{
-							Ref: &schema_j5pb.Ref{
-								Package: "test.foo.v1",
-								Schema:  "FooStatus",
-							},
-						},
-						ListRules: &list_j5pb.EnumRules{
-							Filtering: &list_j5pb.FilteringConstraint{
-								Filterable: true,
-								DefaultFilters: []string{
-									"ACTIVE",
+									Entity:  "Bar",
 								},
 							},
 						},
 					},
 				},
 			},
-		}, {
-			Name: "name",
-			Schema: &schema_j5pb.Field{
-				Type: &schema_j5pb.Field_String_{
-					String_: &schema_j5pb.StringField{
-						ListRules: &list_j5pb.OpenTextRules{
-							Searching: &list_j5pb.SearchingConstraint{
-								Searchable: true,
+			{
+				Name:     "data",
+				Required: true,
+				Schema: &schema_j5pb.Field{
+					Type: &schema_j5pb.Field_Object{
+						Object: &schema_j5pb.ObjectField{
+							Schema: &schema_j5pb.ObjectField_Ref{
+								Ref: &schema_j5pb.Ref{
+									Package: "test.foo.v1",
+									Schema:  "FooData",
+								},
 							},
 						},
 					},
 				},
 			},
-		}, {
-			Name:   "bar",
-			Schema: tObjectRef("test.foo.v1", "Bar"),
-		}, {
-			Name: "createdAt",
-			Schema: &schema_j5pb.Field{
-				Type: &schema_j5pb.Field_Timestamp{
-					Timestamp: &schema_j5pb.TimestampField{
-						ListRules: &list_j5pb.TimestampRules{
-							Sorting: &list_j5pb.SortingConstraint{
-								Sortable:    true,
-								DefaultSort: true,
+			{
+				Name:     "status",
+				Required: true,
+				Schema: &schema_j5pb.Field{
+					Type: &schema_j5pb.Field_Enum{
+						Enum: &schema_j5pb.EnumField{
+							Schema: &schema_j5pb.EnumField_Ref{
+								Ref: &schema_j5pb.Ref{
+									Package: "test.foo.v1",
+									Schema:  "FooStatus",
+								},
 							},
-							Filtering: &list_j5pb.FilteringConstraint{
-								Filterable: true,
+							Rules: &schema_j5pb.EnumField_Rules{},
+							ListRules: &list_j5pb.EnumRules{
+								Filtering: &list_j5pb.FilteringConstraint{
+									Filterable: true,
+									DefaultFilters: []string{
+										"ACTIVE",
+									},
+								},
 							},
 						},
 					},
 				},
 			},
-		}},
+		},
 	}
 
 	return &schema_j5pb.RootSchema{

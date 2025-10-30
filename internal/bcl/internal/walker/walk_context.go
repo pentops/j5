@@ -221,50 +221,56 @@ func (sc *walkContext) setAttribute(path ScopePath, val parser.ASTValue, appendV
 		})
 	}
 
+	if !appendValue && val.IsScalar() {
+		scalarField, isScalar := field.AsScalar()
+		if !isScalar {
+			return sc.WrapErr(BadTypeError{
+				WantType: "Scalar",
+				GotType:  field.FullTypeName(),
+			}, val.Position())
+		}
+
+		err := scalarField.SetASTValue(val)
+		if err != nil {
+			err = fmt.Errorf("SetAttribute %s: %w", field.FullTypeName(), err)
+			return sc.WrapErr(err, val.Position())
+		}
+
+		sc.Logf("SetAttribute Non-Array Done")
+		return nil
+	}
+
 	vals, isArray := val.AsArray()
 	if !isArray && appendValue {
 		vals = []parser.ASTValue{val}
 		isArray = true
 	}
-	if isArray {
-		fieldArray, ok := field.AsArrayOfScalar()
 
-		if ok { // Field and Value are both arrays.
-			if !appendValue && fieldArray.Length() > 0 {
-				return sc.WrapErr(fmt.Errorf("value already set"), val.Position())
-			}
-			for _, val := range vals {
-				_, err := fieldArray.AppendASTValue(val)
-				if err != nil {
-					err = fmt.Errorf("SetAttribute %s, Append value: %w", field.FullTypeName(), err)
-					return sc.WrapErr(err, val.Position())
-				}
-			}
-			sc.Logf("SetAttribute Array Done")
-			return nil
+	if isArray {
+		fieldArray, isArray := field.AsArrayOfScalar()
+		if !isArray {
+			return sc.WrapErr(BadTypeError{
+				WantType: "ArrayOfScalar",
+				GotType:  field.FullTypeName(),
+			}, val.Position())
 		}
 
-		return sc.WrapErr(BadTypeError{
-			WantType: "ArrayOfScalar",
-			GotType:  field.FullTypeName(),
-		}, val.Position())
+		if !appendValue && fieldArray.Length() > 0 {
+			return sc.WrapErr(fmt.Errorf("value already set"), val.Position())
+		}
+
+		for _, val := range vals {
+			_, err := fieldArray.AppendASTValue(val)
+			if err != nil {
+				err = fmt.Errorf("SetAttribute %s, Append value: %w", field.FullTypeName(), err)
+				return sc.WrapErr(err, val.Position())
+			}
+		}
+
+		sc.Logf("SetAttribute Array Done")
+		return nil
 	}
 
-	scalarField, ok := field.AsScalar()
-	if !ok {
-		return sc.WrapErr(BadTypeError{
-			WantType: "Scalar",
-			GotType:  field.FullTypeName(),
-		}, val.Position())
-	}
-
-	err := scalarField.SetASTValue(val)
-	if err != nil {
-		err = fmt.Errorf("SetAttribute %s: %w", field.FullTypeName(), err)
-		return sc.WrapErr(err, val.Position())
-	}
-
-	sc.Logf("SetAttribute Non-Array Done")
 	return nil
 }
 

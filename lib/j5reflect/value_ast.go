@@ -110,9 +110,19 @@ func scalarReflectFromAST(schema *schema_j5pb.Field, value ASTValue) (protorefle
 			return pv, fmt.Errorf("unsupported float format %v", st.Float.Format)
 		}
 
-		//	case *schema_j5pb.Field_Bytes:
+	case *schema_j5pb.Field_Bytes:
+		val, err := value.AsString()
+		if err != nil {
+			return pv, err
+		}
+		return byteValueFromString(val)
 
-		//	case *schema_j5pb.Field_Timestamp:
+	case *schema_j5pb.Field_Timestamp:
+		val, err := value.AsString()
+		if err != nil {
+			return pv, err
+		}
+		return timestampFromString(val)
 
 	case *schema_j5pb.Field_Decimal:
 		val, err := value.AsString()

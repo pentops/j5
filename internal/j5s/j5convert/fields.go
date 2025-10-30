@@ -146,11 +146,8 @@ func buildProperty(ww *conversionVisitor, node *sourcewalk.PropertyNode) (*descr
 	}
 
 	required := node.Schema.Required
-	if ext := protosrc.GetExtension[*schema_j5pb.EntityKey](fieldDesc.Options, ext_j5pb.E_Key); ext != nil {
-		if ext.Primary { //|| ext.PrimaryKey {
-			// even if not explicitly set, a primary key is required, we don't support partial primary keys.
-			required = true
-		}
+	if node.Schema.EntityKey != nil && node.Schema.EntityKey.Primary {
+		required = true
 	}
 
 	if required {
@@ -372,14 +369,26 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		desc.TypeName = gl.Ptr(".j5.types.date.v1.Date")
 
 		if st.Date.Rules != nil {
-			opts := &ext_j5pb.DateField{}
-			opts.Rules = &ext_j5pb.DateField_Rules{
-				Minimum:          st.Date.Rules.Minimum,
-				Maximum:          st.Date.Rules.Maximum,
-				ExclusiveMinimum: st.Date.Rules.ExclusiveMinimum,
-				ExclusiveMaximum: st.Date.Rules.ExclusiveMaximum,
+			if st.Date.Rules.ExclusiveMinimum != nil && !(*st.Date.Rules.ExclusiveMinimum) && st.Date.Rules.Minimum == nil {
+				return nil, fmt.Errorf("date rules: exclusive minimum requires minimum to be set")
 			}
-			proto.SetExtension(desc.Options, ext_j5pb.E_Field, opts)
+
+			if st.Date.Rules.ExclusiveMaximum != nil && !(*st.Date.Rules.ExclusiveMaximum) && st.Date.Rules.Maximum == nil {
+				return nil, fmt.Errorf("date rules: exclusive maximum requires maximum to be set")
+			}
+
+			proto.SetExtension(desc.Options, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
+				Type: &ext_j5pb.FieldOptions_Date{
+					Date: &ext_j5pb.DateField{
+						Rules: &ext_j5pb.DateField_Rules{
+							Minimum:          st.Date.Rules.Minimum,
+							Maximum:          st.Date.Rules.Maximum,
+							ExclusiveMinimum: st.Date.Rules.ExclusiveMinimum,
+							ExclusiveMaximum: st.Date.Rules.ExclusiveMaximum,
+						},
+					},
+				},
+			})
 		}
 
 		if st.Date.ListRules != nil {
@@ -399,14 +408,26 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		desc.TypeName = gl.Ptr(".j5.types.decimal.v1.Decimal")
 
 		if st.Decimal.Rules != nil {
-			opts := &ext_j5pb.DecimalField{}
-			opts.Rules = &ext_j5pb.DecimalField_Rules{
-				Minimum:          st.Decimal.Rules.Minimum,
-				Maximum:          st.Decimal.Rules.Maximum,
-				ExclusiveMinimum: st.Decimal.Rules.ExclusiveMinimum,
-				ExclusiveMaximum: st.Decimal.Rules.ExclusiveMaximum,
+			if st.Decimal.Rules.ExclusiveMinimum != nil && !(*st.Decimal.Rules.ExclusiveMinimum) && st.Decimal.Rules.Minimum == nil {
+				return nil, fmt.Errorf("decimal rules: exclusive minimum requires minimum to be set")
 			}
-			proto.SetExtension(desc.Options, ext_j5pb.E_Field, opts)
+
+			if st.Decimal.Rules.ExclusiveMaximum != nil && !(*st.Decimal.Rules.ExclusiveMaximum) && st.Decimal.Rules.Maximum == nil {
+				return nil, fmt.Errorf("decimal rules: exclusive maximum requires maximum to be set")
+			}
+
+			proto.SetExtension(desc.Options, ext_j5pb.E_Field, &ext_j5pb.FieldOptions{
+				Type: &ext_j5pb.FieldOptions_Decimal{
+					Decimal: &ext_j5pb.DecimalField{
+						Rules: &ext_j5pb.DecimalField_Rules{
+							Minimum:          st.Decimal.Rules.Minimum,
+							Maximum:          st.Decimal.Rules.Maximum,
+							ExclusiveMinimum: st.Decimal.Rules.ExclusiveMinimum,
+							ExclusiveMaximum: st.Decimal.Rules.ExclusiveMaximum,
+						},
+					},
+				},
+			})
 		}
 
 		if st.Decimal.ListRules != nil {
@@ -421,9 +442,6 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		return desc, nil
 
 	case *schema_j5pb.Field_Float:
-		if st.Float.Rules != nil {
-			return nil, fmt.Errorf("TODO: float rules not implemented")
-		}
 		switch st.Float.Format {
 		case schema_j5pb.FloatField_FORMAT_FLOAT32:
 			desc.Type = descriptorpb.FieldDescriptorProto_TYPE_FLOAT.Enum()
@@ -439,6 +457,84 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 		}
 
 		ww.setJ5Ext(node.Source, desc.Options, "float", st.Float.Ext)
+
+		if st.Float.Rules != nil {
+			if st.Float.Rules.ExclusiveMinimum != nil && !(*st.Float.Rules.ExclusiveMinimum) && st.Float.Rules.Minimum == nil {
+				return nil, fmt.Errorf("float rules: exclusive minimum requires minimum to be set")
+			}
+
+			if st.Float.Rules.ExclusiveMaximum != nil && !(*st.Float.Rules.ExclusiveMaximum) && st.Float.Rules.Maximum == nil {
+				return nil, fmt.Errorf("float rules: exclusive maximum requires maximum to be set")
+			}
+
+			rules := &validate.FieldRules{}
+
+			switch st.Float.Format {
+			case schema_j5pb.FloatField_FORMAT_FLOAT32:
+				rules.Type = &validate.FieldRules_Float{
+					Float: &validate.FloatRules{},
+				}
+
+				if st.Float.Rules.Maximum != nil {
+					if st.Float.Rules.ExclusiveMaximum != nil {
+						rules.GetFloat().LessThan = &validate.FloatRules_Lt{
+							Lt: float32(*st.Float.Rules.Maximum),
+						}
+					} else {
+						rules.GetFloat().LessThan = &validate.FloatRules_Lte{
+							Lte: float32(*st.Float.Rules.Maximum),
+						}
+					}
+				}
+
+				if st.Float.Rules.Minimum != nil {
+					if st.Float.Rules.ExclusiveMinimum != nil {
+						rules.GetFloat().GreaterThan = &validate.FloatRules_Gt{
+							Gt: float32(*st.Float.Rules.Minimum),
+						}
+					} else {
+						rules.GetFloat().GreaterThan = &validate.FloatRules_Gte{
+							Gte: float32(*st.Float.Rules.Minimum),
+						}
+					}
+				}
+
+			case schema_j5pb.FloatField_FORMAT_FLOAT64:
+				rules.Type = &validate.FieldRules_Double{
+					Double: &validate.DoubleRules{},
+				}
+
+				if st.Float.Rules.Maximum != nil {
+					if st.Float.Rules.ExclusiveMaximum != nil {
+						rules.GetDouble().LessThan = &validate.DoubleRules_Lt{
+							Lt: *st.Float.Rules.Maximum,
+						}
+					} else {
+						rules.GetDouble().LessThan = &validate.DoubleRules_Lte{
+							Lte: *st.Float.Rules.Maximum,
+						}
+					}
+				}
+
+				if st.Float.Rules.Minimum != nil {
+					if st.Float.Rules.ExclusiveMinimum != nil {
+						rules.GetDouble().GreaterThan = &validate.DoubleRules_Gt{
+							Gt: *st.Float.Rules.Minimum,
+						}
+					} else {
+						rules.GetDouble().GreaterThan = &validate.DoubleRules_Gte{
+							Gte: *st.Float.Rules.Minimum,
+						}
+					}
+				}
+
+			default:
+				return nil, fmt.Errorf("rules: float integer format %v", st.Float.Format)
+			}
+
+			proto.SetExtension(desc.Options, validate.E_Field, rules)
+			ww.file.ensureImport(bufValidateImport)
+		}
 
 		if st.Float.ListRules != nil {
 			ww.file.ensureImport(j5ListAnnotationsImport)
@@ -805,9 +901,33 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 			rules := &validate.FieldRules{
 				Type: &validate.FieldRules_Timestamp{
 					Timestamp: &validate.TimestampRules{},
-					// None Implemented.
 				},
 			}
+
+			if st.Timestamp.Rules.Maximum != nil {
+				if st.Timestamp.Rules.ExclusiveMaximum != nil {
+					rules.GetTimestamp().LessThan = &validate.TimestampRules_Lt{
+						Lt: st.Timestamp.Rules.Maximum,
+					}
+				} else {
+					rules.GetTimestamp().LessThan = &validate.TimestampRules_Lte{
+						Lte: st.Timestamp.Rules.Maximum,
+					}
+				}
+			}
+
+			if st.Timestamp.Rules.Minimum != nil {
+				if st.Timestamp.Rules.ExclusiveMinimum != nil {
+					rules.GetTimestamp().GreaterThan = &validate.TimestampRules_Gt{
+						Gt: st.Timestamp.Rules.Minimum,
+					}
+				} else {
+					rules.GetTimestamp().GreaterThan = &validate.TimestampRules_Gte{
+						Gte: st.Timestamp.Rules.Minimum,
+					}
+				}
+			}
+
 			proto.SetExtension(desc.Options, validate.E_Field, rules)
 			ww.file.ensureImport(bufValidateImport)
 		}
