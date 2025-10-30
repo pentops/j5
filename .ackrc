@@ -3,4 +3,3 @@
 
 --ignore-dir=.git/
 --ignore-dir=.idea/
---ignore-dir=gen/

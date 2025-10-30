@@ -32,6 +32,7 @@ func (dd *Date) DateString() string {
 
 func (dd *Date) MarshalText() ([]byte, error) {
 	str := dd.DateString()
+
 	return []byte(str), nil
 }
 
