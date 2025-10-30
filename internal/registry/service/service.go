@@ -1,10 +1,6 @@
 package service
 
 import (
-	"context"
-	"database/sql"
-	"time"
-
 	_ "github.com/lib/pq"
 	"github.com/pentops/grpc.go/protovalidatemw"
 	"github.com/pentops/grpc.go/versionmw"
@@ -21,30 +17,4 @@ func GRPCMiddleware(version string) []grpc.UnaryServerInterceptor {
 		protovalidatemw.UnaryServerInterceptor(),
 		versionmw.UnaryServerInterceptor(version),
 	}
-}
-
-type DBConfig struct {
-	URL string `env:"POSTGRES_URL"`
-}
-
-func (cfg *DBConfig) OpenDatabase(ctx context.Context) (*sql.DB, error) {
-	db, err := sql.Open("postgres", cfg.URL)
-	if err != nil {
-		return nil, err
-	}
-
-	// Default is unlimited connections, use a cap to prevent hammering the database if it's the bottleneck.
-	// 10 was selected as a conservative number and will likely be revised later.
-	db.SetMaxOpenConns(10)
-
-	for {
-		if err := db.Ping(); err != nil {
-			log.WithError(ctx, err).Error("pinging PG")
-			time.Sleep(time.Second)
-			continue
-		}
-		break
-	}
-
-	return db, nil
 }

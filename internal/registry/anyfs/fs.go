@@ -27,6 +27,8 @@ func NewEnvFS(ctx context.Context, name string) (FS, error) {
 	if strings.HasPrefix(name, "s3://") {
 		return NewS3EnvFS(ctx, name)
 	}
-
+	if strings.HasPrefix(name, "file://") {
+		return NewLocalFS(strings.TrimPrefix(name, "file://"))
+	}
 	return NewLocalFS(name)
 }

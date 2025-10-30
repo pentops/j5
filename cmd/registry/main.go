@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
 	"net/http"
 
+	"github.com/pentops/grpc.go/grpcbind"
 	"github.com/pentops/j5/internal/registry/anyfs"
 	"github.com/pentops/j5/internal/registry/buildwrap"
 	"github.com/pentops/j5/internal/registry/github"
@@ -15,13 +15,12 @@ import (
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/runner"
 	"github.com/pentops/runner/commander"
+	"github.com/pentops/sqrlx.go/pgenv"
 	"github.com/pentops/sqrlx.go/sqrlx"
 	"github.com/pressly/goose"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/pentops/o5-messaging/outbox"
 )
 
@@ -39,10 +38,10 @@ func main() {
 
 func runMigrate(ctx context.Context, cfg struct {
 	MigrationsDir string `env:"MIGRATIONS_DIR" default:"./ext/db"`
-	service.DBConfig
+	DB            pgenv.DatabaseConfig
 }) error {
 
-	db, err := cfg.OpenDatabase(ctx)
+	db, err := cfg.DB.OpenPostgres(ctx)
 	if err != nil {
 		return err
 	}
@@ -50,20 +49,39 @@ func runMigrate(ctx context.Context, cfg struct {
 	return goose.Up(db, cfg.MigrationsDir)
 }
 
+type HTTPConfig struct {
+	HTTPBind string `env:"HTTP_BIND" default:":8081"`
+}
+
+func (srv *HTTPConfig) LisrtenAndServe(ctx context.Context, handler http.Handler) error {
+	httpServer := &http.Server{
+		Addr:    srv.HTTPBind,
+		Handler: handler,
+	}
+	log.WithField(ctx, "bind", srv.HTTPBind).Info("Begin HTTP Server")
+
+	go func() {
+		<-ctx.Done()
+		httpServer.Shutdown(ctx) // nolint:errcheck
+	}()
+
+	return httpServer.ListenAndServe()
+}
+
 func runReadonlyServer(ctx context.Context, cfg struct {
-	HTTPPort int `env:"HTTP_PORT" default:"8081"`
-	GRPCPort int `env:"GRPC_PORT" default:"8080"`
-	service.DBConfig
-	PackageStoreConfig
+	HTTP         HTTPConfig
+	GRPC         grpcbind.EnvConfig
+	DB           pgenv.DatabaseConfig
+	PackageStore PackageStoreConfig
 }) error {
-	dbConn, err := cfg.OpenDatabase(ctx)
+	dbConn, err := cfg.DB.OpenPostgres(ctx)
 	if err != nil {
 		return err
 	}
 
 	db := sqrlx.NewPostgres(dbConn)
 
-	pkgStore, err := cfg.OpenPackageStore(ctx, db)
+	pkgStore, err := cfg.PackageStore.OpenPackageStore(ctx, db)
 	if err != nil {
 		return err
 	}
@@ -74,19 +92,7 @@ func runReadonlyServer(ctx context.Context, cfg struct {
 
 	runGroup.Add("httpServer", func(ctx context.Context) error {
 		handler := gomodproxy.Handler(pkgStore)
-
-		httpServer := &http.Server{
-			Addr:    fmt.Sprintf(":%d", cfg.HTTPPort),
-			Handler: handler,
-		}
-		log.WithField(ctx, "port", cfg.HTTPPort).Info("Begin Registry Server")
-
-		go func() {
-			<-ctx.Done()
-			httpServer.Shutdown(ctx) // nolint:errcheck
-		}()
-
-		return httpServer.ListenAndServe()
+		return cfg.HTTP.LisrtenAndServe(ctx, handler)
 	})
 
 	runGroup.Add("grpcServer", func(ctx context.Context) error {
@@ -98,17 +104,7 @@ func runReadonlyServer(ctx context.Context, cfg struct {
 
 		reflection.Register(grpcServer)
 
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
-		if err != nil {
-			return err
-		}
-		log.WithField(ctx, "port", cfg.GRPCPort).Info("Begin Worker Server")
-		go func() {
-			<-ctx.Done()
-			grpcServer.GracefulStop() // nolint:errcheck
-		}()
-
-		return grpcServer.Serve(lis)
+		return cfg.GRPC.ListenAndServe(ctx, grpcServer)
 	})
 
 	return runGroup.Run(ctx)
@@ -119,19 +115,13 @@ type PackageStoreConfig struct {
 }
 
 func (cfg PackageStoreConfig) OpenPackageStore(ctx context.Context, db sqrlx.Transactor) (*packagestore.PackageStore, error) {
-	awsConfig, err := config.LoadDefaultConfig(ctx)
+
+	fs, err := anyfs.NewEnvFS(ctx, cfg.Storage)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load configuration: %w", err)
 	}
 
-	s3Client := s3.NewFromConfig(awsConfig)
-
-	s3fs, err := anyfs.NewS3FS(s3Client, cfg.Storage)
-	if err != nil {
-		return nil, err
-	}
-
-	pkgStore, err := packagestore.NewPackageStore(db, s3fs)
+	pkgStore, err := packagestore.NewPackageStore(db, fs)
 	if err != nil {
 		return nil, err
 	}
@@ -140,19 +130,17 @@ func (cfg PackageStoreConfig) OpenPackageStore(ctx context.Context, db sqrlx.Tra
 }
 
 func runCombinedServer(ctx context.Context, cfg struct {
-	HTTPPort int `env:"HTTP_PORT" default:"8081"`
-	GRPCPort int `env:"GRPC_PORT" default:"8080"`
-	PackageStoreConfig
-	service.DBConfig
+	HTTP         HTTPConfig
+	GRPC         grpcbind.EnvConfig
+	PackageStore PackageStoreConfig
+	DB           pgenv.DatabaseConfig
 }) error {
-	dbConn, err := cfg.OpenDatabase(ctx)
+	db, err := cfg.DB.OpenPostgresTransactor(ctx)
 	if err != nil {
 		return err
 	}
 
-	db := sqrlx.NewPostgres(dbConn)
-
-	pkgStore, err := cfg.OpenPackageStore(ctx, db)
+	pkgStore, err := cfg.PackageStore.OpenPackageStore(ctx, db)
 	if err != nil {
 		return err
 	}
@@ -181,19 +169,7 @@ func runCombinedServer(ctx context.Context, cfg struct {
 
 	runGroup.Add("httpServer", func(ctx context.Context) error {
 		handler := gomodproxy.Handler(pkgStore)
-
-		httpServer := &http.Server{
-			Addr:    fmt.Sprintf(":%d", cfg.HTTPPort),
-			Handler: handler,
-		}
-		log.WithField(ctx, "port", cfg.HTTPPort).Info("Begin Registry Server")
-
-		go func() {
-			<-ctx.Done()
-			httpServer.Shutdown(ctx) // nolint:errcheck
-		}()
-
-		return httpServer.ListenAndServe()
+		return cfg.HTTP.LisrtenAndServe(ctx, handler)
 	})
 
 	runGroup.Add("grpcServer", func(ctx context.Context) error {
@@ -206,17 +182,7 @@ func runCombinedServer(ctx context.Context, cfg struct {
 
 		reflection.Register(grpcServer)
 
-		lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.GRPCPort))
-		if err != nil {
-			return err
-		}
-		log.WithField(ctx, "port", cfg.GRPCPort).Info("Begin Worker Server")
-		go func() {
-			<-ctx.Done()
-			grpcServer.GracefulStop() // nolint:errcheck
-		}()
-
-		return grpcServer.Serve(lis)
+		return cfg.GRPC.ListenAndServe(ctx, grpcServer)
 	})
 
 	return runGroup.Run(ctx)
