@@ -67,7 +67,6 @@ type propertyNode struct {
 }
 
 func (pn *propertyNode) accept(visitor PropertyVisitor) error {
-
 	propNode := &PropertyNode{
 		Schema: pn.schema,
 		Source: pn.source,

@@ -15,7 +15,6 @@ import (
 )
 
 func TestJ5Store(t *testing.T) {
-
 	flow, uu := NewUniverse(t)
 	defer flow.RunSteps(t)
 

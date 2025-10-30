@@ -96,7 +96,6 @@ type OptionSourceLocation struct {
 }
 
 func buildSourceLocation(optionsLocs []*descriptorpb.SourceCodeInfo_Location, parentLocation protoreflect.SourceLocation, field protoreflect.FieldDescriptor) *OptionSourceLocation {
-
 	num := field.Number()
 	srcLoc := subLocations(optionsLocs, []int32{int32(num)})
 

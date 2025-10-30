@@ -73,7 +73,6 @@ func tObjectRef(ref *schema_j5pb.Ref) *schema_j5pb.ObjectProperty {
 }
 
 func TestImports(t *testing.T) {
-
 	// Run various ways of importing the same object.
 	// The object is baz.v1.Referenced
 
@@ -268,7 +267,6 @@ func TestImports(t *testing.T) {
 }
 
 func TestImportEnum(t *testing.T) {
-
 	deps := &testDeps{
 		pkg: "test.v1",
 		types: map[string]*TypeRef{

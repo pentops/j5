@@ -112,7 +112,6 @@ type fmter struct {
 }
 
 func (p *fmter) diffFile(ff []Fragment) {
-
 	for idx := range ff {
 		stmt := ff[idx]
 		switch stmt := stmt.(type) {
@@ -171,7 +170,6 @@ func (p *fmter) singleLineTokens(src SourceNode, parts ...Token) {
 }
 
 func (p *fmter) multiLineToken(src SourceNode, prefix string, lines []string) {
-
 	fullPrefix := strings.Repeat("\t", p.indent) + prefix
 	for idx, part := range lines {
 		// remove trailing space INCLUDING anything after the prefix,
@@ -203,7 +201,6 @@ func newToken(ty TokenType, value string) Token {
 }
 
 func (p *fmter) doBlockHeader(block BlockHeader) {
-
 	nameParts := referenceTokens(block.Type)
 	for _, val := range block.Tags {
 		nameParts = append(nameParts, newToken(SPACE, " "))

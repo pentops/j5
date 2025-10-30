@@ -60,7 +60,6 @@ func newFooDeletedEvent(fooID, tenantID string) *test_pb.FooPSMEventSpec {
 }
 
 func newFooEvent(keys *test_pb.FooKeys, et test_pb.FooPSMEvent) *test_pb.FooPSMEventSpec {
-
 	if keys.MetaTenantId == "" {
 		panic("metaTenantId is required")
 	}

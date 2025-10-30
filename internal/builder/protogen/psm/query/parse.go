@@ -101,7 +101,6 @@ func NewQueryServiceGenerateSet(name string, service *protogen.Service) *QuerySe
 }
 
 func (qs *QueryServiceGenerateSet) AddMethod(method *protogen.Method, methodOpt *ext_j5pb.StateQueryMethodOptions) error {
-
 	if methodOpt.Get {
 		if qs.getMethod != nil {
 			return fmt.Errorf("service %s already has a get method (%s)", qs.name, qs.getMethod.Desc.Name())
@@ -289,10 +288,12 @@ func deriveStateDescriptorFromQueryDescriptor(src QueryServiceGenerateSet) (*psm
 		if src.listEventsMethod == nil {
 			return nil, fmt.Errorf("no repeated field in get response, and no list events method, cannot derive event")
 		}
+
 		for _, field := range src.listEventsMethod.Output.Fields {
 			if field.Message == nil {
 				continue
 			}
+
 			if field.Desc.Cardinality() == protoreflect.Repeated {
 				if eventMessage != nil {
 					return nil, fmt.Errorf("state get response %s should have exactly one repeated field", src.getMethod.Desc.FullName())

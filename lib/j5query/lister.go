@@ -91,9 +91,11 @@ func (ls *ListSpec) Validate() error {
 	if ls.Method == nil {
 		return fmt.Errorf("list spec must have a method")
 	}
+
 	if err := ls.TableSpec.Validate(); err != nil {
 		return fmt.Errorf("validate table spec: %w", err)
 	}
+
 	return nil
 }
 
@@ -117,7 +119,6 @@ func BuildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListR
 }
 
 func buildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListReflectionSet, error) {
-
 	tableSet, err := NewTableReflectionSet(table)
 	if err != nil {
 		return nil, err
@@ -143,14 +144,12 @@ func buildListReflection(method *j5schema.MethodSchema, table TableSpec) (*ListR
 	for _, field := range method.Response.Properties {
 		switch ft := field.Schema.(type) {
 		case *j5schema.ObjectField:
-
 			if ft.ObjectSchema().FullName() == "j5.list.v1.PageResponse" {
 				ll.pageResponseField = field
 				continue
 			}
 
 		case *j5schema.ArrayField:
-
 			objectField, ok := ft.ItemSchema.(*j5schema.ObjectField)
 			if !ok {
 				return nil, fmt.Errorf("array field %s must be an object field, got %s", field.FullName(), ft.ItemSchema.FullName())
@@ -413,7 +412,6 @@ func decodePageToken(token string, sortFields []sortSpec) (map[string]any, error
 }
 
 func fieldAs[T any](obj j5reflect.Object, path ...string) (val T, ok bool, err error) {
-
 	endField, ok, err := obj.GetField(path...)
 	if err != nil || !ok {
 		return val, ok, err
@@ -523,7 +521,6 @@ func (ll *Lister) BuildQuery(ctx context.Context, req j5reflect.Object, res j5re
 }
 
 func (ll *Lister) addPageFilter(token string, sortFields []sortSpec, tableAlias string) (sq.Sqlizer, error) {
-
 	lhsFields := make([]string, 0, len(sortFields))
 	rhsValues := make([]any, 0, len(sortFields))
 	rhsPlaceholders := make([]string, 0, len(sortFields))

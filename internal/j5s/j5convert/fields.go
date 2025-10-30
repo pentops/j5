@@ -845,7 +845,6 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 // Copies the J5 extension object to the equivalent protoreflect extension type
 // by field names.
 func (ww *conversionVisitor) setJ5Ext(node sourcewalk.SourceNode, dest *descriptorpb.FieldOptions, fieldType protoreflect.Name, j5Ext proto.Message) *ext_j5pb.FieldOptions {
-
 	// Options in the *proto* representation.
 	extOptions := &ext_j5pb.FieldOptions{}
 	extOptionsRefl := extOptions.ProtoReflect()
@@ -909,7 +908,6 @@ func RangeField(pt protoreflect.Message, f func(protoreflect.FieldDescriptor, pr
 }
 
 func stringToRef(st string) *schema_j5pb.Ref {
-
 	ref := &schema_j5pb.Ref{}
 	parts := strings.Split(st, ".")
 	if len(parts) == 1 {

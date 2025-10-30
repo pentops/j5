@@ -22,7 +22,6 @@ type schemaSource interface {
 }
 
 func (api *API) ToJ5Proto() (*client_j5pb.API, error) {
-
 	// preserves order
 	packages := make([]*client_j5pb.Package, 0, len(api.Packages))
 	packageMap := map[string]*client_j5pb.Package{}
@@ -85,7 +84,6 @@ type Package struct {
 }
 
 func (pkg *Package) ToJ5Proto() (*client_j5pb.Package, error) {
-
 	services := make([]*client_j5pb.Service, 0, len(pkg.Services))
 	for _, serviceSrc := range pkg.Services {
 		service, err := serviceSrc.ToJ5Proto()
@@ -196,7 +194,6 @@ type Method struct {
 }
 
 func (mm *Method) ToJ5Proto() (*client_j5pb.Method, error) {
-
 	out := &client_j5pb.Method{
 		Method: &schema_j5pb.Method{
 			FullGrpcName: fmt.Sprintf("/%s.%s/%s", mm.Service.Package.Name, mm.Service.Name, mm.GRPCMethodName),
@@ -228,7 +225,6 @@ type StateEntity struct {
 }
 
 func (entity *StateEntity) ToJ5Proto() (*client_j5pb.StateEntity, error) {
-
 	commands := make([]*client_j5pb.Service, 0, len(entity.Commands))
 	for _, command := range entity.Commands {
 		service, err := command.ToJ5Proto()

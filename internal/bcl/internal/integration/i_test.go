@@ -11,7 +11,6 @@ import (
 )
 
 func TestEndToEnd(t *testing.T) {
-
 	/*
 		schema := &bcl_j5pb.Schema{
 			Blocks: []*bcl_j5pb.Block{{

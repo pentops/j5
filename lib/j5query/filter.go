@@ -130,7 +130,6 @@ type filterSpec struct {
 }
 
 func filtersForField(field *j5schema.ObjectProperty) ([]any, error) {
-
 	switch bigType := field.Schema.(type) {
 	case *j5schema.EnumField:
 		schema := bigType.Schema()
@@ -520,7 +519,6 @@ func validateQueryRequestFilters(message *j5schema.ObjectSchema, filters []*list
 }
 
 func validateQueryRequestFilterField(message *j5schema.ObjectSchema, filterField *list_j5pb.Field) error {
-
 	jsonPath := ParseJSONPathSpec(filterField.GetName())
 	spec, err := NewJSONPath(message, jsonPath)
 	if err != nil {

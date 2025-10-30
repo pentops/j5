@@ -87,7 +87,6 @@ func AsErrorsWithSource(err error) (*ErrorsWithSource, bool) {
 }
 
 func shortString(err *Err) string {
-
 	if err.Pos == nil || err.Pos.isEmpty() {
 		return fmt.Sprintf("? %s", err.Err.Error())
 	} else {

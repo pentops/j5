@@ -7,7 +7,6 @@ import (
 )
 
 func TestPrintAlignment(t *testing.T) {
-
 	run := func(input []string, line, column int, expected string) {
 		t.Log("input:", input)
 		t.Log("pos:", line, column)

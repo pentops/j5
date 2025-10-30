@@ -233,12 +233,10 @@ func TestChain(t *testing.T) {
 }
 
 func TestLink(t *testing.T) {
-
 	flow, uu := NewUniverse(t)
 	defer flow.RunSteps(t)
 
 	flow.Setup(func(ctx context.Context, t flowtest.Asserter) error {
-
 		uu.FooStateMachine.From(test_pb.FooStatus_ACTIVE).
 			OnEvent(test_pb.FooPSMEventUpdated).
 			LinkTo(test_pb.FooPSMLinkHook(uu.BarStateMachine, func(
@@ -284,7 +282,6 @@ func TestLink(t *testing.T) {
 	var barKeys *test_pb.BarKeys
 
 	flow.Step("Hook should have pushed to Bar", func(ctx context.Context, t flowtest.Asserter) {
-
 		res, err := uu.BarQuery.BarList(ctx, &test_spb.BarListRequest{})
 		if err != nil {
 			t.Fatal(err.Error())
@@ -303,11 +300,9 @@ func TestLink(t *testing.T) {
 		}
 
 		barKeys = bar.Keys
-
 	})
 
 	flow.Step("Get Bar (Date Key Test)", func(ctx context.Context, t flowtest.Asserter) {
-
 		res, err := uu.BarQuery.BarGet(ctx, &test_spb.BarGetRequest{
 			BarId:      barKeys.BarId,
 			DateKey:    barKeys.DateKey,
@@ -322,7 +317,6 @@ func TestLink(t *testing.T) {
 		if res.Bar.Keys.BarOtherId != foo1ID {
 			t.Fatalf("expected BarOtherId to match FooId")
 		}
-
 	})
 }
 
@@ -331,7 +325,6 @@ func TestStateDataHook(t *testing.T) {
 	defer flow.RunSteps(t)
 
 	flow.Setup(func(ctx context.Context, t flowtest.Asserter) error {
-
 		uu.FooStateMachine.StateDataHook(test_pb.FooPSMGeneralStateDataHook(func(
 			ctx context.Context,
 			tx sqrlx.Transaction,
@@ -387,7 +380,6 @@ func TestTransitionDataHook(t *testing.T) {
 	defer flow.RunSteps(t)
 
 	flow.Setup(func(ctx context.Context, t flowtest.Asserter) error {
-
 		uu.FooStateMachine.From().
 			OnEvent(test_pb.FooPSMEventCreated).
 			Hook(test_pb.FooPSMDataHook(func(
@@ -396,7 +388,6 @@ func TestTransitionDataHook(t *testing.T) {
 				state *test_pb.FooState,
 				event *test_pb.FooEventType_Created,
 			) error {
-
 				if state.Data.Characteristics == nil || state.Status != test_pb.FooStatus_ACTIVE {
 					_, err := tx.Delete(ctx, sq.Delete("foo_cache").Where("id = ?", state.Keys.FooId))
 					if err != nil {
@@ -458,7 +449,6 @@ func TestStateMachineIdempotencyInitial(t *testing.T) {
 	}
 
 	flow.Step("Create", func(ctx context.Context, t flowtest.Asserter) {
-
 		state, err := uu.FooStateMachine.Transition(ctx, event1)
 		if err != nil {
 			t.Fatal(err.Error())
@@ -495,7 +485,6 @@ func TestStateMachineIdempotencyInitial(t *testing.T) {
 		if len(res.Events) != 1 {
 			t.Fatalf("expected 1 events, got %d", len(res.Events))
 		}
-
 	})
 
 	flow.Step("Different Event Data", func(ctx context.Context, t flowtest.Asserter) {
@@ -510,7 +499,6 @@ func TestStateMachineIdempotencyInitial(t *testing.T) {
 		if !errors.Is(err, psm.ErrDuplicateEventID) {
 			t.Fatalf("expected duplicate event ID, got %v", err)
 		}
-
 	})
 }
 
@@ -572,7 +560,6 @@ func TestStateMachineIdempotencySnapshot(t *testing.T) {
 		if state.Data.Name != "1" {
 			t.Fatalf("expected state name 1, got %s", state.Data.Name)
 		}
-
 	})
 
 }
@@ -667,7 +654,6 @@ func TestFooStateMachine(t *testing.T) {
 				t.Fatalf("expected sequence %d (idx %d), got %d", expect, idx, event.Metadata.Sequence)
 			}
 		}
-
 	})
 
 	flow.Step("ListEvents2", func(ctx context.Context, t flowtest.Asserter) {
@@ -684,7 +670,6 @@ func TestFooStateMachine(t *testing.T) {
 		if len(res.Events) != 3 {
 			t.Fatalf("expected 3 events for foo 2, got %d", len(res.Events))
 		}
-
 	})
 
 	flow.Step("Get2", func(ctx context.Context, t flowtest.Asserter) {
@@ -720,5 +705,4 @@ func TestFooStateMachine(t *testing.T) {
 			t.Fatalf("expected 1 states for default filter (ACTIVE), got %d", len(res.Foo))
 		}
 	})
-
 }

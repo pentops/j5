@@ -10,7 +10,6 @@ import (
 )
 
 func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, error) {
-
 	responseObj, ok := response.(*j5schema.ObjectSchema)
 	if !ok {
 		return nil, fmt.Errorf("expected object schema, got %T", response)
@@ -23,12 +22,14 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 		if !ok {
 			continue
 		}
+
 		if foundArray != nil {
 			return nil, fmt.Errorf("found multiple arrays in response")
 		}
 
 		foundArray = asArray
 	}
+
 	if foundArray == nil {
 		return nil, fmt.Errorf("no array found in response")
 	}
@@ -44,6 +45,7 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 		if searching == nil {
 			return
 		}
+
 		out.SearchableFields = append(out.SearchableFields, &client_j5pb.ListRequest_SearchField{
 			Name: field.ClientPath(),
 		})
@@ -53,6 +55,7 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 		if filtering == nil {
 			return
 		}
+
 		filter := &client_j5pb.ListRequest_FilterField{
 			Name:           field.ClientPath(),
 			DefaultFilters: filtering.DefaultFilters,
@@ -65,6 +68,7 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 		if sorting == nil {
 			return
 		}
+
 		var ds *client_j5pb.ListRequest_SortField_Direction
 		if sorting.DefaultSort {
 			direction := client_j5pb.ListRequest_SortField_DIRECTION_ASC
@@ -72,8 +76,10 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 			if typeName == "timestamp" {
 				direction = client_j5pb.ListRequest_SortField_DIRECTION_DESC
 			}
+
 			ds = &direction
 		}
+
 		out.SortableFields = append(out.SortableFields, &client_j5pb.ListRequest_SortField{
 			Name:        field.ClientPath(),
 			DefaultSort: ds,
@@ -93,6 +99,7 @@ func buildListRequest(response j5schema.RootSchema) (*client_j5pb.ListRequest, e
 
 		return nil
 	})
+
 	if err != nil {
 		return nil, fmt.Errorf("walk path nodes: %w", err)
 	}

@@ -30,6 +30,7 @@ func (nf *NestedField) ProtoChild(name string) (*NestedField, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &NestedField{
 		RootColumn: nf.RootColumn,
 		Path:       *pathChild,
@@ -40,9 +41,11 @@ func (nf *NestedField) Selector(inTable string) string {
 	if nf.ValueColumn != nil {
 		return fmt.Sprintf("%s.%s", inTable, *nf.ValueColumn)
 	}
+
 	if len(nf.Path.path) == 0 {
 		return fmt.Sprintf("%s.%s", inTable, nf.RootColumn)
 	}
+
 	return fmt.Sprintf("%s.%s%s", inTable, nf.RootColumn, nf.Path.JSONBArrowPath())
 }
 
@@ -300,12 +303,15 @@ func objectProperty(obj hasPropertySet, pathElem string, pt pathType) (*j5schema
 		if prop == nil {
 			return nil, fmt.Errorf("client property %q not found in %s", pathElem, obj.FullName())
 		}
+
 		return prop, nil
+
 	case outerPath:
 		prop := obj.AllProperties().ByJSONName(pathElem)
 		if prop == nil {
 			return nil, fmt.Errorf("property %q not found in %s", pathElem, obj.FullName())
 		}
+
 		return prop, nil
 
 	default:
@@ -315,7 +321,6 @@ func objectProperty(obj hasPropertySet, pathElem string, pt pathType) (*j5schema
 }
 
 func newPath(rootMessage *j5schema.ObjectSchema, fieldPath []string, pathType pathType) (*Path, error) {
-
 	if len(fieldPath) == 0 {
 		return nil, fmt.Errorf("fieldPath must have at least one element")
 	}
@@ -339,13 +344,13 @@ func newPath(rootMessage *j5schema.ObjectSchema, fieldPath []string, pathType pa
 			if err != nil {
 				return nil, err
 			}
+
 			node = pathNode{
 				name:  pathElem,
 				field: field,
 			}
 
 		case *j5schema.OneofSchema:
-
 			if len(walkPath) == 0 && pathElem == "!type" {
 				// Very Special Edge Case: Oneof wrapper types allow the client to
 				// filter based on the type of the oneof. So the oneof can be at the
@@ -377,20 +382,26 @@ func newPath(rootMessage *j5schema.ObjectSchema, fieldPath []string, pathType pa
 		switch nextType := node.field.Schema.(type) {
 		case *j5schema.ObjectField:
 			walkMessage = nextType.ObjectSchema()
+
 		case *j5schema.OneofField:
 			walkMessage = nextType.OneofSchema()
+
 		case j5schema.RootSchema:
 			walkMessage = nextType
+
 		case *j5schema.ArrayField:
 			items := nextType.ItemSchema
 			switch items := items.(type) {
 			case *j5schema.ObjectField:
 				walkMessage = items.ObjectSchema()
+
 			case *j5schema.OneofField:
 				walkMessage = items.OneofSchema()
+
 			default:
 				return nil, fmt.Errorf("array field %q in %s.%s is an array, but not of an object or oneof, no such field %q", pathElem, rootMessage.FullName(), strings.Join(fieldPath, "."), strings.Join(walkPath, "."))
 			}
+
 		case *j5schema.MapField:
 			return nil, fmt.Errorf("map fields not supported in path %q", strings.Join(fieldPath, "."))
 		default:

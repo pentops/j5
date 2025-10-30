@@ -153,7 +153,6 @@ func (dr *dockerRun) wait(ctx context.Context) error {
 }
 
 func (dw *Runner) runDocker(ctx context.Context, rc RunContext) error {
-
 	rcDocker := rc.Command.RunType.GetDocker()
 	if rcDocker == nil {
 		return fmt.Errorf("run type is not docker")

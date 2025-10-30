@@ -119,7 +119,6 @@ func testListReflection(t testing.TB, input string, spec tableMod) (*ListReflect
 }
 
 func TestBuildListReflection(t *testing.T) {
-
 	runHappy := func(name string, input string, spec tableMod, callback func(*testing.T, *ListReflectionSet)) {
 		t.Helper()
 		t.Run(name, func(t *testing.T) {

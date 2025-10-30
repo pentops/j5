@@ -60,7 +60,6 @@ func (pkg *Package) IterateSchemas(yield func(string, *RefSchema) bool) {
 }
 
 func (pkg *Package) assertRefsLink() error {
-
 	var seenSchemas = map[string]struct{}{}
 
 	var walkRootSchema func(RootSchema) error

@@ -115,6 +115,7 @@ func buildDefaultSorts(columnName string, message *j5schema.ObjectSchema) ([]sor
 				desc: true,
 			})
 		}
+
 		return nil
 	})
 	if err != nil {

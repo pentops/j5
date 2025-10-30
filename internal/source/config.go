@@ -41,7 +41,6 @@ func readBytesFromAny(root fs.FS, filenames []string) ([]byte, string, error) {
 }
 
 func unmarshalFile(filename string, data []byte, out proto.Message) error {
-
 	switch filepath.Ext(filename) {
 	case ".yaml", ".yml":
 		jsonData, err := yaml.YAMLToJSON(data)
@@ -110,7 +109,6 @@ func resolveRepoPluginReferences(base *pluginBase, config *config_j5pb.RepoConfi
 }
 
 func resolveBundlePluginReferences(base *pluginBase, config *config_j5pb.BundleConfigFile) error {
-
 	bundleRoot, err := buildRootPlugins(config.Plugins, base.rootPlugins)
 	if err != nil {
 		return err

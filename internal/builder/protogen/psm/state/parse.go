@@ -55,7 +55,6 @@ func WalkFile(file *protogen.File) ([]*PSMEntity, error) {
 }
 
 func (se *sourceSet) checkMessage(message *protogen.Message) error {
-
 	ww := walkingMessage{
 		message: message,
 	}

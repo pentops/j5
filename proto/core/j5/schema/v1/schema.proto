@@ -152,7 +152,7 @@ message Object {
   repeated string polymorph_member = 5;
 
   bcl.v1.Block bcl = 6;
- 
+
   option (j5.bcl.v1.block).description_field = "description";
   option (j5.bcl.v1.block).name.field_name = "name";
   option (j5.bcl.v1.block).alias = {name: "field", path: ["properties"]};
@@ -185,7 +185,7 @@ message PolymorphField {
 
   message Rules {}
   message Ext {}
-  
+
   option (j5.bcl.v1.block).qualifier.field_name = "ref";
 }
 
@@ -213,7 +213,7 @@ message OneofField {
 
   message Rules {}
   message Ext {}
-  
+
   option (j5.bcl.v1.block).qualifier.field_name = "ref";
   option (j5.bcl.v1.block).alias = {name: "option", path:  ["oneof","properties"]};
   option (j5.bcl.v1.block).alias = {name: "bcl", path: ["oneof","bcl"]};
@@ -227,7 +227,7 @@ message Oneof {
   bcl.v1.Block bcl = 4;
 
   repeated ObjectProperty properties = 3;
-  
+
   option (j5.bcl.v1.block).description_field = "description";
   option (j5.bcl.v1.block).name.field_name = "name";
   option (j5.bcl.v1.block).alias = {name: "option", path: ["properties"]};
@@ -248,7 +248,7 @@ message EnumField {
     repeated string not_in = 2;
   }
   message Ext {}
-  
+
   option (j5.bcl.v1.block).qualifier.field_name = "ref";
   option (j5.bcl.v1.block).alias = {name: "option", path: ["enum","options"]};
 }
@@ -272,7 +272,7 @@ message Enum {
     string label = 2;
     string description = 3;
   }
-  
+
   option (j5.bcl.v1.block).description_field = "description";
   option (j5.bcl.v1.block).name.field_name = "name";
   option (j5.bcl.v1.block).alias = {name: "option", path: ["options"]};
@@ -295,7 +295,7 @@ message ArrayField {
     optional bool unique_items = 3;
   }
 
-  
+
   option (j5.bcl.v1.block).qualifier = {
     field_name: "items"
     is_block: true
@@ -318,7 +318,7 @@ message MapField {
     // block parsing.
     optional string single_form = 3;
   }
-  
+
   option (j5.bcl.v1.block) = {
     qualifier: {
       field_name: "itemSchema"
@@ -349,7 +349,7 @@ message StringField {
 
 
   message Ext {}
-  
+
   option (j5.bcl.v1.block).qualifier = {
     field_name: "format"
   };
@@ -429,7 +429,7 @@ message FloatField {
     optional double multiple_of = 5;
   }
   message Ext {}
-  
+
   option (j5.bcl.v1.block).qualifier.field_name = "format";
 }
 
@@ -547,8 +547,8 @@ message ObjectProperty {
   // node will be message fields holding a message kind, and the last node is
   // the field containing the property type.
   //repeated int32 proto_field = 11;
-  
-  
+
+
   option (j5.bcl.v1.block).type_select = {
     field_name: "schema",
     bang_bool: "required"
@@ -557,12 +557,12 @@ message ObjectProperty {
   option (j5.bcl.v1.block).name.field_name = "name";
   option (j5.bcl.v1.block).alias = {name: "optional", path: "explicitlyOptional"};
 }
-  
+
 message EntityKey {
   // the field is the primary key of the state entity. It is only valid in the
   // keys object of an entity.
   bool primary = 1;
-  
+
   // When true, this field will be added included in all endpoint>
   // the DB shard.
   // The field must be required

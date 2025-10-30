@@ -8,7 +8,6 @@ import (
 )
 
 func TestNestedObject(t *testing.T) {
-
 	file := &sourcedef_j5pb.SourceFile{
 		Package: &sourcedef_j5pb.Package{
 			Name: "test.v1",

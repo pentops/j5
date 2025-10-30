@@ -194,7 +194,6 @@ const (
 )
 
 func FieldFormat(schema *schema_j5pb.Field) (ColumnType, error) {
-
 	switch ft := schema.Type.(type) {
 	case *schema_j5pb.Field_String_:
 		return textType, nil

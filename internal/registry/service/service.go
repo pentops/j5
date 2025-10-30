@@ -28,7 +28,6 @@ type DBConfig struct {
 }
 
 func (cfg *DBConfig) OpenDatabase(ctx context.Context) (*sql.DB, error) {
-
 	db, err := sql.Open("postgres", cfg.URL)
 	if err != nil {
 		return nil, err

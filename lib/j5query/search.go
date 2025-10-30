@@ -219,7 +219,6 @@ func getFieldSearching(field *j5schema.ObjectProperty) *list_j5pb.SearchingConst
 }
 
 func tsvColumns(message *j5schema.ObjectSchema) ([]*TSVColumn, error) {
-
 	usedColNames := make(map[string]struct{})
 	out := []*TSVColumn{}
 

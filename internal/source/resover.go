@@ -11,7 +11,6 @@ import (
 )
 
 func ResolveIncludes(ctx context.Context, rr RemoteResolver, img *source_j5pb.SourceImage, locks *config_j5pb.LockFile) (*source_j5pb.SourceImage, error) {
-
 	ib := image.NewBuilderFromImage(img)
 	for _, include := range img.Includes {
 		inputSpec := &config_j5pb.Input{

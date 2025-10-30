@@ -133,7 +133,6 @@ type GRPCMethodConfig struct {
 }
 
 func (rr *Router) RegisterGRPCService(ctx context.Context, sd protoreflect.ServiceDescriptor, invoker AppConn) error {
-
 	var defaultAuth auth_j5pb.IsMethodAuthTypeWrappedType = &auth_j5pb.MethodAuthType_None{}
 	if rr.globalAuth != nil {
 		defaultAuth = &auth_j5pb.MethodAuthType_JWTBearer{}
@@ -162,7 +161,6 @@ func (rr *Router) RegisterGRPCService(ctx context.Context, sd protoreflect.Servi
 }
 
 func (rr *Router) buildMethod(md protoreflect.MethodDescriptor, conn AppConn, auth auth_j5pb.IsMethodAuthTypeWrappedType) (*grpcMethod, error) {
-
 	methodOptions := md.Options().(*descriptorpb.MethodOptions)
 
 	if j5Method := protosrc.GetExtension[*ext_j5pb.MethodOptions](methodOptions, ext_j5pb.E_Method); j5Method != nil {

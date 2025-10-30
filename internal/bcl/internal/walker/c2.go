@@ -9,7 +9,6 @@ import (
 )
 
 func WalkSchema(scope *schema.Scope, body parser.Body, verbose bool) error {
-
 	rootContext := &walkContext{
 		scope:   scope,
 		path:    []string{""},
@@ -152,7 +151,6 @@ func (ps *popSet) hasMore() bool {
 }
 
 func doBlock(sc Context, spec schema.BlockSpec, bs *parser.Block) error {
-
 	rootBlockSpec := spec
 
 	gotTags := newPopSet(bs.Tags, bs.Type.End)
@@ -302,7 +300,6 @@ func walkTags(sc Context, spec schema.BlockSpec, gotTags popSet, outerCallback S
 }
 
 func walkQualifiers(sc Context, spec schema.BlockSpec, gotQualifiers popSet, outerCallback SpanCallback) error {
-
 	qualifier, ok := gotQualifiers.popFirst()
 	if !ok {
 		return outerCallback(sc, spec)

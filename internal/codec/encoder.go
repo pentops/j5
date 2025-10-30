@@ -10,7 +10,6 @@ import (
 )
 
 func (c *Codec) encode(msg protoreflect.Message) ([]byte, error) {
-
 	root, err := c.refl.NewRoot(msg)
 	if err != nil {
 		return nil, err

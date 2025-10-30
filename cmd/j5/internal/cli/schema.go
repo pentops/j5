@@ -112,7 +112,6 @@ func RunImage(ctx context.Context, cfg BuildConfig) error {
 }
 
 func RunSources(ctx context.Context, cfg BuildConfig) error {
-
 	image, err := cfg.GetSource(ctx)
 	if err != nil {
 		return err
@@ -157,7 +156,6 @@ func RunSource(ctx context.Context, cfg struct {
 }
 
 func RunClient(ctx context.Context, cfg BuildConfig) error {
-
 	descriptorAPI, err := cfg.descriptorAPI(ctx)
 	if err != nil {
 		return err

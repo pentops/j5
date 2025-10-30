@@ -220,7 +220,6 @@ func TestCircularDependency(t *testing.T) {
 }
 
 func TestPreserveComments(t *testing.T) {
-
 	tf := newTestFiles()
 
 	tf.tAddJ5SFile("local/v1/foo.j5s",
@@ -270,7 +269,6 @@ func TestPreserveComments(t *testing.T) {
 }
 
 func assertEqualLines(t testing.TB, wantLines, gotLines []string) {
-
 	for idx, line := range gotLines {
 		t.Logf("got %03d: '%s'", idx, line)
 		if idx >= len(wantLines) {

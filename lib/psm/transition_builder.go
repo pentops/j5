@@ -143,8 +143,8 @@ func (tb BuilderFrom[K, S, ST, SD, E, IE]) Mutate(
 	hook transitionMutation[K, S, ST, SD, E, IE],
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	eventType := hook.eventType()
-	return tb.OnEvent(eventType).Mutate(hook)
 
+	return tb.OnEvent(eventType).Mutate(hook)
 }
 
 // Hook is a shortcut for OnEvent().Hook() with the event type matching callback function.
@@ -152,6 +152,7 @@ func (tb BuilderFrom[K, S, ST, SD, E, IE]) Hook(
 	hook transitionHook[K, S, ST, SD, E, IE],
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	eventType := hook.eventType()
+
 	return tb.OnEvent(eventType).Hook(hook)
 }
 
@@ -160,6 +161,7 @@ func (tb BuilderFrom[K, S, ST, SD, E, IE]) LogicHook(
 	hook transitionHook[K, S, ST, SD, E, IE],
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	eventType := hook.eventType()
+
 	return tb.OnEvent(eventType).Hook(hook)
 }
 
@@ -168,6 +170,7 @@ func (tb BuilderFrom[K, S, ST, SD, E, IE]) DataHook(
 	hook transitionHook[K, S, ST, SD, E, IE],
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	eventType := hook.eventType()
+
 	return tb.OnEvent(eventType).Hook(hook)
 }
 
@@ -176,6 +179,7 @@ func (tb BuilderFrom[K, S, ST, SD, E, IE]) LinkTo(
 	link transitionHook[K, S, ST, SD, E, IE],
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	eventType := link.eventType()
+
 	return tb.OnEvent(eventType).LinkTo(link)
 }
 
@@ -199,6 +203,7 @@ func (tb *TransitionBuilder[K, S, ST, SD, E, IE]) Mutate(
 	mutation transitionMutation[K, S, ST, SD, E, IE],
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	tb.hookSet.mutations = append(tb.hookSet.mutations, mutation)
+
 	return tb
 }
 
@@ -209,6 +214,7 @@ func (tb *TransitionBuilder[K, S, ST, SD, E, IE]) SetStatus(
 	status ST,
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	tb.hookSet.toStatus = status
+
 	return tb
 }
 
@@ -216,6 +222,7 @@ func (tb *TransitionBuilder[K, S, ST, SD, E, IE]) SetStatus(
 // erroring when the conditions are met.
 func (tb *TransitionBuilder[K, S, ST, SD, E, IE]) Noop() *TransitionBuilder[K, S, ST, SD, E, IE] {
 	tb.hookSet.noop = true
+
 	return tb
 }
 
@@ -224,6 +231,7 @@ func (tb *TransitionBuilder[K, S, ST, SD, E, IE]) Hook(
 	hooks ...transitionHook[K, S, ST, SD, E, IE],
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	tb.hookSet.hooks = append(tb.hookSet.hooks, hooks...)
+
 	return tb
 }
 
@@ -232,6 +240,7 @@ func (tb *TransitionBuilder[K, S, ST, SD, E, IE]) LogicHook(
 	hook transitionHook[K, S, ST, SD, E, IE],
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	tb.hookSet.hooks = append(tb.hookSet.hooks, hook)
+
 	return tb
 }
 
@@ -240,6 +249,7 @@ func (tb *TransitionBuilder[K, S, ST, SD, E, IE]) DataHook(
 	hook transitionHook[K, S, ST, SD, E, IE],
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	tb.hookSet.hooks = append(tb.hookSet.hooks, hook)
+
 	return tb
 }
 
@@ -248,5 +258,6 @@ func (tb *TransitionBuilder[K, S, ST, SD, E, IE]) LinkTo(
 	hook transitionHook[K, S, ST, SD, E, IE],
 ) *TransitionBuilder[K, S, ST, SD, E, IE] {
 	tb.hookSet.hooks = append(tb.hookSet.hooks, hook)
+
 	return tb
 }

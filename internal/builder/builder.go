@@ -104,7 +104,6 @@ func buildGomodFile(pkg *config_j5pb.OutputType_GoProxy) ([]byte, error) {
 }
 
 func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input *source_j5pb.SourceImage, plugins []*config_j5pb.BuildPlugin) error {
-
 	if len(plugins) == 0 {
 		return fmt.Errorf("no plugins")
 	}
@@ -170,7 +169,6 @@ func (b *Builder) runPlugins(ctx context.Context, pc PluginContext, input *sourc
 }
 
 func (b *Builder) runProtocPlugin(ctx context.Context, pc PluginContext, plugin *config_j5pb.BuildPlugin, sourceProto *pluginpb.CodeGeneratorRequest) error {
-
 	start := time.Now()
 
 	parameters := make([]string, 0, len(plugin.Opts))
@@ -244,7 +242,6 @@ func handleResponseFiles(ctx context.Context, resp *pluginpb.CodeGeneratorRespon
 }
 
 func (b *Builder) runJ5ClientPlugin(ctx context.Context, pc PluginContext, plugin *config_j5pb.BuildPlugin, descriptorAPI *client_j5pb.API) error {
-
 	start := time.Now()
 
 	buildRequest := &plugin_j5pb.CodeGenerationRequest{

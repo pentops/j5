@@ -59,7 +59,6 @@ func (df DescriptorFiles) AddFiles(files []*descriptorpb.FileDescriptorProto) er
 	return nil
 }
 func AssertProtoFilesAreEqual(aSrc, bSrc *descriptorpb.FileDescriptorProto) bool {
-
 	if proto.Equal(aSrc, bSrc) {
 		return true
 	}
