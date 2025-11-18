@@ -59,12 +59,26 @@ type Router struct {
 	middleware []func(http.Handler) http.Handler
 }
 
+func jsonError(w http.ResponseWriter, message string, code int) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	enc, err := json.Marshal(map[string]string{"error": message})
+	if err != nil {
+		http.Error(w, `{"error":"internal error marshalling error message"}`, http.StatusInternalServerError)
+		return
+	}
+	w.Write(enc) // nolint: errcheck
+}
+
 func NewRouter() *Router {
 	router := mux.NewRouter()
 
+	router.MethodNotAllowedHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		jsonError(w, fmt.Sprintf("method %s not allowed for %s", r.Method, r.URL.String()), http.StatusMethodNotAllowed)
+		log.WithField(r.Context(), "httpURL", r.URL.String()).Debug("Method not allowed")
+	})
 	router.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}` + "\n")) // nolint: errcheck
+		jsonError(w, fmt.Sprintf("path %s not found", r.URL.String()), http.StatusNotFound)
 		log.WithField(r.Context(), "httpURL", r.URL.String()).Debug("Not found")
 	})
 
