@@ -11,6 +11,7 @@ import (
 	"github.com/pentops/j5/gen/j5/messaging/v1/messaging_j5pb"
 	"github.com/pentops/j5/gen/j5/registry/v1/registry_tpb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
+	"github.com/pentops/j5/internal/gen/j5/registry/v1/registry_spb"
 	"github.com/pentops/j5/internal/registry/github"
 	"github.com/pentops/log.go/log"
 	"github.com/pentops/o5-messaging/o5msg"
@@ -29,7 +30,8 @@ type Publisher interface {
 }
 
 type BuildWorker struct {
-	registry_tpb.UnimplementedBuilderRequestTopicServer
+	registry_tpb.UnsafeBuilderRequestTopicServer
+	registry_spb.UnsafeBuildServiceServer
 
 	builder J5Builder
 	github  IGithub
@@ -42,6 +44,7 @@ type J5Builder interface {
 	RunPublishBuild(ctx context.Context, pc PluginContext, input *source_j5pb.SourceImage, build *config_j5pb.PublishConfig) error
 	MutateImageWithMods(img *source_j5pb.SourceImage, mods []*config_j5pb.ProtoMod) error
 	SourceImage(ctx context.Context, fs fs.FS, bundleName string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error)
+	SourceImages(ctx context.Context, fs fs.FS) ([]ImagePair, error)
 }
 
 type IGithub interface {
@@ -60,6 +63,7 @@ func NewBuildWorker(builder J5Builder, github IGithub, store Storage, publisher 
 
 func (bw *BuildWorker) RegisterGRPC(s *grpc.Server) {
 	registry_tpb.RegisterBuilderRequestTopicServer(s, bw)
+	registry_spb.RegisterBuildServiceServer(s, bw)
 }
 
 func (bw *BuildWorker) replyStatus(ctx context.Context, request *messaging_j5pb.RequestMetadata, status registry_tpb.BuildStatus, output *registry_tpb.BuildOutput) error {
@@ -173,6 +177,32 @@ func (bw *BuildWorker) runPublish(ctx context.Context, req *registry_tpb.Publish
 	return nil
 }
 
+func (bw *BuildWorker) BuildAPISync(ctx context.Context, req *registry_spb.BuildAPISyncRequest) (*registry_spb.BuildAPISyncResponse, error) {
+	pairs, err := bw.BundleImagesFromCommit(ctx, req.Commit)
+	if err != nil {
+		return nil, err
+	}
+
+	res := &registry_spb.BuildAPISyncResponse{}
+	for _, pair := range pairs {
+		if pair.Config.Registry == nil {
+			continue
+		}
+		err = bw.store.UploadJ5Image(ctx, req.Commit, pair.Image, pair.Config.Registry)
+		if err != nil {
+			return nil, fmt.Errorf("upload j5 image: %w", err)
+		}
+		res.Bundles = append(res.Bundles, &registry_spb.BundleBuild{
+			Owner: pair.Config.Registry.Owner,
+			Name:  pair.Config.Registry.Name,
+		})
+
+	}
+
+	return res, nil
+
+}
+
 func (bw *BuildWorker) BuildAPI(ctx context.Context, req *registry_tpb.BuildAPIMessage) (*emptypb.Empty, error) {
 	if req.Request != nil {
 		if err := bw.replyStatus(ctx, req.Request, registry_tpb.BuildStatus_IN_PROGRESS, nil); err != nil {
@@ -182,7 +212,7 @@ func (bw *BuildWorker) BuildAPI(ctx context.Context, req *registry_tpb.BuildAPIM
 
 	log.WithField(ctx, "commit", req.Commit).Info("Build API")
 
-	err := bw.buildAPI(ctx, req.Commit, req)
+	err := bw.buildAPI(ctx, req.Commit, req.Bundle)
 	if err != nil {
 		if req.Request == nil {
 			return nil, err
@@ -209,13 +239,13 @@ func (bw *BuildWorker) BuildAPI(ctx context.Context, req *registry_tpb.BuildAPIM
 
 }
 
-func (bw *BuildWorker) buildAPI(ctx context.Context, commit *source_j5pb.CommitInfo, req *registry_tpb.BuildAPIMessage) error {
-	img, bundleConfig, err := bw.BundleImageFromCommit(ctx, commit, req.Bundle)
+func (bw *BuildWorker) buildAPI(ctx context.Context, commit *source_j5pb.CommitInfo, bundle string) error {
+	img, bundleConfig, err := bw.BundleImageFromCommit(ctx, commit, bundle)
 	if err != nil {
 		return fmt.Errorf("new fs input: %w", err)
 	}
 
-	return bw.store.UploadJ5Image(ctx, req.Commit, img, bundleConfig.Registry)
+	return bw.store.UploadJ5Image(ctx, commit, img, bundleConfig.Registry)
 }
 
 func some[T any](s T) *T {

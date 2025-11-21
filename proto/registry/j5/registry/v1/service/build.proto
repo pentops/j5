@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package j5.registry.v1.service;
+
+import "google/api/annotations.proto";
+import "j5/client/v1/client.proto";
+import "j5/source/v1/image.proto";
+import "j5/ext/v1/annotations.proto";
+import "buf/validate/validate.proto";
+
+option go_package = "github.com/pentops/j5/internal/gen/j5/registry/v1/registry_spb";
+
+service BuildService {
+  option (j5.ext.v1.service).default_auth.custom = {};
+  
+  rpc BuildAPISync(BuildAPISyncRequest) returns (BuildAPISyncResponse) {
+    option (google.api.http) = {
+      post: "/registry/v1/build/api/sync"
+      body: "*"
+    };
+  }
+
+}
+
+message BuildAPISyncRequest {
+  j5.source.v1.CommitInfo commit = 2 [(buf.validate.field).required = true];
+}
+
+message BuildAPISyncResponse {
+  repeated BundleBuild bundles = 1;
+}
+
+message BundleBuild {
+  string owner = 1;
+  string name = 2;
+}
+

@@ -55,12 +55,44 @@ func (b *Builder) MutateImageWithMods(img *source_j5pb.SourceImage, mods []*conf
 	return protomod.MutateImageWithMods(img, mods)
 }
 
+type ImagePair struct {
+	Image  *source_j5pb.SourceImage
+	Config *config_j5pb.BundleConfigFile
+}
+
 func (b *Builder) SourceImage(ctx context.Context, fs fs.FS, bundleName string) (*source_j5pb.SourceImage, *config_j5pb.BundleConfigFile, error) {
 	src, err := source.NewFSRepoRoot(ctx, fs, b.resolver)
 	if err != nil {
 		return nil, nil, err
 	}
 	return src.BundleImageSource(ctx, bundleName)
+}
+
+func (b *Builder) SourceImages(ctx context.Context, fs fs.FS) ([]ImagePair, error) {
+	src, err := source.NewFSRepoRoot(ctx, fs, b.resolver)
+	if err != nil {
+		return nil, err
+	}
+	bundles := src.AllBundles()
+	out := make([]ImagePair, 0, len(bundles))
+	for _, bundleSource := range src.AllBundles() {
+
+		img, err := bundleSource.SourceImage(ctx, src)
+		if err != nil {
+			return nil, err
+		}
+
+		cfg, err := bundleSource.J5Config()
+		if err != nil {
+			return nil, err
+		}
+
+		out = append(out, ImagePair{
+			Image:  img,
+			Config: cfg,
+		})
+	}
+	return out, nil
 }
 
 type PluginContext struct {

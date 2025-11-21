@@ -33,10 +33,27 @@ func (bw *BuildWorker) BundleImageFromCommit(ctx context.Context, commit *source
 
 	img, cfg, err := bw.builder.SourceImage(ctx, repoRoot.fs(), bundleName)
 	if err != nil {
-		return nil, nil, fmt.Errorf("new fs input: %w", err)
+		return nil, nil, err
 	}
 
 	return img, cfg, nil
+}
+
+func (bw *BuildWorker) BundleImagesFromCommit(ctx context.Context, commit *source_j5pb.CommitInfo) ([]ImagePair, error) {
+	repoRoot, err := bw.tmpClone(ctx, commit)
+	if err != nil {
+		return nil, err
+	}
+
+	defer repoRoot.close()
+
+	rootFS := repoRoot.fs()
+
+	images, err := bw.builder.SourceImages(ctx, rootFS)
+	if err != nil {
+		return nil, err
+	}
+	return images, nil
 }
 
 func (bw *BuildWorker) tmpClone(ctx context.Context, commit *source_j5pb.CommitInfo) (*tmpSource, error) {
