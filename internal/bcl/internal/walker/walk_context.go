@@ -277,7 +277,7 @@ func (sc *walkContext) setAttribute(path ScopePath, val parser.ASTValue, appendV
 func (sc *walkContext) setContainerFromScalar(bs schema.BlockSpec, val parser.ASTValue) error {
 	ss := bs.ScalarSplit
 	if ss == nil {
-		return fmt.Errorf("container %s has no method to set from array", bs.ErrName())
+		return fmt.Errorf("container %s has no method to set from scalar", bs.ErrName())
 	}
 
 	var setVals []parser.ASTValue
@@ -301,7 +301,8 @@ func (sc *walkContext) setContainerFromScalar(bs schema.BlockSpec, val parser.AS
 	} else {
 		vals, isArray := val.AsArray()
 		if !isArray {
-			return fmt.Errorf("container %s requires an array when setting from value, got a scalar", bs.ErrName())
+			sc.Logf("ScalarSplit with no delimiter requires array, got %#v", val)
+			return fmt.Errorf("container %s is ScalarSplit with no delimiter, must be set from an array", bs.ErrName())
 		}
 		setVals = vals
 	}

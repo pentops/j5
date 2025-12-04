@@ -391,7 +391,7 @@ message KeyFormat {
     Custom custom = 2;
     UUID uuid = 3;
     ID62 id62 = 4;
-    StringFormat format = 5;
+    Named named = 5;
   }
 
   message Informal {}
@@ -401,6 +401,17 @@ message KeyFormat {
   }
   message UUID {}
   message ID62 {}
+  message Named {
+    Ref ref = 1;
+
+    option (j5.bcl.v1.block).qualifier.field_name = "ref";
+
+    option (j5.bcl.v1.block).scalar_split = {
+      right_to_left: true
+      required_fields: [{path: "schema"}]
+      remainder_field: {path: "package"}
+    };
+  }
 
   option (j5.bcl.v1.block).type_select = {
     field_name: "."

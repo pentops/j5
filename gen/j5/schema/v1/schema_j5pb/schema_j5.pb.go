@@ -433,7 +433,7 @@ const (
 	KeyFormat_Type_Custom   KeyFormatTypeKey = "custom"
 	KeyFormat_Type_Uuid     KeyFormatTypeKey = "uuid"
 	KeyFormat_Type_Id62     KeyFormatTypeKey = "id62"
-	KeyFormat_Type_Format   KeyFormatTypeKey = "format"
+	KeyFormat_Type_Named    KeyFormatTypeKey = "named"
 )
 
 func (x *KeyFormat) TypeKey() (KeyFormatTypeKey, bool) {
@@ -446,8 +446,8 @@ func (x *KeyFormat) TypeKey() (KeyFormatTypeKey, bool) {
 		return KeyFormat_Type_Uuid, true
 	case *KeyFormat_Id62:
 		return KeyFormat_Type_Id62, true
-	case *KeyFormat_Format:
-		return KeyFormat_Type_Format, true
+	case *KeyFormat_Named_:
+		return KeyFormat_Type_Named, true
 	default:
 		return "", false
 	}
@@ -468,8 +468,8 @@ func (x *KeyFormat) Set(val IsKeyFormatWrappedType) {
 		x.Type = &KeyFormat_Uuid{Uuid: v}
 	case *KeyFormat_ID62:
 		x.Type = &KeyFormat_Id62{Id62: v}
-	case *StringFormat:
-		x.Type = &KeyFormat_Format{Format: v}
+	case *KeyFormat_Named:
+		x.Type = &KeyFormat_Named_{Named: v}
 	}
 }
 func (x *KeyFormat) Get() IsKeyFormatWrappedType {
@@ -482,8 +482,8 @@ func (x *KeyFormat) Get() IsKeyFormatWrappedType {
 		return v.Uuid
 	case *KeyFormat_Id62:
 		return v.Id62
-	case *KeyFormat_Format:
-		return v.Format
+	case *KeyFormat_Named_:
+		return v.Named
 	default:
 		return nil
 	}
@@ -500,8 +500,8 @@ func (x *KeyFormat_UUID) KeyFormatTypeKey() KeyFormatTypeKey {
 func (x *KeyFormat_ID62) KeyFormatTypeKey() KeyFormatTypeKey {
 	return KeyFormat_Type_Id62
 }
-func (x *StringFormat) KeyFormatTypeKey() KeyFormatTypeKey {
-	return KeyFormat_Type_Format
+func (x *KeyFormat_Named) KeyFormatTypeKey() KeyFormatTypeKey {
+	return KeyFormat_Type_Named
 }
 func (msg *KeyFormat) Clone() any {
 	return proto.Clone(msg).(*KeyFormat)
@@ -520,6 +520,9 @@ func (msg *KeyFormat_UUID) Clone() any {
 }
 func (msg *KeyFormat_ID62) Clone() any {
 	return proto.Clone(msg).(*KeyFormat_ID62)
+}
+func (msg *KeyFormat_Named) Clone() any {
+	return proto.Clone(msg).(*KeyFormat_Named)
 }
 func (msg *FloatField) Clone() any {
 	return proto.Clone(msg).(*FloatField)

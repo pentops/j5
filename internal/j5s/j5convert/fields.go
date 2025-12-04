@@ -817,6 +817,37 @@ func buildField(ww *conversionVisitor, node sourcewalk.FieldNode) (*descriptorpb
 					Pattern: ff.Custom.Pattern,
 				}
 
+				if ff.Custom.Description != "" {
+					keyExt.PatternInfo = &ext_j5pb.KeyField_PatternInfo{
+						Description: gl.Ptr(ff.Custom.Description),
+					}
+				}
+
+			case *schema_j5pb.KeyFormat_Named_:
+				ref := ff.Named.Ref
+
+				typeRef, err := ww.resolveType(&sourcewalk.RefNode{
+					Source: node.Source,
+					Ref:    ref,
+				})
+				if err != nil {
+					return nil, fmt.Errorf("string format %s: %w", ref, err)
+				}
+
+				if typeRef.StringFormat == nil {
+					return nil, fmt.Errorf("%s refers to a %s, not a string format", ref, typeRef.debugName())
+				}
+
+				keyExt.Type = &ext_j5pb.KeyField_Pattern{
+					Pattern: typeRef.StringFormat.Regex,
+				}
+				keyExt.PatternInfo = &ext_j5pb.KeyField_PatternInfo{
+					Name: gl.Ptr(fmt.Sprintf("%s.%s", typeRef.Package, typeRef.Name)),
+				}
+				if typeRef.StringFormat.Description != "" {
+					keyExt.PatternInfo.Description = gl.Ptr(typeRef.StringFormat.Description)
+				}
+
 			case *schema_j5pb.KeyFormat_Informal_:
 
 			default:
