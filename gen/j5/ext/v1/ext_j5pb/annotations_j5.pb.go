@@ -129,6 +129,10 @@ func (msg *KeyField) Clone() any {
 
 type IsKeyField_Type = isKeyField_Type
 
+func (msg *KeyField_PatternInfo) Clone() any {
+	return proto.Clone(msg).(*KeyField_PatternInfo)
+}
+
 // KeyField_Format
 const (
 	KeyField_Format_UNSPECIFIED KeyField_Format = 0

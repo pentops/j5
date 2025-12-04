@@ -220,6 +220,16 @@ func (cc *summaryWalker) collectFileRefs(sourceFile *sourcedef_j5pb.SourceFile) 
 						Ref:    ref,
 					})
 				}
+
+			case *schema_j5pb.Field_Key:
+				if st.Key.Format != nil {
+					if named := st.Key.Format.GetNamed(); named != nil {
+						cc.addRef(&sourcewalk.RefNode{
+							Source: node.Source,
+							Ref:    named.Ref,
+						})
+					}
+				}
 			}
 
 			return nil

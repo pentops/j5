@@ -274,4 +274,15 @@ message KeyField {
     FORMAT_ID62 = 3;
   }
   j5.schema.v1.EntityRef foreign = 3;
+
+  // Set when the pattern is annotated
+  PatternInfo patternInfo = 10;
+
+  message PatternInfo {
+    // The full type name of a namedPattern.
+    optional string name = 1;
+
+    // Description given either in the namedPattern or inline for custom
+    optional string description = 2;
+  }
 }
