@@ -564,6 +564,7 @@ func (ww *Walker) walkStatement() (Fragment, *unexpectedTokenError) {
 		if comment != nil {
 			hdr.Comment = comment
 		}
+		hdr.End = ww.currentPos()
 		return hdr, nil
 
 	case EOL, EOF:

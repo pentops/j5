@@ -79,6 +79,22 @@ func TestFmtDiff(t *testing.T) {
 			{1, 3, "\n"},
 		},
 	})
+
+	run("comment align", testCase{
+		// Tests a bug where the comment on field f caused the block header not
+		// to have an end in the source, so the diff ranged from 2 to 0.
+
+		input: s(
+			"", // ensures that the field with the comment is not on line 1, which would prevent the panic
+			"object {",
+			"field f // open",
+			"}",
+		),
+		expected: []FmtDiff{
+			{0, 1, ""},
+			{2, 3, "\tfield f // open\n"},
+		},
+	})
 }
 
 type slicePop[T any] struct {
