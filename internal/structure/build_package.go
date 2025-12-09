@@ -433,9 +433,12 @@ func buildMethod(service *schema_j5pb.Service, method protoreflect.MethodDescrip
 
 			fieldName := part[1 : len(part)-1]
 
-			inputField := input.Fields().ByName(protoreflect.Name(fieldName))
+			inputField := input.Fields().ByJSONName(fieldName)
 			if inputField == nil {
-				return nil, fmt.Errorf("path field %q not found in input", fieldName)
+				inputField = input.Fields().ByName(protoreflect.Name(fieldName))
+				if inputField == nil {
+					return nil, fmt.Errorf("path field %q not found in input", fieldName)
+				}
 			}
 
 			jsonName := inputField.JSONName()
