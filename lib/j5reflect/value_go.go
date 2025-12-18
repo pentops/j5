@@ -87,7 +87,7 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value any) (protoreflect.Val
 
 	case *schema_j5pb.Field_Integer:
 		rv := reflect.ValueOf(value)
-		if rv.Kind() == reflect.Ptr {
+		if rv.Kind() == reflect.Pointer {
 			if rv.IsNil() {
 				return protoreflect.Value{}, nil
 			}
@@ -294,7 +294,7 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value any) (protoreflect.Val
 		}
 
 		rv := reflect.ValueOf(value)
-		if rv.Kind() == reflect.Ptr {
+		if rv.Kind() == reflect.Pointer {
 			if rv.IsNil() {
 				return protoreflect.Value{}, nil
 			}
@@ -374,6 +374,9 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value any) (protoreflect.Val
 			}
 			return decimalFromString(*val)
 
+		case json.Number:
+			return decimalFromString(val.String())
+
 		case *decimal_j5t.Decimal:
 			return protoreflect.ValueOfMessage(val.ProtoReflect()), nil
 
@@ -386,7 +389,7 @@ func scalarReflectFromGo(schema *schema_j5pb.Field, value any) (protoreflect.Val
 
 			return protoreflect.ValueOfMessage(msg.ProtoReflect()), nil
 		default:
-			return pv, fmt.Errorf("expected *decimal_j5t.Decimal, got %T", value)
+			return pv, fmt.Errorf("expected decimal got %T", value)
 		}
 
 	case *schema_j5pb.Field_Date:
