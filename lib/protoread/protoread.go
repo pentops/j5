@@ -1,0 +1,118 @@
+package protoread
+
+import (
+	"context"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/pentops/log.go/log"
+	"sigs.k8s.io/yaml"
+
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/pentops/j5/lib/j5codec"
+	"github.com/pentops/j5/lib/j5reflect"
+	"github.com/pentops/j5/lib/j5validate"
+)
+
+type s3API interface {
+	GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+}
+
+var s3Client s3API
+
+func getS3Client(ctx context.Context) (s3API, error) {
+	if s3Client != nil {
+		return s3Client, nil
+	}
+	awsConfig, err := config.LoadDefaultConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load configuration: %w", err)
+	}
+	s3Client = s3.NewFromConfig(awsConfig)
+	return s3Client, nil
+}
+
+func readFile(ctx context.Context, path string) ([]byte, error) {
+	if strings.HasPrefix(path, "s3://") {
+		client, err := getS3Client(ctx)
+		if err != nil {
+			return nil, err
+		}
+		bucket := strings.TrimPrefix(path, "s3://")
+		parts := strings.SplitN(bucket, "/", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid s3 path: %s", path)
+		}
+		bucket, key := parts[0], parts[1]
+
+		log.WithFields(ctx,
+			"path", path,
+			"bucket", bucket,
+			"key", key,
+		).Debug("Reading file from S3")
+
+		res, err := client.GetObject(ctx, &s3.GetObjectInput{
+			Bucket: &bucket,
+			Key:    &key,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("get object %q: %w", path, err)
+		}
+
+		data, err := io.ReadAll(res.Body)
+		if err != nil {
+			return nil, fmt.Errorf("read object body %q: %w", path, err)
+		}
+		return data, nil
+	}
+	return os.ReadFile(path)
+}
+
+func PullAndParse(ctx context.Context, filename string, into j5reflect.Object) error {
+	data, err := readFile(ctx, filename)
+	if err != nil {
+		return fmt.Errorf("reading file %s: %w", filename, err)
+	}
+	err = Parse(filename, data, into)
+	if err != nil {
+		return fmt.Errorf("parsing file %s: %w", filename, err)
+	}
+	return nil
+}
+
+func Parse(filename string, data []byte, out j5reflect.Object) error {
+
+	switch filepath.Ext(filename) {
+	case ".yaml", ".yml":
+		jsonData, err := yaml.YAMLToJSON(data)
+		if err != nil {
+			return fmt.Errorf("unmarshal %s: %w", filename, err)
+		}
+		err = j5codec.Global.JSONToReflect(jsonData, out)
+		if err != nil {
+			return fmt.Errorf("unmarshal %s: %w", filename, err)
+		}
+
+	case ".json":
+		err := j5codec.Global.JSONToReflect(data, out)
+		if err != nil {
+			return fmt.Errorf("unmarshal %s: %w", filename, err)
+		}
+
+	default:
+		return fmt.Errorf("unmarshal %s: unknown file extension %q", filename, filepath.Ext(filename))
+	}
+
+	// should usually be cached, but this is used rarely.
+	validator := j5validate.NewValidator()
+
+	if err := validator.Validate(out); err != nil {
+		return err
+	}
+
+	return nil
+}
