@@ -9,8 +9,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"runtime/debug"
-
 	"buf.build/go/protoyaml"
 	"github.com/pentops/j5/gen/j5/config/v1/config_j5pb"
 	"github.com/pentops/j5/gen/j5/source/v1/source_j5pb"
@@ -23,17 +21,6 @@ import (
 )
 
 var Version = "dev" // Set by main
-
-var Commit = func() string {
-	if info, ok := debug.ReadBuildInfo(); ok {
-		for _, setting := range info.Settings {
-			if setting.Key == "vcs.revision" {
-				return setting.Value
-			}
-		}
-	}
-	return "dev"
-}()
 
 func CommandSet() *commander.CommandSet {
 	cmdGroup := commander.NewCommandSet()
@@ -58,7 +45,7 @@ func CommandSet() *commander.CommandSet {
 }
 
 func runVersion(ctx context.Context, cfg struct{}) error {
-	fmt.Printf("jsonapi version %v\n", Commit)
+	fmt.Printf("pentops/j5 %v\n", Version)
 	return nil
 }
 

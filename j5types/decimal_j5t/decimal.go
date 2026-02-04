@@ -2,12 +2,25 @@ package decimal_j5t
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/shopspring/decimal"
 )
 
+var reDecimal = regexp.MustCompile(`^-?\d+(\.\d+)?$`)
+
 func (d *Decimal) ToShop() (decimal.Decimal, error) {
 	return decimal.NewFromString(d.Value)
+}
+
+func (dd *Decimal) UnmarshalText(data []byte) error {
+	str := string(data)
+	if !reDecimal.MatchString(str) {
+		return fmt.Errorf("invalid decimal format: %s", string(data))
+	}
+
+	dd.Value = str
+	return nil
 }
 
 func (d *Decimal) Decimal() decimal.Decimal {
